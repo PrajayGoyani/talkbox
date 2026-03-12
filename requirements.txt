@@ -1,0 +1,54 @@
+lookup
+unwind
+aggregation
+
+
+user chat listing with reciever avatar, name, last message, timestamp, unread count
+user login, register, logout
+user update profile
+user upload avatar
+user get profile
+
+send message to reciever with socket.io
+get message from reciever with socket.io
+
+get chat messages
+get chat users
+
+List of APIs and socket events
+-----------------------------
+1) Auth APIs
+    POST: /api/auth/register
+    POST: /api/auth/login
+    POST: /api/auth/logout - will check later
+    POST: /api/auth/refresh - will check later
+    POST: /api/auth/verify - will check later
+    POST: /api/auth/forget-password
+    POST: /api/auth/reset-password
+    POST: /api/auth/verify-otp
+
+2) User APIs
+    GET: /api/user/profile
+    PUT: /api/user/profile
+    POST: /api/user/upload-avatar
+
+3) Chat APIs
+    GET: /api/chat/list
+    POST: /api/chat/create
+    GET: /api/chat/messages
+    GET: /api/chat/users
+
+4) Message APIs
+    POST: /api/message/send
+
+5) socket events
+    /listen for new messages
+    /listen for new chat
+    
+Node Native APIs
+----------------
+path, events, stream, cluster, crypto, fs, http, net, os, readline, tls, url, util, zlib
+
+NPM packages
+------------
+express, mongoose, bcrypt, jsonwebtoken, socket.io, multer, dotenv, nodemon

@@ -1,5 +1,4 @@
-const mongoose = require('mongoose');
-const { Schema } = mongoose;
+import mongoose, { Schema } from 'mongoose';
 
 const chatSchema = new Schema({
     reciverId: { type: String, required: true, ref: 'User' },
@@ -8,4 +7,4 @@ const chatSchema = new Schema({
 
 const Chat = mongoose.model('Chat', chatSchema);
 
-module.exports = Chat;
+export default Chat;
