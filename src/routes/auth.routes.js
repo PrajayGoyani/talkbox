@@ -2,7 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 
 import User from '../models/user.model.js';
-import { generateTokens, verifyToken } from '../utils/jwt.js';
+import { generateTokens, verifyAccessToken } from '../utils/jwt.js';
 
 const router = express.Router();
 
@@ -51,7 +51,7 @@ router.post('/refresh', async (req, res) => {
         const refreshToken = req.cookies.jwt;
 
         try {
-            const decoded = verifyToken(refreshToken);
+            const decoded = verifyAccessToken(refreshToken);
             const tokens = generateTokens(decoded);
             return res.json({ ...tokens });
         } catch (error) {
