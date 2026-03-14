@@ -1,5 +1,4 @@
-import jwt from 'jsonwebtoken';
-import { JWT_SECRET_KEY } from '../config/env.js';
+import { verifyAccessToken } from '../utils/jwt.js';
 
 export function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -10,10 +9,10 @@ export function authenticateToken(req, res, next) {
     }
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET_KEY);
+        const decoded = verifyAccessToken(token);
         req.user = decoded;
         next();
     } catch (error) {
-        return res.status(403).json({ message: 'Invalid or expired token.' });   
+        return res.status(403).json({ message: 'Invalid or expired token.' });
     }
 }

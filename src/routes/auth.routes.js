@@ -1,11 +1,8 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
-import { 
-    JWT_SECRET_KEY, JWT_EXPIRATION, JWT_REFRESH_SECRET_KEY, JWT_REFRESH_EXPIRATION
-} from '../config/env.js';
 import User from '../models/user.model.js';
+import { generateTokens, verifyToken } from '../utils/jwt.js';
 
 const router = express.Router();
 
@@ -36,8 +33,7 @@ router.post('/login', async (req, res) => {
         return res.status(401).json({ message: 'Invalid credentials' });
     }
     
-    const accessToken = jwt.sign(user, JWT_SECRET_KEY, { expiresIn: JWT_EXPIRATION });
-    const refreshToken = jwt.sign(user, JWT_REFRESH_SECRET_KEY, { expiresIn: JWT_REFRESH_EXPIRATION });
+    const { accessToken, refreshToken } = generateTokens(user);
 
     // Assigning refresh token in http-only cookie 
     res.cookie('jwt', refreshToken, {
@@ -56,9 +52,9 @@ router.post('/refresh', async (req, res) => {
         const refreshToken = req.cookies.jwt;
 
         try {
-            const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET_KEY);
-            const accessToken = jwt.sign(decoded, JWT_SECRET_KEY, { expiresIn: JWT_REFRESH_EXPIRATION });
-            return res.json({ accessToken });
+            const decoded = verifyToken(refreshToken);
+            const tokens = generateTokens(decoded);
+            return res.json({ ...tokens });
         } catch (error) {
             return res.status(406).json({ message: 'Unauthorized' });
         }
