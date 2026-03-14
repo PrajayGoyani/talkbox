@@ -11,25 +11,21 @@ router.use(authenticateToken);
 
 // Upload avatar
 router.post('/avatar', async (req, res) => {
-    const user = await User.findById(req.user.id);
-    user.avatar = req.file.path;
-    await user.save();
-    res.json(user);
+    // TODO: Add logic to upload avatar
 });
 
-// Get user profile
-router.get('/profile', async (req, res) => {
-    const user = await User.findById(req.user.id);
+// Get user
+router.get('/me', async (req, res) => {
+    const user = await User.findById(req.user.id).select('-password -__v');
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
     res.json(user);
 });
 
 // Update user profile
-router.put('/profile', async (req, res) => {
-    const user = await User.findById(req.user.id);
-    user.name = req.body.name;
-    user.email = req.body.email;
-    await user.save();
-    res.json(user);
+router.patch('/profile', async (req, res) => {
+    // TODO: Add logic to update user profile along with avatar image
 });
 
 export default router;

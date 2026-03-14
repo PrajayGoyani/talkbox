@@ -35,7 +35,6 @@ router.post('/login', async (req, res) => {
     
     const { accessToken, refreshToken } = generateTokens(user);
 
-    // Assigning refresh token in http-only cookie 
     res.cookie('jwt', refreshToken, {
         httpOnly: true,
         sameSite: 'None', secure: true,

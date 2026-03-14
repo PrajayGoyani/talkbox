@@ -7,17 +7,22 @@ import Message from '../models/message.model.js';
 
 // Get chat listing
 router.get('/', async (req, res) => {
-    const user = await User.findById(req.user.id);
-    const chats = await Chat.find({ users: user._id });
-    res.json(chats);
+    // TODO: Add logic to get chat listing
 });
 
 // Create chat
 router.post('/', async (req, res) => {
-    const user = await User.findById(req.user.id);
-    const chat = new Chat({ users: [user._id] });
-    const newChat = await chat.save();
-    res.json(newChat);
+    // TODO: Add logic to create chat
+});
+
+// Update chat
+router.put('/:id', async (req, res) => {
+    // TODO: Add logic to update chat
+});
+
+// Delete chat
+router.delete('/:id', async (req, res) => {
+    // TODO: Add logic to delete chat with chat messages
 });
 
 // Get chat messages
