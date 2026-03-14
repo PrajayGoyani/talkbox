@@ -1,7 +1,7 @@
 # chat-app (one-to-one)
 Real-time one-to-one messaging app
 
-Project Scope
+## Project Scope
  - User Register/Login on App
  - Initiate one-to-one chat with other users
  - Real time messaging updates via socket
