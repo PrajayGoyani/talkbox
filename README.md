@@ -7,7 +7,8 @@ Project Scope
  - Real time messaging updates via socket
     - send image/audio/video along with message body.
     - user reciepts: sent, delivered, seen
-    - user typing, user online, message notification events
+    - user typing, user online, new message notification events
  - Chat listing
-    - Show user's unread messages count
+    - other user profile/avatar image
+    - show user's unread messages count
     - last message short preview
