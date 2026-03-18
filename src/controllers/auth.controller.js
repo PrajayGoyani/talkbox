@@ -26,7 +26,7 @@ export const refresh = async (req, res) => {
 }
 
 export const getMe = async (req, res) => {
-  const user = await authService.getMe(req.user._id);
+  const user = await authService.getMe(req.user.id);
   res.json(success(user));
 };
     

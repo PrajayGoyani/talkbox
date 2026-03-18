@@ -10,8 +10,8 @@ class AuthService {
         }
 
         const user = await User.create({ name, email, password });
-        const tokens = generateTokens(user.toObject());
-
+        const userObject = user.toObject();
+        const tokens = generateTokens({ id: userObject._id.toString() });
         return {
             user: this.sanitize(user),
             ...tokens,
@@ -31,8 +31,9 @@ class AuthService {
 
         user.lastSeen = new Date();
         await user.save();
-        
-        const tokens = generateTokens(user.toObject());
+
+        const userObject = user.toObject();
+        const tokens = generateTokens({ id: userObject._id.toString() });
         return {
             user: this.sanitize(user), 
             ...tokens
@@ -59,7 +60,7 @@ class AuthService {
     }
 
     async getMe(userId) {
-        const user = await User.findById(userId).select('-password');
+        const user = await User.findById(userId).select('-password -__v').lean();
         if (!user) throw AppError.notFound('User');
         return user;
     }

@@ -9,7 +9,7 @@ import { validate } from '../utils/validation.js';
 
 // Get chat listing
 router.get('/', async (req, res) => {
-    const chats = await Chat.find({ cretatedBy: req.user._id })
+    const chats = await Chat.find({ cretatedBy: req.user.id })
         .populate('reciverId', 'name email avatar_url');
     res.json(chats);
 });
@@ -23,7 +23,7 @@ router.post('/', validate(createChatSchema), async (req, res) => {
     const { reciverId } = req.body;
     const chat = new Chat({
         reciverId,
-        cretatedBy: req.user._id
+        cretatedBy: req.user.id
     });
 
     await chat.save();
