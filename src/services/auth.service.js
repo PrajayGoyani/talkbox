@@ -1,5 +1,5 @@
 import User from '../models/user.model.js';
-import { generateTokens, verifyAccessToken } from '../utils/jwt.js';
+import { generateAccessToken, generateTokens, verifyRefreshToken } from '../utils/jwt.js';
 import { AppError } from '../utils/AppError.js';
 
 class AuthService {
@@ -46,16 +46,15 @@ class AuthService {
         }
         
         try {
-            const payload = verifyAccessToken(refreshToken);
+            const payload = verifyRefreshToken(refreshToken);
 
             const user = await User.findById(payload.id);
             if (!user) throw AppError.unauthorized('Invalid user', 'INVALID_USER');
-            const tokens = generateTokens(user);
+            const accessToken = generateAccessToken({ id: user._id.toString() });
 
-            return { ...tokens };
+            return { accessToken };
         } catch (error) {
-            if (error instanceof AppError) throw error;
-            throw AppError.unauthorized('Invalid refresh token', 'INVALID_TOKEN');
+            throw error;
         }
     }
 

@@ -9,12 +9,14 @@ import userRoutes from './src/routes/user.routes.js';
 import chatRoutes from './src/routes/chat.routes.js';
 import { AppError } from './src/utils/AppError.js';
 import { error as errorResponse } from './src/utils/response.js';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 
-// // app.use(express.urlencoded({ extended: true }));
+// app.use(express.urlencoded({ extended: true }));
 
 app.use(express.static(path.join(path.dirname('public'))));
 
@@ -38,10 +40,14 @@ app.use((err, req, res, next) => {
         return;
     }
     
+    let message = err.message || 'Internal Server Error';
+    if (NODE_ENV !== 'development') {
+        message = 'Internal Server Error';
+    }
     console.error(err.stack);
     res.status(err.statusCode || 500).json({
         success: false,
-        message: err.message || 'Internal Server Error',
+        message,
     });
 });
 

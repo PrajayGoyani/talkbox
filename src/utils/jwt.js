@@ -6,9 +6,12 @@ import {
 } from '../config/env.js';
 import jwt from 'jsonwebtoken';
 
+export const generateAccessToken = (payload) => jwt.sign(payload, JWT_SECRET_KEY, { expiresIn: JWT_EXPIRATION });
+export const generateRefreshToken = (payload) => jwt.sign(payload, JWT_REFRESH_SECRET_KEY, { expiresIn: JWT_REFRESH_EXPIRATION });
+
 export function generateTokens(payload) {
-    const accessToken = jwt.sign(payload, JWT_SECRET_KEY, { expiresIn: JWT_EXPIRATION });
-    const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET_KEY, { expiresIn: JWT_REFRESH_EXPIRATION });
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
     return { accessToken, refreshToken };
 }
 
