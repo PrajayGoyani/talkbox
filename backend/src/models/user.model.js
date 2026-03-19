@@ -19,16 +19,29 @@ const userSchema = new Schema({
     lastSeen: { type: Date, default: Date.now },
 });
 
-userSchema.methods.comparePassword = async function (password) {
-    return bcrypt.compare(password, this.password);
-};
+userSchema.loadClass(class {
+    get avatarUrl() {
+        return this.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(this.name || this.email)}`;
+    }
+
+    async comparePassword(password) {
+        return bcrypt.compare(password, this.password);
+    }
+
+    async hashPassword() {
+        const hash = await bcrypt.hash(this.password, BCRYPT_SALT);
+        this.password = hash;
+    }
+
+    static findByEmail(email) {
+        return this.findOne({ email });
+    }
+});
 
 userSchema.pre("save", async function () {
-    if (!this.isModified("password")) {
-        return;
+    if (this.isModified("password")) {
+        await this.hashPassword();
     }
-    const hash = await bcrypt.hash(this.password, BCRYPT_SALT);
-    this.password = hash;
 });
 
 const User = mongoose.model('User', userSchema);

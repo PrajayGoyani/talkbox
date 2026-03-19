@@ -19,7 +19,7 @@ class AuthService {
     }
 
     async login({ email, password }) {
-        const user = await User.findOne({ email });
+        const user = await User.findByEmail(email);
         if (!user) {
             throw AppError.unauthorized('Invalid credentials', 'INVALID_CREDENTIALS');
         }
@@ -69,6 +69,7 @@ class AuthService {
             id: user._id,
             name: user.name,
             email: user.email,
+            avatarUrl: user.avatarUrl,
         };
     }
 
