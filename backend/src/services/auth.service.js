@@ -3,13 +3,13 @@ import { generateAccessToken, generateTokens, verifyRefreshToken } from '../util
 import { AppError } from '../utils/AppError.js';
 
 class AuthService {
-    async signup({ name, email, password }) {
+    async signup({ username, email, password }) {
         const existingUser = await User.exists({ email });
         if (existingUser) {
             throw AppError.conflict('User already exists', 'USER_EXISTS');
         }
 
-        const user = await User.create({ name, email, password });
+        const user = await User.create({ username, email, password });
         const userObject = user.toObject();
         const tokens = generateTokens({ id: userObject._id.toString() });
         return {
@@ -18,8 +18,8 @@ class AuthService {
         };
     }
 
-    async login({ email, password }) {
-        const user = await User.findByEmail(email);
+    async login({ username, password }) {
+        const user = await User.findByEmailorUsername(username);
         if (!user) {
             throw AppError.unauthorized('Invalid credentials', 'INVALID_CREDENTIALS');
         }

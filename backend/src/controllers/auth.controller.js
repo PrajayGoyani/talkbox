@@ -9,11 +9,12 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {  
     const result = await authService.login(req.body);
 
-    /* res.cookie('jwt', refreshToken, {
+    /* res.cookie('refresh_token', result.refreshToken, {
         httpOnly: true,
         sameSite: 'None', secure: true,
         maxAge: 24 * 60 * 60 * 1000
-    }) */;
+    });
+    delete result.refreshToken; */
 
     res.json(success(result));
 };

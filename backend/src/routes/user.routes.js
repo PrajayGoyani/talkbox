@@ -6,6 +6,8 @@ import Chat from '../models/chat.model.js';
 import Message from '../models/message.model.js';
 
 import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { AppError } from '../utils/AppError.js';
+import { success } from '../utils/response.js';
 
 router.use(authenticateToken);
 
@@ -26,6 +28,15 @@ router.get('/me', async (req, res) => {
 // Update user profile
 router.patch('/profile', async (req, res) => {
     // TODO: Add logic to update user profile along with avatar image
+});
+
+// search by exact username
+router.get('/search', async (req, res) => {
+    const user = await User.findByEmailorUsername(req.query.username);
+    if (!user) {
+        throw AppError.notFound('User not found', 'USER_NOT_FOUND');
+    }
+    res.json(success(user));
 });
 
 export default router;

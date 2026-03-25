@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
 export const signupSchema = z.object({
-  name: z.string().optional(),
+  username: z.string().refine(s => !s.includes(' '), 'Username cannot contain spaces.'),
   email: z.email(),
   password: z.string().min(8),
 });
 
 export const loginSchema = z.object({
-  email: z.email(),
+  username: z.string(),
   password: z.string().min(8),
 });

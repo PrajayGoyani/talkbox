@@ -2,9 +2,11 @@ import mongoose, { Schema } from 'mongoose';
 import bcrypt from 'bcrypt';
 
 import { BCRYPT_SALT } from '../config/env.js';
+import z from 'zod';
+import { AppError } from '../utils/AppError.js';
 
 const userSchema = new Schema({
-    name: { type: String, default: null, trim: true },
+    username: { type: String, required: true, unique: true, trim: true },
     email: {
         type: String,
         required: true,
@@ -33,8 +35,27 @@ userSchema.loadClass(class {
         this.password = hash;
     }
 
-    static findByEmail(email) {
-        return this.findOne({ email });
+    static findByEmailorUsername(username) {
+
+        if (this.isEmail(username)) {
+            return this.findOne({ email: username });
+        }
+
+        if (this.isUsername(username)) {
+            return this.findOne({ username });
+        }
+
+        throw AppError.badRequest('Invalid username or email', 'INVALID_USERNAME_OR_EMAIL');
+    }
+
+    static isUsername(input) {
+        const usernameRegex = /^[a-zA-Z0-9]{3,30}$/;
+        return usernameRegex.test(input);
+    }
+
+    static isEmail(input) {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        return emailRegex.test(input);
     }
 });
 
