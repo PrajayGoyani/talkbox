@@ -8,6 +8,7 @@ import { validate } from '../middlewares/validate.middleware.js';
 import { success } from '../utils/response.js';
 import { createChatSchema } from '../schemas/chat.schema.js';
 import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { ObjectId } from 'mongodb'
 
 router.use(authenticateToken);
 
@@ -21,9 +22,10 @@ router.get('/', async (req, res) => {
 
 // Create chat
 router.post('/', validate(createChatSchema), async (req, res) => {
-    const aId = req.body.reciverId;
-    const bId = req.user.id;
-    const [userA, userB] = (aId < bId) ? [aId, bId] : [bId, aId];
+    // Note: this solution is not fault tolrent, if two users create chat at the same time
+    const aId = new ObjectId(req.body.reciverId);
+    const bId = new ObjectId(req.user.id);
+    const [userA, userB] = (aId.getTimestamp() < bId.getTimestamp()) ? [aId, bId] : [bId, aId];
     const chat = await Chat.findOneAndUpdate(
         { userA, userB },
         { $setOnInsert: { userA, userB, createdBy: req.user.id } },
