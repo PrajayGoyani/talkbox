@@ -1,17 +1,19 @@
 import express from 'express';
 const router = express.Router();
 
-import User from '../models/user.model.js';
 import Chat from '../models/chat.model.js';
 import Message from '../models/message.model.js';
 
 import { validate } from '../middlewares/validate.middleware.js';
 import { success } from '../utils/response.js';
 import { createChatSchema } from '../schemas/chat.schema.js';
+import { authenticateToken } from '../middlewares/auth.middleware.js';
+
+router.use(authenticateToken);
 
 // Get chat listing
 router.get('/', async (req, res) => {
-    const chats = await Chat.find({ cretatedBy: req.user.id })
+    const chats = await Chat.find({ createdBy: req.user.id })
         .populate('reciverId', 'name email avatar_url');
     res.json(chats);
 });
@@ -19,13 +21,15 @@ router.get('/', async (req, res) => {
 
 // Create chat
 router.post('/', validate(createChatSchema), async (req, res) => {
-    const { reciverId } = req.body;
-    const chat = new Chat({
-        reciverId,
-        cretatedBy: req.user.id
-    });
+    const aId = req.body.reciverId;
+    const bId = req.user.id;
+    const [userA, userB] = (aId < bId) ? [aId, bId] : [bId, aId];
+    const chat = await Chat.findOneAndUpdate(
+        { userA, userB },
+        { $setOnInsert: { userA, userB, createdBy: req.user.id } },
+        { upsert: true, returnDocument: "after" }
+    );
 
-    await chat.save();
     res.status(201).json(success(chat));
 });
 
