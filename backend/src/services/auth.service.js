@@ -1,15 +1,18 @@
-import User from '../models/user.model.js';
 import { generateAccessToken, generateTokens, verifyRefreshToken } from '../utils/jwt.js';
 import { AppError } from '../utils/AppError.js';
 
 class AuthService {
+    constructor(userModel) {
+        this.User = userModel;
+    }
+
     async signup({ username, email, password }) {
-        const existingUser = await User.exists({ email });
+        const existingUser = await this.User.exists({ email });
         if (existingUser) {
             throw AppError.conflict('User already exists', 'USER_EXISTS');
         }
 
-        const user = await User.create({ username, email, password });
+        const user = await this.User.create({ username, email, password });
         const userObject = user.toObject();
         const tokens = generateTokens({ id: userObject._id.toString() });
         return {
@@ -19,7 +22,7 @@ class AuthService {
     }
 
     async login({ username, password }) {
-        const user = await User.findByEmailorUsername(username);
+        const user = await this.User.findByEmailorUsername(username);
         if (!user) {
             throw AppError.unauthorized('Invalid credentials', 'INVALID_CREDENTIALS');
         }
@@ -48,7 +51,7 @@ class AuthService {
         try {
             const payload = verifyRefreshToken(refreshToken);
 
-            const user = await User.findById(payload.id);
+            const user = await this.User.findById(payload.id);
             if (!user) throw AppError.unauthorized('Invalid user', 'INVALID_USER');
             const accessToken = generateAccessToken({ id: user._id.toString() });
 
@@ -59,7 +62,7 @@ class AuthService {
     }
 
     async getMe(userId) {
-        const user = await User.findById(userId).select('-password -__v').lean();
+        const user = await this.User.findById(userId).select('-password -__v').lean();
         if (!user) throw AppError.notFound('User');
         return user;
     }
@@ -76,4 +79,5 @@ class AuthService {
 
 }
 
-export const authService = new AuthService();
+import UserModel from '../models/user.model.js';
+export const authService = new AuthService(UserModel);

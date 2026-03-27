@@ -10,8 +10,11 @@ import chatRoutes from './src/routes/chat.routes.js';
 import { AppError } from './src/utils/AppError.js';
 import { error as errorResponse } from './src/utils/response.js';
 import cookieParser from 'cookie-parser';
+import http from 'http';
+import { configureSocketServer } from './src/controllers/socket.controller.js';
 
 const app = express();
+const server = http.createServer(app);
 
 app.use(express.json());
 app.use(cookieParser());
@@ -52,15 +55,45 @@ app.use((err, req, res, next) => {
 });
 
 async function configureSocket() {
-    // TODO: implement socket initialization
+    configureSocketServer(server);
 }
 
+import ChatModel from './src/models/chat.model.js';
+import MessageModel from './src/models/message.model.js';
+
 async function startJobs() {
-    // TODO: implement jobs
+    // Basic interval job every 24 hours to enforce retention policies
+    setInterval(async () => {
+        try {
+            console.log('Running background retention jobs...');
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const fourteenDaysAgo = new Date();
+            fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+            await MessageModel.deleteMany({ createdAt: { $lt: thirtyDaysAgo } });
+            
+            // Note: In a real system, messages linked to these chats might also need explicit deletion 
+            // if not handled by cascade or lifecycle hooks, but for now we delete chats explicitly.
+            const chatsToDelete = await ChatModel.find({ 
+                isDeleted: true, 
+                deletedAt: { $lt: fourteenDaysAgo } 
+            });
+            
+            for (const chat of chatsToDelete) {
+                await MessageModel.deleteMany({ chatId: chat._id });
+                await ChatModel.deleteOne({ _id: chat._id });
+            }
+            console.log('Background jobs complete.');
+        } catch (error) {
+            console.error('Error during background jobs:', error);
+        }
+    }, 24 * 60 * 60 * 1000);
 }
 
 function startServer() {
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
         console.log(`Server is running on localhost:${PORT}`);
     });
 }

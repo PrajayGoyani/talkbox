@@ -1,42 +1,23 @@
 import express from 'express';
 const router = express.Router();
 
-import User from '../models/user.model.js';
-import Chat from '../models/chat.model.js';
-import Message from '../models/message.model.js';
-
 import { authenticateToken } from '../middlewares/auth.middleware.js';
-import { AppError } from '../utils/AppError.js';
-import { success } from '../utils/response.js';
+import { rateLimiter } from '../middlewares/rate-limiter.middleware.js';
+import { getMe, searchByUsername, uploadAvatar, updateProfile } from '../controllers/user.controller.js';
 
 router.use(authenticateToken);
+router.use(rateLimiter);
 
 // Upload avatar
-router.post('/avatar', async (req, res) => {
-    // TODO: Add logic to upload avatar
-});
+router.post('/avatar', uploadAvatar);
 
 // Get user
-router.get('/me', async (req, res) => {
-    const user = await User.findById(req.user.id).select('-password -__v');
-    if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-    }
-    res.json(user);
-});
+router.get('/me', getMe);
 
 // Update user profile
-router.patch('/profile', async (req, res) => {
-    // TODO: Add logic to update user profile along with avatar image
-});
+router.patch('/profile', updateProfile);
 
 // search by exact username
-router.get('/search', async (req, res) => {
-    const user = await User.findByEmailorUsername(req.query.username);
-    if (!user) {
-        throw AppError.notFound('User not found', 'USER_NOT_FOUND');
-    }
-    res.json(success(user));
-});
+router.get('/search', searchByUsername);
 
 export default router;

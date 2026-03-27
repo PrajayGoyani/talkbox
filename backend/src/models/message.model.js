@@ -18,6 +18,7 @@ const messageSchema = new Schema({
     // deletedAt: { type: Date, default: null },
     // sentAt: { type: Date, default: Date.now }, // - can refer to createdAt
     createdAt: { type: Date, default: Date.now },
+    idempotencyKey: { type: String, required: true, unique: true }
 });
 
 const Message = mongoose.model('Message', messageSchema);

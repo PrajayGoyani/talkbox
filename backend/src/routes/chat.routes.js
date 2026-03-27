@@ -1,59 +1,38 @@
 import express from 'express';
 const router = express.Router();
 
-import Chat from '../models/chat.model.js';
-import Message from '../models/message.model.js';
-
 import { validate } from '../middlewares/validate.middleware.js';
-import { success } from '../utils/response.js';
 import { createChatSchema } from '../schemas/chat.schema.js';
 import { authenticateToken } from '../middlewares/auth.middleware.js';
-import { ObjectId } from 'mongodb'
+
+import { rateLimiter } from '../middlewares/rate-limiter.middleware.js';
+import { isChatActive } from '../middlewares/is-chat-active.middleware.js';
+
+import {
+    getChatListing,
+    createChat,
+    updateChat,
+    deleteChat,
+    getChatMessages
+} from '../controllers/chat.controller.js';
 
 router.use(authenticateToken);
+router.use(rateLimiter);
+router.use(isChatActive);
 
 // Get chat listing
-router.get('/', async (req, res) => {
-    const chats = await Chat.find({ createdBy: req.user.id })
-        .populate('reciverId', 'name email avatar_url');
-    res.json(chats);
-});
-
+router.get('/', getChatListing);
 
 // Create chat
-router.post('/', validate(createChatSchema), async (req, res) => {
-    // Note: this solution is not fault tolrent, if two users create chat at the same time
-    const aId = new ObjectId(req.body.reciverId);
-    const bId = new ObjectId(req.user.id);
-    const [userA, userB] = (aId.getTimestamp() < bId.getTimestamp()) ? [aId, bId] : [bId, aId];
-    const chat = await Chat.findOneAndUpdate(
-        { userA, userB },
-        { $setOnInsert: { userA, userB, createdBy: req.user.id } },
-        { upsert: true, returnDocument: "after" }
-    );
-
-    res.status(201).json(success(chat));
-});
+router.post('/', validate(createChatSchema), createChat);
 
 // Update chat
-router.put('/:chatId', async (req, res) => {
-    // NOTE: Not in scope right now, we have only one-to-one chat,
-    // so no need to update chat, we can only update messages
-    // TODO: Add logic to update chat
-});
+router.put('/:chatId', updateChat);
 
 // Delete chat
-router.delete('/:chatId', async (req, res) => {
-    // NOTE: should we implement soft delete?
-    // or we also need to delete all messages related to this chat
-    // TODO: Add logic to delete chat with chat messages
-});
+router.delete('/:chatId', deleteChat);
 
 // Get chat messages
-router.get('/:chatId/messages', async (req, res) => {
-    const chat = await Chat.findById(req.params.chatId);
-    const messages = await Message.find({ chat: chat._id });
-    res.json(messages);
-});
+router.get('/:chatId/messages', getChatMessages);
 
 export default router;
