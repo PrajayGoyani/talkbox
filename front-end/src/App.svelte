@@ -1,62 +1,166 @@
 <script lang="ts">
   import './app.css';
+  import { authStore } from './lib/state/auth.svelte';
+  import Login from './lib/components/Login.svelte';
+  import Signup from './lib/components/Signup.svelte';
+
+  let view = $state('LOGIN'); // 'LOGIN' | 'SIGNUP' | 'CHAT'
   let chatName = $state("Chat with ALICE");
+
+  // Sync view with auth state
+  $effect(() => {
+    if (authStore.user) {
+      view = 'CHAT';
+    } else if (view === 'CHAT') {
+      view = 'LOGIN';
+    }
+  });
+
+  const toggleView = (newView: string) => {
+    view = newView;
+    authStore.error = null;
+  };
 </script>
 
-<main class="app-container">
-  <aside class="sidebar glass-panel">
-    <div class="sidebar-header">
-      <h2>Messages</h2>
-    </div>
-    <div class="chat-list">
-      <div class="chat-item active">
-        <div class="avatar">A</div>
-        <div class="chat-preview">
-          <h4>ALICE</h4>
-          <p>Hey, how is Antigravity going?</p>
+{#if authStore.isCheckingAuth}
+  <div class="loading-screen">
+    <span class="loader"></span>
+  </div>
+{:else if view === 'CHAT' && authStore.user}
+  <main class="app-container">
+    <aside class="sidebar glass-panel">
+      <div class="sidebar-header">
+        <h2>Messages</h2>
+      </div>
+      <div class="chat-list">
+        <div class="chat-item active">
+          <div class="avatar">A</div>
+          <div class="chat-preview">
+            <h4>ALICE</h4>
+            <p>Hey, how is Antigravity going?</p>
+          </div>
+        </div>
+        <div class="chat-item">
+          <div class="avatar">B</div>
+          <div class="chat-preview">
+            <h4>BOB</h4>
+            <p>Don't forget the E2EE keys.</p>
+          </div>
         </div>
       </div>
-      <div class="chat-item">
-        <div class="avatar">B</div>
-        <div class="chat-preview">
-          <h4>BOB</h4>
-          <p>Don't forget the E2EE keys.</p>
-        </div>
-      </div>
-    </div>
-  </aside>
 
-  <section class="chat-area">
-    <header class="chat-header glass-panel">
-      <h3>{chatName}</h3>
-      <div class="status">Online</div>
-    </header>
-    
-    <div class="messages">
-      <div class="message msg-receive">
-        <div class="bubble">Hey! Have you seen the new UI?</div>
-        <span class="time">10:42 AM</span>
+      <div class="sidebar-footer glass-panel">
+        <div class="user-info">
+          <div class="avatar primary">
+            {authStore.user.username[0].toUpperCase()}
+          </div>
+          <div class="user-details">
+            <span class="username">{authStore.user.username}</span>
+            <span class="status-dot">Online</span>
+          </div>
+        </div>
+        <button class="logout-btn" onclick={() => authStore.logout()} title="Log Out" aria-label="Log out of account">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
       </div>
-      <div class="message msg-send">
-        <div class="bubble gradient">Yes, it's absolutely stunning! Glassmorphism works perfectly here.</div>
-        <span class="time">10:43 AM</span>
+    </aside>
+
+    <section class="chat-area">
+      <header class="chat-header glass-panel">
+        <h3>{chatName}</h3>
+        <div class="status">Online</div>
+      </header>
+      
+      <div class="messages">
+        <div class="message msg-receive">
+          <div class="bubble">Hey! Have you seen the new UI?</div>
+          <span class="time">10:42 AM</span>
+        </div>
+        <div class="message msg-send">
+          <div class="bubble gradient">Yes, it's absolutely stunning! Glassmorphism works perfectly here.</div>
+          <span class="time">10:43 AM</span>
+        </div>
       </div>
-    </div>
-    
-    <div class="input-area glass-panel">
-      <input type="text" placeholder="Type a message..." />
-      <button class="send-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-      </button>
-    </div>
-  </section>
-</main>
+      
+      <div class="input-area glass-panel">
+        <input type="text" placeholder="Type a message..." aria-label="Message input" />
+        <button class="send-btn" aria-label="Send message">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+      </div>
+    </section>
+  </main>
+{:else}
+  <div class="auth-page">
+    {#if view === 'LOGIN'}
+      <Login>
+        {#snippet toggleSignup()}
+          <button class="link-btn" onclick={() => toggleView('SIGNUP')}>
+            Sign up
+          </button>
+        {/snippet}
+      </Login>
+    {:else}
+      <Signup>
+        {#snippet toggleLogin()}
+          <button class="link-btn" onclick={() => toggleView('LOGIN')}>
+            Log in
+          </button>
+        {/snippet}
+      </Signup>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .app-container {
     display: flex;
     width: 100vw;
     height: 100vh;
+  }
+
+  .auth-page {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-app);
+    padding: 1rem;
+  }
+
+  .loading-screen {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-app);
+  }
+
+  .loader {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--glass-border);
+    border-radius: 50%;
+    border-top-color: var(--color-primary);
+    animation: spin 1s linear infinite;
+  }
+
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    font-size: inherit;
+    transition: var(--transition-fast);
+  }
+
+  .link-btn:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
   }
 
   .sidebar {
@@ -100,13 +204,19 @@
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: var(--bubble-sender);
+    background: var(--bubble-receiver);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
     font-size: 1.1rem;
     box-shadow: var(--shadow-md);
+    flex-shrink: 0;
+  }
+
+  .avatar.primary {
+    background: var(--color-primary);
+    color: white;
   }
 
   .chat-preview h4 {
@@ -121,7 +231,66 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 200px;
+    max-width: 180px;
+  }
+
+  .sidebar-footer {
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .user-details {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .user-details .username {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .user-details .status-dot {
+    font-size: 0.75rem;
+    color: #4ade80;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .user-details .status-dot::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: #4ade80;
+    border-radius: 50%;
+  }
+
+  .logout-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logout-btn:hover {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.1);
   }
 
   .chat-area {
@@ -142,7 +311,7 @@
 
   .chat-header .status {
     font-size: 0.85rem;
-    color: #4ade80; /* vibrant green */
+    color: #4ade80;
     display: flex;
     align-items: center;
     gap: 0.4rem;
@@ -199,6 +368,10 @@
     color: #fff;
   }
 
+  .bubble.gradient {
+    background: var(--bubble-sender);
+  }
+
   .time {
     font-size: 0.75rem;
     color: var(--text-muted);
@@ -249,10 +422,16 @@
     cursor: pointer;
     transition: var(--transition-fast);
     box-shadow: var(--shadow-md);
+    flex-shrink: 0;
   }
 
   .send-btn:hover {
     background: var(--color-primary-hover);
     transform: scale(1.05);
   }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 </style>
+

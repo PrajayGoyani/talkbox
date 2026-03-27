@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { socketService } from '../services/socket.service.js';
-import { JWT_SECRET } from '../config/env.js';
+import { JWT_SECRET_KEY } from '../config/env.js';
 import { AppError } from '../utils/AppError.js';
 
 export const configureSocketServer = (server) => {

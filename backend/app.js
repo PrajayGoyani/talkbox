@@ -11,11 +11,25 @@ import { AppError } from './src/utils/AppError.js';
 import { error as errorResponse } from './src/utils/response.js';
 import cookieParser from 'cookie-parser';
 import http from 'http';
+import cors from 'cors';
 import { configureSocketServer } from './src/controllers/socket.controller.js';
 
 const app = express();
 const server = http.createServer(app);
 
+// TODO: add helmet middleware, when its a right time
+
+// Define allowed origins
+const allowedOrigins = ['http://localhost:5173'];
+
+const corsOptions = {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
+    allowedHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
+    credentials: true // Set to true if you handle cookies/credentials
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -42,7 +56,7 @@ app.use((err, req, res, next) => {
         res.status(err.statusCode).json(errorResponse(err.code, err.message, err.details));
         return;
     }
-    
+
     let message = err.message || 'Internal Server Error';
     if (NODE_ENV !== 'development') {
         message = 'Internal Server Error';
@@ -68,19 +82,19 @@ async function startJobs() {
             console.log('Running background retention jobs...');
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            
+
             const fourteenDaysAgo = new Date();
             fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
             await MessageModel.deleteMany({ createdAt: { $lt: thirtyDaysAgo } });
-            
+
             // Note: In a real system, messages linked to these chats might also need explicit deletion 
             // if not handled by cascade or lifecycle hooks, but for now we delete chats explicitly.
-            const chatsToDelete = await ChatModel.find({ 
-                isDeleted: true, 
-                deletedAt: { $lt: fourteenDaysAgo } 
+            const chatsToDelete = await ChatModel.find({
+                isDeleted: true,
+                deletedAt: { $lt: fourteenDaysAgo }
             });
-            
+
             for (const chat of chatsToDelete) {
                 await MessageModel.deleteMany({ chatId: chat._id });
                 await ChatModel.deleteOne({ _id: chat._id });
