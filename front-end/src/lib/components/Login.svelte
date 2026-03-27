@@ -1,7 +1,7 @@
 <script lang="ts">
   import { authStore } from '../state/auth.svelte';
 
-  let { toggleSignup } = $props<{ toggleSignup: any }>();
+  const { toggleSignup } = $props<{ toggleSignup: any }>();
 
   let username = $state('');
   let password = $state('');
@@ -58,7 +58,7 @@
   </form>
 
   <div class="auth-footer">
-    <p>Don't have an account? {@render toggleSignup()}</p>
+    <p>Don't have an account? {#if toggleSignup}{@render toggleSignup()}{/if}</p>
   </div>
 </div>
 
@@ -94,8 +94,8 @@
   }
 
   .error-banner {
-    background: rgba(ef, 68, 68, 0.1);
-    border: 1px solid rgba(ef, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
     color: #f87171;
     padding: 0.75rem 1rem;
     border-radius: 12px;

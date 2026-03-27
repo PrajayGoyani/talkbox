@@ -30,6 +30,7 @@ export const deleteChat = async (req, res) => {
 
 export const getChatMessages = async (req, res) => {
     // NOTE: Performance constraint says clients should load only recent 100 messages. 
+    // Cursor based pagination
     // This getChatMessages might need pagination in the service, but let's keep it structurally same for now.
     const messages = await chatService.getChatMessages(req.params.chatId);
     res.json(messages);

@@ -3,11 +3,12 @@ import jwt from 'jsonwebtoken';
 import { socketService } from '../services/socket.service.js';
 import { JWT_SECRET_KEY } from '../config/env.js';
 import { AppError } from '../utils/AppError.js';
+import { ALLOWED_ORIGINS } from '../config/env.js';
 
 export const configureSocketServer = (server) => {
     const io = new Server(server, {
         cors: {
-            origin: '*',
+            origin: ALLOWED_ORIGINS,
             methods: ['GET', 'POST'] // adjust origin later
         }
     });
@@ -22,7 +23,7 @@ export const configureSocketServer = (server) => {
         }
 
         try {
-            const decoded = jwt.verify(token, JWT_SECRET);
+            const decoded = jwt.verify(token, JWT_SECRET_KEY);
             // Attach verified user ID to the socket
             socket.data.user = { id: decoded.id };
             next();

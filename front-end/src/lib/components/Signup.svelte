@@ -98,7 +98,7 @@
   </form>
 
   <div class="auth-footer">
-    <p>Already have an account? {@render toggleLogin()}</p>
+    <p>Already have an account? {#if toggleLogin}{@render toggleLogin()}{/if}</p>
   </div>
 </div>
 
@@ -134,8 +134,8 @@
   }
 
   .error-banner {
-    background: rgba(ef, 68, 68, 0.1);
-    border: 1px solid rgba(ef, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
     color: #f87171;
     padding: 0.75rem 1rem;
     border-radius: 12px;
