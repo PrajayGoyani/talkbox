@@ -1,4 +1,5 @@
-import { ZodType, ZodError } from 'zod';
+import { ZodType, ZodError, z } from 'zod';
+import { formatZodErrors } from '../utils/helper.js';
 
 
 /**
@@ -11,7 +12,8 @@ export const validate = (schema) => (req, res, next) => {
     next();
   } catch (error) {
     if (error instanceof ZodError) {
-      return res.status(400).json({ message: 'Validation failed', errors: error.issues });
+      const errors = formatZodErrors(error);
+      return res.status(400).json({ message: 'Validation failed', errors });
     }
     next(error);
   }

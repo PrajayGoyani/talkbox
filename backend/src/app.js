@@ -1,7 +1,7 @@
 import express from 'express';
 import { PORT } from './config/env.js';
 
-import { registerRoutes } from './routes/index.js';
+import { registerRoutes } from './routes/routes.js';
 import http from 'http';
 import { initializeMiddlewares, initializeErrorHandlers } from './bootstrap/handler.js';
 import { configureSocketServer } from './controllers/socket.controller.js';
