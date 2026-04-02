@@ -87,6 +87,7 @@ class SocketService {
             this.io.to(`user:${receiverId}`).emit('message_alert', {
                 chatId,
                 senderId,
+                senderName: sender.name || null,
                 senderUsername: sender.username,
                 preview
             });

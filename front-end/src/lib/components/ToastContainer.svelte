@@ -3,6 +3,7 @@
 
   interface Toast {
     id: number;
+    senderName?: string | null;
     senderUsername: string;
     preview: string;
     chatId: string;
@@ -15,7 +16,7 @@
   let toasts: Toast[] = $state([]);
   let nextId = 0;
 
-  export const addToast = (data: { senderUsername: string; preview: string; chatId: string }) => {
+  export const addToast = (data: { senderName?: string | null; senderUsername: string; preview: string; chatId: string }) => {
     const id = nextId++;
     toasts = [...toasts, { id, ...data }];
     // Auto-dismiss after 5 seconds
@@ -41,10 +42,10 @@
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="toast-card glass-panel" onclick={() => handleClick(toast)}>
         <div class="toast-avatar">
-          {toast.senderUsername[0].toUpperCase()}
+          {(toast.senderName || toast.senderUsername)[0].toUpperCase()}
         </div>
         <div class="toast-body">
-          <span class="toast-sender">{toast.senderUsername}</span>
+          <span class="toast-sender" title="@{toast.senderUsername}">{toast.senderName || toast.senderUsername}</span>
           <span class="toast-preview">{toast.preview}</span>
         </div>
         <button class="toast-close" onclick={(e: MouseEvent) => { e.stopPropagation(); removeToast(toast.id); }} aria-label="Dismiss">

@@ -4,6 +4,7 @@
 export interface UserDto {
   id: string;
   username: string;
+  name?: string | null;
   email: string;
   avatarUrl?: string;
 }
@@ -45,4 +46,5 @@ export interface SignupRequestDto {
   username: string;
   email: string;
   password: string;
+  name?: string;
 }

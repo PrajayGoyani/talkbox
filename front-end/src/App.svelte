@@ -122,9 +122,9 @@
       </div>
       <div class="navbar-right">
         <NotificationsDropdown onNavigate={handleNotificationNavigate} />
-        <div class="navbar-user">
+        <div class="navbar-user" title="@{authStore.user.username}">
           <div class="avatar primary small">
-            {authStore.user.username[0].toUpperCase()}
+            {(authStore.user.name || authStore.user.username)[0].toUpperCase()}
           </div>
         </div>
         <button class="logout-btn" onclick={handleLogout} title="Log Out" aria-label="Log out of account">
@@ -160,10 +160,10 @@
       <div class="sidebar-footer glass-panel">
         <div class="user-info">
           <div class="avatar primary">
-            {authStore.user.username[0].toUpperCase()}
+            {(authStore.user.name || authStore.user.username)[0].toUpperCase()}
           </div>
           <div class="user-details">
-            <span class="username">{authStore.user.username}</span>
+            <span class="username" title="@{authStore.user.username}">{authStore.user.name || authStore.user.username}</span>
             <span class="status-dot">Online</span>
           </div>
         </div>
@@ -174,11 +174,11 @@
       {#if selectedChatId}
         <div class="chat-header glass-panel">
           <div class="chat-header-info">
-            <div class="avatar primary small">
-              {selectedOtherUser?.username?.[0]?.toUpperCase() || '?'}
+            <div class="avatar primary small" title="@{selectedOtherUser?.username}">
+              {(selectedOtherUser?.name || selectedOtherUser?.username)?.[0]?.toUpperCase() || '?'}
             </div>
             <div>
-              <h3>{selectedOtherUser?.username}</h3>
+              <h3 title="@{selectedOtherUser?.username}">{selectedOtherUser?.name || selectedOtherUser?.username}</h3>
               {#if selectedChatStatus === 'pending'}
                 <span class="status-badge pending">Pending</span>
               {:else}

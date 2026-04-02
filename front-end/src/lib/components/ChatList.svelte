@@ -4,6 +4,27 @@
   import { onMount } from 'svelte';
   import { API_BASE } from '../config';
 
+  /** Format a timestamp for chat listing: time if today, 'Yesterday', or date */
+  function formatTime(dateStr: string): string {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const isToday = date.toDateString() === now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    if (isToday) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    if (isYesterday) return 'Yesterday';
+    if (diffDays < 7) {
+      return date.toLocaleDateString([], { weekday: 'short' });
+    }
+    return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+  }
+
   const { activeChatId = null, onSelectChat, activeTab = 'active' } = $props<{ 
     activeChatId?: string | null;
     onSelectChat: (chatId: string, otherUser: any, status: string) => void;
@@ -167,16 +188,23 @@
     </div>
   {:else}
     {#each filteredChats as chat}
+      {@const displayName = chat.otherUser.name || chat.otherUser.username}
       <div class="chat-item-wrapper">
         <button 
           class="chat-item {activeChatId === chat.id ? 'active' : ''}"
           onclick={() => onSelectChat(chat.id, chat.otherUser, chat.status)}
+          title="@{chat.otherUser.username}"
         >
           <div class="avatar receiver">
-            {chat.otherUser.username ? chat.otherUser.username[0].toUpperCase() : '?'}
+            {displayName[0].toUpperCase()}
           </div>
           <div class="chat-info">
-            <span class="chat-name">{chat.otherUser.username}</span>
+            <div class="chat-name-row">
+              <span class="chat-name">{displayName}</span>
+              {#if chat.lastMessage?.sentAt}
+                <span class="chat-time">{formatTime(chat.lastMessage.sentAt)}</span>
+              {/if}
+            </div>
             {#if chat.status === 'pending'}
               <span class="chat-preview pending-label">
                 {chat.createdBy === authStore.user?.id ? 'Request sent' : 'Incoming request'}
@@ -380,9 +408,26 @@
     overflow: hidden;
   }
 
+  .chat-name-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
   .chat-name {
     font-weight: 600;
     font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chat-time {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .chat-preview {

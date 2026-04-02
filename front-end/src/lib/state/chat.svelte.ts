@@ -5,6 +5,7 @@ import { API_ROOT, API_BASE } from '../config';
 interface MessageAlert {
   chatId: string;
   senderId: string;
+  senderName?: string | null;
   senderUsername: string;
   preview: string;
 }
@@ -102,7 +103,9 @@ class ChatStore {
   private showBrowserNotification(data: MessageAlert) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
-    const notification = new Notification(data.senderUsername, {
+    const displayName = data.senderName || data.senderUsername;
+
+    const notification = new Notification(displayName, {
       body: data.preview,
       icon: '/vite.svg',
       tag: `msg-${data.chatId}-${Date.now()}`,

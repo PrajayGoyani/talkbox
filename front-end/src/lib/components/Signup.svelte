@@ -4,12 +4,27 @@
   const { toggleLogin } = $props<{ toggleLogin: any }>();
 
   let username = $state('');
+  let displayName = $state('');
   let email = $state('');
   let password = $state('');
   let confirmPassword = $state('');
   let showPassword = $state(false);
   let showConfirmPassword = $state(false);
   let errors: Record<string, string> = $state({});
+
+  /**
+   * Frontend name sanitizer: strip special chars, capitalize words.
+   * Mirrors the backend sanitizeName transform.
+   */
+  function sanitizeName(val: string): string {
+    return val
+      .trim()
+      .replace(/[^a-zA-Z\s\-']/g, '')
+      .replace(/\s+/g, ' ')
+      .split(' ')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  }
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
@@ -33,10 +48,14 @@
 
     if (Object.keys(errors).length > 0) return;
 
+    // Sanitize name before sending
+    const sanitizedName = displayName.trim() ? sanitizeName(displayName) : undefined;
+
     await authStore.signup({ 
-      username, 
+      username: username.toLowerCase(), 
       email, 
-      password 
+      password,
+      ...(sanitizedName ? { name: sanitizedName } : {})
     });
   };
 </script>
@@ -65,6 +84,20 @@
       />
       {#if errors.username}
         <span class="inline-error">{errors.username}</span>
+      {/if}
+    </div>
+
+    <div class="form-group">
+      <label for="display-name">Display Name <span class="optional-label">(optional)</span></label>
+      <input
+        type="text"
+        id="display-name"
+        bind:value={displayName}
+        placeholder="How you'd like to be called"
+        maxlength="50"
+      />
+      {#if errors.displayName}
+        <span class="inline-error">{errors.displayName}</span>
       {/if}
     </div>
 
@@ -218,6 +251,12 @@
     font-weight: 500;
     color: var(--text-secondary);
     margin-left: 0.25rem;
+  }
+
+  .optional-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 400;
   }
 
   .form-group input {
