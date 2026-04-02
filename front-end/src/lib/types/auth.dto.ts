@@ -34,7 +34,7 @@ export interface AuthResponseDto {
  * Login Request Payload
  */
 export interface LoginRequestDto {
-  username: string; // email or username
+  username: string;
   password: string;
 }
 

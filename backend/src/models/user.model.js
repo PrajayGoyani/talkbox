@@ -23,7 +23,7 @@ const userSchema = new Schema({
 
 userSchema.loadClass(class {
     get avatarUrl() {
-        return this.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(this.name || this.email)}`;
+        return this.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(this.username || this.email)}`;
     }
 
     async comparePassword(password) {

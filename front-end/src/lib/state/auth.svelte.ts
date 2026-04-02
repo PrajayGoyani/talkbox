@@ -2,7 +2,7 @@ import { type UserDto, type AuthResponseDto, type LoginRequestDto, type SignupRe
 
 const API_BASE = 'http://localhost:3000/api';
 
-export class AuthStore {
+class AuthStore {
   user: UserDto | null = $state(null);
   accessToken: string | null = $state(null);
   isCheckingAuth: boolean = $state(true);
@@ -34,6 +34,9 @@ export class AuthStore {
   async login(credentials: LoginRequestDto) {
     this.loading = true;
     this.error = null;
+    const start = Date.now();
+    let pendingError: string | null = null;
+    let success = false;
     try {
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
@@ -45,22 +48,29 @@ export class AuthStore {
 
       if (res.success) {
         this.setAuth(res.data);
-        return true;
+        success = true;
       } else {
-        this.error = res.error?.message || 'Login failed';
-        return false;
+        pendingError = res.error?.message || 'Login failed';
       }
     } catch (e) {
-      this.error = 'Network error occurred';
-      return false;
+      pendingError = 'Network error occurred';
     } finally {
+      const elapsed = Date.now() - start;
+      if (elapsed < 500) {
+        await new Promise(r => setTimeout(r, 500 - elapsed));
+      }
+      this.error = pendingError;
       this.loading = false;
     }
+    return success;
   }
 
   async signup(data: SignupRequestDto) {
     this.loading = true;
     this.error = null;
+    const start = Date.now();
+    let pendingError: string | null = null;
+    let success = false;
     try {
       const response = await fetch(`${API_BASE}/auth/signup`, {
         method: 'POST',
@@ -72,17 +82,21 @@ export class AuthStore {
 
       if (res.success) {
         this.setAuth(res.data);
-        return true;
+        success = true;
       } else {
-        this.error = res.error?.message || 'Signup failed';
-        return false;
+        pendingError = res.error?.message || 'Signup failed';
       }
     } catch (e) {
-      this.error = 'Network error occurred';
-      return false;
+      pendingError = 'Network error occurred';
     } finally {
+      const elapsed = Date.now() - start;
+      if (elapsed < 500) {
+        await new Promise(r => setTimeout(r, 500 - elapsed));
+      }
+      this.error = pendingError;
       this.loading = false;
     }
+    return success;
   }
 
   logout() {

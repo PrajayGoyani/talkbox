@@ -70,7 +70,7 @@ class AuthService {
     sanitize(user) {
         return {
             id: user._id,
-            name: user.name,
+            username: user.username,
             email: user.email,
             avatarUrl: user.avatarUrl,
         };
