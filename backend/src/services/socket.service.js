@@ -50,6 +50,9 @@ class SocketService {
             return existingMessage;
         }
 
+        // Process attachment if any
+        
+
         // 3. Save Message
         const message = await this.Message.create({
             chatId,

@@ -14,7 +14,7 @@ class ChatLockdownService {
             return;
         }
         const chats = await this.Chat.find({ isDeleted: true }).select('_id');
-        chats.forEach(chat => this.deletedChats.add(chat._id.toString()));
+        chats.forEach(chat => this.lockdownChat(chat._id));
         console.log(`Lockdown Hydration complete: ${chats.length} chats locked.`);
     }
 

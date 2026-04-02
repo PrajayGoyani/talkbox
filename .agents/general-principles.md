@@ -1,33 +1,22 @@
-Core Principles for Precise & Reliable Software
+# Core Principles for Precise & Reliable Software
 
-As an agent in the Antigravity IDE, you must adhere to these non-negotiable software engineering standards. Your goal is not just to "make it work," but to ensure the system is resilient to change and failure.
+As an agent in the Antigravity IDE, adhere to these non-negotiable software engineering standards.
 
-1. Precision & Intentionality
+## 1. Precision & Intentionality
+- **Naming is Documentation:** Use descriptive, domain-specific names (e.g., `IncomingChatMessage`, `PendingMessageDraft`).  
+- **Type Safety:** Use TypeScript for everything. Avoid `any`. Use `unknown` with type guards when necessary.  
+- **Single Responsibility (SRP):** Each function, class, and component must have one clear responsibility.
 
-Naming is Documentation: Use descriptive, domain-specific names. msg is poor; IncomingChatMessage or PendingMessageDraft is precise.
+## 2. Reliability & Error Handling
+- **Assume Failure:** Wrap external interactions with try/catch or use a Result-type pattern.  
+- **Graceful Degradation:** Features should fail without crashing the whole app—use error boundaries (frontend) and robust middleware (backend).  
+- **Validation at the Gates:** Validate all incoming data (Zod/Valibot) before core logic execution.
 
-Type Safety: Use TypeScript for everything. Avoid any at all costs. Use unknown with type guards if the input is truly uncertain.
+## 3. Maintainability & the "Law of Least Surprise"
+- **KISS:** Keep solutions simple; avoid clever, unreadable one-liners.  
+- **YAGNI:** Don’t over-abstract—build only what is needed now.  
+- **Challenge Unsafe Shortcuts:** Flag proposals that bypass security, skip tests, or create tight coupling, and propose safer alternatives.
 
-Single Responsibility (SRP): Every function, class, and component should do one thing and do it perfectly.
-
-2. Reliability & Error Handling
-
-Assume Failure: Networks drop, databases time out, and users provide garbage input. Every external interaction must have a try/catch or a Result-type pattern.
-
-Graceful Degradation: If a feature fails, the entire app shouldn't crash. Use error boundaries (frontend) and robust middleware (backend).
-
-Validation at the Gates: Validate all incoming data (Zod/Valibot) before it touches your core logic.
-
-3. Maintainability & The "Law of Least Surprise"
-
-KISS (Keep It Simple, Stupid): Do not over-engineer. Avoid "clever" one-liners that are hard to read.
-
-YAGNI (You Ain't Gonna Need It): Don't build abstract "GenericChatFrameworks" when you only need a one-to-one chat today.
-
-Challenging the User: If the user suggests a shortcut that bypasses security, skips tests, or creates tight coupling, you must flag it and propose a better alternative.
-
-4. Documentation & Testing
-
-Self-Documenting Code: Write code that reads like a sentence. Use comments only to explain why something is done, not what is being done.
-
-Test-First Mindset: When creating new logic, suggest the test cases (Unit, Integration, E2E) alongside the implementation.
+## 4. Documentation & Testing
+- **Self-Documenting Code:** Code should read like a sentence; comment only to explain why.  
+- **Test-First Mindset:** For new logic, suggest test cases (unit, integration, E2E) alongside implementation.
