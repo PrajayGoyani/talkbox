@@ -6,10 +6,17 @@
   let username = $state('');
   let password = $state('');
   let showPassword = $state(false);
+  let errors: Record<string, string> = $state({});
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
-    if (!username || !password) return;
+    errors = {};
+    
+    if (!username.trim()) errors.username = 'Username or email is required';
+    if (!password) errors.password = 'Password is required';
+    
+    if (Object.keys(errors).length > 0) return;
+    
     await authStore.login({ username, password });
   };
 </script>
@@ -26,7 +33,7 @@
     </div>
   {/if}
 
-  <form onsubmit={handleSubmit} class="auth-form">
+  <form onsubmit={handleSubmit} class="auth-form" novalidate>
     <div class="form-group">
       <label for="username">Username or Email</label>
       <input
@@ -36,6 +43,9 @@
         placeholder="Enter your username or email"
         required
       />
+      {#if errors.username}
+        <span class="inline-error">{errors.username}</span>
+      {/if}
     </div>
 
     <div class="form-group">
@@ -61,6 +71,9 @@
           {/if}
         </button>
       </div>
+      {#if errors.password}
+        <span class="inline-error">{errors.password}</span>
+      {/if}
     </div>
 
     <button type="submit" class="auth-btn" disabled={authStore.loading}>
@@ -128,6 +141,14 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .inline-error {
+    color: #f87171;
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+    margin-left: 0.25rem;
+    animation: fadeIn 0.3s ease-out;
   }
 
   .form-group label {

@@ -7,6 +7,7 @@ import { AppError } from '../utils/AppError.js';
 
 const userSchema = new Schema({
     username: { type: String, required: true, unique: true, trim: true },
+    name: { type: String, default: null, trim: true, maxlength: 50 },
     email: {
         type: String,
         required: true,

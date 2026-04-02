@@ -7,23 +7,31 @@
   let email = $state('');
   let password = $state('');
   let confirmPassword = $state('');
-  let passwordError = $state('');
   let showPassword = $state(false);
   let showConfirmPassword = $state(false);
+  let errors: Record<string, string> = $state({});
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
-    passwordError = '';
+    errors = {};
 
-    if (password !== confirmPassword) {
-      passwordError = 'Passwords do not match';
-      return;
+    if (!username.trim()) errors.username = 'Username is required';
+    else if (!/^[a-zA-Z0-9]{3,30}$/.test(username)) {
+      errors.username = 'Username must be 3-30 alphanumeric characters';
     }
 
-    if (password.length < 8) {
-      passwordError = 'Password must be at least 8 characters';
-      return;
+    if (!email.trim()) errors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = 'Invalid email format';
     }
+
+    if (!password) errors.password = 'Password is required';
+    else if (password.length < 8) errors.password = 'Password must be at least 8 characters';
+
+    if (!confirmPassword) errors.confirmPassword = 'Please confirm your password';
+    else if (password !== confirmPassword) errors.confirmPassword = 'Passwords do not match';
+
+    if (Object.keys(errors).length > 0) return;
 
     await authStore.signup({ 
       username, 
@@ -39,13 +47,13 @@
     <p>Join the conversation with premium security</p>
   </div>
 
-  {#if authStore.error || passwordError}
+  {#if authStore.error}
     <div class="error-banner">
-      {passwordError || authStore.error}
+      {authStore.error}
     </div>
   {/if}
 
-  <form onsubmit={handleSubmit} class="auth-form">
+  <form onsubmit={handleSubmit} class="auth-form" novalidate>
     <div class="form-group">
       <label for="username">Username</label>
       <input
@@ -55,6 +63,9 @@
         placeholder="Choose a username"
         required
       />
+      {#if errors.username}
+        <span class="inline-error">{errors.username}</span>
+      {/if}
     </div>
 
     <div class="form-group">
@@ -66,6 +77,9 @@
         placeholder="you@example.com"
         required
       />
+      {#if errors.email}
+        <span class="inline-error">{errors.email}</span>
+      {/if}
     </div>
 
     <div class="form-group">
@@ -91,6 +105,9 @@
           {/if}
         </button>
       </div>
+      {#if errors.password}
+        <span class="inline-error">{errors.password}</span>
+      {/if}
     </div>
 
     <div class="form-group">
@@ -116,6 +133,9 @@
           {/if}
         </button>
       </div>
+      {#if errors.confirmPassword}
+        <span class="inline-error">{errors.confirmPassword}</span>
+      {/if}
     </div>
 
     <button type="submit" class="auth-btn" disabled={authStore.loading}>
@@ -183,6 +203,14 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .inline-error {
+    color: #f87171;
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+    margin-left: 0.25rem;
+    animation: fadeIn 0.3s ease-out;
   }
 
   .form-group label {

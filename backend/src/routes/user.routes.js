@@ -3,6 +3,8 @@ const router = express.Router();
 
 import { authenticateToken } from '../middlewares/auth.middleware.js';
 import { rateLimiter } from '../middlewares/rate-limiter.middleware.js';
+import { validate } from '../middlewares/validate.middleware.js';
+import { updateProfileSchema } from '../schemas/user.schema.js';
 import { getMe, searchByUsername, uploadAvatar, updateProfile } from '../controllers/user.controller.js';
 
 router.use(authenticateToken);
@@ -15,7 +17,7 @@ router.post('/avatar', uploadAvatar);
 router.get('/me', getMe);
 
 // Update user profile
-router.patch('/profile', updateProfile);
+router.patch('/profile', validate(updateProfileSchema), updateProfile);
 
 // search by exact username
 router.get('/search', searchByUsername);

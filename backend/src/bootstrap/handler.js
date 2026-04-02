@@ -11,7 +11,10 @@ import { app } from '../app.js';
 // initialize application specific middlewares
 export function initializeMiddlewares() {
     // Define allowed origins
-    const corsOptions = { origin: ALLOWED_ORIGINS };
+    const corsOptions = {
+        origin: ALLOWED_ORIGINS,
+        credentials: true
+    };
 
     app.use(cors(corsOptions));
     // TODO: add helmet middleware, when its a right time. keep it lean in dev

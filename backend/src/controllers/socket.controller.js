@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { socketService } from '../services/socket.service.js';
+import { chatService } from '../services/chat.service.js';
 import { JWT_SECRET_KEY } from '../config/env.js';
 import { AppError } from '../utils/AppError.js';
 import { ALLOWED_ORIGINS } from '../config/env.js';
@@ -9,11 +10,13 @@ export const configureSocketServer = (server) => {
     const io = new Server(server, {
         cors: {
             origin: ALLOWED_ORIGINS,
-            methods: ['GET', 'POST'] // adjust origin later
+            methods: ['GET', 'POST'],
+            credentials: true
         }
     });
 
     socketService.init(io);
+    chatService.setIO(io);
 
     // Chat Security Auditor: Authenticate socket connection
     io.use((socket, next) => {

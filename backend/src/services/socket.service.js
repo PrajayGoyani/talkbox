@@ -1,5 +1,7 @@
 import { chatLockdownService } from './chat-lockdown.service.js';
 import MessageModel from '../models/message.model.js';
+import ChatModel from '../models/chat.model.js';
+import UserModel from '../models/user.model.js';
 import { AppError } from '../utils/AppError.js';
 
 class SocketService {
@@ -43,17 +45,19 @@ class SocketService {
             throw AppError.forbidden('Cannot send messages to a deleted chat.');
         }
 
-        // 2. Real-time Reliability Enforcer: Deduplication
+        // 2. Verify chat is accepted
+        const chat = await ChatModel.findById(chatId);
+        if (!chat || chat.status !== 'accepted') {
+            throw AppError.forbidden('Chat must be accepted before sending messages.');
+        }
+
+        // 3. Real-time Reliability Enforcer: Deduplication
         const existingMessage = await this.Message.findOne({ idempotencyKey });
         if (existingMessage) {
-            // Already processed, idempotency applied. Return the existing.
             return existingMessage;
         }
 
-        // Process attachment if any
-        
-
-        // 3. Save Message
+        // 4. Save Message
         const message = await this.Message.create({
             chatId,
             senderId,
@@ -61,8 +65,34 @@ class SocketService {
             idempotencyKey
         });
 
-        // 4. Deliver Message if receiver is connected
+        // 5. Update chat's lastMessage + increment receiver's unreadCounts
+        await ChatModel.findByIdAndUpdate(chatId, {
+            lastMessage: {
+                contentBody,
+                senderId,
+                sentAt: message.createdAt
+            },
+            $inc: { [`unreadCounts.${receiverId}`]: 1 }
+        });
+
+        // 6. Deliver Message to receiver if connected
         this.io.to(`user:${receiverId}`).emit('receive_message', message);
+
+        // 7. Emit lightweight message_alert for toast/browser notification
+        try {
+            const sender = await UserModel.findById(senderId);
+            const preview = contentBody.length > 60
+                ? contentBody.substring(0, 60) + '...'
+                : contentBody;
+            this.io.to(`user:${receiverId}`).emit('message_alert', {
+                chatId,
+                senderId,
+                senderUsername: sender.username,
+                preview
+            });
+        } catch (err) {
+            console.error('Failed to emit message_alert:', err);
+        }
 
         return message;
     }

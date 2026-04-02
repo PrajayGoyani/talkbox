@@ -1,0 +1,18 @@
+// ─────────────────────────────────────────────────
+// styles/_example.scss — Example organized SASS file
+// ─────────────────────────────────────────────────
+// Import this in app.scss with: @use '../styles/example';
+//
+// You can create files like:
+//   _navbar.scss   → @use '../styles/navbar';
+//   _messages.scss → @use '../styles/messages';
+//   _sidebar.scss  → @use '../styles/sidebar';
+//
+// The underscore prefix is a SASS convention for partials.
+// Each file can use:
+//   - Raw SCSS
+//   - Tailwind @apply directives
+//   - CSS custom properties (var(--color-primary))
+//   - SASS variables ($spacing: 8px;)
+//   - SASS nesting, mixins, functions
+// ─────────────────────────────────────────────────

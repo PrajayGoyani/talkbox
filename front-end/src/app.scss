@@ -1,0 +1,171 @@
+// ─────────────────────────────────────────────────
+// app.scss — Global design system entry point
+// ─────────────────────────────────────────────────
+// This file is the single entry for all global styles.
+//
+// CSS ARCHITECTURE:
+// Developers have full flexibility:
+//   1. Write scoped CSS/SASS inside <style lang="scss"> in .svelte files
+//   2. Use inline Tailwind classes in templates: <div class="flex gap-2 hover:bg-white/5">
+//   3. Organize styles in separate .scss files and import here:
+//      @use './styles/navbar';
+//      @use './styles/messages';
+//   4. Use Tailwind @apply inside SCSS:
+//      .my-class { @apply flex gap-2 items-center; }
+// ─────────────────────────────────────────────────
+
+// TailwindCSS v4 — import the framework
+@import "tailwindcss";
+
+// Google Fonts
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+// ─────────────────────────────────────────────────
+// Tailwind v4 Theme Configuration
+// ─────────────────────────────────────────────────
+@theme {
+  --font-body: 'Inter', sans-serif;
+
+  // Brand colors
+  --color-brand: #6366f1;
+  --color-brand-hover: #4f46e5;
+  --color-brand-light: rgba(99, 102, 241, 0.15);
+
+  // Status colors
+  --color-success: #4ade80;
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
+  --color-info: #38bdf8;
+}
+
+// ─────────────────────────────────────────────────
+// CSS Custom Properties — Dark Theme (default)
+// ─────────────────────────────────────────────────
+:root,
+[data-theme="dark"] {
+  --font-body: 'Inter', sans-serif;
+
+  // Core brand palette
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-light: rgba(99, 102, 241, 0.15);
+
+  // Background gradients
+  --bg-app: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  --bg-surface: rgba(30, 41, 59, 0.7);
+  --bg-surface-glass: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  // Typography
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  // Interactions
+  --transition-fast: 0.15s ease;
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+  // Chat bubbles
+  --bubble-sender: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --bubble-receiver: #334155;
+
+  // Icon rail
+  --rail-bg: rgba(10, 15, 30, 0.85);
+  --rail-width: 60px;
+  --rail-icon-active: var(--color-primary);
+  --rail-icon-inactive: var(--text-muted);
+
+  // Sub-panel
+  --panel-width: 280px;
+  --panel-bg: var(--bg-surface-glass);
+}
+
+// ─────────────────────────────────────────────────
+// CSS Custom Properties — Light Theme
+// ─────────────────────────────────────────────────
+[data-theme="light"] {
+  // Core brand palette (same brand colors)
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-light: rgba(99, 102, 241, 0.1);
+
+  // Backgrounds
+  --bg-app: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  --bg-surface: rgba(255, 255, 255, 0.85);
+  --bg-surface-glass: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.08);
+
+  // Typography
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  // Shadows (lighter for light theme)
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+
+  // Chat bubbles
+  --bubble-sender: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --bubble-receiver: #e2e8f0;
+
+  // Icon rail
+  --rail-bg: rgba(255, 255, 255, 0.9);
+
+  // Sub-panel
+  --panel-bg: var(--bg-surface-glass);
+}
+
+// ─────────────────────────────────────────────────
+// Global resets & base styles
+// ─────────────────────────────────────────────────
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-app);
+  color: var(--text-primary);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+}
+
+// ─────────────────────────────────────────────────
+// Utility classes (shared across components)
+// ─────────────────────────────────────────────────
+.glass-panel {
+  background: var(--bg-surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass);
+}
+
+// ─────────────────────────────────────────────────
+// Organized SASS imports
+// Developers can create files like:
+//   src/styles/navbar.scss
+//   src/styles/messages.scss
+//   src/styles/sidebar.scss
+// and import them here:
+//
+// @use '../styles/navbar';
+// @use '../styles/messages';
+// @use '../styles/sidebar';
+// ─────────────────────────────────────────────────

@@ -6,13 +6,13 @@ class AuthService {
         this.User = userModel;
     }
 
-    async signup({ username, email, password }) {
+    async signup({ username, email, password, name }) {
         const existingUser = await this.User.exists({ email });
         if (existingUser) {
             throw AppError.conflict('User already exists', 'USER_EXISTS');
         }
 
-        const user = await this.User.create({ username, email, password });
+        const user = await this.User.create({ username, email, password, name: name || null });
         const userObject = user.toObject();
         const tokens = generateTokens({ id: userObject._id.toString() });
         return {
@@ -71,6 +71,7 @@ class AuthService {
         return {
             id: user._id,
             username: user.username,
+            name: user.name || null,
             email: user.email,
             avatarUrl: user.avatarUrl,
         };
