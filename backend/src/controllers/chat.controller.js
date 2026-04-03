@@ -6,6 +6,12 @@ export const getChatListing = async (req, res) => {
     res.json(success(chats));
 };
 
+export const searchChats = async (req, res) => {
+    const query = req.query.q || '';
+    const chats = await chatService.searchChats(req.user.id, query);
+    res.json(success(chats));
+};
+
 export const createChat = async (req, res) => {
     const chat = await chatService.createOrGetChat(req.user.id, req.body.reciverId);
     res.status(201).json(success(chat));
@@ -37,7 +43,9 @@ export const deleteChat = async (req, res) => {
 };
 
 export const getChatMessages = async (req, res) => {
-    const messages = await chatService.getChatMessages(req.params.chatId);
+    const limit = parseInt(req.query.limit) || 50;
+    const cursor = req.query.cursor;
+    const messages = await chatService.getChatMessages(req.params.chatId, limit, cursor);
     res.json(success(messages));
 };
 

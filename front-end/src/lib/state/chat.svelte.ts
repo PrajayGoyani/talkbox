@@ -14,7 +14,13 @@ class ChatStore {
   socket: Socket | null = $state(null);
   isConnected = $state(false);
   messages: Array<any> = $state([]);
+  hasMoreMessages = $state(true);
+  isLoadingMessages = $state(false);
   activeChatId: string | null = $state(null);
+
+  onlineStatus: Record<string, { isOnline: boolean, lastSeen: Date | null }> = $state({});
+  typingStatus: Record<string, Set<string>> = $state({});
+  private typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
   // Callbacks for UI refresh
   private onChatListRefresh: (() => void) | null = null;
@@ -32,7 +38,7 @@ class ChatStore {
 
   connect() {
     if (this.socket || !authStore.accessToken) return;
-    
+
     this.socket = io(API_ROOT, {
       auth: { token: authStore.accessToken },
       withCredentials: true,
@@ -56,9 +62,52 @@ class ChatStore {
       if (message.chatId === this.activeChatId) {
         this.messages = [...this.messages, message];
       }
+      // Clear typing indicator instantly when a message is received
+      if (this.typingStatus[message.chatId]) {
+        this.typingStatus[message.chatId].delete(message.senderId);
+        // Force reactivity trigger
+        this.typingStatus[message.chatId] = new Set(this.typingStatus[message.chatId]);
+      }
+
       // Refresh chat list to update lastMessage preview + unread counts
       if (this.onChatListRefresh) {
         this.onChatListRefresh();
+      }
+    });
+
+    // Listen for User Presence changes
+    this.socket.on('user_status', (data: { userId: string, isOnline: boolean, lastSeen: Date | null }) => {
+      this.onlineStatus[data.userId] = {
+        isOnline: data.isOnline,
+        lastSeen: data.lastSeen ? new Date(data.lastSeen) : null
+      };
+      this.onlineStatus = { ...this.onlineStatus }; // Trigger reactivity
+    });
+
+    // Listen for Typing Indicators
+    this.socket.on('typing_start', (data: { chatId: string, userId: string }) => {
+      if (!this.typingStatus[data.chatId]) {
+        this.typingStatus[data.chatId] = new Set();
+      }
+      this.typingStatus[data.chatId].add(data.userId);
+      this.typingStatus = { ...this.typingStatus }; // Trigger reactivity
+
+      // Auto-clear after 3.5s just in case typing_stop never arrives
+      const key = `${data.chatId}-${data.userId}`;
+      if (this.typingTimeouts.has(key)) clearTimeout(this.typingTimeouts.get(key));
+
+      this.typingTimeouts.set(key, setTimeout(() => {
+        if (this.typingStatus[data.chatId]) {
+          this.typingStatus[data.chatId].delete(data.userId);
+          this.typingStatus = { ...this.typingStatus };
+        }
+      }, 3500));
+    });
+
+    this.socket.on('typing_stop', (data: { chatId: string, userId: string }) => {
+      if (this.typingStatus[data.chatId]) {
+        this.typingStatus[data.chatId].delete(data.userId);
+        this.typingStatus = { ...this.typingStatus };
       }
     });
 
@@ -132,16 +181,49 @@ class ChatStore {
   async loadMessages(chatId: string) {
     this.activeChatId = chatId;
     this.messages = [];
+    this.hasMoreMessages = true;
+    this.isLoadingMessages = true;
     try {
-      const resp = await fetch(`${API_BASE}/chat/${chatId}/messages`, {
+      const resp = await fetch(`${API_BASE}/chat/${chatId}/messages?limit=50`, {
         headers: { 'Authorization': `Bearer ${authStore.accessToken}` },
         credentials: 'include'
       });
       if (!resp.ok) return;
       const result = await resp.json();
-      this.messages = result.data || result || [];
+      const loadedMessages = result.data || result || [];
+      this.messages = loadedMessages;
+      this.hasMoreMessages = loadedMessages.length === 50;
     } catch (e) {
       console.error('Failed to load messages:', e);
+    } finally {
+      this.isLoadingMessages = false;
+    }
+  }
+
+  /** Load older messages using cursor */
+  async loadOlderMessages() {
+    if (!this.activeChatId || !this.hasMoreMessages || this.isLoadingMessages || this.messages.length === 0) return;
+
+    this.isLoadingMessages = true;
+    const oldestMessageId = this.messages[0]._id;
+
+    try {
+      const resp = await fetch(`${API_BASE}/chat/${this.activeChatId}/messages?limit=50&cursor=${oldestMessageId}`, {
+        headers: { 'Authorization': `Bearer ${authStore.accessToken}` },
+        credentials: 'include'
+      });
+      if (!resp.ok) return;
+      const result = await resp.json();
+      const olderMessages = result.data || result || [];
+
+      if (olderMessages.length > 0) {
+        this.messages = [...olderMessages, ...this.messages];
+      }
+      this.hasMoreMessages = olderMessages.length === 50;
+    } catch (e) {
+      console.error('Failed to load older messages:', e);
+    } finally {
+      this.isLoadingMessages = false;
     }
   }
 
@@ -166,6 +248,8 @@ class ChatStore {
   sendMessage(chatId: string, receiverId: string, contentBody: string) {
     if (!this.socket || !contentBody.trim()) return;
 
+    this.emitTyping(chatId, receiverId, false);
+
     const idempotencyKey = `${authStore.user?.id}_${chatId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     this.socket.emit('send_message', {
@@ -186,6 +270,32 @@ class ChatStore {
         }
       }
     });
+  }
+
+  // --- Typing Indicator Emitters ---
+  private myTypingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+
+  emitTyping(chatId: string, receiverId: string, isTyping: boolean) {
+    if (!this.socket || !this.isConnected) return;
+
+    if (!isTyping) {
+      this.socket.emit('typing_stop', { chatId, receiverId });
+      return;
+    }
+
+    const key = `${chatId}-${receiverId}`;
+    if (!this.myTypingTimeouts.has(key)) {
+      // Emit immediately if we haven't recently
+      this.socket.emit('typing_start', { chatId, receiverId });
+    } else {
+      clearTimeout(this.myTypingTimeouts.get(key));
+    }
+
+    // Debounce to prevent flooding and manage typing_stop
+    this.myTypingTimeouts.set(key, setTimeout(() => {
+      this.socket?.emit('typing_stop', { chatId, receiverId });
+      this.myTypingTimeouts.delete(key);
+    }, 2000));
   }
 }
 

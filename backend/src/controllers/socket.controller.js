@@ -54,6 +54,15 @@ export const configureSocketServer = (server) => {
             // TODO: E2EE Key storage logic
             if (ack) ack({ status: 'ok' });
         });
+
+        // Typing Indicators
+        socket.on('typing_start', (data) => {
+            socketService.handleTyping(socket.data.user.id, data, true);
+        });
+
+        socket.on('typing_stop', (data) => {
+            socketService.handleTyping(socket.data.user.id, data, false);
+        });
     });
 
     return io;

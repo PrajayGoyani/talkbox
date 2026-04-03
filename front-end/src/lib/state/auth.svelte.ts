@@ -21,7 +21,7 @@ class AuthStore {
 
     // Try silent refresh first (HttpOnly cookie may have a valid refresh token)
     const refreshed = await this.silentRefresh();
-    
+
     if (!refreshed) {
       // Fallback: check localStorage for cached session 
       const storedUser = localStorage.getItem('auth_user');
@@ -52,14 +52,14 @@ class AuthStore {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       });
-      
+
       if (!response.ok) return false;
-      
+
       const res = await response.json();
       if (res.success && res.data?.accessToken) {
         this.accessToken = res.data.accessToken;
         localStorage.setItem('auth_token', res.data.accessToken);
-        
+
         // If we have cached user data, keep it; otherwise fetch /me
         if (!this.user) {
           const storedUser = localStorage.getItem('auth_user');
@@ -69,7 +69,7 @@ class AuthStore {
             await this.fetchMe();
           }
         }
-        
+
         this.scheduleRefresh();
         return true;
       }

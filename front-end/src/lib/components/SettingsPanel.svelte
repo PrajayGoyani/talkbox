@@ -1,201 +1,134 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount } from "svelte";
 
-  let currentTheme = $state<'dark' | 'light'>('dark');
+  let currentTheme = $state<"dark" | "light">("dark");
 
   onMount(() => {
-    const saved = localStorage.getItem('theme') || 'dark';
-    currentTheme = saved as 'dark' | 'light';
+    const saved = localStorage.getItem("theme") || "dark";
+    currentTheme = saved as "dark" | "light";
     applyTheme(currentTheme);
   });
 
-  function applyTheme(theme: 'dark' | 'light') {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
+  function applyTheme(theme: "dark" | "light") {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
   }
 
   function toggleTheme() {
-    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    currentTheme = currentTheme === "dark" ? "light" : "dark";
     applyTheme(currentTheme);
   }
 </script>
 
-<div class="settings-panel">
+<div class="h-full flex flex-col">
   <div class="panel-header">
-    <h2>Settings</h2>
+    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
+      Settings
+    </h2>
   </div>
 
-  <div class="settings-content">
+  <div class="p-4 flex flex-col gap-3 overflow-y-auto">
     <!-- Theme Toggle -->
-    <div class="setting-item">
-      <div class="setting-info">
-        <span class="setting-label">Theme</span>
-        <span class="setting-desc">Switch between dark and light mode</span>
+    <div
+      class="flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+    >
+      <div class="flex flex-col gap-0.5">
+        <span class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+          >Theme</span
+        >
+        <span class="text-xs text-slate-500"
+          >Switch between dark and light mode</span
+        >
       </div>
-      <button class="theme-toggle" onclick={toggleTheme} aria-label="Toggle theme">
-        <div class="toggle-track {currentTheme}">
-          <div class="toggle-thumb">
-            {#if currentTheme === 'dark'}
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-              </svg>
-            {:else}
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="5"></circle>
-                <line x1="12" y1="1" x2="12" y2="3"></line>
-                <line x1="12" y1="21" x2="12" y2="23"></line>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                <line x1="1" y1="12" x2="3" y2="12"></line>
-                <line x1="21" y1="12" x2="23" y2="12"></line>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-              </svg>
-            {/if}
-          </div>
-        </div>
+      <button
+        type="button"
+        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 {currentTheme ===
+        'dark'
+          ? 'bg-indigo-600'
+          : 'bg-slate-400'}"
+        onclick={toggleTheme}
+        aria-label="Toggle theme"
+      >
+        <span
+          class="pointer-events-none relative flex h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out items-center justify-center {currentTheme ===
+          'dark'
+            ? 'translate-x-0'
+            : 'translate-x-5'} text-slate-400"
+        >
+          {#if currentTheme === "dark"}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              class="text-indigo-600"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          {:else}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              class="text-amber-500"
+            >
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          {/if}
+        </span>
       </button>
     </div>
 
-    <hr class="divider" />
+    <hr class="border-t border-slate-200 dark:border-white/10 my-1" />
 
     <!-- Placeholder sections -->
-    <div class="setting-item disabled">
-      <div class="setting-info">
-        <span class="setting-label">Notification Sound</span>
-        <span class="setting-desc">Play a sound for incoming messages</span>
+    <div
+      class="flex items-center justify-between p-3 rounded-xl opacity-50 cursor-not-allowed"
+    >
+      <div class="flex flex-col gap-0.5">
+        <span class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+          >Notification Sound</span
+        >
+        <span class="text-xs text-slate-500"
+          >Play a sound for incoming messages</span
+        >
       </div>
-      <span class="coming-soon">Coming Soon</span>
+      <span
+        class="text-[10px] text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded uppercase font-bold tracking-wider"
+        >Coming Soon</span
+      >
     </div>
 
-    <div class="setting-item disabled">
-      <div class="setting-info">
-        <span class="setting-label">Privacy</span>
-        <span class="setting-desc">Manage who can send you chat requests</span>
+    <div
+      class="flex items-center justify-between p-3 rounded-xl opacity-50 cursor-not-allowed"
+    >
+      <div class="flex flex-col gap-0.5">
+        <span class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+          >Privacy</span
+        >
+        <span class="text-xs text-slate-500"
+          >Manage who can send you chat requests</span
+        >
       </div>
-      <span class="coming-soon">Coming Soon</span>
+      <span
+        class="text-[10px] text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded uppercase font-bold tracking-wider"
+        >Coming Soon</span
+      >
     </div>
   </div>
 </div>
-
-<style>
-  .settings-panel {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .panel-header {
-    padding: 1.25rem 1.25rem;
-    border-bottom: 1px solid var(--glass-border);
-  }
-
-  .panel-header h2 {
-    font-size: 1.1rem;
-    font-weight: 600;
-  }
-
-  .settings-content {
-    padding: 1rem 1.25rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    overflow-y: auto;
-  }
-
-  .setting-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem;
-    border-radius: 12px;
-    transition: background var(--transition-fast);
-  }
-
-  .setting-item:not(.disabled):hover {
-    background: rgba(255, 255, 255, 0.03);
-  }
-
-  .setting-item.disabled {
-    opacity: 0.5;
-  }
-
-  .setting-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  .setting-label {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--text-primary);
-  }
-
-  .setting-desc {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-  }
-
-  .theme-toggle {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-  }
-
-  .toggle-track {
-    width: 48px;
-    height: 26px;
-    border-radius: 13px;
-    position: relative;
-    transition: background var(--transition-smooth);
-  }
-
-  .toggle-track.dark {
-    background: var(--color-primary);
-  }
-
-  .toggle-track.light {
-    background: #94a3b8;
-  }
-
-  .toggle-thumb {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: white;
-    position: absolute;
-    top: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: left var(--transition-smooth);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-
-  .toggle-track.dark .toggle-thumb {
-    left: 2px;
-    color: var(--color-primary);
-  }
-
-  .toggle-track.light .toggle-thumb {
-    left: 24px;
-    color: #f59e0b;
-  }
-
-  .coming-soon {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.05);
-    padding: 0.2rem 0.6rem;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
-
-  .divider {
-    border: none;
-    border-top: 1px solid var(--glass-border);
-    margin: 0.25rem 0;
-  }
-</style>

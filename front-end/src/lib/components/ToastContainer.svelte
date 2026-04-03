@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount } from "svelte";
 
   interface Toast {
     id: number;
@@ -16,7 +16,12 @@
   let toasts: Toast[] = $state([]);
   let nextId = 0;
 
-  export const addToast = (data: { senderName?: string | null; senderUsername: string; preview: string; chatId: string }) => {
+  export const addToast = (data: {
+    senderName?: string | null;
+    senderUsername: string;
+    preview: string;
+    chatId: string;
+  }) => {
     const id = nextId++;
     toasts = [...toasts, { id, ...data }];
     // Auto-dismiss after 5 seconds
@@ -26,7 +31,7 @@
   };
 
   const removeToast = (id: number) => {
-    toasts = toasts.filter(t => t.id !== id);
+    toasts = toasts.filter((t) => t.id !== id);
   };
 
   const handleClick = (toast: Toast) => {
@@ -36,125 +41,56 @@
 </script>
 
 {#if toasts.length > 0}
-  <div class="toast-container">
+  <div
+    class="fixed bottom-6 right-6 flex flex-col-reverse gap-2 z-[1000] pointer-events-none"
+  >
     {#each toasts as toast (toast.id)}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="toast-card glass-panel" onclick={() => handleClick(toast)}>
-        <div class="toast-avatar">
+      <div
+        class="pointer-events-auto flex items-center gap-3 p-3.5 rounded-2xl min-w-[300px] max-w-[400px] cursor-pointer bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-2xl animate-in slide-in-from-right-10 fade-in duration-300 hover:-translate-y-0.5 transition-all"
+        onclick={() => handleClick(toast)}
+      >
+        <div
+          class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-inner"
+        >
           {(toast.senderName || toast.senderUsername)[0].toUpperCase()}
         </div>
-        <div class="toast-body">
-          <span class="toast-sender" title="@{toast.senderUsername}">{toast.senderName || toast.senderUsername}</span>
-          <span class="toast-preview">{toast.preview}</span>
+        <div class="flex flex-col flex-1 min-w-0 gap-0.5">
+          <span
+            class="text-[13px] font-bold text-slate-900 dark:text-white truncate"
+            title="@{toast.senderUsername}"
+            >{toast.senderName || toast.senderUsername}</span
+          >
+          <span class="text-xs text-slate-500 dark:text-slate-400 truncate"
+            >{toast.preview}</span
+          >
         </div>
-        <button class="toast-close" onclick={(e: MouseEvent) => { e.stopPropagation(); removeToast(toast.id); }} aria-label="Dismiss">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        <button
+          class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-all shrink-0"
+          onclick={(e: MouseEvent) => {
+            e.stopPropagation();
+            removeToast(toast.id);
+          }}
+          aria-label="Dismiss"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            ><line x1="18" y1="6" x2="6" y2="18"></line><line
+              x1="6"
+              y1="6"
+              x2="18"
+              y2="18"
+            ></line></svg
+          >
         </button>
       </div>
     {/each}
   </div>
 {/if}
-
-<style>
-  .toast-container {
-    position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    display: flex;
-    flex-direction: column-reverse;
-    gap: 0.5rem;
-    z-index: 1000;
-    pointer-events: none;
-  }
-
-  .toast-card {
-    pointer-events: auto;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.85rem 1rem;
-    border-radius: 14px;
-    min-width: 300px;
-    max-width: 400px;
-    cursor: pointer;
-    border: 1px solid var(--glass-border);
-    background: rgba(15, 23, 42, 0.95);
-    backdrop-filter: blur(16px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    animation: toastSlideIn 0.3s ease-out;
-    text-align: left;
-    color: var(--text-primary);
-    font-family: inherit;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-
-  .toast-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-  }
-
-  .toast-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--color-primary);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.9rem;
-    flex-shrink: 0;
-  }
-
-  .toast-body {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 0;
-    gap: 0.1rem;
-  }
-
-  .toast-sender {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .toast-preview {
-    font-size: 0.78rem;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .toast-close {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    transition: color 0.15s ease;
-    flex-shrink: 0;
-  }
-
-  .toast-close:hover {
-    color: var(--text-primary);
-  }
-
-  @keyframes toastSlideIn {
-    from {
-      opacity: 0;
-      transform: translateX(40px) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0) scale(1);
-    }
-  }
-</style>

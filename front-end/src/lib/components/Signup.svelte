@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { authStore } from '../state/auth.svelte';
+  import { authStore } from "../state/auth.svelte";
 
   const { toggleLogin } = $props<{ toggleLogin: any }>();
 
-  let username = $state('');
-  let displayName = $state('');
-  let email = $state('');
-  let password = $state('');
-  let confirmPassword = $state('');
+  let username = $state("");
+  let displayName = $state("");
+  let email = $state("");
+  let password = $state("");
+  let confirmPassword = $state("");
   let showPassword = $state(false);
   let showConfirmPassword = $state(false);
   let errors: Record<string, string> = $state({});
@@ -19,343 +19,268 @@
   function sanitizeName(val: string): string {
     return val
       .trim()
-      .replace(/[^a-zA-Z\s\-']/g, '')
-      .replace(/\s+/g, ' ')
-      .split(' ')
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
+      .replace(/[^a-zA-Z\s\-']/g, "")
+      .replace(/\s+/g, " ")
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
   }
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
     errors = {};
 
-    if (!username.trim()) errors.username = 'Username is required';
+    if (!username.trim()) errors.username = "Username is required";
     else if (!/^[a-zA-Z0-9]{3,30}$/.test(username)) {
-      errors.username = 'Username must be 3-30 alphanumeric characters';
+      errors.username = "Username must be 3-30 alphanumeric characters";
     }
 
-    if (!email.trim()) errors.email = 'Email is required';
+    if (!email.trim()) errors.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = 'Invalid email format';
+      errors.email = "Invalid email format";
     }
 
-    if (!password) errors.password = 'Password is required';
-    else if (password.length < 8) errors.password = 'Password must be at least 8 characters';
+    if (!password) errors.password = "Password is required";
+    else if (password.length < 8)
+      errors.password = "Password must be at least 8 characters";
 
-    if (!confirmPassword) errors.confirmPassword = 'Please confirm your password';
-    else if (password !== confirmPassword) errors.confirmPassword = 'Passwords do not match';
+    if (!confirmPassword)
+      errors.confirmPassword = "Please confirm your password";
+    else if (password !== confirmPassword)
+      errors.confirmPassword = "Passwords do not match";
 
     if (Object.keys(errors).length > 0) return;
 
     // Sanitize name before sending
-    const sanitizedName = displayName.trim() ? sanitizeName(displayName) : undefined;
+    const sanitizedName = displayName.trim()
+      ? sanitizeName(displayName)
+      : undefined;
 
-    await authStore.signup({ 
-      username: username.toLowerCase(), 
-      email, 
+    await authStore.signup({
+      username: username.toLowerCase(),
+      email,
       password,
-      ...(sanitizedName ? { name: sanitizedName } : {})
+      ...(sanitizedName ? { name: sanitizedName } : {}),
     });
   };
 </script>
 
-<div class="auth-card glass-panel">
-  <div class="auth-header">
-    <h1>Create Account</h1>
-    <p>Join the conversation with premium security</p>
+<div class="auth-card">
+  <div class="text-center">
+    <h1 class="auth-title">Create Account</h1>
+    <p class="text-slate-500 dark:text-slate-400 text-[15px]">
+      Join the conversation with premium security
+    </p>
   </div>
 
   {#if authStore.error}
-    <div class="error-banner">
+    <div
+      class="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3 rounded-xl text-sm text-center"
+    >
       {authStore.error}
     </div>
   {/if}
 
-  <form onsubmit={handleSubmit} class="auth-form" novalidate>
-    <div class="form-group">
-      <label for="username">Username</label>
+  <form onsubmit={handleSubmit} class="flex flex-col gap-5" novalidate>
+    <div class="flex flex-col gap-2">
       <input
         type="text"
         id="username"
         bind:value={username}
         placeholder="Choose a username"
         required
+        class="input-field"
       />
       {#if errors.username}
-        <span class="inline-error">{errors.username}</span>
+        <span
+          class="text-rose-500 text-xs mt-1 ml-1 animate-in fade-in duration-300"
+          >{errors.username}</span
+        >
       {/if}
     </div>
 
-    <div class="form-group">
-      <label for="display-name">Display Name <span class="optional-label">(optional)</span></label>
+    <div class="flex flex-col gap-2">
+      <label
+        for="display-name"
+        class="text-sm font-semibold text-slate-600 dark:text-slate-400 ml-1"
+        >Display Name <span class="text-[10px] text-slate-500 font-normal ml-1"
+          >(optional)</span
+        ></label
+      >
       <input
         type="text"
         id="display-name"
         bind:value={displayName}
         placeholder="How you'd like to be called"
         maxlength="50"
+        class="input-field"
       />
       {#if errors.displayName}
-        <span class="inline-error">{errors.displayName}</span>
+        <span
+          class="text-rose-500 text-xs mt-1 ml-1 animate-in fade-in duration-300"
+          >{errors.displayName}</span
+        >
       {/if}
     </div>
 
-    <div class="form-group">
-      <label for="email">Email Address</label>
+    <div class="flex flex-col gap-2">
+      <label
+        for="email"
+        class="text-sm font-semibold text-slate-600 dark:text-slate-400 ml-1"
+        >Email Address</label
+      >
       <input
         type="email"
         id="email"
         bind:value={email}
         placeholder="you@example.com"
         required
+        class="input-field"
       />
       {#if errors.email}
-        <span class="inline-error">{errors.email}</span>
+        <span
+          class="text-rose-500 text-xs mt-1 ml-1 animate-in fade-in duration-300"
+          >{errors.email}</span
+        >
       {/if}
     </div>
 
-    <div class="form-group">
-      <label for="password">Password</label>
-      <div class="password-wrapper">
+    <div class="flex flex-col gap-2">
+      <label
+        for="password"
+        class="text-sm font-semibold text-slate-600 dark:text-slate-400 ml-1"
+        >Password</label
+      >
+      <div class="relative flex items-center">
         <input
           type={showPassword ? "text" : "password"}
           id="password"
           bind:value={password}
           placeholder="At least 8 characters"
           required
+          class="input-field pr-12"
         />
-        <button 
-          type="button" 
-          class="toggle-password" 
-          onclick={() => showPassword = !showPassword}
+        <button
+          type="button"
+          class="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          onclick={() => (showPassword = !showPassword)}
           aria-label={showPassword ? "Hide password" : "Show password"}
         >
           {#if showPassword}
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path
+                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+              ></path><line x1="1" y1="1" x2="23" y2="23"></line></svg
+            >
           {:else}
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+              ></path><circle cx="12" cy="12" r="3"></circle></svg
+            >
           {/if}
         </button>
       </div>
       {#if errors.password}
-        <span class="inline-error">{errors.password}</span>
+        <span
+          class="text-rose-500 text-xs mt-1 ml-1 animate-in fade-in duration-300"
+          >{errors.password}</span
+        >
       {/if}
     </div>
 
-    <div class="form-group">
-      <label for="confirm-password">Confirm Password</label>
-      <div class="password-wrapper">
+    <div class="flex flex-col gap-2">
+      <label
+        for="confirm-password"
+        class="text-sm font-semibold text-slate-600 dark:text-slate-400 ml-1"
+        >Confirm Password</label
+      >
+      <div class="relative flex items-center">
         <input
           type={showConfirmPassword ? "text" : "password"}
           id="confirm-password"
           bind:value={confirmPassword}
           placeholder="Re-enter your password"
           required
+          class="input-field pr-12"
         />
-        <button 
-          type="button" 
-          class="toggle-password" 
-          onclick={() => showConfirmPassword = !showConfirmPassword}
+        <button
+          type="button"
+          class="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          onclick={() => (showConfirmPassword = !showConfirmPassword)}
           aria-label={showConfirmPassword ? "Hide password" : "Show password"}
         >
           {#if showConfirmPassword}
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path
+                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+              ></path><line x1="1" y1="1" x2="23" y2="23"></line></svg
+            >
           {:else}
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+              ></path><circle cx="12" cy="12" r="3"></circle></svg
+            >
           {/if}
         </button>
       </div>
       {#if errors.confirmPassword}
-        <span class="inline-error">{errors.confirmPassword}</span>
+        <span
+          class="text-rose-500 text-xs mt-1 ml-1 animate-in fade-in duration-300"
+          >{errors.confirmPassword}</span
+        >
       {/if}
     </div>
 
-    <button type="submit" class="auth-btn" disabled={authStore.loading}>
+    <button type="submit" class="btn-primary" disabled={authStore.loading}>
       {#if authStore.loading}
-        <span class="loader"></span>
+        <span
+          class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+        ></span>
       {:else}
         Create Account
       {/if}
     </button>
   </form>
 
-  <div class="auth-footer">
-    <p>Already have an account? {#if toggleLogin}{@render toggleLogin()}{/if}</p>
+  <div class="text-center text-[14px] text-slate-500 dark:text-slate-400 mt-2">
+    <p>
+      Already have an account? {#if toggleLogin}{@render toggleLogin()}{/if}
+    </p>
   </div>
 </div>
-
-<style>
-  .auth-card {
-    width: 100%;
-    max-width: 420px;
-    padding: 2.5rem;
-    border-radius: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    animation: fadeIn 0.5s ease-out;
-  }
-
-  .auth-header {
-    text-align: center;
-  }
-
-  .auth-header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .auth-header p {
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-  }
-
-  .error-banner {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: #f87171;
-    padding: 0.75rem 1rem;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    text-align: center;
-  }
-
-  .auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .inline-error {
-    color: #f87171;
-    font-size: 0.8rem;
-    margin-top: 0.2rem;
-    margin-left: 0.25rem;
-    animation: fadeIn 0.3s ease-out;
-  }
-
-  .form-group label {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    margin-left: 0.25rem;
-  }
-
-  .optional-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    font-weight: 400;
-  }
-
-  .form-group input {
-    width: 100%;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 0.85rem 1rem;
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: 0.95rem;
-    outline: none;
-    transition: var(--transition-smooth);
-    box-sizing: border-box;
-  }
-
-  .password-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .password-wrapper input {
-    padding-right: 2.5rem;
-  }
-
-  .toggle-password {
-    position: absolute;
-    right: 0.75rem;
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    transition: color 0.2s;
-  }
-
-  .toggle-password:hover {
-    color: var(--text-primary);
-  }
-
-  .form-group input:focus {
-    border-color: var(--color-primary);
-    background: rgba(0, 0, 0, 0.3);
-    box-shadow: 0 0 0 4px var(--color-primary-light);
-  }
-
-  .auth-btn {
-    background: var(--color-primary);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    padding: 0.85rem;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition-fast);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 0.5rem;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-  }
-
-  .auth-btn:hover:not(:disabled) {
-    background: var(--color-primary-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
-  }
-
-  .auth-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-
-  .loader {
-    width: 20px;
-    height: 20px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: #fff;
-    animation: spin 0.8s linear infinite;
-  }
-
-  .auth-footer {
-    text-align: center;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-</style>

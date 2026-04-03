@@ -30,10 +30,73 @@ class SocketService {
         this.activeConnections.set(userId, socket);
         socket.join(`user:${userId}`);
 
+        // Broadcast online presence
+        this.notifyStatusChange(userId, true);
+
         socket.on('disconnect', () => {
             if (this.activeConnections.get(userId)?.id === socket.id) {
                 this.activeConnections.delete(userId);
+                this.notifyStatusChange(userId, false);
             }
+        });
+    }
+
+    async notifyStatusChange(userId, isOnline) {
+        try {
+            if (!isOnline) {
+                await UserModel.findByIdAndUpdate(userId, { lastSeen: new Date() });
+            }
+            
+            // Find all accepted chats for this user
+            const chats = await ChatModel.find({ 
+                'participants': userId,
+                status: 'accepted'
+            });
+
+            // Extract unique partner IDs
+            const partnerIds = new Set();
+            chats.forEach(chat => {
+                chat.participants.forEach(p => {
+                    const pIdStr = p.toString();
+                    if (pIdStr !== userId.toString()) partnerIds.add(pIdStr);
+                });
+            });
+
+            // Emit to each connected partner
+            const statusPayload = { 
+                userId, 
+                isOnline, 
+                lastSeen: isOnline ? null : new Date() 
+            };
+            
+            for (const partnerId of partnerIds) {
+                this.io.to(`user:${partnerId}`).emit('user_status', statusPayload);
+            }
+        } catch (err) {
+            console.error('Error notifying status change:', err);
+        }
+    }
+
+    async handleTyping(senderId, payload, isTyping) {
+        const { receiverId, chatId } = payload;
+        if (!receiverId || !chatId) return;
+
+        // Security: Prevent arbitrary users from flooding target room bindings unless they share an active chat
+        try {
+            const isValid = await Chat.exists({
+                _id: chatId,
+                status: 'accepted',
+                $or: [{ userA: senderId, userB: receiverId }, { userA: receiverId, userB: senderId }]
+            });
+            
+            if (!isValid) return;
+        } catch (e) {
+            return;
+        }
+
+        this.io.to(`user:${receiverId}`).emit(isTyping ? 'typing_start' : 'typing_stop', {
+            chatId,
+            userId: senderId
         });
     }
 

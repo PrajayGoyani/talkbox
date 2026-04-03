@@ -17,7 +17,8 @@ import {
     updateChat,
     deleteChat,
     getChatMessages,
-    markChatRead
+    markChatRead,
+    searchChats
 } from '../controllers/chat.controller.js';
 
 router.use(authenticateToken);
@@ -25,6 +26,9 @@ router.use(rateLimiter);
 
 // Get chat listing (active + pending)
 router.get('/', getChatListing);
+
+// Search active chats
+router.get('/search', searchChats);
 
 // Send a chat request by username
 router.post('/request', validate(chatRequestSchema), requestChat);

@@ -1,65 +1,100 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
 
-:root {
-  --font-body: 'Inter', sans-serif;
-  
-  /* Core brand palette */
-  --color-primary: #6366f1;
-  --color-primary-hover: #4f46e5;
-  --color-primary-light: rgba(99, 102, 241, 0.15);
-  
-  /* Background gradients */
-  --bg-app: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-  --bg-surface: rgba(30, 41, 59, 0.7);
-  --bg-surface-glass: rgba(15, 23, 42, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.08);
-
-  /* Typography */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-
-  /* Interactions */
-  --transition-fast: 0.15s ease;
-  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  
-  /* Chat bubbles */
-  --bubble-sender: linear-gradient(135deg, #6366f1, #8b5cf6);
-  --bubble-receiver: #334155;
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-*, *::before, *::after {
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+*, ::after, ::before {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
 body {
-  font-family: var(--font-body);
-  background: var(--bg-app);
-  color: var(--text-primary);
-  min-height: 100vh;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  overflow: hidden;
-  -webkit-font-smoothing: antialiased;
+  @apply antialiased font-sans transition-colors duration-300;
+  background: theme('colors.slate.50');
+  color: theme('colors.slate.900');
 }
 
-#app {
-  width: 100%;
-  height: 100vh;
-  display: flex;
+[data-theme="dark"] body {
+  background: theme('colors.slate.950');
+  color: theme('colors.slate.100');
 }
 
-/* Glassmorphism utility classes */
+/* Layout & Cards */
 .glass-panel {
-  background: var(--bg-surface-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-right: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-glass);
+  @apply backdrop-blur-md shadow-xl border-slate-200/50 dark:border-white/10;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .glass-panel {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.auth-card {
+  @apply w-full max-w-[420px] p-10 bg-slate-100/5 dark:bg-black/20 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-3xl flex flex-col gap-8 shadow-2xl;
+}
+
+.auth-title {
+  @apply text-3xl font-extrabold mb-2 bg-linear-to-br from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent;
+}
+
+/* Form Elements */
+.btn-primary {
+  @apply w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-500/25 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center;
+}
+
+.input-field {
+  @apply w-full bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-[15px] outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all;
+}
+
+/* Panels & Lists */
+.panel-header {
+  @apply p-5 border-b border-slate-200 dark:border-white/10 shrink-0;
+}
+
+.chat-item {
+  @apply flex items-center gap-3 p-3 rounded-xl transition-all relative w-full text-left hover:bg-slate-100 dark:hover:bg-white/5;
+}
+
+.chat-item-active {
+  @apply bg-indigo-600/10 dark:bg-indigo-600/20 border-l-2 border-indigo-600;
+}
+
+/* Chat Messages */
+.chat-bubble {
+  @apply max-w-[75%] px-4 py-2 rounded-2xl shadow-sm relative transition-all duration-200;
+}
+
+.chat-bubble-sent {
+  @apply self-end bg-indigo-600 text-white rounded-br-none;
+}
+
+.chat-bubble-received {
+  @apply self-start bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-slate-100 rounded-bl-none;
+}
+
+/* Navigation */
+.rail-btn {
+  @apply p-2.5 rounded-xl transition-all relative text-slate-400 hover:bg-white/10 hover:text-indigo-500;
+}
+
+.rail-btn-active {
+  @apply bg-indigo-600/20 text-indigo-400 after:content-[''] after:absolute after:-left-1.5 after:w-1 after:h-5 after:bg-indigo-500 after:rounded-r-full shadow-[0_0_15px_rgba(99,102,241,0.2)];
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 dark:bg-slate-700 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400 dark:bg-slate-600;
 }

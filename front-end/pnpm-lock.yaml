@@ -24,9 +24,6 @@ importers:
       '@types/node':
         specifier: ^24.12.0
         version: 24.12.0
-      sass:
-        specifier: ^1.98.0
-        version: 1.98.0
       svelte:
         specifier: ^5.53.12
         version: 5.55.0
@@ -1039,7 +1036,8 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  immutable@5.1.5: {}
+  immutable@5.1.5:
+    optional: true
 
   is-extglob@2.1.1:
     optional: true
@@ -1165,6 +1163,7 @@ snapshots:
       source-map-js: 1.2.1
     optionalDependencies:
       '@parcel/watcher': 2.5.6
+    optional: true
 
   socket.io-client@4.8.3:
     dependencies:

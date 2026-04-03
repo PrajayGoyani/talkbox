@@ -74,6 +74,71 @@ class ChatService {
     }
 
     /**
+     * Search accepted chats by username, name, or email
+     * @param {string | import('mongodb').ObjectId} userId
+     * @param {string} query
+     * @returns {Promise<Array<Object>>}
+     */
+    async searchChats(userId, query) {
+        if (!query || query.trim().length === 0) return [];
+        
+        // Escape regex metadata characters to prevent ReDoS payloads
+        const escapedQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const q = new RegExp(escapedQuery, 'i');
+        
+        // Find matching users
+        const matchingUsers = await this.User.find({
+            $or: [
+                { username: q },
+                { name: q },
+                { email: q }
+            ]
+        }, '_id');
+        
+        const matchingUserIds = matchingUsers.map(u => u._id);
+
+        // Find active chats where the other user is in the matching IDs
+        const chats = await this.Chat.find({
+            $or: [{ userA: userId }, { userB: userId }],
+            isDeleted: false,
+            status: 'accepted',
+            $and: [
+                {
+                    $or: [
+                        { userA: { $in: matchingUserIds } },
+                        { userB: { $in: matchingUserIds } }
+                    ]
+                }
+            ]
+        })
+        .populate('userA', 'username name email avatar_url')
+        .populate('userB', 'username name email avatar_url');
+
+        return chats.map(chat => {
+            const otherUser = chat.userA._id.toString() === userId.toString() ? chat.userB : chat.userA;
+            const unread = chat.unreadCounts?.get?.(userId.toString()) || 0;
+            return {
+                id: chat._id,
+                status: chat.status,
+                otherUser: {
+                    id: otherUser._id,
+                    username: otherUser.username,
+                    name: otherUser.name || null,
+                    email: otherUser.email,
+                    avatarUrl: otherUser.avatar_url
+                },
+                lastMessage: chat.lastMessage?.contentBody ? {
+                    contentBody: chat.lastMessage.contentBody,
+                    senderId: chat.lastMessage.senderId,
+                    sentAt: chat.lastMessage.sentAt
+                } : null,
+                unreadCount: unread,
+                createdAt: chat.createdAt
+            };
+        });
+    }
+
+    /**
      * Create a chat request by username lookup.
      * - Sender provides a username
      * - We find the target user
@@ -269,9 +334,11 @@ class ChatService {
 
     /**
      * @param {string | import('mongodb').ObjectId} chatId
+     * @param {number} limit
+     * @param {string} cursor
      * @returns {Promise<Array<Object>>}
      */
-    async getChatMessages(chatId) {
+    async getChatMessages(chatId, limit = 50, cursor = null) {
         const chat = await this.Chat.findById(chatId);
         if (!chat) {
             throw AppError.notFound('Chat not found', 'CHAT_NOT_FOUND');
@@ -279,8 +346,17 @@ class ChatService {
         if (chat.status !== 'accepted') {
             throw AppError.forbidden('Chat must be accepted before viewing messages');
         }
-        const messages = await this.Message.find({ chatId: chat._id });
-        return messages;
+        
+        const query = { chatId: chat._id };
+        if (cursor) {
+            query._id = { $lt: cursor };
+        }
+        
+        const messages = await this.Message.find(query)
+            .sort({ _id: -1 })
+            .limit(limit);
+            
+        return messages.reverse();
     }
 
     /**
