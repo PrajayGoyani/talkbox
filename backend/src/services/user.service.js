@@ -1,10 +1,22 @@
 import { AppError } from '../utils/AppError.js';
 
+/**
+ * @typedef {import('mongoose').Model} Model
+ */
+
 class UserService {
+    /**
+     * @param {Model} userModel
+     */
     constructor(userModel) {
+        /** @type {Model} */
         this.User = userModel;
     }
 
+    /**
+     * @param {string | import('mongodb').ObjectId} userId
+     * @returns {Promise<Object>}
+     */
     async getMe(userId) {
         const user = await this.User.findById(userId).select('-password -__v');
         if (!user) {
@@ -13,6 +25,10 @@ class UserService {
         return user;
     }
 
+    /**
+     * @param {string} username
+     * @returns {Promise<Object>}
+     */
     async searchByUsername(username) {
         const user = await this.User.findByEmailorUsername(username);
         if (!user) {
@@ -21,6 +37,11 @@ class UserService {
         return user;
     }
 
+    /**
+     * @param {string | import('mongodb').ObjectId} userId
+     * @param {string} fileOrUrl
+     * @returns {Promise<Object>}
+     */
     async uploadAvatar(userId, fileOrUrl) {
         // Implement logic to update user's avatar. For simplicity, assume url is passed or file uploaded and saved.
         const user = await this.User.findById(userId);
@@ -33,6 +54,11 @@ class UserService {
         return user;
     }
 
+    /**
+     * @param {string | import('mongodb').ObjectId} userId
+     * @param {Object} data
+     * @returns {Promise<Object>}
+     */
     async updateProfile(userId, data) {
         const user = await this.User.findById(userId);
         if (!user) {

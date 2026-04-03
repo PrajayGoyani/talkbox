@@ -3,15 +3,32 @@ import { ObjectId } from 'mongodb';
 import { chatLockdownService } from './chat-lockdown.service.js';
 import { notificationService } from './notification.service.js';
 
+/**
+ * @typedef {import('mongoose').Model} Model
+ * @typedef {import('socket.io').Server} Server
+ */
+
 class ChatService {
+    /**
+     * @param {Model} chatModel
+     * @param {Model} messageModel
+     * @param {Model} userModel
+     */
     constructor(chatModel, messageModel, userModel) {
+        /** @type {Model} */
         this.Chat = chatModel;
+        /** @type {Model} */
         this.Message = messageModel;
+        /** @type {Model} */
         this.User = userModel;
+        /** @type {Server | null} */
         this.io = null;
     }
 
-    /** Allow socket controller to inject io instance */
+    /** 
+     * Allow socket controller to inject io instance 
+     * @param {Server} io
+     */
     setIO(io) {
         this.io = io;
     }
@@ -19,6 +36,8 @@ class ChatService {
     /**
      * Get chat listing for a user. Returns chats with status included.
      * Filters out rejected and deleted chats.
+     * @param {string | import('mongodb').ObjectId} userId
+     * @returns {Promise<Array<Object>>}
      */
     async getChatListing(userId) {
         const chats = await this.Chat.find({
@@ -60,6 +79,9 @@ class ChatService {
      * - We find the target user
      * - We create a pending chat (or return existing)
      * - We send a notification to the receiver
+     * @param {string | import('mongodb').ObjectId} senderId
+     * @param {string} targetUsername
+     * @returns {Promise<Object>}
      */
     async requestChat(senderId, targetUsername) {
         // 1. Find the target user by exact username match
@@ -124,6 +146,9 @@ class ChatService {
     /**
      * Accept a pending chat request.
      * Only the receiver (non-creator) can accept.
+     * @param {string | import('mongodb').ObjectId} chatId
+     * @param {string | import('mongodb').ObjectId} userId
+     * @returns {Promise<Object>}
      */
     async acceptChat(chatId, userId) {
         const chat = await this.Chat.findById(chatId);
@@ -161,6 +186,9 @@ class ChatService {
     /**
      * Reject a pending chat request.
      * Only the receiver (non-creator) can reject.
+     * @param {string | import('mongodb').ObjectId} chatId
+     * @param {string | import('mongodb').ObjectId} userId
+     * @returns {Promise<Object>}
      */
     async rejectChat(chatId, userId) {
         const chat = await this.Chat.findById(chatId);
@@ -193,7 +221,12 @@ class ChatService {
         return chat;
     }
 
-    /** Legacy method kept for backward-compat */
+    /** 
+     * Legacy method kept for backward-compat 
+     * @param {string | import('mongodb').ObjectId} creatorId
+     * @param {string | import('mongodb').ObjectId} receiverId
+     * @returns {Promise<Object>}
+     */
     async createOrGetChat(creatorId, receiverId) {
         const aId = new ObjectId(receiverId);
         const bId = new ObjectId(creatorId);
@@ -207,10 +240,19 @@ class ChatService {
         return chat;
     }
 
+    /**
+     * @param {string | import('mongodb').ObjectId} chatId
+     * @param {Object} data
+     * @returns {Promise<void>}
+     */
     async updateChat(chatId, data) {
         throw new Error('Not implemented');
     }
 
+    /**
+     * @param {string | import('mongodb').ObjectId} chatId
+     * @returns {Promise<Object>}
+     */
     async deleteChat(chatId) {
         const chat = await this.Chat.findById(chatId);
         if (!chat) {
@@ -225,6 +267,10 @@ class ChatService {
         return { message: 'Chat successfully deleted' };
     }
 
+    /**
+     * @param {string | import('mongodb').ObjectId} chatId
+     * @returns {Promise<Array<Object>>}
+     */
     async getChatMessages(chatId) {
         const chat = await this.Chat.findById(chatId);
         if (!chat) {
@@ -240,6 +286,9 @@ class ChatService {
     /**
      * Mark a chat as read for a specific user.
      * Resets unreadCounts[userId] to 0.
+     * @param {string | import('mongodb').ObjectId} chatId
+     * @param {string | import('mongodb').ObjectId} userId
+     * @returns {Promise<Object>}
      */
     async markChatRead(chatId, userId) {
         const chat = await this.Chat.findById(chatId);

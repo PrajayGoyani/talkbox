@@ -45,7 +45,7 @@ class NotificationService {
         const notification = await Notification.findOneAndUpdate(
             { _id: notificationId, recipientId: userId },
             { isRead: true },
-            { new: true }
+            { returnDocument: 'after' }
         );
         if (!notification) {
             throw AppError.notFound('Notification not found', 'NOTIFICATION_NOT_FOUND');
