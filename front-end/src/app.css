@@ -8,8 +8,8 @@
 
 *, ::after, ::before {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  /* margin: 0;
+  padding: 0; */
 }
 
 body {
@@ -82,7 +82,7 @@ body {
 }
 
 .rail-btn-active {
-  @apply bg-indigo-600/20 text-indigo-400 after:content-[''] after:absolute after:-left-1.5 after:w-1 after:h-5 after:bg-indigo-500 after:rounded-r-full shadow-[0_0_15px_rgba(99,102,241,0.2)];
+  @apply bg-indigo-600/20 text-indigo-400 after:content-[''] after:absolute after:-left-1.5 after:-top-0 after:w-1 after:h-10 after:bg-indigo-500 after:rounded-r-full shadow-[0_0_15px_rgba(99,102,241,0.2)];
 }
 
 /* Scrollbar styles */
