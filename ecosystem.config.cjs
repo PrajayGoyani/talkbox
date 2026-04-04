@@ -6,7 +6,8 @@ module.exports = {
       name: "chat-app-backend",
       cwd: "./backend",
       script: "bun",
-      args: IS_DEV ? "run dev" : "run start",
+      args: "run start",
+      watch: IS_DEV,
       env: {
         NODE_ENV: IS_DEV ? "development" : "production"
       }
