@@ -1,4 +1,11 @@
-.PHONY: up dev down restart status logs help
+.PHONY: install up dev down restart status logs help
+
+# Install dependencies for frontend and backend
+install:
+	@echo "Installing dependencies..."
+	cd backend && pnpm install
+	cd front-end && pnpm install
+	@echo "Installation complete!"
 
 # Production Mode (Backend: start, Frontend: build + preview)
 up:
@@ -37,6 +44,7 @@ logs:
 # Show help
 help:
 	@echo "Available commands:"
+	@echo "  make install     - Install dependencies for backend and frontend"
 	@echo "  make up          - Start in Production mode (Backend 'start', Frontend 'preview')"
 	@echo "  make dev         - Start in Development mode (Backend 'dev', Frontend 'dev')"
 	@echo "  make down        - Stop and remove both applications"
