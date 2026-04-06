@@ -19,8 +19,12 @@
   type PanelId = "conversations" | "profile" | "settings" | "requests";
 
   // State
-  let selectedOtherUser: any = $state(null);
-  let selectedChatStatus: string = $state("");
+  // Derived state for current chat
+  const selectedChat = $derived(
+    chatStore.chats.find((c) => c.id === selectedChatId) || null,
+  );
+  let selectedOtherUser = $derived(selectedChat?.otherUser || null);
+  let selectedChatStatus = $derived(selectedChat?.status || "");
 
   let notificationsOpen = $state(false);
   let unreadNotifications = $state(0);
@@ -33,6 +37,8 @@
   );
   let selectedChatId = $derived(routerStore.segments[2] || null);
   let isSidebarCollapsed = $state(false);
+  let showJumpButton = $state(false);
+  let userHasScrolledUp = $state(false);
 
   $effect(() => {
     if (typeof localStorage !== "undefined") {
@@ -54,13 +60,14 @@
     });
   });
 
-  const handleSelectChat = (chatId: string, otherUser: any, status: string) => {
-    selectedOtherUser = otherUser;
-    selectedChatStatus = status;
+  const handleSelectChat = (chatId: string, _otherUser: any, status: string) => {
     routerStore.navigate(`/chat/conversations/${chatId}`);
     if (status === "accepted") {
       chatStore.loadMessages(chatId);
       chatStore.markChatRead(chatId);
+      // Reset scroll state for new chat
+      userHasScrolledUp = false;
+      showJumpButton = false;
     }
   };
 
@@ -83,11 +90,23 @@
   $effect(() => {
     const _len = chatStore.messages.length;
     tick().then(() => {
-      if (messagesContainer) {
+      // Only auto-scroll if user is near the bottom or hasn't explicitly scrolled up
+      if (messagesContainer && !userHasScrolledUp) {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
       }
     });
   });
+
+  const scrollToBottom = () => {
+    if (messagesContainer) {
+      messagesContainer.scrollTo({
+        top: messagesContainer.scrollHeight,
+        behavior: "smooth",
+      });
+      userHasScrolledUp = false;
+      showJumpButton = false;
+    }
+  };
 
   const toggleView = (newView: string) => {
     routerStore.navigate(newView === "LOGIN" ? "/login" : "/signup");
@@ -105,6 +124,8 @@
       return;
     chatStore.sendMessage(selectedChatId, selectedOtherUser.id, messageInput);
     messageInput = "";
+    // After sending, immediately scroll to bottom
+    scrollToBottom();
   };
 
   const handleKeydown = (e: KeyboardEvent) => {
@@ -141,6 +162,20 @@
 
   const handleMessagesScroll = (e: Event) => {
     const target = e.target as HTMLElement;
+
+    // Show jump button if scrolled up significantly (more than 300px from bottom)
+    const distanceFromBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+    showJumpButton = distanceFromBottom > 300;
+    
+    // If user is within 50px of bottom, consider them "at the bottom"
+    if (distanceFromBottom < 50) {
+      userHasScrolledUp = false;
+    } else if (distanceFromBottom > 150) {
+      // If they scroll up more than 150px, stop auto-scrolling to bottom
+      userHasScrolledUp = true;
+    }
+
     if (
       target.scrollTop < 50 &&
       chatStore.hasMoreMessages &&
@@ -442,6 +477,32 @@
                 {/each}
               {/if}
             </div>
+
+            <!-- Jump to Latest Button -->
+            {#if showJumpButton}
+              <button
+                class="absolute bottom-[90px] right-6 md:right-8 bg-indigo-600 hover:bg-indigo-500 text-white w-10 h-10 rounded-full shadow-2xl flex items-center justify-center transition-all animate-in slide-in-from-bottom-8 fade-in duration-300 active:scale-90 z-30"
+                onclick={scrollToBottom}
+                title="Jump to latest"
+                aria-label="Scroll to bottom"
+              >
+                <div class="relative">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M7 13l5 5 5-5M7 6l5 5 5-5"></path>
+                  </svg>
+                </div>
+              </button>
+            {/if}
 
             {#if chatStore.typingStatus[selectedChatId]?.size > 0}
               {#if !chatStore.typingStatus[selectedChatId].has(authStore.user?.id) || chatStore.typingStatus[selectedChatId].size > 1}

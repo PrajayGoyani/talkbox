@@ -41,7 +41,6 @@
     searchQuery?: string;
   }>();
 
-  let chats: Array<any> = $state([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
 
@@ -60,21 +59,7 @@
     loading = true;
     error = null;
     try {
-      const endpoint =
-        query.trim().length > 0
-          ? `${API_BASE}/chat/search?q=${encodeURIComponent(query.trim())}`
-          : `${API_BASE}/chat`;
-
-      const resp = await fetch(endpoint, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authStore.accessToken}`,
-        },
-        credentials: "include",
-      });
-      if (!resp.ok) throw new Error("Failed to load chats");
-      const result = await resp.json();
-      chats = result.data || [];
+      await chatStore.fetchChats(query);
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -148,7 +133,7 @@
 
   // Filter chats based on active tab
   const filteredChats = $derived(
-    chats.filter((chat) => {
+    chatStore.chats.filter((chat) => {
       if (activeTab === "active") return chat.status === "accepted";
       if (activeTab === "pending") return chat.status === "pending";
       return true;
@@ -265,7 +250,12 @@
           onclick={() => onSelectChat(chat.id, chat.otherUser, chat.status)}
           title="@{chat.otherUser.username}"
         >
-          <Avatar user={chat.otherUser} class="w-11 h-11 bg-slate-200 dark:bg-slate-800 text-lg text-slate-600 dark:text-slate-300" />
+          <div class="relative shrink-0">
+            <Avatar user={chat.otherUser} class="w-11 h-11 bg-slate-200 dark:bg-slate-800 text-lg text-slate-600 dark:text-slate-300" />
+            {#if chatStore.onlineStatus[chat.otherUser.id]?.isOnline}
+              <div class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-sm"></div>
+            {/if}
+          </div>
           <div class="flex flex-col flex-1 overflow-hidden">
             <div class="flex justify-between items-baseline gap-2">
               <span
@@ -281,17 +271,19 @@
             {#if chat.status === "pending"}
               <span class="text-xs text-amber-500 italic truncate mt-0.5">
                 {chat.createdBy === authStore.user?.id
-                  ? "Request sent"
-                  : "Incoming request"}
-              </span>
-            {:else if chat.lastMessage}
-              <span
-                class="text-xs text-slate-500 truncate mt-0.5 leading-tight"
-              >
-                {chat.lastMessage.contentBody.length > 35
-                  ? chat.lastMessage.contentBody.substring(0, 35) + "..."
-                  : chat.lastMessage.contentBody}
-              </span>
+                   ? "Request sent"
+                   : "Incoming request"}
+               </span>
+            {:else if chatStore.typingStatus[chat.id]?.size > 0 && !chatStore.typingStatus[chat.id].has(authStore.user?.id)}
+               <span class="text-xs text-indigo-500 font-medium italic animate-pulse truncate mt-0.5">
+                 Typing...
+               </span>
+            {:else if chat.lastMessage?.contentBody}
+               <span class="text-xs text-slate-500 truncate mt-0.5 leading-tight">
+                 {(chat.lastMessage.contentBody || "").length > 35
+                    ? (chat.lastMessage.contentBody || "").substring(0, 35) + "..."
+                    : (chat.lastMessage.contentBody || "")}
+               </span>
             {:else}
               <span class="text-xs text-slate-500 truncate mt-0.5"
                 >No messages yet</span

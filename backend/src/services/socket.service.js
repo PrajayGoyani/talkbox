@@ -123,7 +123,7 @@ class SocketService {
 
         // Security: Prevent arbitrary users from flooding target room bindings unless they share an active chat
         try {
-            const isValid = await Chat.exists({
+            const isValid = await ChatModel.exists({
                 _id: chatId,
                 status: 'accepted',
                 $or: [{ userA: senderId, userB: receiverId }, { userA: receiverId, userB: senderId }]
@@ -192,6 +192,7 @@ class SocketService {
                 senderId,
                 senderName: sender.name || null,
                 senderUsername: sender.username,
+                senderAvatar: sender.avatarUrl,
                 preview
             });
         } catch (err) {

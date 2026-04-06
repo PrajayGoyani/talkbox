@@ -7,6 +7,7 @@ interface MessageAlert {
   senderId: string;
   senderName?: string | null;
   senderUsername: string;
+  senderAvatar?: string | null;
   preview: string;
 }
 
@@ -20,6 +21,7 @@ class ChatStore {
 
   onlineStatus: Record<string, { isOnline: boolean, lastSeen: Date | null }> = $state({});
   typingStatus: Record<string, Set<string>> = $state({});
+  chats: Array<any> = $state([]);
   private typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
   // Callbacks for UI refresh
@@ -224,6 +226,29 @@ class ChatStore {
       console.error('Failed to load older messages:', e);
     } finally {
       this.isLoadingMessages = false;
+    }
+  }
+
+  /** Load chats list via REST */
+  async fetchChats(query = "") {
+    try {
+      const endpoint = query.trim().length > 0
+        ? `${API_BASE}/chat/search?q=${encodeURIComponent(query.trim())}`
+        : `${API_BASE}/chat`;
+
+      const resp = await fetch(endpoint, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authStore.accessToken}`,
+        },
+        credentials: "include",
+      });
+      if (!resp.ok) return;
+      const result = await resp.json();
+      this.chats = result.data || [];
+      return this.chats;
+    } catch (e) {
+      console.error("Failed to fetch chats:", e);
     }
   }
 

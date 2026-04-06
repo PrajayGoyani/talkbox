@@ -1,6 +1,6 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
-  import { API_BASE } from "../config";
+  import { API_BASE, API_ROOT } from "../config";
 
   let editingName = $state(false);
   let nameInput = $state(authStore.user?.name || "");
@@ -16,6 +16,16 @@
   const displayName = $derived(
     authStore.user?.name || authStore.user?.username || "",
   );
+
+  const resolvedAvatarUrl = $derived.by(() => {
+    const url = authStore.user?.avatarUrl;
+    if (!url) return null;
+    if (url.startsWith("/uploads/")) return `${API_ROOT}${url}`;
+    if (url.startsWith("http://localhost:3000/uploads/")) {
+      return url.replace("http://localhost:3000", API_ROOT);
+    }
+    return url;
+  });
 
   /** Frontend sanitize: letters, spaces, hyphens, apostrophes only. Capitalize words. */
   function sanitizeName(val: string): string {
@@ -152,9 +162,9 @@
         class="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center relative cursor-pointer overflow-hidden shadow-xl shadow-indigo-500/20 transition-transform hover:scale-105"
         onclick={handleAvatarSelect}
       >
-        {#if avatarPreview || authStore.user?.avatarUrl}
+        {#if avatarPreview || resolvedAvatarUrl}
           <img
-            src={avatarPreview || authStore.user?.avatarUrl}
+            src={avatarPreview || resolvedAvatarUrl}
             alt="Avatar"
             class="w-full h-full object-cover"
           />
