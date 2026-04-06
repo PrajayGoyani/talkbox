@@ -14,6 +14,7 @@
   let requestLoading = $state(false);
   let requestError = $state<string | null>(null);
   let requestSuccess = $state<string | null>(null);
+  let processingStates: Record<string, 'accepting' | 'rejecting' | null> = $state({});
 
   export const refreshRequests = async () => {
     await fetchPendingChats();
@@ -70,6 +71,8 @@
   };
 
   const handleAccept = async (chatId: string) => {
+    if (processingStates[chatId]) return;
+    processingStates[chatId] = 'accepting';
     try {
       await fetch(`${API_BASE}/chat/${chatId}/accept`, {
         method: "PUT",
@@ -79,10 +82,14 @@
       await fetchPendingChats();
     } catch (e) {
       console.error(e);
+    } finally {
+      delete processingStates[chatId];
     }
   };
 
   const handleReject = async (chatId: string) => {
+    if (processingStates[chatId]) return;
+    processingStates[chatId] = 'rejecting';
     try {
       await fetch(`${API_BASE}/chat/${chatId}/reject`, {
         method: "PUT",
@@ -92,6 +99,8 @@
       await fetchPendingChats();
     } catch (e) {
       console.error(e);
+    } finally {
+      delete processingStates[chatId];
     }
   };
 
@@ -210,41 +219,51 @@
             </div>
             <div class="flex gap-1.5 shrink-0">
               <button
-                class="w-8 h-8 rounded-full flex items-center justify-center bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-colors"
+                class="w-8 h-8 rounded-full flex items-center justify-center bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-colors disabled:opacity-40"
                 onclick={() => handleAccept(chat.id)}
                 aria-label="Accept"
+                disabled={!!processingStates[chat.id]}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  ><polyline points="20 6 9 17 4 12"></polyline></svg
-                >
+                {#if processingStates[chat.id] === 'accepting'}
+                  <span class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></span>
+                {:else}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    ><polyline points="20 6 9 17 4 12"></polyline></svg
+                  >
+                {/if}
               </button>
               <button
-                class="w-8 h-8 rounded-full flex items-center justify-center bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 transition-colors"
+                class="w-8 h-8 rounded-full flex items-center justify-center bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 transition-colors disabled:opacity-40"
                 onclick={() => handleReject(chat.id)}
                 aria-label="Reject"
+                disabled={!!processingStates[chat.id]}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  ><line x1="18" y1="6" x2="6" y2="18"></line><line
-                    x1="6"
-                    y1="6"
-                    x2="18"
-                    y2="18"
-                  ></line></svg
-                >
+                {#if processingStates[chat.id] === 'rejecting'}
+                  <span class="w-3.5 h-3.5 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin"></span>
+                {:else}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    ><line x1="18" y1="6" x2="6" y2="18"></line><line
+                      x1="6"
+                      y1="6"
+                      x2="18"
+                      y2="18"
+                    ></line></svg
+                  >
+                {/if}
               </button>
             </div>
           </div>
