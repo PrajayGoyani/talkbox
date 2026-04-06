@@ -72,8 +72,21 @@ class ChatStore {
         this.typingStatus[message.chatId] = new Set(this.typingStatus[message.chatId]);
       }
 
-      // Refresh chat list (locally) to update lastMessage preview + unread counts
-      this.updateLocalChat(message.chatId, message);
+      // Update local last message preview and unread count
+      const isViewing = message.chatId === this.activeChatId;
+      const shouldInc = !isViewing && message.senderId !== authStore.user?.id;
+      
+      const chat = this.chats.find(c => c.id === message.chatId);
+      const currentUnread = chat?.unreadCount || 0;
+
+      this.patchChatLocally(message.chatId, {
+        lastMessage: {
+          contentBody: message.contentBody,
+          senderId: message.senderId,
+          sentAt: message.createdAt
+        },
+        unreadCount: shouldInc ? currentUnread + 1 : currentUnread
+      }, true);
     });
 
     // Listen for User Presence changes
@@ -228,8 +241,11 @@ class ChatStore {
     }
   }
 
-  /** Update a single chat in the local 'chats' list without a full fetch */
-  private updateLocalChat(chatId: string, message: any) {
+  /** 
+   * Update a single chat in the local 'chats' list without a full fetch.
+   * If moveToTop is true, also re-orders the list (useful for new messages).
+   */
+  private patchChatLocally(chatId: string, updates: Partial<any>, moveToTop = false) {
     const chatIndex = this.chats.findIndex((c: any) => c.id === chatId);
     if (chatIndex === -1) {
       // If chat not in list (e.g. newly accepted), a full refresh is safer
@@ -237,22 +253,16 @@ class ChatStore {
       return;
     }
 
-    const chat = { ...this.chats[chatIndex] };
-    chat.lastMessage = {
-      contentBody: message.contentBody,
-      senderId: message.senderId,
-      sentAt: message.createdAt
-    };
+    const chat = { ...this.chats[chatIndex], ...updates };
+    const newChats = [...this.chats];
 
-    // Increment unread count if we are not currently viewing this chat
-    if (chatId !== this.activeChatId && message.senderId !== authStore.user?.id) {
-       chat.unreadCount = (chat.unreadCount || 0) + 1;
+    if (moveToTop) {
+      newChats.splice(chatIndex, 1);
+      newChats.unshift(chat);
+    } else {
+      newChats[chatIndex] = chat;
     }
 
-    // Remove from old position and move to top
-    const newChats = [...this.chats];
-    newChats.splice(chatIndex, 1);
-    newChats.unshift(chat);
     this.chats = newChats;
   }
 
@@ -287,10 +297,8 @@ class ChatStore {
         headers: { 'Authorization': `Bearer ${authStore.accessToken}` },
         credentials: 'include'
       });
-      // Refresh chat list to update unread counts
-      if (this.onChatListRefresh) {
-        this.onChatListRefresh();
-      }
+      // Update local chat unread count instantly
+      this.patchChatLocally(chatId, { unreadCount: 0 });
     } catch (e) {
       console.error('Failed to mark chat as read:', e);
     }
@@ -325,7 +333,13 @@ class ChatStore {
           this.messages = [...this.messages, ack.message];
         }
         // Update local chat list (set last message, move to top)
-        this.updateLocalChat(chatId, ack.message);
+        this.patchChatLocally(chatId, {
+          lastMessage: {
+            contentBody: ack.message.contentBody,
+            senderId: ack.message.senderId,
+            sentAt: ack.message.createdAt
+          }
+        }, true);
       }
     });
   }
