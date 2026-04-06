@@ -28,6 +28,10 @@
 <div class="auth-card">
   <div class="text-center">
     <h1 class="auth-title">Welcome back</h1>
+    <!-- <div class="flex flex-col items-center gap-3 mb-2">
+      <img src="/favicon.png" alt="Talkbox Logo" class="w-16 h-16 rounded-2xl shadow-lg ring-4 ring-indigo-600/10" />
+      <h1 class="auth-title mt-2">Welcome to Talkbox</h1>
+    </div> -->
     <p class="text-slate-500 dark:text-slate-400 text-[15px]">
       Sign in to continue your conversations
     </p>

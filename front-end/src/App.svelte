@@ -568,8 +568,10 @@
             >
             <h3 class="text-2xl text-slate-900 dark:text-slate-100 font-bold">
               Welcome to your Dashboard
+              <!-- Welcome to Talkbox -->
             </h3>
             <p class="text-base max-w-[300px]">
+              <!-- Select a conversation from the sidebar or start a new one to begin chatting. -->
               Select a conversation from the sidebar or start a new one.
             </p>
           </div>

@@ -155,5 +155,13 @@
         Sign Out
       </button>
     </div>
+    <!-- <div class="mt-auto pt-6 pb-4 text-center">
+      <div class="flex flex-col items-center gap-1.5 opacity-40">
+        <img src="/favicon.png" alt="Talkbox Logo" class="w-8 h-8 rounded-lg grayscale pointer-events-none" />
+        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+          Talkbox v1.0.0
+        </p>
+      </div>
+    </div> -->
   </div>
 </div>

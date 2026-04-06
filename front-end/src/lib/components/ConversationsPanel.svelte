@@ -21,9 +21,13 @@
 <div class="h-full flex flex-col">
   <div class="p-5 border-b border-slate-200 dark:border-white/10">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
-        Messages
-      </h2>
+      <div class="flex items-center gap-2">
+        <!-- <img src="/favicon.png" alt="Talkbox Logo" class="w-7 h-7 rounded-lg" /> -->
+        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
+          Messages
+          <!-- Talkbox -->
+        </h2>
+      </div>
       <button
         class="w-9 h-9 md:hidden flex items-center justify-center rounded-xl text-slate-500 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-white/10 transition-all relative"
         onclick={onNotificationToggle}
