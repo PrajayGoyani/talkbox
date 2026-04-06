@@ -81,6 +81,7 @@
     requestLoading = true;
     requestError = null;
     requestSuccess = null;
+    // await new Promise((resolve) => setTimeout(resolve, 1000));
     try {
       const resp = await fetch(`${API_BASE}/chat/request`, {
         method: "POST",
@@ -159,7 +160,7 @@
           onkeydown={(e) => e.key === "Enter" && handleSendRequest()}
         />
         <button
-          class="p-2 rounded-lg text-slate-500 hover:text-indigo-600 transition-colors disabled:opacity-40"
+          class="w-10 h-10 flex items-center justify-center rounded-lg text-slate-500 hover:text-indigo-600 transition-colors disabled:opacity-40"
           onclick={handleSendRequest}
           disabled={requestLoading || !requestUsername.trim()}
           aria-label="Send chat request"
@@ -184,7 +185,7 @@
           {/if}
         </button>
         <button
-          class="p-2 rounded-lg text-slate-500 hover:text-rose-500 transition-colors"
+          class="w-10 h-10 flex items-center justify-center rounded-lg text-slate-500 hover:text-rose-500 transition-colors"
           onclick={() => {
             showRequestInput = false;
             requestError = null;
