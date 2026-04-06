@@ -17,6 +17,7 @@ class ChatStore {
   messages: Array<any> = $state([]);
   hasMoreMessages = $state(true);
   isLoadingMessages = $state(false);
+  isSendingMessage = $state(false);
   activeChatId: string | null = $state(null);
 
   onlineStatus: Record<string, { isOnline: boolean, lastSeen: Date | null }> = $state({});
@@ -270,12 +271,18 @@ class ChatStore {
   }
 
   /** Send a message via socket with idempotency */
-  sendMessage(chatId: string, receiverId: string, contentBody: string) {
-    if (!this.socket || !contentBody.trim()) return;
+  async sendMessage(chatId: string, receiverId: string, contentBody: string) {
+    if (!this.socket || !this.isConnected || !contentBody.trim()) return;
 
+    this.isSendingMessage = true;
+    // await new Promise((r) => setTimeout(r, 1000)); // test loader
     this.emitTyping(chatId, receiverId, false);
 
     const idempotencyKey = `${authStore.user?.id}_${chatId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    const timeout = setTimeout(() => {
+        this.isSendingMessage = false;
+    }, 10000); // 10s fallback for UI safety
 
     this.socket.emit('send_message', {
       chatId,
@@ -283,6 +290,8 @@ class ChatStore {
       contentBody: contentBody.trim(),
       idempotencyKey
     }, (ack: any) => {
+      clearTimeout(timeout);
+      this.isSendingMessage = false;
       if (ack?.status === 'ok' && ack.message) {
         // Add our own sent message to the list (avoid duplicates)
         const exists = this.messages.some((m: any) => m.idempotencyKey === ack.message.idempotencyKey);

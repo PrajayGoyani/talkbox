@@ -523,27 +523,32 @@
                 bind:value={messageInput}
                 onkeydown={handleKeydown}
                 oninput={handleInput}
+                disabled={chatStore.isSendingMessage}
               />
               <button
-                class="bg-indigo-600 hover:bg-indigo-700 text-white p-2.5 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
                 aria-label="Send message"
                 onclick={handleSendMessage}
-                disabled={!messageInput.trim()}
+                disabled={!messageInput.trim() || chatStore.isSendingMessage}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><line x1="22" y1="2" x2="11" y2="13"></line><polygon
-                    points="22 2 15 22 11 13 2 9 22 2"
-                  ></polygon></svg
-                >
+                {#if chatStore.isSendingMessage}
+                  <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                {:else}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><line x1="22" y1="2" x2="11" y2="13"></line><polygon
+                      points="22 2 15 22 11 13 2 9 22 2"
+                    ></polygon></svg
+                  >
+                {/if}
               </button>
             </div>
           {/if}
