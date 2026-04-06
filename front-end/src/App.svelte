@@ -209,13 +209,13 @@
 
 {#if authStore.isCheckingAuth}
   <div
-    class="flex items-center justify-center w-screen h-screen bg-slate-50 dark:bg-slate-950"
+    class="flex items-center justify-center w-screen h-dvh bg-slate-50 dark:bg-slate-950"
   >
     <span class="loader"></span>
   </div>
 {:else if routerStore.segments[0] === "chat" && authStore.user}
   <main
-    class="flex flex-col w-screen h-screen overflow-hidden bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300"
+    class="flex flex-col w-screen h-dvh overflow-hidden bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300"
   >
     <NotificationsDropdown
       bind:isOpen={notificationsOpen}
@@ -224,7 +224,7 @@
     />
 
     <!-- Body: Rail + Sub-Panel + Chat -->
-    <div class="flex flex-1 min-h-0">
+    <div class="flex flex-col md:flex-row flex-1 min-h-0 relative w-full overflow-hidden">
       <!-- Icon Rail -->
       <IconRail
         {activePanel}
@@ -232,38 +232,51 @@
         onNotificationToggle={() => (notificationsOpen = !notificationsOpen)}
         notificationCount={unreadNotifications}
         onLogout={handleLogout}
+        hideOnMobile={!!selectedChatId}
       />
 
       <!-- Sub Panel Area -->
       <aside
-        class="glass-panel flex flex-col z-10 shrink-0 transition-all duration-300 {isSidebarCollapsed
-          ? 'w-0 opacity-0 border-none overflow-hidden'
-          : 'w-[280px] border-r'}"
+        class="glass-panel flex-col z-10 min-h-0 shrink-0 transition-all duration-300 {isSidebarCollapsed
+          ? 'w-0 opacity-0 border-none overflow-hidden hidden md:flex'
+          : 'w-full md:w-[280px] border-r'} {selectedChatId ? 'hidden md:flex' : 'flex flex-1 md:flex-initial'}"
       >
         {#if activePanel === "conversations"}
           <ConversationsPanel
             activeChatId={selectedChatId}
             onSelectChat={handleSelectChat}
+            unreadCount={unreadNotifications}
+            onNotificationToggle={() => (notificationsOpen = !notificationsOpen)}
           />
         {:else if activePanel === "profile"}
           <ProfilePanel />
         {:else if activePanel === "settings"}
-          <SettingsPanel />
+          <SettingsPanel user={authStore.user} onLogout={handleLogout} />
         {:else if activePanel === "requests"}
           <RequestsPanel />
         {/if}
       </aside>
 
       <section
-        class="flex-1 flex flex-col relative bg-slate-100/50 dark:bg-slate-950/30 {selectedChatId
-          ? ''
-          : 'justify-center items-center'}"
+        class="flex-1 min-h-0 flex flex-col relative bg-slate-100/50 dark:bg-slate-950/30 {selectedChatId
+          ? 'flex'
+          : 'hidden md:flex flex-col justify-center items-center'}"
       >
         {#if selectedChatId}
           <div class="glass-panel p-4 border-b">
             <div class="flex items-center gap-3">
+              <!-- Mobile Back Button -->
               <button
-                class="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10 transition-all mr-2"
+                class="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10 transition-all mr-2"
+                onclick={() => routerStore.navigate('/chat/' + activePanel)}
+                aria-label="Back"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+              </button>
+
+              <!-- Desktop Sidebar Toggle Button -->
+              <button
+                class="hidden md:flex p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10 transition-all mr-2"
                 onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
                 aria-label="Toggle Sidebar"
               >
@@ -509,7 +522,7 @@
   </main>
 {:else}
   <div
-    class="flex items-center justify-center w-screen h-screen bg-slate-50 dark:bg-slate-950 font-sans"
+    class="flex items-center justify-center w-screen h-dvh bg-slate-50 dark:bg-slate-950 font-sans overflow-y-auto p-4"
   >
     {#if routerStore.segments[0] === "login"}
       <Login>

@@ -34,7 +34,7 @@ body {
 }
 
 .auth-card {
-  @apply w-full max-w-[420px] p-10 bg-slate-100/5 dark:bg-black/20 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-3xl flex flex-col gap-8 shadow-2xl;
+  @apply w-full max-w-[420px] p-6 sm:p-10 bg-slate-100/5 dark:bg-black/20 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-3xl flex flex-col gap-8 shadow-2xl;
 }
 
 .auth-title {
@@ -82,7 +82,37 @@ body {
 }
 
 .rail-btn-active {
-  @apply bg-indigo-600/20 text-indigo-400 after:content-[''] after:absolute after:-left-1.5 after:-top-0 after:w-1 after:h-10 after:bg-indigo-500 after:rounded-r-full shadow-[0_0_15px_rgba(99,102,241,0.2)];
+  @apply bg-indigo-600/20 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)];
+}
+
+.rail-btn-active::after {
+  content: '';
+  position: absolute;
+  background-color: var(--color-indigo-500);
+}
+
+@media (max-width: 767px) {
+  .rail-btn-active::after {
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+  }
+}
+
+@media (min-width: 768px) {
+  .rail-btn-active::after {
+    left: -2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 32px;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+  }
 }
 
 /* Scrollbar styles */

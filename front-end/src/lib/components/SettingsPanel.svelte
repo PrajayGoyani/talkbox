@@ -1,5 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import Avatar from "./Avatar.svelte";
+
+  const { onLogout, user } = $props<{
+    onLogout?: () => void;
+    user?: any;
+  }>();
 
   let currentTheme = $state<"dark" | "light">("dark");
 
@@ -129,6 +135,25 @@
         class="text-[10px] text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded uppercase font-bold tracking-wider"
         >Coming Soon</span
       >
+    </div>
+
+    <!-- Mobile-only User section and Logout -->
+    <div class="flex flex-col gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-white/10 md:hidden">
+      <div class="px-1 flex items-center gap-3">
+        <Avatar {user} class="w-12 h-12 bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border-2 border-white dark:border-slate-800" />
+        <div class="flex flex-col">
+          <span class="text-base font-bold text-slate-900 dark:text-slate-100">{user?.name || user?.username}</span>
+          <span class="text-xs text-slate-500">@{user?.username}</span>
+        </div>
+      </div>
+      
+      <button 
+        class="w-full mt-2 flex items-center justify-center gap-2 p-3.5 rounded-xl bg-rose-500/10 text-rose-500 font-bold hover:bg-rose-500/20 transition-all active:scale-[0.98]"
+        onclick={onLogout}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        Sign Out
+      </button>
     </div>
   </div>
 </div>

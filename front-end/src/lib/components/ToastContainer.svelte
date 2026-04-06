@@ -43,7 +43,7 @@
 
 {#if toasts.length > 0}
   <div
-    class="fixed bottom-6 right-6 flex flex-col-reverse gap-2 z-[1000] pointer-events-none"
+    class="fixed bottom-6 right-6 flex flex-col-reverse gap-2 z-1000 pointer-events-none"
   >
     {#each toasts as toast (toast.id)}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
