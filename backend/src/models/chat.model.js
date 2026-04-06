@@ -24,6 +24,8 @@ const chatSchema = new Schema({
     deletedAt: { type: Date, default: null }
 });
 
+chatSchema.index({ userA: 1, isDeleted: 1, status: 1 });
+chatSchema.index({ userB: 1, isDeleted: 1, status: 1 });
 chatSchema.index({ userA: 1, userB: 1 }, { unique: true });
 
 const Chat = mongoose.model('Chat', chatSchema);

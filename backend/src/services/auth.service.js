@@ -44,7 +44,7 @@ class AuthService {
      * @returns {Promise<Object>}
      */
     async login({ username, password }) {
-        const user = await this.User.findByEmailorUsername(username);
+        const user = await this.User.findByEmailOrUsername(username);
         if (!user) {
             throw AppError.unauthorized('Invalid credentials', 'INVALID_CREDENTIALS');
         }

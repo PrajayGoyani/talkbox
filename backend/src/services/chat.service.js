@@ -15,11 +15,8 @@ class ChatService {
      * @param {Model} userModel
      */
     constructor(chatModel, messageModel, userModel) {
-        /** @type {Model} */
         this.Chat = chatModel;
-        /** @type {Model} */
         this.Message = messageModel;
-        /** @type {Model} */
         this.User = userModel;
         /** @type {Server | null} */
         this.io = null;
@@ -82,60 +79,83 @@ class ChatService {
     async searchChats(userId, query) {
         if (!query || query.trim().length === 0) return [];
         
-        // Escape regex metadata characters to prevent ReDoS payloads
+        const uidStr = userId.toString();
         const escapedQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const q = new RegExp(escapedQuery, 'i');
-        
-        // Find matching users
-        const matchingUsers = await this.User.find({
-            $or: [
-                { username: q },
-                { name: q },
-                { email: q }
-            ]
-        }, '_id');
-        
-        const matchingUserIds = matchingUsers.map(u => u._id);
 
-        // Find active chats where the other user is in the matching IDs
-        const chats = await this.Chat.find({
-            $or: [{ userA: userId }, { userB: userId }],
-            isDeleted: false,
-            status: 'accepted',
-            $and: [
-                {
-                    $or: [
-                        { userA: { $in: matchingUserIds } },
-                        { userB: { $in: matchingUserIds } }
-                    ]
+        // Aggregation pipeline to join chats and users efficiently in a single round-trip
+        const chats = await this.Chat.aggregate([
+            {
+                $match: {
+                    $or: [{ userA: uidStr }, { userB: uidStr }],
+                    isDeleted: false,
+                    status: 'accepted'
                 }
-            ]
-        })
-        .populate('userA', 'username name email avatar_url')
-        .populate('userB', 'username name email avatar_url');
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    let: { userA: '$userA', userB: '$userB' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        // The user must be one of the chat participants
+                                        // userA/userB are strings in our schema, so they must match the string representation or be converted
+                                        { $or: [ { $eq: [{ $toString: '$_id' }, '$$userA'] }, { $eq: [{ $toString: '$_id' }, '$$userB'] } ] },
+                                        // But NOT the current user searching
+                                        { $ne: [{ $toString: '$_id' }, uidStr] }
+                                    ]
+                                },
+                                // Search criteria on the user (ReDoS-safe regex)
+                                $or: [
+                                    { username: q },
+                                    { name: q },
+                                    { email: q }
+                                ]
+                            }
+                        },
+                        { $limit: 1 }, 
+                        { $project: { username: 1, name: 1, email: 1, avatar_url: 1 } }
+                    ],
+                    as: 'otherUser'
+                }
+            },
+            // Filter out chats where the other user didn't match the search
+            { $unwind: '$otherUser' },
+            { $limit: 50 },
+            {
+                $project: {
+                    id: '$_id',
+                    status: 1,
+                    otherUser: {
+                        id: '$otherUser._id',
+                        username: '$otherUser.username',
+                        name: '$otherUser.name',
+                        email: '$otherUser.email',
+                        avatarUrl: '$otherUser.avatar_url'
+                    },
+                    lastMessage: '$lastMessage',
+                    unreadCount: { 
+                        $ifNull: [
+                            { $getField: { field: uidStr, input: '$unreadCounts' } },
+                            0 
+                        ]
+                    },
+                    createdAt: 1
+                }
+            }
+        ]);
 
-        return chats.map(chat => {
-            const otherUser = chat.userA._id.toString() === userId.toString() ? chat.userB : chat.userA;
-            const unread = chat.unreadCounts?.get?.(userId.toString()) || 0;
-            return {
-                id: chat._id,
-                status: chat.status,
-                otherUser: {
-                    id: otherUser._id,
-                    username: otherUser.username,
-                    name: otherUser.name || null,
-                    email: otherUser.email,
-                    avatarUrl: otherUser.avatar_url
-                },
-                lastMessage: chat.lastMessage?.contentBody ? {
-                    contentBody: chat.lastMessage.contentBody,
-                    senderId: chat.lastMessage.senderId,
-                    sentAt: chat.lastMessage.sentAt
-                } : null,
-                unreadCount: unread,
-                createdAt: chat.createdAt
-            };
-        });
+        return chats.map(chat => ({
+            ...chat,
+            lastMessage: chat.lastMessage?.contentBody ? {
+                contentBody: chat.lastMessage.contentBody,
+                senderId: chat.lastMessage.senderId,
+                sentAt: chat.lastMessage.sentAt
+            } : null
+        }));
     }
 
     /**

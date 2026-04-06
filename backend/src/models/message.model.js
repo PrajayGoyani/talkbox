@@ -21,6 +21,12 @@ const messageSchema = new Schema({
     idempotencyKey: { type: String, required: true, unique: true }
 });
 
+/**
+ * QA: for future
+ * slack does not maintain delivered receipt (also delete as well)
+ * is deleted messages are forever gone in slack?
+ */
+
 const Message = mongoose.model('Message', messageSchema);
 
 export default Message;

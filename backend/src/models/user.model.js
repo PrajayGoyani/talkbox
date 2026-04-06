@@ -7,7 +7,7 @@ import { AppError } from '../utils/AppError.js';
 
 const userSchema = new Schema({
     username: { type: String, required: true, unique: true, trim: true },
-    name: { type: String, default: null, trim: true, maxlength: 50 },
+    name: { type: String, default: null, trim: true, maxlength: 50, index: true },
     email: {
         type: String,
         required: true,
@@ -36,7 +36,7 @@ userSchema.loadClass(class {
         this.password = hash;
     }
 
-    static findByEmailorUsername(username) {
+    static findByEmailOrUsername(username) {
 
         if (this.isEmail(username)) {
             return this.findOne({ email: username });

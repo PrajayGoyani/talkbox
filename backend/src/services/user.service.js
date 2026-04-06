@@ -30,7 +30,7 @@ class UserService {
      * @returns {Promise<Object>}
      */
     async searchByUsername(username) {
-        const user = await this.User.findByEmailorUsername(username);
+        const user = await this.User.findByEmailOrUsername(username);
         if (!user) {
             throw AppError.notFound('User not found', 'USER_NOT_FOUND');
         }
