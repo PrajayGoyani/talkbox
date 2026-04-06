@@ -72,10 +72,8 @@ class ChatStore {
         this.typingStatus[message.chatId] = new Set(this.typingStatus[message.chatId]);
       }
 
-      // Refresh chat list to update lastMessage preview + unread counts
-      if (this.onChatListRefresh) {
-        this.onChatListRefresh();
-      }
+      // Refresh chat list (locally) to update lastMessage preview + unread counts
+      this.updateLocalChat(message.chatId, message);
     });
 
     // Listen for User Presence changes
@@ -230,6 +228,34 @@ class ChatStore {
     }
   }
 
+  /** Update a single chat in the local 'chats' list without a full fetch */
+  private updateLocalChat(chatId: string, message: any) {
+    const chatIndex = this.chats.findIndex((c: any) => c.id === chatId);
+    if (chatIndex === -1) {
+      // If chat not in list (e.g. newly accepted), a full refresh is safer
+      if (this.onChatListRefresh) this.onChatListRefresh();
+      return;
+    }
+
+    const chat = { ...this.chats[chatIndex] };
+    chat.lastMessage = {
+      contentBody: message.contentBody,
+      senderId: message.senderId,
+      sentAt: message.createdAt
+    };
+
+    // Increment unread count if we are not currently viewing this chat
+    if (chatId !== this.activeChatId && message.senderId !== authStore.user?.id) {
+       chat.unreadCount = (chat.unreadCount || 0) + 1;
+    }
+
+    // Remove from old position and move to top
+    const newChats = [...this.chats];
+    newChats.splice(chatIndex, 1);
+    newChats.unshift(chat);
+    this.chats = newChats;
+  }
+
   /** Load chats list via REST */
   async fetchChats(query = "") {
     try {
@@ -281,7 +307,7 @@ class ChatStore {
     const idempotencyKey = `${authStore.user?.id}_${chatId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     const timeout = setTimeout(() => {
-        this.isSendingMessage = false;
+      this.isSendingMessage = false;
     }, 10000); // 10s fallback for UI safety
 
     this.socket.emit('send_message', {
@@ -298,10 +324,8 @@ class ChatStore {
         if (!exists) {
           this.messages = [...this.messages, ack.message];
         }
-        // Refresh chat list to show this as last message
-        if (this.onChatListRefresh) {
-          this.onChatListRefresh();
-        }
+        // Update local chat list (set last message, move to top)
+        this.updateLocalChat(chatId, ack.message);
       }
     });
   }
