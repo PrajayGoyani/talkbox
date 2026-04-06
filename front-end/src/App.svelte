@@ -62,19 +62,34 @@
 
   const handleSelectChat = (chatId: string, _otherUser: any, status: string) => {
     routerStore.navigate(`/chat/conversations/${chatId}`);
-    if (status === "accepted") {
-      chatStore.loadMessages(chatId);
-      chatStore.markChatRead(chatId);
-      // Reset scroll state for new chat
-      userHasScrolledUp = false;
-      showJumpButton = false;
-    }
   };
+
+  // Sync current chat messages when URL param changes (including on mount/refresh)
+  $effect(() => {
+    const chatId = selectedChatId;
+    if (chatId && authStore.user) {
+      untrack(() => {
+        // Find chat to check status
+        const chat = chatStore.chats.find(c => c.id === chatId);
+        // On refresh, chats might not be loaded yet, so we still trigger loadMessages 
+        // to show the UI content, but only if the user is authenticated.
+        chatStore.loadMessages(chatId);
+        chatStore.markChatRead(chatId);
+        
+        // Reset scroll state for new chat
+        userHasScrolledUp = false;
+        showJumpButton = false;
+      });
+    }
+  });
 
   // Sync with auth state and connect socket when entering chat view
   $effect(() => {
     if (authStore.user && routerStore.segments[0] === "chat") {
       chatStore.connect();
+      // Ensure chats are fetched on mount/re-auth
+      chatStore.fetchChats(); 
+      
       // Register toast callback
       chatStore.onToast((data) => {
         if (toastContainer) {
