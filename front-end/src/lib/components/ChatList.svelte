@@ -3,6 +3,7 @@
   import { chatStore } from "../state/chat.svelte";
   import { onMount } from "svelte";
   import { API_BASE } from "../config";
+  import Avatar from "./Avatar.svelte";
 
   /** Format a timestamp for chat listing: time if today, 'Yesterday', or date */
   function formatTime(dateStr: string): string {
@@ -264,11 +265,7 @@
           onclick={() => onSelectChat(chat.id, chat.otherUser, chat.status)}
           title="@{chat.otherUser.username}"
         >
-          <div
-            class="w-11 h-11 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-lg shrink-0 text-slate-600 dark:text-slate-300"
-          >
-            {displayName[0].toUpperCase()}
-          </div>
+          <Avatar user={chat.otherUser} class="w-11 h-11 bg-slate-200 dark:bg-slate-800 text-lg text-slate-600 dark:text-slate-300" />
           <div class="flex flex-col flex-1 overflow-hidden">
             <div class="flex justify-between items-baseline gap-2">
               <span

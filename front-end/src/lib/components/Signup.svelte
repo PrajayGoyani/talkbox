@@ -1,5 +1,6 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
+  import { routerStore } from "../state/router.svelte";
 
   const { toggleLogin } = $props<{ toggleLogin: any }>();
 
@@ -56,12 +57,16 @@
       ? sanitizeName(displayName)
       : undefined;
 
-    await authStore.signup({
+    const success = await authStore.signup({
       username: username.toLowerCase(),
       email,
       password,
       ...(sanitizedName ? { name: sanitizedName } : {}),
     });
+    
+    if (success) {
+      routerStore.navigate('/chat/conversations');
+    }
   };
 </script>
 

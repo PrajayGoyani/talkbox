@@ -3,6 +3,7 @@
   import { chatStore } from "../state/chat.svelte";
   import { onMount } from "svelte";
   import { API_BASE } from "../config";
+  import Avatar from "./Avatar.svelte";
 
   let pendingChats: Array<any> = $state([]);
   let loading = $state(true);
@@ -198,11 +199,7 @@
             class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
           >
             <div class="flex items-center gap-3 flex-1 min-w-0">
-              <div
-                class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shrink-0"
-              >
-                {displayName[0].toUpperCase()}
-              </div>
+              <Avatar user={chat.otherUser} class="w-9 h-9 bg-indigo-600 text-white text-sm" />
               <div class="flex flex-col min-w-0">
                 <span
                   class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate"
@@ -270,11 +267,7 @@
             class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
           >
             <div class="flex items-center gap-3 flex-1 min-w-0">
-              <div
-                class="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-sm shrink-0"
-              >
-                {displayName[0].toUpperCase()}
-              </div>
+              <Avatar user={chat.otherUser} class="w-9 h-9 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm" />
               <div class="flex flex-col min-w-0">
                 <span
                   class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate"

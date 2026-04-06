@@ -7,6 +7,7 @@
   import ChatList from "./lib/components/ChatList.svelte";
   import NotificationsDropdown from "./lib/components/NotificationsDropdown.svelte";
   import ToastContainer from "./lib/components/ToastContainer.svelte";
+  import Avatar from "./lib/components/Avatar.svelte";
 
   import { routerStore } from "./lib/state/router.svelte";
   import IconRail from "./lib/components/IconRail.svelte";
@@ -96,6 +97,7 @@
   const handleLogout = async () => {
     chatStore.disconnect();
     await authStore.logout();
+    routerStore.navigate('/login');
   };
 
   const handleSendMessage = () => {
@@ -277,13 +279,7 @@
                   ></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg
                 >
               </button>
-              <div
-                class="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm font-bold shrink-0"
-                title="@{selectedOtherUser?.username}"
-              >
-                {(selectedOtherUser?.name ||
-                  selectedOtherUser?.username)?.[0]?.toUpperCase() || "?"}
-              </div>
+              <Avatar user={selectedOtherUser} class="w-9 h-9 bg-indigo-500 text-white text-sm" />
               <div>
                 <h3
                   class="m-0 text-lg font-semibold leading-none"

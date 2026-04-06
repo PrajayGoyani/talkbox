@@ -1,5 +1,6 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
+  import { routerStore } from "../state/router.svelte";
 
   const { toggleSignup } = $props<{ toggleSignup: any }>();
 
@@ -17,7 +18,10 @@
 
     if (Object.keys(errors).length > 0) return;
 
-    await authStore.login({ username, password });
+    const success = await authStore.login({ username, password });
+    if (success) {
+      routerStore.navigate('/chat/conversations');
+    }
   };
 </script>
 

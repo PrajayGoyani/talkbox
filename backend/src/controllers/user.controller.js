@@ -2,8 +2,11 @@ import { userService } from '../services/user.service.js';
 import { success } from '../utils/response.js';
 
 export const uploadAvatar = async (req, res) => {
-    // TODO: Add logic to upload avatar
-    const result = await userService.uploadAvatar(req.user.id, req.file);
+    if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+    const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    const result = await userService.uploadAvatar(req.user.id, avatarUrl);
     res.json(success(result));
 };
 

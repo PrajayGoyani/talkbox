@@ -22,6 +22,7 @@ export function initializeMiddlewares() {
     app.use(express.json());
     app.use(cookieParser());
     // app.use(express.urlencoded({ extended: true }));
+    app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
     app.use(express.static(path.join(path.dirname('public'))));
 }
 

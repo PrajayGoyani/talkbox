@@ -1,5 +1,6 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
+  import Avatar from "./Avatar.svelte";
 
   type PanelId = "conversations" | "profile" | "settings" | "requests";
 
@@ -197,11 +198,6 @@
     </button>
 
     <!-- User avatar at bottom -->
-    <div
-      class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-indigo-500/20 border-2 border-slate-900 mt-2"
-      title="@{authStore.user?.username}"
-    >
-      {displayName[0].toUpperCase()}
-    </div>
+    <Avatar user={authStore.user} class="w-9 h-9 bg-indigo-600 text-white text-sm shadow-lg shadow-indigo-500/20 border-2 border-slate-900 mt-2" />
   </div>
 </nav>

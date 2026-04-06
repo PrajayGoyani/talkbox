@@ -32,6 +32,9 @@ class SocketService {
 
         // Broadcast online presence
         this.notifyStatusChange(userId, true);
+        
+        // Fetch and send partners' status to the newly connected user
+        this.emitPartnersStatus(userId, socket);
 
         socket.on('disconnect', () => {
             if (this.activeConnections.get(userId)?.id === socket.id) {
@@ -39,6 +42,43 @@ class SocketService {
                 this.notifyStatusChange(userId, false);
             }
         });
+    }
+
+    async emitPartnersStatus(userId, socket) {
+        try {
+            const chats = await ChatModel.find({ 
+                'participants': userId,
+                status: 'accepted'
+            });
+
+            const partnerIds = new Set();
+            chats.forEach(chat => {
+                chat.participants.forEach(p => {
+                    const pIdStr = p.toString();
+                    if (pIdStr !== userId.toString()) partnerIds.add(pIdStr);
+                });
+            });
+
+            for (const partnerId of partnerIds) {
+                const isOnline = this.activeConnections.has(partnerId);
+                let lastSeen = null;
+                
+                if (!isOnline) {
+                    const partner = await UserModel.findById(partnerId);
+                    if (partner) {
+                        lastSeen = partner.lastSeen;
+                    }
+                }
+                
+                socket.emit('user_status', {
+                    userId: partnerId,
+                    isOnline,
+                    lastSeen
+                });
+            }
+        } catch (err) {
+            console.error('Error emitting partners status:', err);
+        }
     }
 
     async notifyStatusChange(userId, isOnline) {

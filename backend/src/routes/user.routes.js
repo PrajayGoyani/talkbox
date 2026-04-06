@@ -6,12 +6,13 @@ import { rateLimiter } from '../middlewares/rate-limiter.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { updateProfileSchema } from '../schemas/user.schema.js';
 import { getMe, searchByUsername, uploadAvatar, updateProfile } from '../controllers/user.controller.js';
+import { upload } from '../middlewares/upload.middleware.js';
 
 router.use(authenticateToken);
 router.use(rateLimiter);
 
 // Upload avatar
-router.post('/avatar', uploadAvatar);
+router.post('/avatar', upload.single('avatar'), uploadAvatar);
 
 // Get user
 router.get('/me', getMe);
