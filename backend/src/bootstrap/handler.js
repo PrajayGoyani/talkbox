@@ -13,7 +13,9 @@ export function initializeMiddlewares() {
     // Define allowed origins
     const corsOptions = {
         origin: ALLOWED_ORIGINS,
-        credentials: true
+        credentials: true,
+        optionsSuccessStatus: 200,
+        maxAge: 86400
     };
 
     app.use(cors(corsOptions));
