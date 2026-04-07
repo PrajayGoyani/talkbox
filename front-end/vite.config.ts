@@ -6,6 +6,10 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   lint: { options: { typeAware: true, typeCheck: true } },
   plugins: [tailwindcss(), svelte()],
+  // run: { cache: true },
+  // staged: {
+  //   "*": "vp check --fix",
+  // },
   fmt: {
     printWidth: 120,
     ignorePatterns: ["routeTree.gen.ts", "docs/changelog/index.mdx"],
