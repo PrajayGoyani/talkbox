@@ -14,7 +14,7 @@ module.exports = {
     },
     {
       name: "chat-app-frontend",
-      cwd: "./front-end",
+      cwd: "./frontend",
       script: "bun",
       args: IS_DEV ? "run dev --host" : "run preview",
       env: {

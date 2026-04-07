@@ -37,7 +37,7 @@
   let toastContainer: ToastContainer | undefined = $state();
 
   let activePanel = $derived(
-    (routerStore.segments[1] as PanelId) || "conversations"
+    (routerStore.segments[1] as PanelId) || "conversations",
   );
   let selectedChatId = $derived(routerStore.segments[2] || null);
   let isSidebarCollapsed = $state(false);
@@ -45,10 +45,10 @@
   $effect(() => {
     // Apply theme
     document.documentElement.setAttribute("data-theme", storage.getTheme());
-    
+
     // Initialize router once
     routerStore.init();
-    
+
     // If auth check completes, ensure router forces an update to apply guards
     if (!authStore.isCheckingAuth) {
       untrack(() => routerStore.updateFromHash());
@@ -76,8 +76,8 @@
     if (authStore.user) {
       chatStore.connect();
       // Ensure chats are fetched on mount/re-auth
-      chatStore.fetchChats(); 
-      
+      chatStore.fetchChats();
+
       // Register toast callback
       chatStore.onToast((data) => {
         if (toastContainer) {
@@ -133,7 +133,9 @@
     />
 
     <!-- Body: Rail + Sub-Panel + Chat -->
-    <div class="flex flex-col md:flex-row flex-1 min-h-0 relative w-full overflow-hidden">
+    <div
+      class="flex flex-col md:flex-row flex-1 min-h-0 relative w-full overflow-hidden"
+    >
       <!-- Icon Rail -->
       <IconRail
         {activePanel}
@@ -148,7 +150,9 @@
       <aside
         class="glass-panel flex-col z-10 min-h-0 shrink-0 transition-all duration-300 {isSidebarCollapsed
           ? 'w-0 opacity-0 border-none overflow-hidden hidden md:flex'
-          : 'w-full md:w-[280px] border-r'} {selectedChatId ? 'hidden md:flex' : 'flex flex-1 md:flex-initial'}"
+          : 'w-full md:w-[280px] border-r'} {selectedChatId
+          ? 'hidden md:flex'
+          : 'flex flex-1 md:flex-initial'}"
       >
         {#key activePanel}
           <div
@@ -161,7 +165,8 @@
                 activeChatId={selectedChatId}
                 onSelectChat={handleSelectChat}
                 unreadCount={unreadNotifications}
-                onNotificationToggle={() => (notificationsOpen = !notificationsOpen)}
+                onNotificationToggle={() =>
+                  (notificationsOpen = !notificationsOpen)}
               />
             {:else if activePanel === "profile"}
               <ProfilePanel />

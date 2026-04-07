@@ -7,6 +7,9 @@
   "editor.formatOnSave": true,
   "oxc.enable.oxfmt": true,
   "oxc.enable.oxlint": true,
-  "oxc.configPath": "./front-end/vite.config.ts",
-  "oxc.fmt.configPath": "./front-end/vite.config.ts"
+  "oxc.configPath": "./frontend/vite.config.ts",
+  "oxc.fmt.configPath": "./frontend/vite.config.ts",
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode"
+  }
 }
