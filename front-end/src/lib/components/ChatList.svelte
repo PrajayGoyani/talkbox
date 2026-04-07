@@ -4,6 +4,7 @@
   import { onMount } from "svelte";
   import { API_BASE } from "../config";
   import Avatar from "./Avatar.svelte";
+  import Icon from "./Icon.svelte";
 
   /** Format a timestamp for chat listing: time if today, 'Yesterday', or date */
   function formatTime(dateStr: string): string {
@@ -179,18 +180,7 @@
               class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
             ></span>
           {:else}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              ><line x1="22" y1="2" x2="11" y2="13"></line><polygon
-                points="22 2 15 22 11 13 2 9 22 2"
-              ></polygon></svg
-            >
+            <Icon name="send" class="w-4 h-4" />
           {/if}
         </button>
         <button
@@ -212,21 +202,7 @@
         class="flex items-center justify-center gap-2 w-full p-2.5 border border-dashed border-slate-300 dark:border-white/10 rounded-xl text-slate-500 hover:text-indigo-600 hover:border-indigo-500 hover:bg-indigo-500/5 transition-all text-sm font-medium"
         onclick={() => (showRequestInput = true)}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          ><line x1="12" y1="5" x2="12" y2="19"></line><line
-            x1="5"
-            y1="12"
-            x2="19"
-            y2="12"
-          ></line></svg
-        >
+        <Icon name="check" class="w-4 h-4" stroke-width="2" />
         New Chat
       </button>
     {/if}
@@ -284,7 +260,7 @@
                    ? "Request sent"
                    : "Incoming request"}
                </span>
-            {:else if chatStore.typingStatus[chat.id]?.size > 0 && !chatStore.typingStatus[chat.id].has(authStore.user?.id)}
+            {:else if (chatStore.typingStatus[chat.id]?.size ?? 0) > 0 && !chatStore.typingStatus[chat.id]?.has(authStore.user?.id || '')}
                <span class="text-xs text-indigo-500 font-medium italic animate-pulse truncate mt-0.5">
                  Typing...
                </span>
@@ -300,10 +276,10 @@
               >
             {/if}
           </div>
-          {#if chat.unreadCount > 0}
+          {#if (chat.unreadCount ?? 0) > 0}
             <span
               class="bg-indigo-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 animate-in scale-in-0 duration-300"
-              >{chat.unreadCount > 99 ? "99+" : chat.unreadCount}</span
+              >{(chat.unreadCount ?? 0) > 99 ? "99+" : chat.unreadCount}</span
             >
           {/if}
         </button>         <!-- Accept/Reject for incoming pending requests -->
@@ -321,16 +297,7 @@
               {#if processingStates[chat.id] === 'accepting'}
                 <span class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></span>
               {:else}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  ><polyline points="20 6 9 17 4 12"></polyline></svg
-                >
+                <Icon name="check" class="w-4 h-4" stroke-width="2.5" />
               {/if}
             </button>
             <button
@@ -342,24 +309,10 @@
               {#if processingStates[chat.id] === 'rejecting'}
                 <span class="w-3.5 h-3.5 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin"></span>
               {:else}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  ><line x1="18" y1="6" x2="6" y2="18"></line><line
-                    x1="6"
-                    y1="6"
-                    x2="18"
-                    y2="18"
-                  ></line></svg
-                >
+                <Icon name="close" class="w-4 h-4" stroke-width="2.5" />
               {/if}
             </button>
-          </div>v>
+          </div>
         {/if}
       </div>
     {/each}

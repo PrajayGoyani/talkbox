@@ -6,6 +6,7 @@
   import { quintOut } from "svelte/easing";
   import { API_BASE } from "../config";
   import Avatar from "./Avatar.svelte";
+  import Icon from "./Icon.svelte";
 
   let pendingChats: Array<any> = $state([]);
   let loading = $state(true);
@@ -154,18 +155,7 @@
               class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
             ></span>
           {:else}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
+            <Icon name={"send"} class="w-4 h-4" />
           {/if}
         </button>
       </div>
@@ -180,7 +170,8 @@
       {/if}
     </div>
 
-    <hr class="border-t border-slate-200 dark:border-white/10 my-1" />
+    <!-- Section Divider with dynamic padding -->
+    <div class="h-px bg-slate-200 dark:bg-white/10 mx-[-16px] my-2"></div>
 
     <!-- Incoming Requests -->
     <div class="flex flex-col gap-2">
@@ -230,16 +221,7 @@
                   {#if processingStates[chat.id] === 'accepting'}
                     <span class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></span>
                   {:else}
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      ><polyline points="20 6 9 17 4 12"></polyline></svg
-                    >
+                    <Icon name={"check"} class="w-4 h-4" stroke-width="2.5" />
                   {/if}
                 </button>
                 <button
@@ -251,21 +233,7 @@
                   {#if processingStates[chat.id] === 'rejecting'}
                     <span class="w-3.5 h-3.5 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin"></span>
                   {:else}
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      ><line x1="18" y1="6" x2="6" y2="18"></line><line
-                        x1="6"
-                        y1="6"
-                        x2="18"
-                        y2="18"
-                      ></line></svg
-                    >
+                    <Icon name={"close"} class="w-4 h-4" stroke-width="2.5" />
                   {/if}
                 </button>
               </div>

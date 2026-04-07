@@ -2,7 +2,38 @@ import { io, type Socket } from 'socket.io-client';
 import { authStore } from './auth.svelte';
 import { API_ROOT, API_BASE } from '../config';
 
-interface MessageAlert {
+export interface User {
+  id: string;
+  username: string;
+  name?: string | null;
+  avatar?: string | null;
+}
+
+export interface Message {
+  _id: string;
+  chatId: string;
+  senderId: string;
+  contentBody: string;
+  createdAt: string;
+  idempotencyKey?: string;
+}
+
+export interface Chat {
+  id: string;
+  participants: string[];
+  status: 'pending' | 'accepted' | 'rejected';
+  createdBy: string;
+  otherUser: User;
+  unreadCount?: number;
+  lastMessage?: {
+    contentBody: string;
+    senderId: string;
+    sentAt: string;
+  };
+  createdAt: string;
+}
+
+export interface MessageAlert {
   chatId: string;
   senderId: string;
   senderName?: string | null;
@@ -14,7 +45,7 @@ interface MessageAlert {
 class ChatStore {
   socket: Socket | null = $state(null);
   isConnected = $state(false);
-  messages: Array<any> = $state([]);
+  messages: Array<Message> = $state([]);
   hasMoreMessages = $state(true);
   isLoadingMessages = $state(false);
   isSendingMessage = $state(false);
@@ -22,7 +53,7 @@ class ChatStore {
 
   onlineStatus: Record<string, { isOnline: boolean, lastSeen: Date | null }> = $state({});
   typingStatus: Record<string, Set<string>> = $state({});
-  chats: Array<any> = $state([]);
+  chats: Array<Chat> = $state([]);
   private typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   private messagesAbortController: AbortController | null = null;
   private chatsAbortController: AbortController | null = null;
@@ -63,7 +94,7 @@ class ChatStore {
     });
 
     // Listen for incoming messages
-    this.socket.on('receive_message', (message: any) => {
+    this.socket.on('receive_message', (message: Message) => {
       if (message.chatId === this.activeChatId) {
         this.messages = [...this.messages, message];
       }
@@ -151,13 +182,13 @@ class ChatStore {
     });
 
     // When a chat request or acceptance arrives, refresh the chat list
-    this.socket.on('notification', (_notification: any) => {
+    this.socket.on('notification', (_notification: { type: string, referenceId: string }) => {
       if (this.onChatListRefresh) {
         this.onChatListRefresh();
       }
     });
 
-    this.socket.on('chat_accepted', (_data: any) => {
+    this.socket.on('chat_accepted', (_data: { chatId: string }) => {
       if (this.onChatListRefresh) {
         this.onChatListRefresh();
       }
@@ -214,7 +245,7 @@ class ChatStore {
       });
       if (!resp.ok) return;
       const result = await resp.json();
-      const loadedMessages = result.data || result || [];
+      const loadedMessages: Message[] = result.data || result || [];
       this.messages = loadedMessages;
       this.hasMoreMessages = loadedMessages.length === 50;
     } catch (e: any) {
@@ -245,7 +276,7 @@ class ChatStore {
       });
       if (!resp.ok) return;
       const result = await resp.json();
-      const olderMessages = result.data || result || [];
+      const olderMessages: Message[] = result.data || result || [];
 
       if (olderMessages.length > 0) {
         this.messages = [...olderMessages, ...this.messages];
@@ -263,8 +294,8 @@ class ChatStore {
    * Update a single chat in the local 'chats' list without a full fetch.
    * If moveToTop is true, also re-orders the list (useful for new messages).
    */
-  private patchChatLocally(chatId: string, updates: Partial<any>, moveToTop = false) {
-    const chatIndex = this.chats.findIndex((c: any) => c.id === chatId);
+  private patchChatLocally(chatId: string, updates: Partial<Chat>, moveToTop = false) {
+    const chatIndex = this.chats.findIndex((c: Chat) => c.id === chatId);
     if (chatIndex === -1) {
       // If chat not in list (e.g. newly accepted), a full refresh is safer
       if (this.onChatListRefresh) this.onChatListRefresh();
@@ -346,12 +377,12 @@ class ChatStore {
       receiverId,
       contentBody: contentBody.trim(),
       idempotencyKey
-    }, (ack: any) => {
+    }, (ack: { status: string, message: Message }) => {
       clearTimeout(timeout);
       this.isSendingMessage = false;
       if (ack?.status === 'ok' && ack.message) {
         // Add our own sent message to the list (avoid duplicates)
-        const exists = this.messages.some((m: any) => m.idempotencyKey === ack.message.idempotencyKey);
+        const exists = this.messages.some((m: Message) => m.idempotencyKey === ack.message.idempotencyKey);
         if (!exists) {
           this.messages = [...this.messages, ack.message];
         }

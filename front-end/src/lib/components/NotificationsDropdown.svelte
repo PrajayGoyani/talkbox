@@ -5,6 +5,7 @@
   import { fly, fade, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { API_BASE } from "../config";
+  import Icon from "./Icon.svelte";
 
   let {
     onNavigate,
@@ -104,15 +105,15 @@
   const getIcon = (type: string) => {
     switch (type) {
       case "chat_request":
-        return "📩";
+        return "add";
       case "request_accepted":
-        return "✅";
+        return "check";
       case "request_rejected":
-        return "❌";
+        return "close";
       case "new_message":
-        return "💬";
+        return "nav-chat";
       default:
-        return "🔔";
+        return "notifications";
     }
   };
 
@@ -197,16 +198,7 @@
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-indigo-400 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/50 transition-all"
             onclick={markAllAsRead}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              ><polyline points="20 6 9 17 4 12"></polyline></svg
-            >
+            <Icon name="check" class="w-3.5 h-3.5" />
             Mark all read
           </button>
         {/if}
@@ -215,21 +207,7 @@
           onclick={() => (isOpen = false)}
           aria-label="Close notifications"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            ><line x1="18" y1="6" x2="6" y2="18"></line><line
-              x1="6"
-              y1="6"
-              x2="18"
-              y2="18"
-            ></line></svg
-          >
+          <Icon name="close" class="w-4.5 h-4.5" />
         </button>
       </div>
     </div>
@@ -239,19 +217,7 @@
         <div
           class="flex flex-col items-center gap-3 p-12 text-slate-500 text-center"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="opacity-20"
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            ><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path
-              d="M13.73 21a2 2 0 0 1-3.46 0"
-            ></path></svg
-          >
+          <Icon name="notifications" class="w-12 h-12 opacity-20" />
           <p class="text-sm">No notifications yet</p>
         </div>
       {/if}
@@ -267,7 +233,7 @@
             <div
               class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300"
             >
-              <span class="text-xl">{getIcon(notification.type)}</span>
+              <Icon name={getIcon(notification.type) as any} class="w-5 h-5 text-indigo-400" />
             </div>
             <div class="flex flex-col flex-1 min-w-0 gap-0.5">
               <span
