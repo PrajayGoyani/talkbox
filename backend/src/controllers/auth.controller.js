@@ -11,8 +11,8 @@ const COOKIE_OPTIONS = {
 
 // Override for development if not using HTTPS locally
 if (process.env.NODE_ENV === 'development') {
-    COOKIE_OPTIONS.secure = false;
-    COOKIE_OPTIONS.sameSite = 'Lax';
+    // COOKIE_OPTIONS.secure = false;
+    // COOKIE_OPTIONS.sameSite = 'Lax';
 }
 
 export const signup = async (req, res) => {
