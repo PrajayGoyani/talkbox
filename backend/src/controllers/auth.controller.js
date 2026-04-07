@@ -3,16 +3,18 @@ import { success } from '../utils/response.js';
 
 const COOKIE_OPTIONS = {
     httpOnly: true,
-    secure: true, // Always true since we're using HTTPS on live and localhost supports it or can be relaxed
-    sameSite: 'None', // Required for cross-site origins (different subdomains)
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/' // Ensure cookie is globally available
+    secure: true, 
+    sameSite: 'None', 
+    maxAge: 7 * 24 * 60 * 60 * 1000, 
+    path: '/',
+    partitioned: true // CHIPS: Required for cross-site cookies in modern browsers
 };
 
-// Override for development if not using HTTPS locally
+// Use Lax for local development if not on HTTPS
 if (process.env.NODE_ENV === 'development') {
-    // COOKIE_OPTIONS.secure = false;
-    // COOKIE_OPTIONS.sameSite = 'Lax';
+    COOKIE_OPTIONS.secure = false;
+    COOKIE_OPTIONS.sameSite = 'Lax';
+    COOKIE_OPTIONS.partitioned = false;
 }
 
 export const signup = async (req, res) => {
