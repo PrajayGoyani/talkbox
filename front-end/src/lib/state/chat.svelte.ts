@@ -24,6 +24,8 @@ class ChatStore {
   typingStatus: Record<string, Set<string>> = $state({});
   chats: Array<any> = $state([]);
   private typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+  private messagesAbortController: AbortController | null = null;
+  private chatsAbortController: AbortController | null = null;
 
   // Callbacks for UI refresh
   private onChatListRefresh: (() => void) | null = null;
@@ -187,12 +189,19 @@ class ChatStore {
       this.socket = null;
       this.isConnected = false;
     }
+    this.messagesAbortController?.abort();
+    this.chatsAbortController?.abort();
+    this.messagesAbortController = null;
+    this.chatsAbortController = null;
     this.messages = [];
     this.activeChatId = null;
   }
 
   /** Load messages for a chat via REST */
   async loadMessages(chatId: string) {
+    this.messagesAbortController?.abort();
+    this.messagesAbortController = new AbortController();
+
     this.activeChatId = chatId;
     this.messages = [];
     this.hasMoreMessages = true;
@@ -200,14 +209,16 @@ class ChatStore {
     try {
       const resp = await fetch(`${API_BASE}/chat/${chatId}/messages?limit=50`, {
         headers: { 'Authorization': `Bearer ${authStore.accessToken}` },
-        credentials: 'include'
+        credentials: 'include',
+        signal: this.messagesAbortController.signal
       });
       if (!resp.ok) return;
       const result = await resp.json();
       const loadedMessages = result.data || result || [];
       this.messages = loadedMessages;
       this.hasMoreMessages = loadedMessages.length === 50;
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === 'AbortError') return;
       console.error('Failed to load messages:', e);
     } finally {
       this.isLoadingMessages = false;
@@ -218,13 +229,19 @@ class ChatStore {
   async loadOlderMessages() {
     if (!this.activeChatId || !this.hasMoreMessages || this.isLoadingMessages || this.messages.length === 0) return;
 
+    // We reuse the same message abort controller, but we don't abort here 
+    // unless we strictly want to prevent pagination while a new chat load is happening.
+    // Actually, loadMessages already aborts any ongoing request.
+    const signal = this.messagesAbortController?.signal;
+
     this.isLoadingMessages = true;
     const oldestMessageId = this.messages[0]._id;
 
     try {
       const resp = await fetch(`${API_BASE}/chat/${this.activeChatId}/messages?limit=50&cursor=${oldestMessageId}`, {
         headers: { 'Authorization': `Bearer ${authStore.accessToken}` },
-        credentials: 'include'
+        credentials: 'include',
+        signal
       });
       if (!resp.ok) return;
       const result = await resp.json();
@@ -234,7 +251,8 @@ class ChatStore {
         this.messages = [...olderMessages, ...this.messages];
       }
       this.hasMoreMessages = olderMessages.length === 50;
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === 'AbortError') return;
       console.error('Failed to load older messages:', e);
     } finally {
       this.isLoadingMessages = false;
@@ -268,6 +286,9 @@ class ChatStore {
 
   /** Load chats list via REST */
   async fetchChats(query = "") {
+    this.chatsAbortController?.abort();
+    this.chatsAbortController = new AbortController();
+
     try {
       const endpoint = query.trim().length > 0
         ? `${API_BASE}/chat/search?q=${encodeURIComponent(query.trim())}`
@@ -279,12 +300,14 @@ class ChatStore {
           Authorization: `Bearer ${authStore.accessToken}`,
         },
         credentials: "include",
+        signal: this.chatsAbortController.signal,
       });
       if (!resp.ok) return;
       const result = await resp.json();
       this.chats = result.data || [];
       return this.chats;
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === 'AbortError') return;
       console.error("Failed to fetch chats:", e);
     }
   }

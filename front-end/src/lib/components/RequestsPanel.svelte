@@ -2,6 +2,8 @@
   import { authStore } from "../state/auth.svelte";
   import { chatStore } from "../state/chat.svelte";
   import { onMount } from "svelte";
+  import { slide, fade } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
   import { API_BASE } from "../config";
   import Avatar from "./Avatar.svelte";
 
@@ -202,69 +204,71 @@
       {:else if incomingRequests.length === 0}
         <div class="text-sm text-slate-500 py-2">No incoming requests</div>
       {:else}
-        {#each incomingRequests as chat}
+        {#each incomingRequests as chat (chat.id)}
           {@const displayName = chat.otherUser.name || chat.otherUser.username}
-          <div
-            class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
-          >
-            <div class="flex items-center gap-3 flex-1 min-w-0">
-              <Avatar user={chat.otherUser} class="w-9 h-9 bg-indigo-600 text-white text-sm" />
-              <div class="flex flex-col min-w-0">
-                <span
-                  class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate"
-                  title="@{chat.otherUser.username}">{displayName}</span
-                >
-                <span class="text-[11px] text-slate-500">Wants to connect</span>
+          <div transition:slide={{ duration: 300, easing: quintOut }}>
+            <div
+              class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
+            >
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <Avatar user={chat.otherUser} class="w-9 h-9 bg-indigo-600 text-white text-sm group-hover:scale-105 transition-transform" />
+                <div class="flex flex-col min-w-0">
+                  <span
+                    class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate"
+                    title="@{chat.otherUser.username}">{displayName}</span
+                  >
+                  <span class="text-[11px] text-slate-500">Wants to connect</span>
+                </div>
               </div>
-            </div>
-            <div class="flex gap-1.5 shrink-0">
-              <button
-                class="w-8 h-8 rounded-full flex items-center justify-center bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-colors disabled:opacity-40"
-                onclick={() => handleAccept(chat.id)}
-                aria-label="Accept"
-                disabled={!!processingStates[chat.id]}
-              >
-                {#if processingStates[chat.id] === 'accepting'}
-                  <span class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></span>
-                {:else}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    ><polyline points="20 6 9 17 4 12"></polyline></svg
-                  >
-                {/if}
-              </button>
-              <button
-                class="w-8 h-8 rounded-full flex items-center justify-center bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 transition-colors disabled:opacity-40"
-                onclick={() => handleReject(chat.id)}
-                aria-label="Reject"
-                disabled={!!processingStates[chat.id]}
-              >
-                {#if processingStates[chat.id] === 'rejecting'}
-                  <span class="w-3.5 h-3.5 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin"></span>
-                {:else}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    ><line x1="18" y1="6" x2="6" y2="18"></line><line
-                      x1="6"
-                      y1="6"
-                      x2="18"
-                      y2="18"
-                    ></line></svg
-                  >
-                {/if}
-              </button>
+              <div class="flex gap-1.5 shrink-0">
+                <button
+                  class="w-8 h-8 rounded-full flex items-center justify-center bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-colors disabled:opacity-40"
+                  onclick={() => handleAccept(chat.id)}
+                  aria-label="Accept"
+                  disabled={!!processingStates[chat.id]}
+                >
+                  {#if processingStates[chat.id] === 'accepting'}
+                    <span class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></span>
+                  {:else}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      ><polyline points="20 6 9 17 4 12"></polyline></svg
+                    >
+                  {/if}
+                </button>
+                <button
+                  class="w-8 h-8 rounded-full flex items-center justify-center bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 transition-colors disabled:opacity-40"
+                  onclick={() => handleReject(chat.id)}
+                  aria-label="Reject"
+                  disabled={!!processingStates[chat.id]}
+                >
+                  {#if processingStates[chat.id] === 'rejecting'}
+                    <span class="w-3.5 h-3.5 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin"></span>
+                  {:else}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      ><line x1="18" y1="6" x2="6" y2="18"></line><line
+                        x1="6"
+                        y1="6"
+                        x2="18"
+                        y2="18"
+                      ></line></svg
+                    >
+                  {/if}
+                </button>
+              </div>
             </div>
           </div>
         {/each}
@@ -280,21 +284,23 @@
       {#if outgoingRequests.length === 0 && !loading}
         <div class="text-sm text-slate-500 py-2">No pending sent requests</div>
       {:else}
-        {#each outgoingRequests as chat}
+        {#each outgoingRequests as chat (chat.id)}
           {@const displayName = chat.otherUser.name || chat.otherUser.username}
-          <div
-            class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
-          >
-            <div class="flex items-center gap-3 flex-1 min-w-0">
-              <Avatar user={chat.otherUser} class="w-9 h-9 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm" />
-              <div class="flex flex-col min-w-0">
-                <span
-                  class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate"
-                  title="@{chat.otherUser.username}">{displayName}</span
-                >
-                <span class="text-[11px] text-slate-500"
-                  >Waiting for response...</span
-                >
+          <div transition:slide={{ duration: 300, easing: quintOut }}>
+            <div
+              class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
+            >
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <Avatar user={chat.otherUser} class="w-9 h-9 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm group-hover:scale-105 transition-transform" />
+                <div class="flex flex-col min-w-0">
+                  <span
+                    class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate"
+                    title="@{chat.otherUser.username}">{displayName}</span
+                  >
+                  <span class="text-[11px] text-slate-500"
+                    >Waiting for response...</span
+                  >
+                </div>
               </div>
             </div>
           </div>

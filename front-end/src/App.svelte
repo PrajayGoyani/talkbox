@@ -1,5 +1,7 @@
 <script lang="ts">
   import { tick, untrack } from "svelte";
+  import { fade, fly, slide } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
   import { authStore } from "./lib/state/auth.svelte";
   import { chatStore } from "./lib/state/chat.svelte";
   import Login from "./lib/components/Login.svelte";
@@ -291,20 +293,28 @@
           ? 'w-0 opacity-0 border-none overflow-hidden hidden md:flex'
           : 'w-full md:w-[280px] border-r'} {selectedChatId ? 'hidden md:flex' : 'flex flex-1 md:flex-initial'}"
       >
-        {#if activePanel === "conversations"}
-          <ConversationsPanel
-            activeChatId={selectedChatId}
-            onSelectChat={handleSelectChat}
-            unreadCount={unreadNotifications}
-            onNotificationToggle={() => (notificationsOpen = !notificationsOpen)}
-          />
-        {:else if activePanel === "profile"}
-          <ProfilePanel />
-        {:else if activePanel === "settings"}
-          <SettingsPanel user={authStore.user} onLogout={handleLogout} />
-        {:else if activePanel === "requests"}
-          <RequestsPanel />
-        {/if}
+        {#key activePanel}
+          <div
+            in:fly={{ x: -20, duration: 300, delay: 150, easing: quintOut }}
+            out:fade={{ duration: 150 }}
+            class="flex flex-col h-full overflow-hidden"
+          >
+            {#if activePanel === "conversations"}
+              <ConversationsPanel
+                activeChatId={selectedChatId}
+                onSelectChat={handleSelectChat}
+                unreadCount={unreadNotifications}
+                onNotificationToggle={() => (notificationsOpen = !notificationsOpen)}
+              />
+            {:else if activePanel === "profile"}
+              <ProfilePanel />
+            {:else if activePanel === "settings"}
+              <SettingsPanel user={authStore.user} onLogout={handleLogout} />
+            {:else if activePanel === "requests"}
+              <RequestsPanel />
+            {/if}
+          </div>
+        {/key}
       </aside>
 
       <section

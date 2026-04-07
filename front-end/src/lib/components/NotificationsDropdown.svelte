@@ -2,6 +2,8 @@
   import { authStore } from "../state/auth.svelte";
   import { chatStore } from "../state/chat.svelte";
   import { onMount, untrack } from "svelte";
+  import { fly, fade, slide } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
   import { API_BASE } from "../config";
 
   let {
@@ -175,14 +177,15 @@
 
 <!-- Side Drawer (portal-style, rendered outside sidebar flow) -->
 {#if isOpen}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    class="fixed inset-0 bg-black/60 z-998 animate-in fade-in duration-200"
+  <button
+    class="fixed inset-0 bg-black/60 z-998 backdrop-blur-sm border-none w-full h-full cursor-default"
     onclick={() => (isOpen = false)}
-  ></div>
+    transition:fade={{ duration: 200 }}
+    aria-label="Close notifications"
+  ></button>
   <aside
-    class="fixed top-0 right-0 w-[380px] max-w-[90vw] h-full bg-slate-900 border-l border-white/5 z-999 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300"
+    class="fixed top-0 right-0 w-[400px] max-w-[90vw] h-full bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-white/5 z-999 flex flex-col shadow-2xl"
+    transition:fly={{ x: 400, duration: 400, easing: quintOut }}
   >
     <div
       class="p-5 border-b border-white/5 flex items-center justify-between shrink-0"
@@ -253,38 +256,40 @@
         </div>
       {/if}
 
-      {#each notifications as notification}
-        <button
-          class="flex gap-4 p-4 w-full text-left border-b border-white/5 transition-all relative {notification.isRead
-            ? 'hover:bg-white/5'
-            : 'bg-indigo-600/5 border-l-2 border-indigo-600 hover:bg-indigo-600/10'}"
-          onclick={() => handleNotificationClick(notification)}
-        >
-          <div
-            class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0"
+      {#each notifications as notification (notification._id)}
+        <div transition:slide={{ duration: 300, easing: quintOut }}>
+          <button
+            class="flex gap-4 p-4 w-full text-left border-b border-white/5 transition-all relative group {notification.isRead
+              ? 'hover:bg-white/5'
+              : 'bg-indigo-600/5 border-l-2 border-indigo-600 hover:bg-indigo-600/10'}"
+            onclick={() => handleNotificationClick(notification)}
           >
-            <span class="text-xl">{getIcon(notification.type)}</span>
-          </div>
-          <div class="flex flex-col flex-1 min-w-0 gap-0.5">
-            <span
-              class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
-              >{getLabel(notification.type)}</span
+            <div
+              class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300"
             >
-            <span class="text-sm text-slate-200 leading-snug wrap-break-word"
-              >{notification.message}</span
-            >
-            <span class="text-[10px] text-slate-500 mt-0.5"
-              >{timeAgo(notification.createdAt)}</span
-            >
-          </div>
-          <div class="flex items-start shrink-0 pt-1">
-            {#if !notification.isRead}
-              <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-            {:else}
-              <span class="text-[10px] text-slate-500">✓</span>
-            {/if}
-          </div>
-        </button>
+              <span class="text-xl">{getIcon(notification.type)}</span>
+            </div>
+            <div class="flex flex-col flex-1 min-w-0 gap-0.5">
+              <span
+                class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
+                >{getLabel(notification.type)}</span
+              >
+              <span class="text-sm text-slate-200 leading-snug wrap-break-word group-hover:text-white transition-colors"
+                >{notification.message}</span
+              >
+              <span class="text-[10px] text-slate-500 mt-0.5"
+                >{timeAgo(notification.createdAt)}</span
+              >
+            </div>
+            <div class="flex items-start shrink-0 pt-1">
+              {#if !notification.isRead}
+                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></span>
+              {:else}
+                <span class="text-[10px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">✓</span>
+              {/if}
+            </div>
+          </button>
+        </div>
       {/each}
 
       {#if loading}
