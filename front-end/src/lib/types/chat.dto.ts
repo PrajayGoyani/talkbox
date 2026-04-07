@@ -15,7 +15,7 @@ export interface RawMessageDto {
  * Socket acknowledgement response.
  */
 export interface MessageAckDto {
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   message?: RawMessageDto;
   error?: string;
 }

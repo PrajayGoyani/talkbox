@@ -1,3 +1,12 @@
 {
-    "files.eol": "\n"
+    "files.eol": "\n",
+    "[typescript]": {
+        "editor.defaultFormatter": "oxc.oxc-vscode"
+    },
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+    "editor.formatOnSave": true,
+    "oxc.enable.oxfmt": true,
+    "oxc.enable.oxlint": true,
+    "oxc.configPath": "./vite.config.ts",
+    "oxc.fmt.configPath": "./vite.config.ts"
 }

@@ -1,12 +1,24 @@
-import { io, type Socket } from 'socket.io-client';
-import { SvelteSet } from 'svelte/reactivity';
-import { authStore } from './auth.svelte';
-import { notificationStore } from './notification.svelte';
-import { API_ROOT, API_BASE, TYPING_INDICATOR_DURATION, TYPING_DEBOUNCE_DURATION, MESSAGE_SEND_FALLBACK_TIMEOUT, ASSETS } from '../config';
-import type { RawMessageDto, MessageAckDto, UserStatusDto, TypingIndicatorDto } from '../types/chat.dto';
-import type { Notification } from '../types/notification';
+import { io, type Socket } from "socket.io-client";
+import { SvelteSet } from "svelte/reactivity";
+import { authStore } from "./auth.svelte";
+import { notificationStore } from "./notification.svelte";
+import {
+  API_ROOT,
+  API_BASE,
+  TYPING_INDICATOR_DURATION,
+  TYPING_DEBOUNCE_DURATION,
+  MESSAGE_SEND_FALLBACK_TIMEOUT,
+  ASSETS,
+} from "../config";
+import type {
+  RawMessageDto,
+  MessageAckDto,
+  UserStatusDto,
+  TypingIndicatorDto,
+} from "../types/chat.dto";
+import type { Notification } from "../types/notification";
 
-export type ChatStatus = 'pending' | 'accepted' | 'rejected';
+export type ChatStatus = "pending" | "accepted" | "rejected";
 
 export interface User {
   id: string;
@@ -57,7 +69,7 @@ class ChatStore {
   isSendingMessage = $state(false);
   activeChatId: string | null = $state(null);
 
-  onlineStatus: Record<string, { isOnline: boolean, lastSeen: Date | null }> = $state({});
+  onlineStatus: Record<string, { isOnline: boolean; lastSeen: Date | null }> = $state({});
   typingStatus: Record<string, SvelteSet<string>> = $state({});
   chats: Array<Chat> = $state([]);
   lastError: string | null = $state(null);
@@ -85,23 +97,23 @@ class ChatStore {
     this.socket = io(API_ROOT, {
       auth: { token: authStore.accessToken },
       withCredentials: true,
-      transports: ['websocket', 'polling']
+      transports: ["websocket", "polling"],
     });
 
-    this.socket.on('connect', () => {
+    this.socket.on("connect", () => {
       this.isConnected = true;
     });
 
-    this.socket.on('disconnect', () => {
+    this.socket.on("disconnect", () => {
       this.isConnected = false;
     });
 
-    this.socket.on('connect_error', (err) => {
-      console.error('Socket connection error:', err.message);
+    this.socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err.message);
     });
 
     // Listen for incoming messages
-    this.socket.on('receive_message', (rawMessage: RawMessageDto) => {
+    this.socket.on("receive_message", (rawMessage: RawMessageDto) => {
       const message: Message = { ...rawMessage, id: rawMessage._id || rawMessage.id! };
       if (message.chatId === this.activeChatId) {
         this.messages = [...this.messages, message];
@@ -114,30 +126,34 @@ class ChatStore {
       // Update local last message preview and unread count
       const isViewing = message.chatId === this.activeChatId;
       const shouldInc = !isViewing && message.senderId !== authStore.user?.id;
-      
-      const chat = this.chats.find(c => c.id === message.chatId);
+
+      const chat = this.chats.find((c) => c.id === message.chatId);
       const currentUnread = chat?.unreadCount || 0;
 
-      this.patchChatLocally(message.chatId, {
-        lastMessage: {
-          contentBody: message.contentBody,
-          senderId: message.senderId,
-          sentAt: message.createdAt
+      this.patchChatLocally(
+        message.chatId,
+        {
+          lastMessage: {
+            contentBody: message.contentBody,
+            senderId: message.senderId,
+            sentAt: message.createdAt,
+          },
+          unreadCount: shouldInc ? currentUnread + 1 : currentUnread,
         },
-        unreadCount: shouldInc ? currentUnread + 1 : currentUnread
-      }, true);
+        true,
+      );
     });
 
     // Listen for User Presence changes
-    this.socket.on('user_status', (data: UserStatusDto) => {
+    this.socket.on("user_status", (data: UserStatusDto) => {
       this.onlineStatus[data.userId] = {
         isOnline: data.isOnline,
-        lastSeen: data.lastSeen ? new Date(data.lastSeen) : null
+        lastSeen: data.lastSeen ? new Date(data.lastSeen) : null,
       };
     });
 
     // Listen for Typing Indicators
-    this.socket.on('typing_start', (data: TypingIndicatorDto) => {
+    this.socket.on("typing_start", (data: TypingIndicatorDto) => {
       if (!this.typingStatus[data.chatId]) {
         this.typingStatus[data.chatId] = new SvelteSet();
       }
@@ -147,21 +163,24 @@ class ChatStore {
       const key = `${data.chatId}-${data.userId}`;
       if (this.typingTimeouts.has(key)) clearTimeout(this.typingTimeouts.get(key));
 
-      this.typingTimeouts.set(key, setTimeout(() => {
-        if (this.typingStatus[data.chatId]) {
-          this.typingStatus[data.chatId].delete(data.userId);
-        }
-      }, TYPING_INDICATOR_DURATION));
+      this.typingTimeouts.set(
+        key,
+        setTimeout(() => {
+          if (this.typingStatus[data.chatId]) {
+            this.typingStatus[data.chatId].delete(data.userId);
+          }
+        }, TYPING_INDICATOR_DURATION),
+      );
     });
 
-    this.socket.on('typing_stop', (data: TypingIndicatorDto) => {
+    this.socket.on("typing_stop", (data: TypingIndicatorDto) => {
       if (this.typingStatus[data.chatId]) {
         this.typingStatus[data.chatId].delete(data.userId);
       }
     });
 
     // Listen for message alerts (toast / browser notification)
-    this.socket.on('message_alert', (data: MessageAlert) => {
+    this.socket.on("message_alert", (data: MessageAlert) => {
       const isChatOpen = data.chatId === this.activeChatId;
       const isTabFocused = document.hasFocus();
 
@@ -180,14 +199,14 @@ class ChatStore {
     });
 
     // When a notification arrives, delegate to notificationStore and refresh chat list
-    this.socket.on('notification', (notification: Notification) => {
+    this.socket.on("notification", (notification: Notification) => {
       notificationStore.addRealTimeNotification(notification);
       if (this.onChatListRefresh) {
         this.onChatListRefresh();
       }
     });
 
-    this.socket.on('chat_accepted', (_data: { chatId: string }) => {
+    this.socket.on("chat_accepted", (_data: { chatId: string }) => {
       if (this.onChatListRefresh) {
         this.onChatListRefresh();
       }
@@ -196,7 +215,7 @@ class ChatStore {
 
   /** Show browser-level notification when tab is not focused */
   private showBrowserNotification(data: MessageAlert) {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
 
     const displayName = data.senderName || data.senderUsername;
 
@@ -204,7 +223,7 @@ class ChatStore {
       body: data.preview,
       icon: ASSETS.NOTIFICATION_ICON,
       tag: `msg-${data.chatId}-${Date.now()}`,
-      silent: false
+      silent: false,
     });
 
     notification.onclick = () => {
@@ -238,20 +257,20 @@ class ChatStore {
     this.isLoadingMessages = true;
     try {
       const resp = await fetch(`${API_BASE}/chat/${chatId}/messages?limit=50`, {
-        headers: { 'Authorization': `Bearer ${authStore.accessToken}` },
-        credentials: 'include',
-        signal: this.messagesAbortController.signal
+        headers: { Authorization: `Bearer ${authStore.accessToken}` },
+        credentials: "include",
+        signal: this.messagesAbortController.signal,
       });
       if (!resp.ok) return;
       const result = await resp.json();
       const rawLoaded: any[] = result.data || result || [];
-      const loadedMessages: Message[] = rawLoaded.map(m => ({ ...m, id: m._id || m.id }));
+      const loadedMessages: Message[] = rawLoaded.map((m) => ({ ...m, id: m._id || m.id }));
       this.messages = loadedMessages;
       this.hasMoreMessages = loadedMessages.length === 50;
     } catch (e) {
-      if (e instanceof Error && e.name === 'AbortError') return;
-      console.error('Failed to load messages:', e);
-      this.lastError = 'Failed to load messages. Please try again.';
+      if (e instanceof Error && e.name === "AbortError") return;
+      console.error("Failed to load messages:", e);
+      this.lastError = "Failed to load messages. Please try again.";
     } finally {
       this.isLoadingMessages = false;
     }
@@ -259,37 +278,46 @@ class ChatStore {
 
   /** Load older messages using cursor */
   async loadOlderMessages() {
-    if (!this.activeChatId || !this.hasMoreMessages || this.isLoadingMessages || this.messages.length === 0) return;
+    if (
+      !this.activeChatId ||
+      !this.hasMoreMessages ||
+      this.isLoadingMessages ||
+      this.messages.length === 0
+    )
+      return;
 
     const signal = this.messagesAbortController?.signal;
     this.isLoadingMessages = true;
     const oldestMessageId = this.messages[0].id;
 
     try {
-      const resp = await fetch(`${API_BASE}/chat/${this.activeChatId}/messages?limit=50&cursor=${oldestMessageId}`, {
-        headers: { 'Authorization': `Bearer ${authStore.accessToken}` },
-        credentials: 'include',
-        signal
-      });
+      const resp = await fetch(
+        `${API_BASE}/chat/${this.activeChatId}/messages?limit=50&cursor=${oldestMessageId}`,
+        {
+          headers: { Authorization: `Bearer ${authStore.accessToken}` },
+          credentials: "include",
+          signal,
+        },
+      );
       if (!resp.ok) return;
       const result = await resp.json();
       const rawOlder: any[] = result.data || result || [];
-      const olderMessages: Message[] = rawOlder.map(m => ({ ...m, id: m._id || m.id }));
+      const olderMessages: Message[] = rawOlder.map((m) => ({ ...m, id: m._id || m.id }));
 
       if (olderMessages.length > 0) {
         this.messages = [...olderMessages, ...this.messages];
       }
       this.hasMoreMessages = olderMessages.length === 50;
     } catch (e: unknown) {
-      if (e instanceof Error && e.name === 'AbortError') return;
-      console.error('Failed to load older messages:', e);
-      this.lastError = 'Failed to load older messages.';
+      if (e instanceof Error && e.name === "AbortError") return;
+      console.error("Failed to load older messages:", e);
+      this.lastError = "Failed to load older messages.";
     } finally {
       this.isLoadingMessages = false;
     }
   }
 
-  /** 
+  /**
    * Update a single chat in the local 'chats' list without a full fetch.
    * If moveToTop is true, also re-orders the list (useful for new messages).
    */
@@ -319,9 +347,10 @@ class ChatStore {
     this.chatsAbortController = new AbortController();
     this.lastError = null;
     try {
-      const endpoint = query.trim().length > 0
-        ? `${API_BASE}/chat/search?q=${encodeURIComponent(query.trim())}`
-        : `${API_BASE}/chat`;
+      const endpoint =
+        query.trim().length > 0
+          ? `${API_BASE}/chat/search?q=${encodeURIComponent(query.trim())}`
+          : `${API_BASE}/chat`;
 
       const resp = await fetch(endpoint, {
         headers: {
@@ -333,15 +362,15 @@ class ChatStore {
       });
       if (!resp.ok) {
         const err = await resp.json();
-        throw new Error(err.error?.message || 'Failed to fetch chats');
+        throw new Error(err.error?.message || "Failed to fetch chats");
       }
       const result = await resp.json();
       this.chats = result.data || [];
       return this.chats;
     } catch (e: any) {
-      if (e instanceof Error && e.name === 'AbortError') return;
+      if (e instanceof Error && e.name === "AbortError") return;
       console.error("Failed to fetch chats:", e);
-      this.lastError = e.message || 'Failed to fetch chats';
+      this.lastError = e.message || "Failed to fetch chats";
     }
   }
 
@@ -349,13 +378,13 @@ class ChatStore {
   async markChatRead(chatId: string) {
     try {
       await fetch(`${API_BASE}/chat/${chatId}/read`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${authStore.accessToken}` },
-        credentials: 'include'
+        method: "PUT",
+        headers: { Authorization: `Bearer ${authStore.accessToken}` },
+        credentials: "include",
       });
       this.patchChatLocally(chatId, { unreadCount: 0 });
     } catch (e: unknown) {
-      console.error('Failed to mark chat as read:', e);
+      console.error("Failed to mark chat as read:", e);
     }
   }
 
@@ -364,16 +393,16 @@ class ChatStore {
     this.lastError = null;
     try {
       const resp = await fetch(`${API_BASE}/chat/${chatId}/accept`, {
-        method: 'PUT',
+        method: "PUT",
         headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: 'include'
+        credentials: "include",
       });
       const result = await resp.json();
-      if (!resp.ok) throw new Error(result.error?.message || 'Failed to accept chat');
+      if (!resp.ok) throw new Error(result.error?.message || "Failed to accept chat");
       await this.fetchChats();
     } catch (e: any) {
-      console.error('Failed to accept chat:', e);
-      this.lastError = e.message || 'Failed to accept chat';
+      console.error("Failed to accept chat:", e);
+      this.lastError = e.message || "Failed to accept chat";
       throw e;
     }
   }
@@ -383,16 +412,16 @@ class ChatStore {
     this.lastError = null;
     try {
       const resp = await fetch(`${API_BASE}/chat/${chatId}/reject`, {
-        method: 'PUT',
+        method: "PUT",
         headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: 'include'
+        credentials: "include",
       });
       const result = await resp.json();
-      if (!resp.ok) throw new Error(result.error?.message || 'Failed to reject chat');
+      if (!resp.ok) throw new Error(result.error?.message || "Failed to reject chat");
       await this.fetchChats();
     } catch (e: any) {
-      console.error('Failed to reject chat:', e);
-      this.lastError = e.message || 'Failed to reject chat';
+      console.error("Failed to reject chat:", e);
+      this.lastError = e.message || "Failed to reject chat";
       throw e;
     }
   }
@@ -401,20 +430,20 @@ class ChatStore {
   async sendChatRequest(username: string) {
     try {
       const resp = await fetch(`${API_BASE}/chat/request`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${authStore.accessToken}`,
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({ username: username.trim() }),
       });
       const result = await resp.json();
-      if (!resp.ok) throw new Error(result.error?.message || 'Failed to send request');
+      if (!resp.ok) throw new Error(result.error?.message || "Failed to send request");
       await this.fetchChats();
       return result;
     } catch (e: unknown) {
-      console.error('Failed to send chat request:', e);
+      console.error("Failed to send chat request:", e);
       throw e;
     }
   }
@@ -432,30 +461,40 @@ class ChatStore {
       this.isSendingMessage = false;
     }, MESSAGE_SEND_FALLBACK_TIMEOUT);
 
-    this.socket.emit('send_message', {
-      chatId,
-      receiverId,
-      contentBody: contentBody.trim(),
-      idempotencyKey
-    }, (ack: MessageAckDto) => {
-      clearTimeout(timeout);
-      this.isSendingMessage = false;
-      if (ack?.status === 'ok' && ack.message) {
-        // Map _id from backend to id
-        const message = { ...ack.message, id: ack.message._id || ack.message.id! };
-        const exists = this.messages.some((m: Message) => m.idempotencyKey === message.idempotencyKey);
-        if (!exists) {
-          this.messages = [...this.messages, message];
-        }
-        this.patchChatLocally(chatId, {
-          lastMessage: {
-            contentBody: message.contentBody,
-            senderId: message.senderId,
-            sentAt: message.createdAt
+    this.socket.emit(
+      "send_message",
+      {
+        chatId,
+        receiverId,
+        contentBody: contentBody.trim(),
+        idempotencyKey,
+      },
+      (ack: MessageAckDto) => {
+        clearTimeout(timeout);
+        this.isSendingMessage = false;
+        if (ack?.status === "ok" && ack.message) {
+          // Map _id from backend to id
+          const message = { ...ack.message, id: ack.message._id || ack.message.id! };
+          const exists = this.messages.some(
+            (m: Message) => m.idempotencyKey === message.idempotencyKey,
+          );
+          if (!exists) {
+            this.messages = [...this.messages, message];
           }
-        }, true);
-      }
-    });
+          this.patchChatLocally(
+            chatId,
+            {
+              lastMessage: {
+                contentBody: message.contentBody,
+                senderId: message.senderId,
+                sentAt: message.createdAt,
+              },
+            },
+            true,
+          );
+        }
+      },
+    );
   }
 
   // --- Typing Indicator Emitters ---
@@ -465,21 +504,24 @@ class ChatStore {
     if (!this.socket || !this.isConnected) return;
 
     if (!isTyping) {
-      this.socket.emit('typing_stop', { chatId, receiverId });
+      this.socket.emit("typing_stop", { chatId, receiverId });
       return;
     }
 
     const key = `${chatId}-${receiverId}`;
     if (!this.myTypingTimeouts.has(key)) {
-      this.socket.emit('typing_start', { chatId, receiverId });
+      this.socket.emit("typing_start", { chatId, receiverId });
     } else {
       clearTimeout(this.myTypingTimeouts.get(key));
     }
 
-    this.myTypingTimeouts.set(key, setTimeout(() => {
-      this.socket?.emit('typing_stop', { chatId, receiverId });
-      this.myTypingTimeouts.delete(key);
-    }, TYPING_DEBOUNCE_DURATION));
+    this.myTypingTimeouts.set(
+      key,
+      setTimeout(() => {
+        this.socket?.emit("typing_stop", { chatId, receiverId });
+        this.myTypingTimeouts.delete(key);
+      }, TYPING_DEBOUNCE_DURATION),
+    );
   }
 }
 

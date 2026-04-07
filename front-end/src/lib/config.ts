@@ -9,14 +9,14 @@ const getBaseUrl = (): string => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  
-  if (typeof window === 'undefined') return 'http://localhost:3000'; // SSR fallback
+
+  if (typeof window === "undefined") return "http://localhost:3000"; // SSR fallback
 
   const { hostname, protocol } = window.location;
   // Use http for localhost:3000 if not on prod, or use current protocol for prod
-  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-  const port = isLocal ? ':3000' : '';
-  
+  const isLocal = hostname === "localhost" || hostname === "127.0.0.1";
+  const port = isLocal ? ":3000" : "";
+
   return `${protocol}//${hostname}${port}`;
 };
 
@@ -39,6 +39,6 @@ export const MESSAGE_SEND_FALLBACK_TIMEOUT = 10000;
 
 /** Default asset paths */
 export const ASSETS = {
-  NOTIFICATION_ICON: '/vite.svg',
-  LOGO: '/favicon.png'
+  NOTIFICATION_ICON: "/vite.svg",
+  LOGO: "/favicon.png",
 };

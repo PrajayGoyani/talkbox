@@ -61,6 +61,7 @@
 
   // Sync current chat messages when URL param changes (including on mount/refresh)
   $effect(() => {
+    debugger;
     const chatId = selectedChatId;
     if (chatId && authStore.user) {
       untrack(() => {

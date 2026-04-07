@@ -1,8 +1,8 @@
-export type NotificationType = 
-  | 'chat_request' 
-  | 'request_accepted' 
-  | 'request_rejected' 
-  | 'new_message';
+export type NotificationType =
+  | "chat_request"
+  | "request_accepted"
+  | "request_rejected"
+  | "new_message";
 
 export interface Notification {
   _id: string;

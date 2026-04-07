@@ -1,6 +1,12 @@
-import { type UserDto, type AuthResponseDto, type LoginRequestDto, type SignupRequestDto, type ApiResponse } from '../types/auth.dto';
-import { API_BASE } from '../config';
-import { storage } from '../utils/storage';
+import {
+  type UserDto,
+  type AuthResponseDto,
+  type LoginRequestDto,
+  type SignupRequestDto,
+  type ApiResponse,
+} from "../types/auth.dto";
+import { API_BASE } from "../config";
+import { storage } from "../utils/storage";
 
 // Access tokens expire in 15min typically; refresh 1 min before
 const REFRESH_INTERVAL_MS = 14 * 60 * 1000;
@@ -18,7 +24,7 @@ class AuthStore {
   }
 
   private async init() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     // Try silent refresh first (HttpOnly cookie may have a valid refresh token)
     const refreshed = await this.silentRefresh();
@@ -41,9 +47,9 @@ class AuthStore {
   async silentRefresh(): Promise<boolean> {
     try {
       const response = await fetch(`${API_BASE}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
       });
 
       if (!response.ok) return false;
@@ -75,8 +81,8 @@ class AuthStore {
   private async fetchMe() {
     try {
       const resp = await fetch(`${API_BASE}/auth/me`, {
-        headers: { 'Authorization': `Bearer ${this.accessToken}` },
-        credentials: 'include'
+        headers: { Authorization: `Bearer ${this.accessToken}` },
+        credentials: "include",
       });
       if (resp.status === 401) {
         this.clearAuth();
@@ -89,7 +95,7 @@ class AuthStore {
         storage.setUser(res.data);
       }
     } catch (e) {
-      console.error('Failed to fetch user profile', e);
+      console.error("Failed to fetch user profile", e);
     }
   }
 
@@ -107,9 +113,9 @@ class AuthStore {
     let success = false;
     try {
       const response = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(credentials),
       });
 
@@ -119,10 +125,10 @@ class AuthStore {
         this.setAuth(res.data);
         success = true;
       } else {
-        this.error = res.error?.message || 'Login failed';
+        this.error = res.error?.message || "Login failed";
       }
     } catch (e) {
-      this.error = 'Network error occurred';
+      this.error = "Network error occurred";
     } finally {
       this.loading = false;
     }
@@ -135,9 +141,9 @@ class AuthStore {
     let success = false;
     try {
       const response = await fetch(`${API_BASE}/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
       });
 
@@ -147,10 +153,10 @@ class AuthStore {
         this.setAuth(res.data);
         success = true;
       } else {
-        this.error = res.error?.message || 'Signup failed';
+        this.error = res.error?.message || "Signup failed";
       }
     } catch (e) {
-      this.error = 'Network error occurred';
+      this.error = "Network error occurred";
     } finally {
       this.loading = false;
     }
@@ -160,11 +166,11 @@ class AuthStore {
   async logout() {
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
     try {
-      if (typeof window !== 'undefined') {
-        await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+      if (typeof window !== "undefined") {
+        await fetch(`${API_BASE}/auth/logout`, { method: "POST", credentials: "include" });
       }
     } catch (e) {
-      console.error('Logout error', e);
+      console.error("Logout error", e);
     }
     this.clearAuth();
   }
@@ -186,23 +192,23 @@ class AuthStore {
   async updateProfile(data: { name?: string | null }) {
     try {
       const resp = await fetch(`${API_BASE}/user/profile`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.accessToken}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.accessToken}`,
         },
-        credentials: 'include',
-        body: JSON.stringify(data)
+        credentials: "include",
+        body: JSON.stringify(data),
       });
       const res = await resp.json();
-      if (!resp.ok) throw new Error(res.error?.message || 'Failed to update profile');
+      if (!resp.ok) throw new Error(res.error?.message || "Failed to update profile");
       if (res.success && res.data) {
         this.user = { ...this.user, ...res.data } as UserDto;
         storage.setUser(this.user);
       }
       return res;
     } catch (e: unknown) {
-      console.error('Profile update error', e);
+      console.error("Profile update error", e);
       throw e;
     }
   }
@@ -210,31 +216,31 @@ class AuthStore {
   /** Upload user avatar */
   async updateAvatar(file: File) {
     // Client-side validation
-    if (!file.type.startsWith('image/')) {
-      throw new Error('Please upload an image file');
+    if (!file.type.startsWith("image/")) {
+      throw new Error("Please upload an image file");
     }
     if (file.size > 5 * 1024 * 1024) {
-      throw new Error('Image size must be less than 5MB');
+      throw new Error("Image size must be less than 5MB");
     }
 
     try {
       const formData = new FormData();
-      formData.append('avatar', file);
+      formData.append("avatar", file);
       const resp = await fetch(`${API_BASE}/user/avatar`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${this.accessToken}` },
-        credentials: 'include',
-        body: formData
+        method: "POST",
+        headers: { Authorization: `Bearer ${this.accessToken}` },
+        credentials: "include",
+        body: formData,
       });
       const res = await resp.json();
-      if (!resp.ok) throw new Error(res.error?.message || 'Failed to upload avatar');
+      if (!resp.ok) throw new Error(res.error?.message || "Failed to upload avatar");
       if (res.success && res.data?.avatar_url) {
         this.user = { ...this.user, avatarUrl: res.data.avatar_url } as UserDto;
         storage.setUser(this.user);
       }
       return res;
     } catch (e: unknown) {
-      console.error('Avatar upload error', e);
+      console.error("Avatar upload error", e);
       throw e;
     }
   }
