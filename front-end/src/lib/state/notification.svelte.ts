@@ -1,6 +1,7 @@
-import { authStore } from "./auth.svelte";
-import { API_BASE } from "../config";
 import type { Notification, NotificationResponse } from "../types/notification";
+
+import { API_BASE } from "../config";
+import { authStore } from "./auth.svelte";
 
 class NotificationStore {
   notifications = $state<Notification[]>([]);
@@ -55,9 +56,7 @@ class NotificationStore {
       });
 
       if (resp.ok) {
-        this.notifications = this.notifications.map((n) =>
-          n._id === id ? { ...n, isRead: true } : n,
-        );
+        this.notifications = this.notifications.map((n) => (n._id === id ? { ...n, isRead: true } : n));
         this.unreadCount = Math.max(0, this.unreadCount - 1);
       }
     } catch (e) {

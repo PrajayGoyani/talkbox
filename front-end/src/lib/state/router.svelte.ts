@@ -1,5 +1,5 @@
-import { authStore } from "./auth.svelte";
 import { Route } from "../utils/routes";
+import { authStore } from "./auth.svelte";
 
 class RouterStore {
   hash = $state("");
@@ -40,19 +40,13 @@ class RouterStore {
     const firstSegment = pathSegments[0];
 
     // Redirect to login if unauthenticated and not on an auth page
-    if (
-      !authStore.user &&
-      ![Route.LOGIN.replace(/^\//, ""), Route.SIGNUP.replace(/^\//, "")].includes(firstSegment)
-    ) {
+    if (!authStore.user && ![Route.LOGIN.replace(/^\//, ""), Route.SIGNUP.replace(/^\//, "")].includes(firstSegment)) {
       this.navigate(Route.LOGIN);
       return;
     }
 
     // Redirect to chat if already authenticated and trying to access auth pages
-    if (
-      authStore.user &&
-      [Route.LOGIN.replace(/^\//, ""), Route.SIGNUP.replace(/^\//, "")].includes(firstSegment)
-    ) {
+    if (authStore.user && [Route.LOGIN.replace(/^\//, ""), Route.SIGNUP.replace(/^\//, "")].includes(firstSegment)) {
       this.navigate(Route.CONVERSATIONS);
       return;
     }

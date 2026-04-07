@@ -1,3 +1,4 @@
+import { API_BASE } from "../config";
 import {
   type UserDto,
   type AuthResponseDto,
@@ -5,7 +6,6 @@ import {
   type SignupRequestDto,
   type ApiResponse,
 } from "../types/auth.dto";
-import { API_BASE } from "../config";
 import { storage } from "../utils/storage";
 
 // Access tokens expire in 15min typically; refresh 1 min before

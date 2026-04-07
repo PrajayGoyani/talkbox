@@ -1,10 +1,11 @@
-import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite-plus";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [tailwindcss(), svelte()], 
+  lint: {"options":{"typeAware":true,"typeCheck":true}},
+  plugins: [tailwindcss(), svelte()],
   fmt: {
     printWidth: 120,
     ignorePatterns: ["routeTree.gen.ts", "docs/changelog/index.mdx"],

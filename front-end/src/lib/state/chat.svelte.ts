@@ -1,7 +1,9 @@
 import { io, type Socket } from "socket.io-client";
 import { SvelteSet } from "svelte/reactivity";
-import { authStore } from "./auth.svelte";
-import { notificationStore } from "./notification.svelte";
+
+import type { RawMessageDto, MessageAckDto, UserStatusDto, TypingIndicatorDto } from "../types/chat.dto";
+import type { Notification } from "../types/notification";
+
 import {
   API_ROOT,
   API_BASE,
@@ -10,13 +12,8 @@ import {
   MESSAGE_SEND_FALLBACK_TIMEOUT,
   ASSETS,
 } from "../config";
-import type {
-  RawMessageDto,
-  MessageAckDto,
-  UserStatusDto,
-  TypingIndicatorDto,
-} from "../types/chat.dto";
-import type { Notification } from "../types/notification";
+import { authStore } from "./auth.svelte";
+import { notificationStore } from "./notification.svelte";
 
 export type ChatStatus = "pending" | "accepted" | "rejected";
 
@@ -278,27 +275,18 @@ class ChatStore {
 
   /** Load older messages using cursor */
   async loadOlderMessages() {
-    if (
-      !this.activeChatId ||
-      !this.hasMoreMessages ||
-      this.isLoadingMessages ||
-      this.messages.length === 0
-    )
-      return;
+    if (!this.activeChatId || !this.hasMoreMessages || this.isLoadingMessages || this.messages.length === 0) return;
 
     const signal = this.messagesAbortController?.signal;
     this.isLoadingMessages = true;
     const oldestMessageId = this.messages[0].id;
 
     try {
-      const resp = await fetch(
-        `${API_BASE}/chat/${this.activeChatId}/messages?limit=50&cursor=${oldestMessageId}`,
-        {
-          headers: { Authorization: `Bearer ${authStore.accessToken}` },
-          credentials: "include",
-          signal,
-        },
-      );
+      const resp = await fetch(`${API_BASE}/chat/${this.activeChatId}/messages?limit=50&cursor=${oldestMessageId}`, {
+        headers: { Authorization: `Bearer ${authStore.accessToken}` },
+        credentials: "include",
+        signal,
+      });
       if (!resp.ok) return;
       const result = await resp.json();
       const rawOlder: any[] = result.data || result || [];
@@ -348,9 +336,7 @@ class ChatStore {
     this.lastError = null;
     try {
       const endpoint =
-        query.trim().length > 0
-          ? `${API_BASE}/chat/search?q=${encodeURIComponent(query.trim())}`
-          : `${API_BASE}/chat`;
+        query.trim().length > 0 ? `${API_BASE}/chat/search?q=${encodeURIComponent(query.trim())}` : `${API_BASE}/chat`;
 
       const resp = await fetch(endpoint, {
         headers: {
@@ -475,9 +461,7 @@ class ChatStore {
         if (ack?.status === "ok" && ack.message) {
           // Map _id from backend to id
           const message = { ...ack.message, id: ack.message._id || ack.message.id! };
-          const exists = this.messages.some(
-            (m: Message) => m.idempotencyKey === message.idempotencyKey,
-          );
+          const exists = this.messages.some((m: Message) => m.idempotencyKey === message.idempotencyKey);
           if (!exists) {
             this.messages = [...this.messages, message];
           }
