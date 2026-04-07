@@ -1,5 +1,5 @@
 export const validate = (schema) => {
-    return (req, res, next) => {
-        const errors = [];
-    };
+  return (req, res, next) => {
+    const errors = [];
+  };
 };

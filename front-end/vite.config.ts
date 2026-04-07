@@ -4,7 +4,7 @@ import { defineConfig } from "vite-plus";
 
 // https://vite.dev/config/
 export default defineConfig({
-  lint: {"options":{"typeAware":true,"typeCheck":true}},
+  lint: { options: { typeAware: true, typeCheck: true } },
   plugins: [tailwindcss(), svelte()],
   fmt: {
     printWidth: 120,

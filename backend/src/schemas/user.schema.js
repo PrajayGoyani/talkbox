@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Sanitize a display name:
@@ -9,20 +9,20 @@ import { z } from 'zod';
 const sanitizeName = (val) =>
   val
     .trim()
-    .replace(/[^a-zA-Z\s\-']/g, '')
-    .replace(/\s+/g, ' ')
-    .split(' ')
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+    .replace(/[^a-zA-Z\s\-']/g, "")
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 
 const nameField = z
   .string()
-  .min(2, 'Name must be at least 2 characters')
-  .max(50, 'Name must be at most 50 characters')
+  .min(2, "Name must be at least 2 characters")
+  .max(50, "Name must be at most 50 characters")
   .transform(sanitizeName);
 
 export const signupSchema = z.object({
-  username: z.string().refine(s => !s.includes(' '), 'Username cannot contain spaces.'),
+  username: z.string().refine((s) => !s.includes(" "), "Username cannot contain spaces."),
   email: z.email(),
   password: z.string().min(8),
   name: nameField.optional(),

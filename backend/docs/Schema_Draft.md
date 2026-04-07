@@ -1,6 +1,7 @@
 # Schema Draft
 
 ## User
+
 - id (String): Unique identifier for the user.
 - name (String): Name of the user.
 - email (String): Email address of the user.
@@ -9,6 +10,7 @@
 - updatedAt (Date): Timestamp when the user was last updated.
 
 ## Chat
+
 - id (String): Unique identifier for the chat.
 - participants (Array): Array of user IDs representing the participants in the chat.
 - participantKey (String): Unique key for the chat, sorted by participant IDs.
@@ -17,6 +19,7 @@
 - lastActivityAt (Date): Timestamp when the chat was last active.
 
 ## Message
+
 - id (String): Unique identifier for the message.
 - conversation (String): ID of the conversation the message belongs to.
 - sender (String): ID of the user who sent the message.
@@ -36,7 +39,7 @@ const UserSchema = new mongoose.Schema({
 });
 -->
 
-<!-- 
+<!--
 // Chat
 const chatSchema = new mongoose.Schema({
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }], // length 2
@@ -58,7 +61,6 @@ const chatSchema = new mongoose.Schema({
 });
 chatSchema.index({ participants: 1 });
 -->
-
 
 <!--
 const AttachmentSchema = new mongoose.Schema({
