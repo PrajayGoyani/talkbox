@@ -152,7 +152,7 @@
         class="flex items-center justify-center gap-2 w-full p-2.5 border border-dashed border-slate-300 dark:border-white/10 rounded-xl text-slate-500 hover:text-indigo-600 hover:border-indigo-500 hover:bg-indigo-500/5 transition-all text-sm font-medium"
         onclick={() => (showRequestInput = true)}
       >
-        <Icon name="check" class="w-4 h-4" stroke-width="2" />
+        <Icon name="add" class="w-4 h-4" stroke-width="2" />
         New Chat
       </button>
     {/if}
