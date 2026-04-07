@@ -1,10 +1,12 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
   import { chatStore } from "../state/chat.svelte";
+  import { notificationStore } from "../state/notification.svelte";
+  import type { Notification } from "../types/notification";
   import { onMount, untrack } from "svelte";
   import { fly, fade, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import { API_BASE } from "../config";
+  import { formatTimeAgo } from "../utils/date";
   import Icon from "./Icon.svelte";
 
   let {
@@ -17,83 +19,19 @@
     unreadCount?: number;
   }>();
 
-  let notifications: Array<any> = $state([]);
-  let loading = $state(false);
-  let skip = $state(0);
-  let hasMore = $state(true);
-  const LIMIT = 15;
+  // Sync unreadCount with notificationStore
+  $effect(() => {
+    unreadCount = notificationStore.unreadCount;
+  });
 
   $effect(() => {
     if (isOpen) {
-      untrack(() => fetchNotifications(true));
+      untrack(() => notificationStore.fetchNotifications(true));
     }
   });
 
-  const fetchNotifications = async (reset = false) => {
-    if (loading) return;
-    loading = true;
-    const currentSkip = reset ? 0 : skip;
-    try {
-      const resp = await fetch(
-        `${API_BASE}/notifications?limit=${LIMIT}&skip=${currentSkip}`,
-        {
-          headers: { Authorization: `Bearer ${authStore.accessToken}` },
-          credentials: "include",
-        },
-      );
-      if (!resp.ok) throw new Error("Failed to load notifications");
-      const result = await resp.json();
-      const data = result.data;
-
-      // Concurrency guard: check if skip still matches (simple version)
-      if (reset) {
-        notifications = data.notifications;
-        skip = data.notifications.length;
-      } else {
-        notifications = [...notifications, ...data.notifications];
-        skip += data.notifications.length;
-      }
-      unreadCount = data.unreadCount;
-      hasMore = data.notifications.length === LIMIT;
-    } catch (e) {
-      console.error(e);
-    } finally {
-      loading = false;
-    }
-  };
-
-  const markAsRead = async (id: string) => {
-    try {
-      await fetch(`${API_BASE}/notifications/${id}/read`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: "include",
-      });
-      notifications = notifications.map((n) =>
-        n._id === id ? { ...n, isRead: true } : n,
-      );
-      unreadCount = Math.max(0, unreadCount - 1);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    try {
-      await fetch(`${API_BASE}/notifications/read-all`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: "include",
-      });
-      notifications = notifications.map((n) => ({ ...n, isRead: true }));
-      unreadCount = 0;
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleNotificationClick = (notification: any) => {
-    if (!notification.isRead) markAsRead(notification._id);
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.isRead) notificationStore.markAsRead(notification._id);
     onNavigate(notification.type, notification.referenceId);
     isOpen = false;
   };
@@ -132,44 +70,14 @@
     }
   };
 
-  const timeAgo = (date: string) => {
-    const diff = Date.now() - new Date(date).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.floor(hrs / 24);
-    return `${days}d ago`;
-  };
-
-  // Listen to real-time socket events (chat_request, request_accepted, request_rejected only)
-  $effect(() => {
-    const socket = chatStore.socket;
-    if (!socket) return;
-
-    const handler = (notification: any) => {
-      // Only add non-message notifications to the dropdown
-      if (notification.type === "new_message") return;
-      notifications = [notification, ...notifications];
-      unreadCount += 1;
-    };
-
-    socket.on("notification", handler);
-
-    return () => {
-      socket.off("notification", handler);
-    };
-  });
-
-  // Request browser notification permission on mount (used by chatStore for message alerts)
+  // Request browser notification permission on mount
   onMount(() => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
-    // Only fetch if not already open (to avoid double call if open starts as true, though unlikely)
+    // Only fetch if not already open
     if (!isOpen) {
-      fetchNotifications(true);
+      notificationStore.fetchNotifications(true);
     }
   });
 </script>
@@ -196,7 +104,7 @@
         {#if unreadCount > 0}
           <button
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-indigo-400 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/50 transition-all"
-            onclick={markAllAsRead}
+            onclick={() => notificationStore.markAllAsRead()}
           >
             <Icon name="check" class="w-3.5 h-3.5" />
             Mark all read
@@ -213,7 +121,7 @@
     </div>
 
     <div class="flex-1 overflow-y-auto py-2">
-      {#if notifications.length === 0 && !loading}
+      {#if notificationStore.notifications.length === 0 && !notificationStore.loading}
         <div
           class="flex flex-col items-center gap-3 p-12 text-slate-500 text-center"
         >
@@ -222,7 +130,7 @@
         </div>
       {/if}
 
-      {#each notifications as notification (notification._id)}
+      {#each notificationStore.notifications as notification (notification._id)}
         <div transition:slide={{ duration: 300, easing: quintOut }}>
           <button
             class="flex gap-4 p-4 w-full text-left border-b border-white/5 transition-all relative group {notification.isRead
@@ -244,7 +152,7 @@
                 >{notification.message}</span
               >
               <span class="text-[10px] text-slate-500 mt-0.5"
-                >{timeAgo(notification.createdAt)}</span
+                >{formatTimeAgo(notification.createdAt)}</span
               >
             </div>
             <div class="flex items-start shrink-0 pt-1">
@@ -258,7 +166,7 @@
         </div>
       {/each}
 
-      {#if loading}
+      {#if notificationStore.loading}
         <div class="flex justify-center p-6">
           <span
             class="w-6 h-6 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
@@ -266,10 +174,10 @@
         </div>
       {/if}
 
-      {#if hasMore && !loading && notifications.length > 0}
+      {#if notificationStore.hasMore && !notificationStore.loading && notificationStore.notifications.length > 0}
         <button
           class="w-full p-4 text-indigo-400 text-sm font-medium hover:bg-white/5 transition-colors border-t border-white/5"
-          onclick={() => fetchNotifications()}
+          onclick={() => notificationStore.fetchNotifications()}
         >
           Load more notifications
         </button>

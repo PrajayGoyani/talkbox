@@ -1,23 +1,18 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { storage, type Theme } from "../utils/storage";
+  import type { UserDto } from "../types/auth.dto";
   import Avatar from "./Avatar.svelte";
 
   const { onLogout, user } = $props<{
     onLogout?: () => void;
-    user?: any;
+    user?: UserDto | null;
   }>();
 
-  let currentTheme = $state<"dark" | "light">("dark");
+  let currentTheme = $state<Theme>(storage.getTheme());
 
-  onMount(() => {
-    const saved = localStorage.getItem("theme") || "dark";
-    currentTheme = saved as "dark" | "light";
-    applyTheme(currentTheme);
-  });
-
-  function applyTheme(theme: "dark" | "light") {
+  function applyTheme(theme: Theme) {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
+    storage.setTheme(theme);
   }
 
   function toggleTheme() {
@@ -155,13 +150,5 @@
         Sign Out
       </button>
     </div>
-    <!-- <div class="mt-auto pt-6 pb-4 text-center">
-      <div class="flex flex-col items-center gap-1.5 opacity-40">
-        <img src="/favicon.png" alt="Talkbox Logo" class="w-8 h-8 rounded-lg grayscale pointer-events-none" />
-        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-          Talkbox v1.0.0
-        </p>
-      </div>
-    </div> -->
   </div>
 </div>

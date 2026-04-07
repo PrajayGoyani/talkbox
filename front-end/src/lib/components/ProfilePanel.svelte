@@ -1,6 +1,6 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
-  import { API_BASE, API_ROOT } from "../config";
+  import { API_ROOT } from "../config";
 
   let editingName = $state(false);
   let nameInput = $state(authStore.user?.name || "");
@@ -31,7 +31,9 @@
   function sanitizeName(val: string): string {
     return val
       .trim()
-      .replace(/[^a-zA-Z\s\-']/g, "")
+      // .replace(/[^a-zA-Z\s\-']/g, "") // Note: keep for future reference
+      // Allow Unicode letters, spaces, hyphens, and apostrophes
+      .replace(/[^\p{L}\s\-']/gu, "")
       .replace(/\s+/g, " ")
       .split(" ")
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -50,28 +52,11 @@
 
     saving = true;
     try {
-      const resp = await fetch(`${API_BASE}/user/profile`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authStore.accessToken}`,
-        },
-        credentials: "include",
-        body: JSON.stringify({ name: sanitized || null }),
-      });
-      const result = await resp.json();
-      if (!resp.ok)
-        throw new Error(result.error?.message || "Failed to update name");
-
-      // Update local auth state
-      if (authStore.user) {
-        authStore.user = { ...authStore.user, name: sanitized || undefined };
-        localStorage.setItem("auth_user", JSON.stringify(authStore.user));
-      }
+      await authStore.updateProfile({ name: sanitized || null });
       saveSuccess = true;
       editingName = false;
       setTimeout(() => (saveSuccess = false), 3000);
-    } catch (e) {
+    } catch (e: unknown) {
       saveError = (e as Error).message;
     } finally {
       saving = false;
@@ -108,24 +93,8 @@
     uploadingAvatar = true;
     saveError = null;
     try {
-      const formData = new FormData();
-      formData.append("avatar", file);
-      const resp = await fetch(`${API_BASE}/user/avatar`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: "include",
-        body: formData,
-      });
-      if (!resp.ok) throw new Error("Failed to upload avatar");
-      const result = await resp.json();
-      if (authStore.user) {
-        authStore.user = {
-          ...authStore.user,
-          avatarUrl: result.data?.avatar_url,
-        };
-        localStorage.setItem("auth_user", JSON.stringify(authStore.user));
-      }
-    } catch (e) {
+      await authStore.updateAvatar(file);
+    } catch (e: unknown) {
       saveError = (e as Error).message;
       avatarPreview = null;
     } finally {
@@ -156,11 +125,11 @@
   <div class="p-6 flex flex-col gap-6 overflow-y-auto">
     <!-- Avatar Section -->
     <div class="flex justify-center">
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center relative cursor-pointer overflow-hidden shadow-xl shadow-indigo-500/20 transition-transform hover:scale-105"
+      <button
+        class="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center relative cursor-pointer overflow-hidden shadow-xl shadow-indigo-500/20 transition-transform hover:scale-105 border-none p-0"
         onclick={handleAvatarSelect}
+        onkeydown={(e) => (e.key === "Enter" || e.key === " ") && handleAvatarSelect()}
+        aria-label="Change avatar"
       >
         {#if avatarPreview || resolvedAvatarUrl}
           <img
@@ -200,7 +169,7 @@
             ></span>
           </div>
         {/if}
-      </div>
+      </button>
       <input
         type="file"
         bind:this={avatarInput}

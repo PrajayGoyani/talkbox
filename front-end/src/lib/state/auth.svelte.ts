@@ -1,5 +1,6 @@
 import { type UserDto, type AuthResponseDto, type LoginRequestDto, type SignupRequestDto, type ApiResponse } from '../types/auth.dto';
 import { API_BASE } from '../config';
+import { storage } from '../utils/storage';
 
 // Access tokens expire in 15min typically; refresh 1 min before
 const REFRESH_INTERVAL_MS = 14 * 60 * 1000;
@@ -23,18 +24,10 @@ class AuthStore {
     const refreshed = await this.silentRefresh();
 
     if (!refreshed) {
-      // Fallback: check localStorage for cached session 
-      const storedUser = localStorage.getItem('auth_user');
-      const storedToken = localStorage.getItem('auth_token');
-      if (storedUser && storedToken) {
-        try {
-          this.user = JSON.parse(storedUser);
-          this.accessToken = storedToken;
-          this.scheduleRefresh();
-        } catch (e) {
-          console.error('Failed to parse stored auth data', e);
-          this.clearAuth();
-        }
+      // Fallback: check storage for cached user (but we no longer store/check tokens here)
+      const storedUser = storage.getUser();
+      if (storedUser) {
+        this.user = storedUser;
       }
     }
     this.isCheckingAuth = false;
@@ -58,13 +51,12 @@ class AuthStore {
       const res = await response.json();
       if (res.success && res.data?.accessToken) {
         this.accessToken = res.data.accessToken;
-        localStorage.setItem('auth_token', res.data.accessToken);
 
         // If we have cached user data, keep it; otherwise fetch /me
         if (!this.user) {
-          const storedUser = localStorage.getItem('auth_user');
+          const storedUser = storage.getUser();
           if (storedUser) {
-            this.user = JSON.parse(storedUser);
+            this.user = storedUser;
           } else {
             await this.fetchMe();
           }
@@ -86,11 +78,15 @@ class AuthStore {
         headers: { 'Authorization': `Bearer ${this.accessToken}` },
         credentials: 'include'
       });
+      if (resp.status === 401) {
+        this.clearAuth();
+        return;
+      }
       if (!resp.ok) return;
       const res = await resp.json();
       if (res.success && res.data) {
         this.user = res.data;
-        localStorage.setItem('auth_user', JSON.stringify(res.data));
+        storage.setUser(res.data);
       }
     } catch (e) {
       console.error('Failed to fetch user profile', e);
@@ -108,8 +104,6 @@ class AuthStore {
   async login(credentials: LoginRequestDto) {
     this.loading = true;
     this.error = null;
-    const start = Date.now();
-    let pendingError: string | null = null;
     let success = false;
     try {
       const response = await fetch(`${API_BASE}/auth/login`, {
@@ -125,16 +119,11 @@ class AuthStore {
         this.setAuth(res.data);
         success = true;
       } else {
-        pendingError = res.error?.message || 'Login failed';
+        this.error = res.error?.message || 'Login failed';
       }
     } catch (e) {
-      pendingError = 'Network error occurred';
+      this.error = 'Network error occurred';
     } finally {
-      const elapsed = Date.now() - start;
-      if (elapsed < 500) {
-        await new Promise(r => setTimeout(r, 500 - elapsed));
-      }
-      this.error = pendingError;
       this.loading = false;
     }
     return success;
@@ -143,8 +132,6 @@ class AuthStore {
   async signup(data: SignupRequestDto) {
     this.loading = true;
     this.error = null;
-    const start = Date.now();
-    let pendingError: string | null = null;
     let success = false;
     try {
       const response = await fetch(`${API_BASE}/auth/signup`, {
@@ -160,16 +147,11 @@ class AuthStore {
         this.setAuth(res.data);
         success = true;
       } else {
-        pendingError = res.error?.message || 'Signup failed';
+        this.error = res.error?.message || 'Signup failed';
       }
     } catch (e) {
-      pendingError = 'Network error occurred';
+      this.error = 'Network error occurred';
     } finally {
-      const elapsed = Date.now() - start;
-      if (elapsed < 500) {
-        await new Promise(r => setTimeout(r, 500 - elapsed));
-      }
-      this.error = pendingError;
       this.loading = false;
     }
     return success;
@@ -190,17 +172,71 @@ class AuthStore {
   private clearAuth() {
     this.user = null;
     this.accessToken = null;
-    localStorage.removeItem('auth_user');
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_refresh_token');
+    storage.clearAuth();
   }
 
   private setAuth(data: AuthResponseDto) {
     this.user = data.user;
     this.accessToken = data.accessToken;
-    localStorage.setItem('auth_user', JSON.stringify(data.user));
-    localStorage.setItem('auth_token', data.accessToken);
+    storage.setUser(data.user);
     this.scheduleRefresh();
+  }
+
+  /** Update user profile (name) */
+  async updateProfile(data: { name?: string | null }) {
+    try {
+      const resp = await fetch(`${API_BASE}/user/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.accessToken}`
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+      const res = await resp.json();
+      if (!resp.ok) throw new Error(res.error?.message || 'Failed to update profile');
+      if (res.success && res.data) {
+        this.user = { ...this.user, ...res.data } as UserDto;
+        storage.setUser(this.user);
+      }
+      return res;
+    } catch (e: unknown) {
+      console.error('Profile update error', e);
+      throw e;
+    }
+  }
+
+  /** Upload user avatar */
+  async updateAvatar(file: File) {
+    // Client-side validation
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Please upload an image file');
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error('Image size must be less than 5MB');
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const resp = await fetch(`${API_BASE}/user/avatar`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${this.accessToken}` },
+        credentials: 'include',
+        body: formData
+      });
+      const res = await resp.json();
+      if (!resp.ok) throw new Error(res.error?.message || 'Failed to upload avatar');
+      if (res.success && res.data?.avatar_url) {
+        this.user = { ...this.user, avatarUrl: res.data.avatar_url } as UserDto;
+        storage.setUser(this.user);
+      }
+      return res;
+    } catch (e: unknown) {
+      console.error('Avatar upload error', e);
+      throw e;
+    }
   }
 }
 

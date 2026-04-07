@@ -1,15 +1,13 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
-  import { chatStore } from "../state/chat.svelte";
+  import { chatStore, type Chat, type User } from "../state/chat.svelte";
   import { onMount } from "svelte";
-  import { slide, fade } from "svelte/transition";
+  import { slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import { API_BASE } from "../config";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
 
-  let pendingChats: Array<any> = $state([]);
-  let loading = $state(true);
+  let loading = $state(false);
   let error = $state<string | null>(null);
 
   // New chat request
@@ -17,27 +15,13 @@
   let requestLoading = $state(false);
   let requestError = $state<string | null>(null);
   let requestSuccess = $state<string | null>(null);
-  let processingStates: Record<string, 'accepting' | 'rejecting' | null> = $state({});
+  let processingStates: Record<string, "accepting" | "rejecting" | null> =
+    $state({});
 
   export const refreshRequests = async () => {
-    await fetchPendingChats();
-  };
-
-  const fetchPendingChats = async () => {
     loading = true;
-    error = null;
     try {
-      const resp = await fetch(`${API_BASE}/chat`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authStore.accessToken}`,
-        },
-        credentials: "include",
-      });
-      if (!resp.ok) throw new Error("Failed to load chats");
-      const result = await resp.json();
-      const allChats = result.data || [];
-      pendingChats = allChats.filter((c: any) => c.status === "pending");
+      await chatStore.fetchChats();
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -51,21 +35,9 @@
     requestError = null;
     requestSuccess = null;
     try {
-      const resp = await fetch(`${API_BASE}/chat/request`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authStore.accessToken}`,
-        },
-        credentials: "include",
-        body: JSON.stringify({ username: requestUsername.trim() }),
-      });
-      const result = await resp.json();
-      if (!resp.ok)
-        throw new Error(result.error?.message || "Failed to send request");
+      await chatStore.sendChatRequest(requestUsername);
       requestSuccess = `Request sent to ${requestUsername}!`;
       requestUsername = "";
-      await fetchPendingChats();
     } catch (e) {
       requestError = (e as Error).message;
     } finally {
@@ -75,37 +47,31 @@
 
   const handleAccept = async (chatId: string) => {
     if (processingStates[chatId]) return;
-    processingStates[chatId] = 'accepting';
+    processingStates[chatId] = "accepting";
     try {
-      await fetch(`${API_BASE}/chat/${chatId}/accept`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: "include",
-      });
-      await fetchPendingChats();
+      await chatStore.acceptChat(chatId);
     } catch (e) {
       console.error(e);
     } finally {
-      delete processingStates[chatId];
+      processingStates[chatId] = null;
     }
   };
 
   const handleReject = async (chatId: string) => {
     if (processingStates[chatId]) return;
-    processingStates[chatId] = 'rejecting';
+    processingStates[chatId] = "rejecting";
     try {
-      await fetch(`${API_BASE}/chat/${chatId}/reject`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: "include",
-      });
-      await fetchPendingChats();
+      await chatStore.rejectChat(chatId);
     } catch (e) {
       console.error(e);
     } finally {
-      delete processingStates[chatId];
+      processingStates[chatId] = null;
     }
   };
+
+  const pendingChats = $derived(
+    chatStore.chats.filter((c) => c.status === "pending"),
+  );
 
   const incomingRequests = $derived(
     pendingChats.filter((c) => c.createdBy !== authStore.user?.id),
@@ -115,8 +81,8 @@
   );
 
   onMount(() => {
-    fetchPendingChats();
-    chatStore.onRefreshChats(() => fetchPendingChats());
+    refreshRequests();
+    chatStore.onRefreshChats(() => refreshRequests());
   });
 </script>
 

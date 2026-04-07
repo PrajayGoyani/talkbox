@@ -1,16 +1,17 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import { authStore } from "../state/auth.svelte";
   import { chatStore } from "../state/chat.svelte";
   import type { User, Message } from "../state/chat.svelte";
+  import { formatSimpleTime, formatTimeAgo, getDateLabel } from "../utils/date";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
-  import { tick } from "svelte";
 
   let {
     chatId,
     otherUser,
     status,
-    isSidebarCollapsed = $bindable(false),
+    isSidebarCollapsed = $bindable<boolean>(false),
     onBack,
   }: {
     chatId: string;
@@ -68,7 +69,8 @@
 
   const handleMessagesScroll = (e: Event) => {
     const target = e.target as HTMLElement;
-    const distanceFromBottom = target.scrollHeight - target.scrollTop - target.clientHeight;
+    const distanceFromBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
     showJumpButton = distanceFromBottom > 300;
 
     if (distanceFromBottom < 50) {
@@ -77,47 +79,21 @@
       userHasScrolledUp = true;
     }
 
-    if (target.scrollTop < 50 && chatStore.hasMoreMessages && !chatStore.isLoadingMessages) {
+    if (
+      target.scrollTop < 50 &&
+      chatStore.hasMoreMessages &&
+      !chatStore.isLoadingMessages
+    ) {
       const scrollBottom = target.scrollHeight - target.scrollTop;
       chatStore.loadOlderMessages().then(() => {
         setTimeout(() => {
           if (messagesContainer) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight - scrollBottom;
+            messagesContainer.scrollTop =
+              messagesContainer.scrollHeight - scrollBottom;
           }
         }, 0);
       });
     }
-  };
-
-  const formatTime = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
-  const timeAgo = (date: Date | string) => {
-    const d = typeof date === "string" ? new Date(date) : date;
-    const seconds = Math.max(0, Math.floor((new Date().getTime() - d.getTime()) / 1000));
-    if (seconds < 60) return `just now`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return d.toLocaleDateString();
-  };
-
-  const getDateLabel = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (d.toDateString() === today.toDateString()) return "Today";
-    if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
-    return d.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: d.getFullYear() !== today.getFullYear() ? "numeric" : undefined,
-    });
   };
 </script>
 
@@ -163,7 +139,7 @@
             >
           {:else if chatStore.onlineStatus[otherUser?.id || ""]?.lastSeen}
             <span class="text-xs text-slate-500">
-              Last seen {timeAgo(chatStore.onlineStatus[otherUser?.id || ""].lastSeen!)}
+              Last seen {formatTimeAgo(chatStore.onlineStatus[otherUser?.id || ""].lastSeen!)}
             </span>
           {:else}
             <span class="text-xs text-slate-500">Offline</span>
@@ -223,7 +199,7 @@
         No messages yet. Send a message to start!
       </div>
     {:else}
-      {#each chatStore.messages as msg, i (msg._id)}
+      {#each chatStore.messages as msg, i (msg.id)}
         {@const currentDateLabel = getDateLabel(msg.createdAt)}
         {@const prevDateLabel =
           i > 0
@@ -250,7 +226,7 @@
             {msg.contentBody}
           </p>
           <span class="block text-[10px] opacity-70 mt-1 text-right"
-            >{formatTime(msg.createdAt)}</span
+            >{formatSimpleTime(msg.createdAt)}</span
           >
         </div>
       {/each}

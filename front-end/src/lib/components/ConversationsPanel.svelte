@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { type User } from "../state/chat.svelte";
   import ChatList from "./ChatList.svelte";
 
   const { activeChatId, onSelectChat, unreadCount = 0, onNotificationToggle } = $props<{
     activeChatId?: string | null;
-    onSelectChat: (chatId: string, otherUser: any, status: string) => void;
+    onSelectChat: (chatId: string, otherUser: User, status: string) => void;
     unreadCount?: number;
     onNotificationToggle?: () => void;
   }>();

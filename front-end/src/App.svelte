@@ -3,7 +3,8 @@
   import { fade, fly, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { authStore } from "./lib/state/auth.svelte";
-  import { chatStore } from "./lib/state/chat.svelte";
+  import { chatStore, type User } from "./lib/state/chat.svelte";
+  import { notificationStore } from "./lib/state/notification.svelte";
   import Login from "./lib/components/Login.svelte";
   import Signup from "./lib/components/Signup.svelte";
   import ChatList from "./lib/components/ChatList.svelte";
@@ -12,14 +13,14 @@
   import Avatar from "./lib/components/Avatar.svelte";
 
   import { routerStore } from "./lib/state/router.svelte";
+  import { Route } from "./lib/utils/routes";
+  import { storage } from "./lib/utils/storage";
   import IconRail from "./lib/components/IconRail.svelte";
   import ConversationsPanel from "./lib/components/ConversationsPanel.svelte";
   import ProfilePanel from "./lib/components/ProfilePanel.svelte";
   import SettingsPanel from "./lib/components/SettingsPanel.svelte";
   import RequestsPanel from "./lib/components/RequestsPanel.svelte";
   import ChatWindow from "./lib/components/ChatWindow.svelte";
-
-  import type { Chat, User } from "./lib/state/chat.svelte";
 
   type PanelId = "conversations" | "profile" | "settings" | "requests";
 
@@ -32,7 +33,7 @@
   let selectedChatStatus = $derived(selectedChat?.status || "");
 
   let notificationsOpen = $state(false);
-  let unreadNotifications = $state(0);
+  let unreadNotifications = $derived(notificationStore.unreadCount);
   let toastContainer: ToastContainer | undefined = $state();
 
   let activePanel = $derived(
@@ -42,27 +43,20 @@
   let isSidebarCollapsed = $state(false);
 
   $effect(() => {
-    if (typeof localStorage !== "undefined") {
-      const savedTheme = localStorage.getItem("theme") || "dark";
-      document.documentElement.setAttribute("data-theme", savedTheme);
+    // Apply theme
+    document.documentElement.setAttribute("data-theme", storage.getTheme());
+    
+    // Initialize router once
+    routerStore.init();
+    
+    // If auth check completes, ensure router forces an update to apply guards
+    if (!authStore.isCheckingAuth) {
+      untrack(() => routerStore.updateFromHash());
     }
   });
 
-  // Handle router init and auth check transition
-  $effect(() => {
-    // Only track isCheckingAuth
-    const _checking = authStore.isCheckingAuth;
-    untrack(() => {
-      routerStore.init();
-      if (!_checking) {
-        // Re-trigger routing to apply guards now that we know the user state
-        routerStore.updateFromHash?.();
-      }
-    });
-  });
-
-  const handleSelectChat = (chatId: string, _otherUser: any, status: string) => {
-    routerStore.navigate(`/chat/conversations/${chatId}`);
+  const handleSelectChat = (chatId: string) => {
+    routerStore.navigate(`${Route.CONVERSATIONS}/${chatId}`);
   };
 
   // Sync current chat messages when URL param changes (including on mount/refresh)
@@ -76,9 +70,9 @@
     }
   });
 
-  // Sync with auth state and connect socket when entering chat view
+  // Sync with auth state and connect socket when authenticated
   $effect(() => {
-    if (authStore.user && routerStore.segments[0] === "chat") {
+    if (authStore.user) {
       chatStore.connect();
       // Ensure chats are fetched on mount/re-auth
       chatStore.fetchChats(); 
@@ -95,14 +89,14 @@
   });
 
   const toggleView = (newView: string) => {
-    routerStore.navigate(newView === "LOGIN" ? "/login" : "/signup");
+    routerStore.navigate(newView === "LOGIN" ? Route.LOGIN : Route.SIGNUP);
     authStore.error = null;
   };
 
   const handleLogout = async () => {
     chatStore.disconnect();
     await authStore.logout();
-    routerStore.navigate("/login");
+    routerStore.navigate(Route.LOGIN);
   };
 
   const handleNotificationNavigate = (type: string, referenceId: string) => {
@@ -111,11 +105,11 @@
       routePanel = "requests";
     }
 
-    routerStore.navigate(`/chat/${routePanel}/${referenceId}`);
+    routerStore.navigate(`${Route.CHAT}/${routePanel}/${referenceId}`);
   };
 
   const handleToastClick = (chatId: string) => {
-    routerStore.navigate(`/chat/conversations/${chatId}`);
+    routerStore.navigate(`${Route.CONVERSATIONS}/${chatId}`);
     chatStore.loadMessages(chatId);
     chatStore.markChatRead(chatId);
   };

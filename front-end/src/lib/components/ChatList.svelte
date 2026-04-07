@@ -1,34 +1,10 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
-  import { chatStore } from "../state/chat.svelte";
+  import { chatStore, type User, type ChatStatus } from "../state/chat.svelte";
   import { onMount } from "svelte";
-  import { API_BASE } from "../config";
+  import { formatListTime } from "../utils/date";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
-
-  /** Format a timestamp for chat listing: time if today, 'Yesterday', or date */
-  function formatTime(dateStr: string): string {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const isToday = date.toDateString() === now.toDateString();
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-
-    if (isToday) {
-      return date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
-    if (isYesterday) return "Yesterday";
-    if (diffDays < 7) {
-      return date.toLocaleDateString([], { weekday: "short" });
-    }
-    return date.toLocaleDateString([], { day: "numeric", month: "short" });
-  }
 
   const {
     activeChatId = null,
@@ -37,14 +13,16 @@
     searchQuery = "",
   } = $props<{
     activeChatId?: string | null;
-    onSelectChat: (chatId: string, otherUser: any, status: string) => void;
+    onSelectChat: (chatId: string, otherUser: User, status: ChatStatus) => void;
     activeTab?: string;
     searchQuery?: string;
   }>();
 
-  let loading = $state(true);
+  let loading = $state(false);
   let error = $state<string | null>(null);
-  let processingStates: Record<string, 'accepting' | 'rejecting' | null> = $state({});
+  let processingStates = $state<Record<string, "accepting" | "rejecting" | null>>(
+    {},
+  );
 
   // New chat request
   let showRequestInput = $state(false);
@@ -54,14 +32,9 @@
   let requestSuccess = $state<string | null>(null);
 
   export const refreshChats = async () => {
-    await fetchChats(searchQuery);
-  };
-
-  const fetchChats = async (query = "") => {
     loading = true;
-    error = null;
     try {
-      await chatStore.fetchChats(query);
+      await chatStore.fetchChats(searchQuery);
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -74,7 +47,7 @@
     clearTimeout(searchTimeout);
     const currentQuery = searchQuery;
     searchTimeout = setTimeout(() => {
-      fetchChats(currentQuery);
+      refreshChats();
     }, 300);
   });
 
@@ -83,24 +56,11 @@
     requestLoading = true;
     requestError = null;
     requestSuccess = null;
-    // await new Promise((resolve) => setTimeout(resolve, 1000));
     try {
-      const resp = await fetch(`${API_BASE}/chat/request`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authStore.accessToken}`,
-        },
-        credentials: "include",
-        body: JSON.stringify({ username: requestUsername.trim() }),
-      });
-      const result = await resp.json();
-      if (!resp.ok)
-        throw new Error(result.error?.message || "Failed to send request");
+      await chatStore.sendChatRequest(requestUsername);
       requestSuccess = `Request sent to ${requestUsername}!`;
       requestUsername = "";
       showRequestInput = false;
-      await fetchChats();
     } catch (e) {
       requestError = (e as Error).message;
     } finally {
@@ -110,31 +70,21 @@
 
   const handleAccept = async (chatId: string) => {
     if (processingStates[chatId]) return;
-    processingStates[chatId] = 'accepting';
+    processingStates[chatId] = "accepting";
     try {
-      await fetch(`${API_BASE}/chat/${chatId}/accept`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: "include",
-      });
-      await fetchChats();
+      await chatStore.acceptChat(chatId);
     } catch (e) {
       console.error(e);
     } finally {
-      delete processingStates[chatId];
+      processingStates[chatId] = null;
     }
   };
 
   const handleReject = async (chatId: string) => {
     if (processingStates[chatId]) return;
-    processingStates[chatId] = 'rejecting';
+    processingStates[chatId] = "rejecting";
     try {
-      await fetch(`${API_BASE}/chat/${chatId}/reject`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: "include",
-      });
-      await fetchChats();
+      await chatStore.rejectChat(chatId);
     } catch (e) {
       console.error(e);
     } finally {
@@ -250,7 +200,7 @@
               >
               {#if chat.lastMessage?.sentAt}
                 <span class="text-[10px] text-slate-500 shrink-0"
-                  >{formatTime(chat.lastMessage.sentAt)}</span
+                  >{formatListTime(chat.lastMessage.sentAt)}</span
                 >
               {/if}
             </div>

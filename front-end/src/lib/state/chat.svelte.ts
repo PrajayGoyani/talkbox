@@ -1,6 +1,12 @@
 import { io, type Socket } from 'socket.io-client';
+import { SvelteSet } from 'svelte/reactivity';
 import { authStore } from './auth.svelte';
-import { API_ROOT, API_BASE } from '../config';
+import { notificationStore } from './notification.svelte';
+import { API_ROOT, API_BASE, TYPING_INDICATOR_DURATION, TYPING_DEBOUNCE_DURATION, MESSAGE_SEND_FALLBACK_TIMEOUT, ASSETS } from '../config';
+import type { RawMessageDto, MessageAckDto, UserStatusDto, TypingIndicatorDto } from '../types/chat.dto';
+import type { Notification } from '../types/notification';
+
+export type ChatStatus = 'pending' | 'accepted' | 'rejected';
 
 export interface User {
   id: string;
@@ -10,7 +16,7 @@ export interface User {
 }
 
 export interface Message {
-  _id: string;
+  id: string; // Map from backend _id
   chatId: string;
   senderId: string;
   contentBody: string;
@@ -21,7 +27,7 @@ export interface Message {
 export interface Chat {
   id: string;
   participants: string[];
-  status: 'pending' | 'accepted' | 'rejected';
+  status: ChatStatus;
   createdBy: string;
   otherUser: User;
   unreadCount?: number;
@@ -52,8 +58,9 @@ class ChatStore {
   activeChatId: string | null = $state(null);
 
   onlineStatus: Record<string, { isOnline: boolean, lastSeen: Date | null }> = $state({});
-  typingStatus: Record<string, Set<string>> = $state({});
+  typingStatus: Record<string, SvelteSet<string>> = $state({});
   chats: Array<Chat> = $state([]);
+  lastError: string | null = $state(null);
   private typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   private messagesAbortController: AbortController | null = null;
   private chatsAbortController: AbortController | null = null;
@@ -94,15 +101,14 @@ class ChatStore {
     });
 
     // Listen for incoming messages
-    this.socket.on('receive_message', (message: Message) => {
+    this.socket.on('receive_message', (rawMessage: RawMessageDto) => {
+      const message: Message = { ...rawMessage, id: rawMessage._id || rawMessage.id! };
       if (message.chatId === this.activeChatId) {
         this.messages = [...this.messages, message];
       }
       // Clear typing indicator instantly when a message is received
       if (this.typingStatus[message.chatId]) {
         this.typingStatus[message.chatId].delete(message.senderId);
-        // Force reactivity trigger
-        this.typingStatus[message.chatId] = new Set(this.typingStatus[message.chatId]);
       }
 
       // Update local last message preview and unread count
@@ -123,38 +129,34 @@ class ChatStore {
     });
 
     // Listen for User Presence changes
-    this.socket.on('user_status', (data: { userId: string, isOnline: boolean, lastSeen: Date | null }) => {
+    this.socket.on('user_status', (data: UserStatusDto) => {
       this.onlineStatus[data.userId] = {
         isOnline: data.isOnline,
         lastSeen: data.lastSeen ? new Date(data.lastSeen) : null
       };
-      this.onlineStatus = { ...this.onlineStatus }; // Trigger reactivity
     });
 
     // Listen for Typing Indicators
-    this.socket.on('typing_start', (data: { chatId: string, userId: string }) => {
+    this.socket.on('typing_start', (data: TypingIndicatorDto) => {
       if (!this.typingStatus[data.chatId]) {
-        this.typingStatus[data.chatId] = new Set();
+        this.typingStatus[data.chatId] = new SvelteSet();
       }
       this.typingStatus[data.chatId].add(data.userId);
-      this.typingStatus = { ...this.typingStatus }; // Trigger reactivity
 
-      // Auto-clear after 3.5s just in case typing_stop never arrives
+      // Auto-clear after timeout just in case typing_stop never arrives
       const key = `${data.chatId}-${data.userId}`;
       if (this.typingTimeouts.has(key)) clearTimeout(this.typingTimeouts.get(key));
 
       this.typingTimeouts.set(key, setTimeout(() => {
         if (this.typingStatus[data.chatId]) {
           this.typingStatus[data.chatId].delete(data.userId);
-          this.typingStatus = { ...this.typingStatus };
         }
-      }, 3500));
+      }, TYPING_INDICATOR_DURATION));
     });
 
-    this.socket.on('typing_stop', (data: { chatId: string, userId: string }) => {
+    this.socket.on('typing_stop', (data: TypingIndicatorDto) => {
       if (this.typingStatus[data.chatId]) {
         this.typingStatus[data.chatId].delete(data.userId);
-        this.typingStatus = { ...this.typingStatus };
       }
     });
 
@@ -164,25 +166,22 @@ class ChatStore {
       const isTabFocused = document.hasFocus();
 
       if (isChatOpen && isTabFocused) {
-        // Message is already visible on screen — do nothing
-        // Also auto-mark as read since user is viewing
         this.markChatRead(data.chatId);
         return;
       }
 
       if (!isTabFocused) {
-        // Tab not focused — show browser notification
         this.showBrowserNotification(data);
       } else {
-        // Tab focused but different chat — show in-app toast
         if (this.onToastCallback) {
           this.onToastCallback(data);
         }
       }
     });
 
-    // When a chat request or acceptance arrives, refresh the chat list
-    this.socket.on('notification', (_notification: { type: string, referenceId: string }) => {
+    // When a notification arrives, delegate to notificationStore and refresh chat list
+    this.socket.on('notification', (notification: Notification) => {
+      notificationStore.addRealTimeNotification(notification);
       if (this.onChatListRefresh) {
         this.onChatListRefresh();
       }
@@ -203,7 +202,7 @@ class ChatStore {
 
     const notification = new Notification(displayName, {
       body: data.preview,
-      icon: '/vite.svg',
+      icon: ASSETS.NOTIFICATION_ICON,
       tag: `msg-${data.chatId}-${Date.now()}`,
       silent: false
     });
@@ -245,12 +244,14 @@ class ChatStore {
       });
       if (!resp.ok) return;
       const result = await resp.json();
-      const loadedMessages: Message[] = result.data || result || [];
+      const rawLoaded: any[] = result.data || result || [];
+      const loadedMessages: Message[] = rawLoaded.map(m => ({ ...m, id: m._id || m.id }));
       this.messages = loadedMessages;
       this.hasMoreMessages = loadedMessages.length === 50;
-    } catch (e: any) {
-      if (e.name === 'AbortError') return;
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
       console.error('Failed to load messages:', e);
+      this.lastError = 'Failed to load messages. Please try again.';
     } finally {
       this.isLoadingMessages = false;
     }
@@ -260,13 +261,9 @@ class ChatStore {
   async loadOlderMessages() {
     if (!this.activeChatId || !this.hasMoreMessages || this.isLoadingMessages || this.messages.length === 0) return;
 
-    // We reuse the same message abort controller, but we don't abort here 
-    // unless we strictly want to prevent pagination while a new chat load is happening.
-    // Actually, loadMessages already aborts any ongoing request.
     const signal = this.messagesAbortController?.signal;
-
     this.isLoadingMessages = true;
-    const oldestMessageId = this.messages[0]._id;
+    const oldestMessageId = this.messages[0].id;
 
     try {
       const resp = await fetch(`${API_BASE}/chat/${this.activeChatId}/messages?limit=50&cursor=${oldestMessageId}`, {
@@ -276,15 +273,17 @@ class ChatStore {
       });
       if (!resp.ok) return;
       const result = await resp.json();
-      const olderMessages: Message[] = result.data || result || [];
+      const rawOlder: any[] = result.data || result || [];
+      const olderMessages: Message[] = rawOlder.map(m => ({ ...m, id: m._id || m.id }));
 
       if (olderMessages.length > 0) {
         this.messages = [...olderMessages, ...this.messages];
       }
       this.hasMoreMessages = olderMessages.length === 50;
-    } catch (e: any) {
-      if (e.name === 'AbortError') return;
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === 'AbortError') return;
       console.error('Failed to load older messages:', e);
+      this.lastError = 'Failed to load older messages.';
     } finally {
       this.isLoadingMessages = false;
     }
@@ -297,7 +296,6 @@ class ChatStore {
   private patchChatLocally(chatId: string, updates: Partial<Chat>, moveToTop = false) {
     const chatIndex = this.chats.findIndex((c: Chat) => c.id === chatId);
     if (chatIndex === -1) {
-      // If chat not in list (e.g. newly accepted), a full refresh is safer
       if (this.onChatListRefresh) this.onChatListRefresh();
       return;
     }
@@ -319,7 +317,7 @@ class ChatStore {
   async fetchChats(query = "") {
     this.chatsAbortController?.abort();
     this.chatsAbortController = new AbortController();
-
+    this.lastError = null;
     try {
       const endpoint = query.trim().length > 0
         ? `${API_BASE}/chat/search?q=${encodeURIComponent(query.trim())}`
@@ -333,13 +331,17 @@ class ChatStore {
         credentials: "include",
         signal: this.chatsAbortController.signal,
       });
-      if (!resp.ok) return;
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.error?.message || 'Failed to fetch chats');
+      }
       const result = await resp.json();
       this.chats = result.data || [];
       return this.chats;
     } catch (e: any) {
-      if (e.name === 'AbortError') return;
+      if (e instanceof Error && e.name === 'AbortError') return;
       console.error("Failed to fetch chats:", e);
+      this.lastError = e.message || 'Failed to fetch chats';
     }
   }
 
@@ -351,10 +353,69 @@ class ChatStore {
         headers: { 'Authorization': `Bearer ${authStore.accessToken}` },
         credentials: 'include'
       });
-      // Update local chat unread count instantly
       this.patchChatLocally(chatId, { unreadCount: 0 });
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('Failed to mark chat as read:', e);
+    }
+  }
+
+  /** Accept a chat request */
+  async acceptChat(chatId: string) {
+    this.lastError = null;
+    try {
+      const resp = await fetch(`${API_BASE}/chat/${chatId}/accept`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${authStore.accessToken}` },
+        credentials: 'include'
+      });
+      const result = await resp.json();
+      if (!resp.ok) throw new Error(result.error?.message || 'Failed to accept chat');
+      await this.fetchChats();
+    } catch (e: any) {
+      console.error('Failed to accept chat:', e);
+      this.lastError = e.message || 'Failed to accept chat';
+      throw e;
+    }
+  }
+
+  /** Reject a chat request */
+  async rejectChat(chatId: string) {
+    this.lastError = null;
+    try {
+      const resp = await fetch(`${API_BASE}/chat/${chatId}/reject`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${authStore.accessToken}` },
+        credentials: 'include'
+      });
+      const result = await resp.json();
+      if (!resp.ok) throw new Error(result.error?.message || 'Failed to reject chat');
+      await this.fetchChats();
+    } catch (e: any) {
+      console.error('Failed to reject chat:', e);
+      this.lastError = e.message || 'Failed to reject chat';
+      throw e;
+    }
+  }
+
+  /** Send a new chat request to a username */
+  async sendChatRequest(username: string) {
+    try {
+      const resp = await fetch(`${API_BASE}/chat/request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authStore.accessToken}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ username: username.trim() }),
+      });
+      const result = await resp.json();
+      if (!resp.ok) throw new Error(result.error?.message || 'Failed to send request');
+      await this.fetchChats();
+      return result;
+    } catch (e: unknown) {
+      console.error('Failed to send chat request:', e);
+      throw e;
     }
   }
 
@@ -363,35 +424,34 @@ class ChatStore {
     if (!this.socket || !this.isConnected || !contentBody.trim()) return;
 
     this.isSendingMessage = true;
-    // await new Promise((r) => setTimeout(r, 1000)); // test loader
     this.emitTyping(chatId, receiverId, false);
 
-    const idempotencyKey = `${authStore.user?.id}_${chatId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const idempotencyKey = crypto.randomUUID();
 
     const timeout = setTimeout(() => {
       this.isSendingMessage = false;
-    }, 10000); // 10s fallback for UI safety
+    }, MESSAGE_SEND_FALLBACK_TIMEOUT);
 
     this.socket.emit('send_message', {
       chatId,
       receiverId,
       contentBody: contentBody.trim(),
       idempotencyKey
-    }, (ack: { status: string, message: Message }) => {
+    }, (ack: MessageAckDto) => {
       clearTimeout(timeout);
       this.isSendingMessage = false;
       if (ack?.status === 'ok' && ack.message) {
-        // Add our own sent message to the list (avoid duplicates)
-        const exists = this.messages.some((m: Message) => m.idempotencyKey === ack.message.idempotencyKey);
+        // Map _id from backend to id
+        const message = { ...ack.message, id: ack.message._id || ack.message.id! };
+        const exists = this.messages.some((m: Message) => m.idempotencyKey === message.idempotencyKey);
         if (!exists) {
-          this.messages = [...this.messages, ack.message];
+          this.messages = [...this.messages, message];
         }
-        // Update local chat list (set last message, move to top)
         this.patchChatLocally(chatId, {
           lastMessage: {
-            contentBody: ack.message.contentBody,
-            senderId: ack.message.senderId,
-            sentAt: ack.message.createdAt
+            contentBody: message.contentBody,
+            senderId: message.senderId,
+            sentAt: message.createdAt
           }
         }, true);
       }
@@ -411,17 +471,15 @@ class ChatStore {
 
     const key = `${chatId}-${receiverId}`;
     if (!this.myTypingTimeouts.has(key)) {
-      // Emit immediately if we haven't recently
       this.socket.emit('typing_start', { chatId, receiverId });
     } else {
       clearTimeout(this.myTypingTimeouts.get(key));
     }
 
-    // Debounce to prevent flooding and manage typing_stop
     this.myTypingTimeouts.set(key, setTimeout(() => {
       this.socket?.emit('typing_stop', { chatId, receiverId });
       this.myTypingTimeouts.delete(key);
-    }, 2000));
+    }, TYPING_DEBOUNCE_DURATION));
   }
 }
 
