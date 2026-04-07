@@ -10,6 +10,7 @@ import { app } from '../app.js';
 
 // initialize application specific middlewares
 export function initializeMiddlewares() {
+    app.set('trust proxy', 1);
     // Define allowed origins
     const corsOptions = {
         origin: ALLOWED_ORIGINS,

@@ -3,10 +3,16 @@ import { success } from '../utils/response.js';
 
 const COOKIE_OPTIONS = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'None', // Lax
+    secure: true, // Always true since we're using HTTPS on live and localhost supports it or can be relaxed
+    sameSite: 'None', // Required for cross-site origins (different subdomains)
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 };
+
+// Override for development if not using HTTPS locally
+if (process.env.NODE_ENV === 'development') {
+    COOKIE_OPTIONS.secure = false;
+    COOKIE_OPTIONS.sameSite = 'Lax';
+}
 
 export const signup = async (req, res) => {
     const result = await authService.signup(req.body);
