@@ -5,7 +5,8 @@ const COOKIE_OPTIONS = {
     httpOnly: true,
     secure: true, // Always true since we're using HTTPS on live and localhost supports it or can be relaxed
     sameSite: 'None', // Required for cross-site origins (different subdomains)
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/' // Ensure cookie is globally available
 };
 
 // Override for development if not using HTTPS locally
