@@ -18,7 +18,7 @@ export async function configureSocket() {
 }
 
 export function startServer() {
-  // Note: initailize order should be: middlewares -> routes -> error handlers
+  // Note: initailize order should be: extensions -> middlewares -> routes -> error handlers
   initializeExtensions();
   initializeMiddlewares(); // common one - specific one are added at route level
   registerRoutes();
