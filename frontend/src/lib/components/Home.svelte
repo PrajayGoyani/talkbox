@@ -24,7 +24,7 @@
       <p
         class="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10"
       >
-        Experience seamless, real-time messaging with a premium interface.
+        Experience <!-- seamless, --> real-time messaging with a premium interface.
         <!-- designed for modern teams and individuals. -->
       </p>
 
