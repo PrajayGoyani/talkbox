@@ -214,19 +214,19 @@
   </main>
 {:else}
   <div
-    class="flex flex-col w-screen h-dvh bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden"
+    class="flex flex-col w-screen h-dvh bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden overflow-x-hidden"
   >
     <!-- Guest Header -->
     <header class="h-16 shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md z-50">
-      <div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+      <div class="max-w-7xl mx-auto px-3 sm:px-4 h-full flex items-center justify-between">
         <button 
           onclick={() => routerStore.navigate("/")}
-          class="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          class="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0"
         >
-          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
             <span class="text-white font-bold text-xl">T</span>
           </div>
-          <span class="font-bold text-xl tracking-tight text-slate-900 dark:text-slate-100">Talkbox</span>
+          <span class="font-bold text-lg sm:text-xl tracking-tight text-slate-900 dark:text-slate-100">Talkbox</span>
         </button>
 
         <div class="flex items-center gap-4">
@@ -240,7 +240,7 @@
 
           <button 
             onclick={() => themeStore.toggleTheme()}
-            class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400"
+            class="p-1.5 sm:p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400"
             aria-label="Toggle Theme"
           >
             {#if themeStore.theme === 'dark'}

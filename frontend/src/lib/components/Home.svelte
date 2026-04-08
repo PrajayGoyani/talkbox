@@ -10,11 +10,11 @@
   let signupLink = Route.SIGNUP;
 </script>
 
-<div class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+<div class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 overflow-x-hidden">
   <main>
     <!-- Hero Section -->
-    <section class="max-w-7xl mx-auto px-4 text-center">
-      <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+    <section class="max-w-7xl mx-auto px-4 text-center mt-12 md:mt-24">
+      <h1 class="text-4xl md:text-7xl font-extrabold tracking-tight mb-6 bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
         Connect. Chat. <br/> Collaborate.
       </h1>
       <p class="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10">
@@ -46,11 +46,11 @@
       </div>
 
       <!-- App Preview -->
-      <div class="relative max-w-5xl mx-auto group perspective-1000">
-        <div class="absolute -top-20 -left-20 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl animate-pulse delay-700"></div>
-        <div class="absolute -bottom-20 -right-20 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
+      <div class="relative max-w-5xl mx-auto group perspective-1000 px-2 sm:px-0">
+        <div class="absolute -top-10 -left-10 md:-top-20 md:-left-20 w-32 h-32 md:w-64 md:h-64 bg-indigo-600/20 rounded-full blur-3xl animate-pulse delay-700"></div>
+        <div class="absolute -bottom-10 -right-10 md:-bottom-20 md:-right-20 w-32 h-32 md:w-64 md:h-64 bg-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
         
-        <div class="relative rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(79,70,229,0.2)] border border-slate-200 dark:border-slate-800 transform rotate-x-6 rotate-y--6 transition-all duration-700 group-hover:rotate-0 group-hover:scale-[1.02] bg-white dark:bg-slate-950">
+        <div class="relative rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(79,70,229,0.2)] border border-slate-200 dark:border-slate-800 transform rotate-x-6 rotate-y--6 transition-all duration-700 group-hover:rotate-0 group-hover:scale-[1.02] bg-white dark:bg-slate-950 max-w-full">
           <!-- Top Bar -->
           <div class="h-10 border-b border-slate-100 dark:border-slate-800 flex items-center px-4 gap-1.5">
             <div class="w-3 h-3 rounded-full bg-rose-500/20 border border-rose-500/40"></div>
@@ -59,20 +59,18 @@
           </div>
 
           <!-- Stylized Mockup content -->
-          <div class="aspect-video flex">
+          <div class="aspect-4/3 sm:aspect-video flex min-w-0">
             <!-- Mock Icon Rail -->
-            <div class="w-14 border-r border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex flex-col items-center py-4 gap-4">
-              <div class="w-8 h-8 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-600">
-                <div class="w-4 h-4 bg-indigo-600 rounded-sm"></div>
+            <div class="w-10 sm:w-14 border-r border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex flex-col items-center py-4 gap-4 shrink-0">
+              <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-600">
+                <div class="w-3 h-3 sm:w-4 sm:h-4 bg-indigo-600 rounded-sm"></div>
               </div>
-              <div class="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800"></div>
-              <div class="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800"></div>
-              <div class="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800"></div>
-              <div class="mt-auto w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800"></div>
+              <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-slate-200 dark:bg-slate-800 opacity-50"></div>
+              <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-slate-200 dark:bg-slate-800 opacity-50"></div>
             </div>
 
-            <!-- Mock Chat List -->
-            <div class="w-1/4 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 p-4 space-y-6">
+            <!-- Mock Chat List (Hidden on mobile) -->
+            <div class="hidden sm:flex w-1/4 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 p-4 flex-col space-y-6 shrink-0">
               <div class="w-full h-8 bg-slate-100 dark:bg-slate-900 rounded-lg"></div>
               {#each [1, 2, 3, 4] as i}
                 <div class="flex gap-3 items-center opacity-70">
@@ -86,23 +84,23 @@
             </div>
 
             <!-- Mock Chat Window -->
-            <div class="flex-1 p-8 flex flex-col justify-end gap-6 bg-slate-50/30 dark:bg-slate-900/20">
-              <div class="flex gap-3">
-                <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 self-end"></div>
-                <div class="max-w-[70%] h-16 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl rounded-bl-sm p-4 shadow-sm">
-                  <div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded"></div>
-                  <div class="w-2/3 h-2 bg-slate-100 dark:bg-slate-800 rounded mt-2"></div>
+            <div class="flex-1 p-4 md:p-8 flex flex-col justify-end gap-3 md:gap-6 bg-slate-50/30 dark:bg-slate-900/20 min-w-0">
+              <div class="flex gap-2 md:gap-3">
+                <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-slate-200 dark:bg-slate-800 self-end"></div>
+                <div class="max-w-[85%] md:max-w-[70%] h-auto bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl md:rounded-2xl rounded-bl-sm p-3 md:p-4 shadow-sm">
+                  <div class="w-24 md:w-full h-1.5 md:h-2 bg-slate-100 dark:bg-slate-800 rounded"></div>
+                  <div class="w-16 md:w-2/3 h-1.5 md:h-2 bg-slate-100 dark:bg-slate-800 rounded mt-2"></div>
                 </div>
               </div>
-              <div class="flex gap-3 flex-row-reverse">
-                <div class="w-8 h-8 rounded-full bg-indigo-600 self-end"></div>
-                <div class="max-w-[70%] h-12 bg-indigo-600 rounded-2xl rounded-br-sm p-4 text-white shadow-lg shadow-indigo-600/20">
-                  <div class="w-full h-2 bg-white/30 rounded"></div>
+              <div class="flex gap-2 md:gap-3 flex-row-reverse">
+                <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-indigo-600 self-end"></div>
+                <div class="max-w-[85%] md:max-w-[70%] h-auto bg-indigo-600 rounded-xl md:rounded-2xl rounded-br-sm p-3 md:p-4 text-white shadow-lg shadow-indigo-600/20">
+                  <div class="w-20 md:w-full h-1.5 md:h-2 bg-white/30 rounded"></div>
                 </div>
               </div>
-              <div class="h-12 w-full mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-center px-4 justify-between">
-                <div class="w-1/3 h-2 bg-slate-100 dark:bg-slate-800 rounded"></div>
-                <div class="w-6 h-6 bg-indigo-600 rounded-lg"></div>
+              <div class="h-10 md:h-12 w-full mt-2 md:mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl md:rounded-2xl flex items-center px-3 md:px-4 justify-between">
+                <div class="w-1/3 h-1.5 md:h-2 bg-slate-100 dark:bg-slate-800 rounded"></div>
+                <div class="w-5 h-5 md:w-6 md:h-6 bg-indigo-600 rounded-lg"></div>
               </div>
             </div>
           </div>
