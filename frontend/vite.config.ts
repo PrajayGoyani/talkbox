@@ -2,7 +2,7 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite-plus";
 
-// https://vite.dev/config/
+// https://viteplus.dev/config/
 export default defineConfig({
   lint: { options: { typeAware: true, typeCheck: true } },
   plugins: [tailwindcss(), svelte()],
