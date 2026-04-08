@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 
-import { JWT_SECRET_KEY } from "../config/env.js";
+import { JWT_SECRET_KEY, NODE_ENV } from "../config/env.js";
 import { ALLOWED_ORIGINS } from "../config/env.js";
 import { chatService } from "../services/chat.service.js";
 import { socketService } from "../services/socket.service.js";
@@ -32,6 +32,9 @@ export const configureSocketServer = (server) => {
       socket.data.user = { id: decoded.id };
       next();
     } catch (error) {
+      if (NODE_ENV === "development") {
+        console.error(error);
+      }
       return next(AppError.unauthorized("Socket authentication error: Invalid Token."));
     }
   });

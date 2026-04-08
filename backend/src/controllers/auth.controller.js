@@ -1,5 +1,4 @@
 import { authService } from "../services/auth.service.js";
-import { success } from "../utils/response.js";
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -23,7 +22,7 @@ export const signup = async (req, res) => {
   res.cookie("refresh_token", result.refreshToken, COOKIE_OPTIONS);
   delete result.refreshToken;
 
-  res.json(success(result));
+  res.success(result);
 };
 
 export const login = async (req, res) => {
@@ -32,21 +31,21 @@ export const login = async (req, res) => {
   res.cookie("refresh_token", result.refreshToken, COOKIE_OPTIONS);
   delete result.refreshToken;
 
-  res.json(success(result));
+  res.success(result);
 };
 
 export const logout = async (req, res) => {
   res.clearCookie("refresh_token", COOKIE_OPTIONS);
-  res.json(success({ message: "Logged out successfully" }));
+  res.success({ message: "Logged out successfully" });
 };
 
 export const refresh = async (req, res) => {
   const refreshToken = req.cookies.refresh_token;
   const result = await authService.refresh(refreshToken);
-  res.json(success(result));
+  res.success(result);
 };
 
 export const getMe = async (req, res) => {
   const user = await authService.getMe(req.user.id);
-  res.json(success(user));
+  res.success(user);
 };

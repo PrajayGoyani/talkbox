@@ -3,7 +3,11 @@ import { PORT } from "./config/env.js";
 
 import { registerRoutes } from "./routes/routes.js";
 import http from "http";
-import { initializeMiddlewares, initializeErrorHandlers } from "./bootstrap/handler.js";
+import {
+  initializeMiddlewares,
+  initializeErrorHandlers,
+  initializeExtensions,
+} from "./bootstrap/handler.js";
 import { configureSocketServer } from "./controllers/socket.controller.js";
 
 export const app = express();
@@ -15,6 +19,7 @@ export async function configureSocket() {
 
 export function startServer() {
   // Note: initailize order should be: middlewares -> routes -> error handlers
+  initializeExtensions();
   initializeMiddlewares(); // common one - specific one are added at route level
   registerRoutes();
   initializeErrorHandlers();

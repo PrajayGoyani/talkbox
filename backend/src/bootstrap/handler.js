@@ -2,7 +2,7 @@ import path from "path";
 import express from "express";
 import { ALLOWED_ORIGINS, NODE_ENV } from "../config/env.js";
 import { AppError } from "../utils/AppError.js";
-import { error as errorResponse } from "../utils/response.js";
+import { error as errorResponse, success } from "../utils/response.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 // import helmet from 'helmet';
@@ -56,4 +56,10 @@ export function initializeErrorHandlers() {
       message,
     });
   });
+}
+
+export function initializeExtensions() {
+  app.response.success = function (data, statusCode = 200) {
+    return this.status(statusCode).json(success(data));
+  };
 }
