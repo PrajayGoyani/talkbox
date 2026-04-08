@@ -7,6 +7,7 @@ import {
   initializeMiddlewares,
   initializeErrorHandlers,
   initializeExtensions,
+  initializeStatic,
 } from "./bootstrap/handler.js";
 import { configureSocketServer } from "./controllers/socket.controller.js";
 
@@ -18,9 +19,10 @@ export async function configureSocket() {
 }
 
 export function startServer() {
-  // Note: initailize order should be: extensions -> middlewares -> routes -> error handlers
+  // Note: the order must be: extensions -> static -> middlewares -> routes -> error handlers
   initializeExtensions();
-  initializeMiddlewares(); // common one - specific one are added at route level
+  initializeStatic();
+  initializeMiddlewares();
   registerRoutes();
   initializeErrorHandlers();
   server.listen(PORT, () => {

@@ -8,7 +8,7 @@ import cors from "cors";
 // import helmet from 'helmet';
 import { app } from "../app.js";
 
-// initialize application specific middlewares
+// global application-level middlewares
 export function initializeMiddlewares() {
   app.set("trust proxy", 1);
   // Define allowed origins
@@ -25,8 +25,12 @@ export function initializeMiddlewares() {
   app.use(express.json());
   app.use(cookieParser());
   // app.use(express.urlencoded({ extended: true }));
-  app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
-  app.use(express.static(path.join(path.dirname("public"))));
+}
+
+// serve static file assets
+export function initializeStatic() {
+  // app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
+  app.use(express.static(path.join(process.cwd(), "public")));
 }
 
 export function initializeErrorHandlers() {
@@ -59,6 +63,7 @@ export function initializeErrorHandlers() {
 }
 
 export function initializeExtensions() {
+  // Enhance express prototype
   app.response.success = function (data, statusCode = 200) {
     return this.status(statusCode).json(success(data));
   };
