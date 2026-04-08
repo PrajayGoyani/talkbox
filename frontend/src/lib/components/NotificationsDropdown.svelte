@@ -97,13 +97,13 @@
     transition:fly={{ x: 400, duration: 400, easing: quintOut }}
   >
     <div
-      class="p-5 border-b border-white/5 flex items-center justify-between shrink-0"
+      class="p-5 border-b border-slate-200 dark:border-white/5 flex items-center justify-between shrink-0"
     >
-      <h2 class="text-lg font-bold text-white">Notifications</h2>
+      <h2 class="text-lg font-bold text-slate-900 dark:text-white">Notifications</h2>
       <div class="flex items-center gap-2">
         {#if unreadCount > 0}
           <button
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-indigo-400 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/50 transition-all"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/50 transition-all"
             onclick={() => notificationStore.markAllAsRead()}
           >
             <Icon name="check" class="w-3.5 h-3.5" />
@@ -111,7 +111,7 @@
           </button>
         {/if}
         <button
-          class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+          class="p-2 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
           onclick={() => (isOpen = false)}
           aria-label="Close notifications"
         >
@@ -133,13 +133,13 @@
       {#each notificationStore.notifications as notification (notification._id)}
         <div transition:slide={{ duration: 300, easing: quintOut }}>
           <button
-            class="flex gap-4 p-4 w-full text-left border-b border-white/5 transition-all relative group {notification.isRead
-              ? 'hover:bg-white/5'
+            class="flex gap-4 p-4 w-full text-left border-b border-slate-200 dark:border-white/5 transition-all relative group {notification.isRead
+              ? 'hover:bg-slate-200/50 dark:hover:bg-white/5'
               : 'bg-indigo-600/5 border-l-2 border-indigo-600 hover:bg-indigo-600/10'}"
             onclick={() => handleNotificationClick(notification)}
           >
             <div
-              class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300"
+              class="w-10 h-10 rounded-xl bg-slate-200 dark:bg-white/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300"
             >
               <Icon name={getIcon(notification.type) as any} class="w-5 h-5 text-indigo-400" />
             </div>
@@ -148,7 +148,7 @@
                 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
                 >{getLabel(notification.type)}</span
               >
-              <span class="text-sm text-slate-200 leading-snug wrap-break-word group-hover:text-white transition-colors"
+              <span class="text-sm text-slate-700 dark:text-slate-200 leading-snug wrap-break-word group-hover:text-slate-900 dark:group-hover:text-white transition-colors"
                 >{notification.message}</span
               >
               <span class="text-[10px] text-slate-500 mt-0.5"
@@ -176,7 +176,7 @@
 
       {#if notificationStore.hasMore && !notificationStore.loading && notificationStore.notifications.length > 0}
         <button
-          class="w-full p-4 text-indigo-400 text-sm font-medium hover:bg-white/5 transition-colors border-t border-white/5"
+          class="w-full p-4 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:bg-slate-200 dark:hover:bg-white/5 transition-colors border-t border-slate-200 dark:border-white/5"
           onclick={() => notificationStore.fetchNotifications()}
         >
           Load more notifications
