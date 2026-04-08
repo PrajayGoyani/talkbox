@@ -25,6 +25,7 @@
   import Terms from "./lib/components/Terms.svelte";
   import Privacy from "./lib/components/Privacy.svelte";
   import Home from "./lib/components/Home.svelte";
+  import ThemeToggle from "./lib/components/ThemeToggle.svelte";
 
   type PanelId = "conversations" | "profile" | "settings" | "requests";
 
@@ -217,60 +218,75 @@
     class="flex flex-col w-screen h-dvh bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden overflow-x-hidden"
   >
     <!-- Guest Header -->
-    <header class="h-16 shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md z-50">
-      <div class="max-w-7xl mx-auto px-3 sm:px-4 h-full flex items-center justify-between">
-        <button 
+    <header
+      class="h-16 shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md z-50"
+    >
+      <div
+        class="max-w-7xl mx-auto px-3 sm:px-4 h-full flex items-center justify-between"
+      >
+        <button
           onclick={() => routerStore.navigate("/")}
           class="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0"
         >
-          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+          <div
+            class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0"
+          >
             <span class="text-white font-bold text-xl">T</span>
           </div>
-          <span class="font-bold text-lg sm:text-xl tracking-tight text-slate-900 dark:text-slate-100">Talkbox</span>
+          <span
+            class="font-bold text-lg sm:text-xl tracking-tight text-slate-900 dark:text-slate-100"
+            >Talkbox</span
+          >
         </button>
 
         <div class="flex items-center gap-4">
           <!-- Features/FAQ links only on Home -->
           {#if routerStore.segments.length === 0}
-            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400 mr-4">
-              <a href="#features" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Features</a>
-              <a href="#faq" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">FAQ</a>
+            <nav
+              class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400 mr-4"
+            >
+              <a
+                href="#features"
+                class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                >Features</a
+              >
+              <a
+                href="#faq"
+                class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                >FAQ</a
+              >
             </nav>
           {/if}
 
-          <button 
-            onclick={() => themeStore.toggleTheme()}
-            class="p-1.5 sm:p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400"
-            aria-label="Toggle Theme"
-          >
-            {#if themeStore.theme === 'dark'}
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M16.243 17.657l.707.707M7.757 6.343l.707.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
-              </svg>
-            {:else}
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            {/if}
-          </button>
+          <ThemeToggle />
 
           {#if !routerStore.segments.includes("login") && !routerStore.segments.includes("signup")}
             {#if authStore.user}
-              <button 
+              <button
                 onclick={() => routerStore.navigate(Route.CONVERSATIONS)}
                 class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-sm font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2"
               >
                 Go to Dashboard
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg
+                >
               </button>
             {:else}
-              <button 
+              <button
                 onclick={() => routerStore.navigate(Route.LOGIN)}
                 class="hidden sm:block text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-indigo-600 px-2"
               >
                 Log In
               </button>
-              <button 
+              <button
                 onclick={() => routerStore.navigate(Route.SIGNUP)}
                 class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-sm font-bold transition-all shadow-lg shadow-indigo-600/20"
               >
