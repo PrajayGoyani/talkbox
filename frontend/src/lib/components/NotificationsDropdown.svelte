@@ -87,7 +87,7 @@
 <!-- Side Drawer (portal-style, rendered outside sidebar flow) -->
 {#if isOpen}
   <button
-    class="fixed inset-0 bg-black/60 z-998 backdrop-blur-sm border-none w-full h-full cursor-default"
+    class="fixed inset-0 bg-black/60 z-998 backdrop-blur-sm border-none w-full h-full"
     onclick={() => (isOpen = false)}
     transition:fade={{ duration: 200 }}
     aria-label="Close notifications"
@@ -103,7 +103,7 @@
       <div class="flex items-center gap-2">
         {#if unreadCount > 0}
           <button
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/50 transition-all"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/50 transition-all active:scale-95"
             onclick={() => notificationStore.markAllAsRead()}
           >
             <Icon name="check" class="w-3.5 h-3.5" />
@@ -111,7 +111,7 @@
           </button>
         {/if}
         <button
-          class="p-2 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+          class="p-2 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10 transition-colors active:scale-90"
           onclick={() => (isOpen = false)}
           aria-label="Close notifications"
         >
@@ -176,7 +176,7 @@
 
       {#if notificationStore.hasMore && !notificationStore.loading && notificationStore.notifications.length > 0}
         <button
-          class="w-full p-4 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:bg-slate-200 dark:hover:bg-white/5 transition-colors border-t border-slate-200 dark:border-white/5"
+          class="w-full p-4 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:bg-slate-200 dark:hover:bg-white/5 transition-colors border-t border-slate-200 dark:border-white/5 active:bg-slate-300 dark:active:bg-white/10"
           onclick={() => notificationStore.fetchNotifications()}
         >
           Load more notifications

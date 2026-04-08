@@ -16,6 +16,14 @@
   padding: 0; */
 }
 
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 body {
   @apply font-sans antialiased transition-colors duration-300;
   background: theme("colors.slate.50");
@@ -60,7 +68,7 @@ body {
 }
 
 .chat-item {
-  @apply relative flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all hover:bg-slate-100 dark:hover:bg-white/5;
+  @apply relative flex w-full cursor-pointer items-center gap-3 rounded-xl p-3 text-left transition-all hover:bg-slate-100 dark:hover:bg-white/5;
 }
 
 .chat-item-active {
@@ -82,7 +90,7 @@ body {
 
 /* Navigation */
 .rail-btn {
-  @apply relative rounded-xl p-2.5 text-slate-400 transition-all hover:bg-white/10 hover:text-indigo-500;
+  @apply relative rounded-xl p-2.5 text-slate-400 transition-all hover:bg-white/10 hover:text-indigo-500 active:scale-90;
 }
 
 .rail-btn-active {

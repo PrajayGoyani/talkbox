@@ -101,7 +101,7 @@
   <div class="flex items-center gap-3">
     <!-- Mobile Back Button -->
     <button
-      class="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10 transition-all mr-2"
+      class="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10 transition-all mr-2 active:scale-90"
       onclick={onBack}
       aria-label="Back"
     >
@@ -110,7 +110,7 @@
 
     <!-- Desktop Sidebar Toggle Button -->
     <button
-      class="hidden md:flex p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10 transition-all mr-2"
+      class="hidden md:flex p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10 transition-all mr-2 active:scale-90"
       onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
       aria-label="Toggle Sidebar"
     >
@@ -131,7 +131,7 @@
         >
       {:else}
         <div class="flex items-center gap-1.5 mt-1">
-          {#if chatStore.onlineStatus[otherUser?.id || '']?.isOnline}
+          {#if chatStore.onlineStatus[otherUser?.id || ""]?.isOnline}
             <span
               class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
             ></span><span class="text-xs text-emerald-500 font-medium"
@@ -139,7 +139,9 @@
             >
           {:else if chatStore.onlineStatus[otherUser?.id || ""]?.lastSeen}
             <span class="text-xs text-slate-500">
-              Last seen {formatTimeAgo(chatStore.onlineStatus[otherUser?.id || ""].lastSeen!)}
+              Last seen {formatTimeAgo(
+                chatStore.onlineStatus[otherUser?.id || ""].lastSeen!,
+              )}
             </span>
           {:else}
             <span class="text-xs text-slate-500">Offline</span>
@@ -202,9 +204,7 @@
       {#each chatStore.messages as msg, i (msg.id)}
         {@const currentDateLabel = getDateLabel(msg.createdAt)}
         {@const prevDateLabel =
-          i > 0
-            ? getDateLabel(chatStore.messages[i - 1].createdAt)
-            : null}
+          i > 0 ? getDateLabel(chatStore.messages[i - 1].createdAt) : null}
 
         {#if currentDateLabel !== prevDateLabel}
           <div
@@ -248,11 +248,10 @@
   {/if}
 
   {#if (chatStore.typingStatus[chatId]?.size ?? 0) > 0}
-    {#if !chatStore.typingStatus[chatId]?.has(authStore.user?.id || '') || (chatStore.typingStatus[chatId]?.size ?? 0) > 1}
+    {#if !chatStore.typingStatus[chatId]?.has(authStore.user?.id || "") || (chatStore.typingStatus[chatId]?.size ?? 0) > 1}
       <div class="px-6 pb-2">
         <span class="text-xs text-slate-500 italic"
-          >{otherUser?.name || otherUser?.username} is
-          typing...</span
+          >{otherUser?.name || otherUser?.username} is typing...</span
         >
       </div>
     {/if}
@@ -275,7 +274,9 @@
       disabled={!messageInput.trim() || chatStore.isSendingMessage}
     >
       {#if chatStore.isSendingMessage}
-        <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+        <span
+          class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+        ></span>
       {:else}
         <Icon name="send" class="w-5 h-5" />
       {/if}

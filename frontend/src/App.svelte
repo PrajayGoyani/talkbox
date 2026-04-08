@@ -304,7 +304,7 @@
         <Login>
           {#snippet toggleSignup()}
             <button
-              class="text-indigo-600 hover:text-indigo-500 font-medium transition-colors cursor-pointer"
+              class="text-indigo-600 hover:text-indigo-500 font-medium transition-colors"
               onclick={() => toggleView("SIGNUP")}
             >
               Sign up
@@ -315,7 +315,7 @@
         <Signup>
           {#snippet toggleLogin()}
             <button
-              class="text-indigo-600 hover:text-indigo-500 font-medium transition-colors cursor-pointer"
+              class="text-indigo-600 hover:text-indigo-500 font-medium transition-colors"
               onclick={() => toggleView("LOGIN")}
             >
               Log in

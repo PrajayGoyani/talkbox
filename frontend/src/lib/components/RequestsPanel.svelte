@@ -111,7 +111,7 @@
           onkeydown={(e) => e.key === "Enter" && handleSendRequest()}
         />
         <button
-          class="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors disabled:opacity-40 shrink-0"
+          class="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-all disabled:opacity-40 shrink-0 active:scale-90"
           onclick={handleSendRequest}
           disabled={requestLoading || !requestUsername.trim()}
           aria-label="Send request"
@@ -179,7 +179,7 @@
               </div>
               <div class="flex gap-1.5 shrink-0">
                 <button
-                  class="w-8 h-8 rounded-full flex items-center justify-center bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-colors disabled:opacity-40"
+                  class="w-8 h-8 rounded-full flex items-center justify-center bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-all disabled:opacity-40 active:scale-95"
                   onclick={() => handleAccept(chat.id)}
                   aria-label="Accept"
                   disabled={!!processingStates[chat.id]}
@@ -191,7 +191,7 @@
                   {/if}
                 </button>
                 <button
-                  class="w-8 h-8 rounded-full flex items-center justify-center bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 transition-colors disabled:opacity-40"
+                  class="w-8 h-8 rounded-full flex items-center justify-center bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 transition-all disabled:opacity-40 active:scale-95"
                   onclick={() => handleReject(chat.id)}
                   aria-label="Reject"
                   disabled={!!processingStates[chat.id]}

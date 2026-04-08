@@ -37,7 +37,7 @@
   >
     <!-- App Logo (hidden on mobile) -->
     <button
-      class="w-10 h-10 hidden md:flex items-center justify-center text-indigo-500 mb-3 hover:bg-white/10 rounded-xl transition-all"
+      class="w-10 h-10 hidden md:flex items-center justify-center text-indigo-500 mb-3 hover:bg-white/10 rounded-xl transition-all active:scale-90"
       onclick={() => routerStore.navigate("/")}
       title="Talkbox Home"
       aria-label="Back to Home"
@@ -86,7 +86,7 @@
 
     <!-- Notification bell (opens right-side drawer) -->
     <button
-      class="w-11 h-11 hidden md:flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all relative"
+      class="w-11 h-11 hidden md:flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all relative active:scale-90"
       onclick={onNotificationToggle}
       title="Notifications"
       aria-label="Notifications"
@@ -104,7 +104,7 @@
 
   <div class="hidden md:flex flex-col items-center gap-1">
     <button
-      class="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
+      class="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all active:scale-90"
       onclick={onLogout}
       title="Log Out"
       aria-label="Log out"

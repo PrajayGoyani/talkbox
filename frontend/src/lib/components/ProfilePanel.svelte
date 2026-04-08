@@ -126,7 +126,7 @@
     <!-- Avatar Section -->
     <div class="flex justify-center">
       <button
-        class="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center relative cursor-pointer overflow-hidden shadow-xl shadow-indigo-500/20 transition-transform hover:scale-105 border-none p-0"
+        class="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center relative overflow-hidden shadow-xl shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 border-none p-0"
         onclick={handleAvatarSelect}
         onkeydown={(e) => (e.key === "Enter" || e.key === " ") && handleAvatarSelect()}
         aria-label="Change avatar"
@@ -199,7 +199,7 @@
               class="input-field flex-1 py-2! px-3! text-sm!"
             />
             <button
-              class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 flex items-center justify-center transition-colors disabled:opacity-40"
+              class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 flex items-center justify-center transition-all disabled:opacity-40 active:scale-90"
               onclick={handleSaveName}
               disabled={saving}
               aria-label="Save name"
@@ -213,7 +213,7 @@
               {/if}
             </button>
             <button
-              class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 flex items-center justify-center transition-colors"
+              class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 flex items-center justify-center transition-all active:scale-90"
               onclick={cancelEditName}
               aria-label="Cancel editing">✕</button
             >
@@ -226,7 +226,7 @@
               >{authStore.user?.name || "Not set"}</span
             >
             <button
-              class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all"
+              class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all active:scale-90"
               onclick={startEditName}
               aria-label="Edit display name"
             >
