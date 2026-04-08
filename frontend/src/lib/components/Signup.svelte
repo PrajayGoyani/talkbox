@@ -63,9 +63,9 @@
       password,
       ...(sanitizedName ? { name: sanitizedName } : {}),
     });
-    
+
     if (success) {
-      routerStore.navigate('/chat/conversations');
+      routerStore.navigate("/chat/conversations");
     }
   };
 </script>

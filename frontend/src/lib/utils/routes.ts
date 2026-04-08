@@ -6,4 +6,6 @@ export enum Route {
   PROFILE = "/chat/profile",
   SETTINGS = "/chat/settings",
   REQUESTS = "/chat/requests",
+  TERMS = "/terms",
+  PRIVACY = "/privacy",
 }

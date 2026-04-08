@@ -2,6 +2,7 @@
   import { authStore } from "../state/auth.svelte";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
+  import { routerStore } from "../state/router.svelte";
 
   type PanelId = "conversations" | "profile" | "settings" | "requests";
 
@@ -27,15 +28,22 @@
 </script>
 
 <nav
-  class="w-full md:w-[60px] h-[60px] md:h-full bg-slate-900 flex-row md:flex-col justify-between items-center px-4 py-0 md:px-0 md:py-4 border-t md:border-t-0 md:border-r border-white/5 shrink-0 z-20 order-last md:order-first {hideOnMobile ? 'hidden md:flex' : 'flex'}"
+  class="w-full md:w-[60px] h-[60px] md:h-full bg-slate-900 flex-row md:flex-col justify-between items-center px-4 py-0 md:px-0 md:py-4 border-t md:border-t-0 md:border-r border-white/5 shrink-0 z-20 order-last md:order-first {hideOnMobile
+    ? 'hidden md:flex'
+    : 'flex'}"
 >
-  <div class="flex flex-row md:flex-col items-center gap-2 md:gap-1 w-full md:w-auto justify-between md:justify-start">
+  <div
+    class="flex flex-row md:flex-col items-center gap-2 md:gap-1 w-full md:w-auto justify-between md:justify-start"
+  >
     <!-- App Logo (hidden on mobile) -->
-    <div
-      class="w-10 h-10 hidden md:flex items-center justify-center text-indigo-500 mb-3"
+    <button
+      class="w-10 h-10 hidden md:flex items-center justify-center text-indigo-500 mb-3 hover:bg-white/10 rounded-xl transition-all"
+      onclick={() => routerStore.navigate("/")}
+      title="Talkbox Home"
+      aria-label="Back to Home"
     >
       <Icon name="nav-chat" class="w-6 h-6" />
-    </div>
+    </button>
 
     <!-- Navigation Icons -->
     <button
@@ -106,7 +114,10 @@
 
     <!-- User avatar at bottom -->
     <div class="md:mt-2">
-      <Avatar user={authStore.user} class="w-9 h-9 bg-indigo-600 text-white text-sm shadow-lg shadow-indigo-500/20 border-2 border-slate-900" />
+      <Avatar
+        user={authStore.user}
+        class="w-9 h-9 bg-indigo-600 text-white text-sm shadow-lg shadow-indigo-500/20 border-2 border-slate-900"
+      />
     </div>
   </div>
 </nav>

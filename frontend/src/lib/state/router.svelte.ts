@@ -22,9 +22,10 @@ class RouterStore {
     // Strip leading # and /
     let rawHash = window.location.hash.replace(/^#\/?/, "");
 
-    // Default Route
+    // Default Route (Home)
     if (!rawHash) {
-      this.navigate(authStore.user ? Route.CONVERSATIONS : Route.LOGIN);
+      this.hash = "";
+      this.segments = [];
       return;
     }
 
@@ -39,8 +40,16 @@ class RouterStore {
 
     const firstSegment = pathSegments[0];
 
-    // Redirect to login if unauthenticated and not on an auth page
-    if (!authStore.user && ![Route.LOGIN.replace(/^\//, ""), Route.SIGNUP.replace(/^\//, "")].includes(firstSegment)) {
+    const guestRoutes = [
+      Route.LOGIN.replace(/^\//, ""),
+      Route.SIGNUP.replace(/^\//, ""),
+      Route.TERMS.replace(/^\//, ""),
+      Route.PRIVACY.replace(/^\//, ""),
+      "", // Home
+    ];
+
+    // Redirect to login if unauthenticated and not on an allowed guest page
+    if (!authStore.user && !guestRoutes.includes(firstSegment || "")) {
       this.navigate(Route.LOGIN);
       return;
     }

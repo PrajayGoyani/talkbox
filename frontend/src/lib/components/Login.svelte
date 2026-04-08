@@ -20,7 +20,7 @@
 
     const success = await authStore.login({ username, password });
     if (success) {
-      routerStore.navigate('/chat/conversations');
+      routerStore.navigate("/chat/conversations");
     }
   };
 </script>
