@@ -45,6 +45,8 @@ class RouterStore {
       Route.SIGNUP.replace(/^\//, ""),
       Route.TERMS.replace(/^\//, ""),
       Route.PRIVACY.replace(/^\//, ""),
+      "features",
+      "faq",
       "", // Home
     ];
 

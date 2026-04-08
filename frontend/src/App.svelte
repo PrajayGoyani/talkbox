@@ -226,7 +226,7 @@
       >
         <button
           onclick={() => routerStore.navigate("/")}
-          class="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0"
+          class="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0 active:scale-95"
         >
           <div
             class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0"
@@ -241,7 +241,7 @@
 
         <div class="flex items-center gap-4">
           <!-- Features/FAQ links only on Home -->
-          {#if routerStore.segments.length === 0}
+          {#if routerStore.segments.length === 0 || routerStore.segments[0] === "features" || routerStore.segments[0] === "faq"}
             <nav
               class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400 mr-4"
             >
@@ -264,7 +264,7 @@
             {#if authStore.user}
               <button
                 onclick={() => routerStore.navigate(Route.CONVERSATIONS)}
-                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-sm font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2"
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-sm font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2 active:scale-95"
               >
                 Go to Dashboard
                 <svg
@@ -282,13 +282,13 @@
             {:else}
               <button
                 onclick={() => routerStore.navigate(Route.LOGIN)}
-                class="hidden sm:block text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-indigo-600 px-2"
+                class="hidden sm:block text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-indigo-600 px-2 active:scale-95"
               >
                 Log In
               </button>
               <button
                 onclick={() => routerStore.navigate(Route.SIGNUP)}
-                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-sm font-bold transition-all shadow-lg shadow-indigo-600/20"
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-sm font-bold transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
               >
                 Sign Up
               </button>
