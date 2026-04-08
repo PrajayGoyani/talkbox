@@ -46,6 +46,9 @@
   );
   let selectedChatId = $derived(routerStore.segments[2] || null);
   let isSidebarCollapsed = $state(false);
+  let isDocPage = $derived(
+    routerStore.segments[0] === "terms" || routerStore.segments[0] === "privacy",
+  );
 
   $effect(() => {
     // Apply theme reactively
@@ -299,29 +302,37 @@
     </header>
 
     <!-- Content -->
-    <div class="flex-1 overflow-y-auto w-full flex items-center justify-center">
+    <div
+      class="flex-1 overflow-y-auto w-full flex flex-col {isDocPage
+        ? 'block'
+        : 'items-center p-4 sm:p-8'}"
+    >
       {#if routerStore.segments[0] === "login"}
-        <Login>
-          {#snippet toggleSignup()}
-            <button
-              class="text-indigo-600 hover:text-indigo-500 font-medium transition-colors"
-              onclick={() => toggleView("SIGNUP")}
-            >
-              Sign up
-            </button>
-          {/snippet}
-        </Login>
+        <div class="w-full flex justify-center py-8 my-auto">
+          <Login>
+            {#snippet toggleSignup()}
+              <button
+                class="text-indigo-600 hover:text-indigo-500 font-medium transition-colors"
+                onclick={() => toggleView("SIGNUP")}
+              >
+                Sign up
+              </button>
+            {/snippet}
+          </Login>
+        </div>
       {:else if routerStore.segments[0] === "signup"}
-        <Signup>
-          {#snippet toggleLogin()}
-            <button
-              class="text-indigo-600 hover:text-indigo-500 font-medium transition-colors"
-              onclick={() => toggleView("LOGIN")}
-            >
-              Log in
-            </button>
-          {/snippet}
-        </Signup>
+        <div class="w-full flex justify-center py-8 my-auto">
+          <Signup>
+            {#snippet toggleLogin()}
+              <button
+                class="text-indigo-600 hover:text-indigo-500 font-medium transition-colors"
+                onclick={() => toggleView("LOGIN")}
+              >
+                Log in
+              </button>
+            {/snippet}
+          </Signup>
+        </div>
       {:else if routerStore.segments[0] === "terms"}
         <div class="w-full">
           <Terms />

@@ -3,7 +3,7 @@
   import { Route } from "../utils/routes";
 </script>
 
-<div class="max-w-4xl mx-auto px-4 py-32 prose dark:prose-invert">
+<div class="max-w-4xl mx-auto px-4 py-12 prose dark:prose-invert">
   <button 
     onclick={() => routerStore.navigate("/")}
     class="mb-8 text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-2"
