@@ -20,7 +20,7 @@
   }>();
 
   let listContainerHeight = $state(0);
-  const SKELETON_ITEM_HEIGHT = 68; // height of ChatListSkeleton
+  const SKELETON_ITEM_HEIGHT = 80; // height of ChatListSkeleton
   const skeletonCount = $derived(
     listContainerHeight > 0
       ? Math.ceil(listContainerHeight / SKELETON_ITEM_HEIGHT)
@@ -116,7 +116,10 @@
   });
 </script>
 
-<div class="flex flex-col gap-1 h-full p-2" bind:clientHeight={listContainerHeight}>
+<div
+  class="flex flex-col gap-1 h-full p-2"
+  bind:clientHeight={listContainerHeight}
+>
   <!-- New Chat Request Button -->
   <div class="mb-2 flex flex-col gap-1.5">
     {#if showRequestInput}

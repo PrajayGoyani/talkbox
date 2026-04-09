@@ -27,7 +27,7 @@
   let showJumpButton = $state(false);
   let userHasScrolledUp = $state(false);
   let windowContainerHeight = $state(0);
-  const MESSAGE_SKELETON_HEIGHT = 80;
+  const MESSAGE_SKELETON_HEIGHT = 90;
   const messageSkeletonCount = $derived(
     windowContainerHeight > 0
       ? Math.ceil(windowContainerHeight / MESSAGE_SKELETON_HEIGHT)
