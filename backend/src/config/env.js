@@ -6,4 +6,10 @@ export const JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION;
 export const MONGO_URI = process.env.MONGO_URI;
 export const NODE_ENV = process.env.NODE_ENV;
 export const BCRYPT_SALT = Number(process.env.BCRYPT_SALT);
+
+if (!process.env.ALLOWED_ORIGINS) {
+  console.error("Fatal: ALLOWED_ORIGINS environment variable is required.");
+  process.exit(1);
+}
 export const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
+

@@ -1,10 +1,10 @@
 import mongoose, { Schema } from "mongoose";
 
 const messageSchema = new Schema({
-  chatId: { type: String, required: true, ref: "Chat" },
-  senderId: { type: String, required: true, ref: "User" },
+  chatId: { type: Schema.Types.ObjectId, required: true, ref: "Chat" },
+  senderId: { type: Schema.Types.ObjectId, required: true, ref: "User" },
   contentBody: { type: String, default: "", trim: true },
-  attachement: {
+  attachment: {
     kind: { type: String, enum: ["image", "audio", "video"], default: null },
     url: { type: String, default: null },
     // metadata: { type: Schema.Types.Mixed, default: null }

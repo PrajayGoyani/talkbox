@@ -46,17 +46,18 @@ class SocketService {
 
   async emitPartnersStatus(userId, socket) {
     try {
+      const uidStr = userId.toString();
       const chats = await ChatModel.find({
-        participants: userId,
+        $or: [{ userA: uidStr }, { userB: uidStr }],
         status: "accepted",
       });
 
       const partnerIds = new Set();
       chats.forEach((chat) => {
-        chat.participants.forEach((p) => {
-          const pIdStr = p.toString();
-          if (pIdStr !== userId.toString()) partnerIds.add(pIdStr);
-        });
+        const aStr = chat.userA.toString();
+        const bStr = chat.userB.toString();
+        if (aStr !== uidStr) partnerIds.add(aStr);
+        if (bStr !== uidStr) partnerIds.add(bStr);
       });
 
       for (const partnerId of partnerIds) {
@@ -83,23 +84,25 @@ class SocketService {
 
   async notifyStatusChange(userId, isOnline) {
     try {
+      const uidStr = userId.toString();
+
       if (!isOnline) {
         await UserModel.findByIdAndUpdate(userId, { lastSeen: new Date() });
       }
 
       // Find all accepted chats for this user
       const chats = await ChatModel.find({
-        participants: userId,
+        $or: [{ userA: uidStr }, { userB: uidStr }],
         status: "accepted",
       });
 
       // Extract unique partner IDs
       const partnerIds = new Set();
       chats.forEach((chat) => {
-        chat.participants.forEach((p) => {
-          const pIdStr = p.toString();
-          if (pIdStr !== userId.toString()) partnerIds.add(pIdStr);
-        });
+        const aStr = chat.userA.toString();
+        const bStr = chat.userB.toString();
+        if (aStr !== uidStr) partnerIds.add(aStr);
+        if (bStr !== uidStr) partnerIds.add(bStr);
       });
 
       // Emit to each connected partner
@@ -133,7 +136,7 @@ class SocketService {
       });
 
       if (!isValid) return;
-    } catch (e) {
+    } catch (_e) {
       return;
     }
 

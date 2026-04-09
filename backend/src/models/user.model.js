@@ -2,7 +2,6 @@ import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 
 import { BCRYPT_SALT } from "../config/env.js";
-import z from "zod";
 import { AppError } from "../utils/AppError.js";
 
 const userSchema = new Schema({

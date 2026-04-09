@@ -28,4 +28,5 @@ export function startServer() {
   server.listen(PORT, () => {
     console.log(`Server is running on localhost:${PORT}`);
   });
+  return server;
 }

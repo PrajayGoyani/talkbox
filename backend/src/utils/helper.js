@@ -4,8 +4,9 @@ export const formatZodErrors = (error) => {
     if ("invalid_type" === code) {
       message = `This field is required.`;
     }
-    return { origin, code, message, path };
+    return { origin: origin || "unknown", code, message, path };
   });
 
   return errors;
 };
+

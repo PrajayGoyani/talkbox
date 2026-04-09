@@ -13,15 +13,13 @@ async function runRetentionCleanup() {
 
     await MessageModel.deleteMany({ createdAt: { $lt: thirtyDaysAgo } });
 
-    // Note: In a real system, messages linked to these chats might also need explicit deletion
-    // if not handled by cascade or lifecycle hooks, but for now we delete chats explicitly.
     const chatsToDelete = await ChatModel.find({
       isDeleted: true,
       deletedAt: { $lt: fourteenDaysAgo },
     });
 
     for (const chat of chatsToDelete) {
-      await MessageModel.deleteMany({ chatId: chat._id }); // can move this to chat model hooks
+      await MessageModel.deleteMany({ chatId: chat._id });
       await ChatModel.deleteOne({ _id: chat._id });
     }
     console.log("Background jobs complete.");
@@ -31,10 +29,13 @@ async function runRetentionCleanup() {
 }
 
 export async function startJobs() {
-  // Execute immediately on startup
-  if (NODE_ENV === "production") {
-    await runRetentionCleanup();
+  if (NODE_ENV !== "production") {
+    console.log("Skipping background jobs in non-production environment.");
+    return;
   }
+
+  // Execute immediately on startup
+  await runRetentionCleanup();
 
   // Schedule to run every 24 hours
   setInterval(
@@ -47,4 +48,3 @@ export async function startJobs() {
   );
 }
 
-// NOTE: future enhancement: node-cron or Agenda(support multiple DBs) or BullMQ (redis based)

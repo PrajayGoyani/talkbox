@@ -6,7 +6,6 @@ import { rateLimiter } from "../middlewares/rate-limiter.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { updateProfileSchema } from "../schemas/user.schema.js";
 import {
-  getMe,
   searchByUsername,
   uploadAvatar,
   updateProfile,
@@ -19,9 +18,6 @@ router.use(rateLimiter);
 // Upload avatar
 router.post("/avatar", upload.single("avatar"), uploadAvatar);
 
-// Get user
-router.get("/me", getMe);
-
 // Update user profile
 router.patch("/profile", validate(updateProfileSchema), updateProfile);
 
@@ -29,3 +25,4 @@ router.patch("/profile", validate(updateProfileSchema), updateProfile);
 router.get("/search", searchByUsername);
 
 export default router;
+

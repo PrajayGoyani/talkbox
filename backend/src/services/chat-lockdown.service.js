@@ -1,3 +1,6 @@
+import { NODE_ENV } from "../config/env.js";
+import ChatModel from "../models/chat.model.js";
+
 // O(1) hash store for deleted chats lockdown logic
 class ChatLockdownService {
   constructor(chatModel) {
@@ -29,6 +32,5 @@ class ChatLockdownService {
   }
 }
 
-import { NODE_ENV } from "../config/env.js";
-import ChatModel from "../models/chat.model.js";
 export const chatLockdownService = new ChatLockdownService(ChatModel);
+

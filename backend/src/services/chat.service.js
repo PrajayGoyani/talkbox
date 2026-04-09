@@ -2,6 +2,9 @@ import { AppError } from "../utils/AppError.js";
 import { ObjectId } from "mongodb";
 import { chatLockdownService } from "./chat-lockdown.service.js";
 import { notificationService } from "./notification.service.js";
+import ChatModel from "../models/chat.model.js";
+import MessageModel from "../models/message.model.js";
+import UserModel from "../models/user.model.js";
 
 /**
  * @typedef {import('mongoose').Model} Model
@@ -81,7 +84,7 @@ class ChatService {
   async searchChats(userId, query) {
     if (!query || query.trim().length === 0) return [];
 
-    const uidStr = userId.toString();
+    const uid = new ObjectId(userId);
     const escapedQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const q = new RegExp(escapedQuery, "i");
 
@@ -89,7 +92,7 @@ class ChatService {
     const chats = await this.Chat.aggregate([
       {
         $match: {
-          $or: [{ userA: uidStr }, { userB: uidStr }],
+          $or: [{ userA: uid }, { userB: uid }],
           isDeleted: false,
           status: "accepted",
         },
@@ -104,15 +107,14 @@ class ChatService {
                 $expr: {
                   $and: [
                     // The user must be one of the chat participants
-                    // userA/userB are strings in our schema, so they must match the string representation or be converted
                     {
                       $or: [
-                        { $eq: [{ $toString: "$_id" }, "$$userA"] },
-                        { $eq: [{ $toString: "$_id" }, "$$userB"] },
+                        { $eq: ["$_id", "$$userA"] },
+                        { $eq: ["$_id", "$$userB"] },
                       ],
                     },
                     // But NOT the current user searching
-                    { $ne: [{ $toString: "$_id" }, uidStr] },
+                    { $ne: ["$_id", uid] },
                   ],
                 },
                 // Search criteria on the user (ReDoS-safe regex)
@@ -141,7 +143,7 @@ class ChatService {
           },
           lastMessage: "$lastMessage",
           unreadCount: {
-            $ifNull: [{ $getField: { field: uidStr, input: "$unreadCounts" } }, 0],
+            $ifNull: [{ $getField: { field: userId.toString(), input: "$unreadCounts" } }, 0],
           },
           createdAt: 1,
         },
@@ -313,42 +315,20 @@ class ChatService {
   }
 
   /**
-   * Legacy method kept for backward-compat
-   * @param {string | import('mongodb').ObjectId} creatorId
-   * @param {string | import('mongodb').ObjectId} receiverId
+   * @param {string | import('mongodb').ObjectId} chatId
+   * @param {string | import('mongodb').ObjectId} userId
    * @returns {Promise<Object>}
    */
-  async createOrGetChat(creatorId, receiverId) {
-    const aId = new ObjectId(receiverId);
-    const bId = new ObjectId(creatorId);
-    const [userA, userB] = aId.getTimestamp() < bId.getTimestamp() ? [aId, bId] : [bId, aId];
-
-    const chat = await this.Chat.findOneAndUpdate(
-      { userA, userB },
-      { $setOnInsert: { userA, userB, createdBy: creatorId, status: "pending" } },
-      { upsert: true, returnDocument: "after" },
-    );
-    return chat;
-  }
-
-  /**
-   * @param {string | import('mongodb').ObjectId} chatId
-   * @param {Object} data
-   * @returns {Promise<void>}
-   */
-  async updateChat(chatId, data) {
-    throw new Error("Not implemented");
-  }
-
-  /**
-   * @param {string | import('mongodb').ObjectId} chatId
-   * @returns {Promise<Object>}
-   */
-  async deleteChat(chatId) {
+  async deleteChat(chatId, userId) {
     const chat = await this.Chat.findById(chatId);
     if (!chat) {
       throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
     }
+
+    // Verify user is a participant
+    const isParticipant =
+      chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
+    if (!isParticipant) throw AppError.forbidden("You are not part of this chat");
 
     chat.isDeleted = true;
     chat.deletedAt = new Date();
@@ -364,7 +344,7 @@ class ChatService {
    * @param {string} cursor
    * @returns {Promise<Array<Object>>}
    */
-  async getChatMessages(chatId, limit = 50, cursor = null) {
+  async getChatMessages(chatId, userId, limit = 50, cursor = null) {
     const chat = await this.Chat.findById(chatId);
     if (!chat) {
       throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
@@ -372,6 +352,11 @@ class ChatService {
     if (chat.status !== "accepted") {
       throw AppError.forbidden("Chat must be accepted before viewing messages");
     }
+
+    // Verify user is a participant
+    const isParticipant =
+      chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
+    if (!isParticipant) throw AppError.forbidden("You are not part of this chat");
 
     const query = { chatId: chat._id };
     if (cursor) {
@@ -405,9 +390,5 @@ class ChatService {
     return { message: "Chat marked as read" };
   }
 }
-
-import ChatModel from "../models/chat.model.js";
-import MessageModel from "../models/message.model.js";
-import UserModel from "../models/user.model.js";
 
 export const chatService = new ChatService(ChatModel, MessageModel, UserModel);

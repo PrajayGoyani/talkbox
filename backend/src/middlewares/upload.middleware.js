@@ -3,9 +3,6 @@ import path from "path";
 import crypto from "crypto";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 // Cloudinary configuration (can use CLOUDINARY_URL or individual keys)
 cloudinary.config({
@@ -31,7 +28,7 @@ const cloudinaryStorage = new CloudinaryStorage({
   params: {
     folder: "talkbox-avatars",
     allowed_formats: ["jpg", "png", "jpeg", "webp"],
-    public_id: (req, file) => {
+    public_id: (_req, _file) => {
       const uniqueSuffix = Date.now() + "-" + crypto.randomBytes(6).toString("hex");
       return "avatar-" + uniqueSuffix;
     },

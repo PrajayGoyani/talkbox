@@ -1,5 +1,6 @@
 import { generateAccessToken, generateTokens, verifyRefreshToken } from "../utils/jwt.js";
 import { AppError } from "../utils/AppError.js";
+import UserModel from "../models/user.model.js";
 
 /**
  * @typedef {import('mongoose').Model} Model
@@ -74,17 +75,12 @@ class AuthService {
       throw AppError.unauthorized("Refresh token required", "TOKEN_REQUIRED");
     }
 
-    try {
-      const payload = verifyRefreshToken(refreshToken);
+    const payload = verifyRefreshToken(refreshToken);
+    const user = await this.User.findById(payload.id);
+    if (!user) throw AppError.unauthorized("Invalid user", "INVALID_USER");
+    const accessToken = generateAccessToken({ id: user._id.toString() });
 
-      const user = await this.User.findById(payload.id);
-      if (!user) throw AppError.unauthorized("Invalid user", "INVALID_USER");
-      const accessToken = generateAccessToken({ id: user._id.toString() });
-
-      return { accessToken };
-    } catch (error) {
-      throw error;
-    }
+    return { accessToken };
   }
 
   /**
@@ -112,5 +108,5 @@ class AuthService {
   }
 }
 
-import UserModel from "../models/user.model.js";
 export const authService = new AuthService(UserModel);
+

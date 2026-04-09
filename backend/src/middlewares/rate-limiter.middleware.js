@@ -1,6 +1,6 @@
 import { AppError } from "../utils/AppError.js";
 
-// Simple in-memory rate limiter per user for demonstration
+// Simple in-memory rate limiter per user
 // A Map storing userId -> { count: number, resetTime: number }
 
 const requestCounts = new Map();
@@ -8,9 +8,17 @@ const requestCounts = new Map();
 const WINDOW_MS = 60 * 1000; // 1 minute
 const MAX_REQUESTS = 100;
 
+// Periodic cleanup of expired entries to prevent unbounded memory growth
+setInterval(() => {
+  const now = Date.now();
+  for (const [userId, record] of requestCounts) {
+    if (now >= record.resetTime) {
+      requestCounts.delete(userId);
+    }
+  }
+}, 5 * 60 * 1000); // every 5 minutes
+
 export const rateLimiter = (req, res, next) => {
-  // If user is not authenticated yet, we can't limit by user id.
-  // Assuming this middleware is placed after authenticateToken.
   const userId = req.user?.id;
   if (!userId) {
     return next();
@@ -42,3 +50,4 @@ export const rateLimiter = (req, res, next) => {
 
   next();
 };
+

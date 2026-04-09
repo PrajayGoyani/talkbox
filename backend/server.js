@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { setServers } from "node:dns/promises";
+import mongoose from "mongoose";
 
 import { configureSocket, startServer } from "./src/app.js";
 import { connectDB } from "./src/config/db.js";
@@ -14,7 +15,24 @@ async function bootstrap() {
   await connectDB();
   await configureSocket();
   await startJobs();
-  startServer();
+  const server = startServer();
+
+  // Graceful shutdown
+  const shutdown = async (signal) => {
+    console.log(`\n${signal} received. Shutting down gracefully...`);
+    server.close(() => {
+      console.log("HTTP server closed.");
+    });
+    await mongoose.connection.close();
+    console.log("MongoDB connection closed.");
+    process.exit(0);
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  console.error("Fatal: Bootstrap failed:", err);
+  process.exit(1);
+});

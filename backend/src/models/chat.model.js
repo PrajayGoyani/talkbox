@@ -1,9 +1,9 @@
 import mongoose, { Schema } from "mongoose";
 
 const chatSchema = new Schema({
-  userA: { type: String, required: true, ref: "User" },
-  userB: { type: String, required: true, ref: "User" },
-  createdBy: { type: String, required: true, ref: "User" },
+  userA: { type: Schema.Types.ObjectId, required: true, ref: "User" },
+  userB: { type: Schema.Types.ObjectId, required: true, ref: "User" },
+  createdBy: { type: Schema.Types.ObjectId, required: true, ref: "User" },
   status: {
     type: String,
     enum: ["pending", "accepted", "rejected"],
@@ -11,7 +11,7 @@ const chatSchema = new Schema({
   },
   lastMessage: {
     contentBody: { type: String, default: null },
-    senderId: { type: String, ref: "User", default: null },
+    senderId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     sentAt: { type: Date, default: null },
   },
   unreadCounts: {
@@ -31,3 +31,4 @@ chatSchema.index({ userA: 1, userB: 1 }, { unique: true });
 const Chat = mongoose.model("Chat", chatSchema);
 
 export default Chat;
+

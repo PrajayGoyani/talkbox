@@ -5,20 +5,12 @@ export const uploadAvatar = async (req, res) => {
     return res.status(400).json({ success: false, message: "No file uploaded" });
   }
 
-  // const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  // const result = await userService.uploadAvatar(req.user.id, avatarUrl);
-
   // Construct path based on storage strategy
   const isCloudinary = process.env.UPLOAD_STRATEGY === "cloudinary";
   const avatarPath = isCloudinary ? req.file.path : `/uploads/${req.file.filename}`;
 
   const result = await userService.uploadAvatar(req.user.id, avatarPath);
   res.success(result);
-};
-
-export const getMe = async (req, res) => {
-  const user = await userService.getMe(req.user.id);
-  res.success(user);
 };
 
 export const updateProfile = async (req, res) => {
