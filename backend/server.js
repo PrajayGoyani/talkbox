@@ -8,10 +8,6 @@ import { startJobs } from "./src/jobs/jobs.js"; // avoided using generic names h
 // windows specific hack
 if (process.platform === "win32") {
   setServers(["1.1.1.1", "8.8.8.8"]); // for mongodb connection issues
-  // nodemon fix
-  process.stdout.on("error", (err) => {
-    if (err.code === "EPIPE") process.exit(0);
-  });
 }
 
 async function bootstrap() {

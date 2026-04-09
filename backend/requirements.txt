@@ -51,4 +51,4 @@ path, events, stream, cluster, crypto, fs, http, net, os, readline, tls, url, ut
 
 NPM packages
 ------------
-express, mongoose, bcrypt, jsonwebtoken, socket.io, multer, dotenv, nodemon
+express, mongoose, bcrypt, jsonwebtoken, socket.io, multer, dotenv

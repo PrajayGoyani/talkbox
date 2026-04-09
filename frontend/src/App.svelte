@@ -47,7 +47,8 @@
   let selectedChatId = $derived(routerStore.segments[2] || null);
   let isSidebarCollapsed = $state(false);
   let isDocPage = $derived(
-    routerStore.segments[0] === "terms" || routerStore.segments[0] === "privacy",
+    routerStore.segments[0] === "terms" ||
+      routerStore.segments[0] === "privacy",
   );
 
   $effect(() => {
@@ -269,6 +270,7 @@
                 onclick={() => routerStore.navigate(Route.CONVERSATIONS)}
                 class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-sm font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2 active:scale-95"
               >
+                <!-- Browse Chats -->
                 Go to Dashboard
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
