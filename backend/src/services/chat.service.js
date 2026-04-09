@@ -56,7 +56,7 @@ class ChatService {
         status: chat.status,
         createdBy: chat.createdBy,
         otherUser: {
-          id: otherUser._id,
+          id: otherUser._id.toString(),
           username: otherUser.username,
           name: otherUser.name || null,
           email: otherUser.email,
@@ -135,7 +135,7 @@ class ChatService {
           id: "$_id",
           status: 1,
           otherUser: {
-            id: "$otherUser._id",
+            id: { $toString: "$otherUser._id" },
             username: "$otherUser.username",
             name: "$otherUser.name",
             email: "$otherUser.email",

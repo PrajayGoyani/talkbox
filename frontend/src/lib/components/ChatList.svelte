@@ -205,7 +205,7 @@
               user={chat.otherUser}
               class="w-11 h-11 bg-slate-200 dark:bg-slate-800 text-lg text-slate-600 dark:text-slate-300"
             />
-            {#if chatStore.onlineStatus[chat.otherUser.id]?.isOnline}
+            {#if chatStore.onlineStatus.get(chat.otherUser.id)?.isOnline}
               <div
                 class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-sm"
               ></div>

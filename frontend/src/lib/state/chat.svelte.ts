@@ -1,5 +1,5 @@
 import { io, type Socket } from "socket.io-client";
-import { SvelteSet } from "svelte/reactivity";
+import { SvelteSet, SvelteMap } from "svelte/reactivity";
 
 import type { RawMessageDto, MessageAckDto, UserStatusDto, TypingIndicatorDto } from "../types/chat.dto";
 import type { Notification } from "../types/notification";
@@ -66,7 +66,7 @@ class ChatStore {
   isSendingMessage = $state(false);
   activeChatId: string | null = $state(null);
 
-  onlineStatus: Record<string, { isOnline: boolean; lastSeen: Date | null }> = $state({});
+  onlineStatus = new SvelteMap<string, { isOnline: boolean; lastSeen: Date | null }>();
   typingStatus: Record<string, SvelteSet<string>> = $state({});
   chats: Array<Chat> = $state([]);
   lastError: string | null = $state(null);
@@ -143,10 +143,10 @@ class ChatStore {
 
     // Listen for User Presence changes
     this.socket.on("user_status", (data: UserStatusDto) => {
-      this.onlineStatus[data.userId] = {
+      this.onlineStatus.set(data.userId, {
         isOnline: data.isOnline,
         lastSeen: data.lastSeen ? new Date(data.lastSeen) : null,
-      };
+      });
     });
 
     // Listen for Typing Indicators
@@ -260,6 +260,10 @@ class ChatStore {
       });
       if (!resp.ok) return;
       const result = await resp.json();
+      
+      // Guard against race conditions: only update if this chat is still active
+      if (this.activeChatId !== chatId) return;
+
       const rawLoaded: any[] = result.data || result || [];
       const loadedMessages: Message[] = rawLoaded.map((m) => ({ ...m, id: m._id || m.id }));
       this.messages = loadedMessages;

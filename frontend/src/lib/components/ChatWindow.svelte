@@ -139,16 +139,16 @@
         >
       {:else}
         <div class="flex items-center gap-1.5 mt-1">
-          {#if chatStore.onlineStatus[otherUser?.id || ""]?.isOnline}
+          {#if chatStore.onlineStatus.get(otherUser?.id || "")?.isOnline}
             <span
               class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
             ></span><span class="text-xs text-emerald-500 font-medium"
               >Online</span
             >
-          {:else if chatStore.onlineStatus[otherUser?.id || ""]?.lastSeen}
+          {:else if chatStore.onlineStatus.get(otherUser?.id || "")?.lastSeen}
             <span class="text-xs text-slate-500">
               Last seen {formatTimeAgo(
-                chatStore.onlineStatus[otherUser?.id || ""].lastSeen!,
+                chatStore.onlineStatus.get(otherUser?.id || "")!.lastSeen!,
               )}
             </span>
           {:else}

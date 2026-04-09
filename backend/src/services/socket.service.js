@@ -94,6 +94,7 @@ class SocketService {
       const chats = await ChatModel.find({
         $or: [{ userA: uidStr }, { userB: uidStr }],
         status: "accepted",
+        isDeleted: false,
       });
 
       // Extract unique partner IDs
@@ -107,7 +108,7 @@ class SocketService {
 
       // Emit to each connected partner
       const statusPayload = {
-        userId,
+        userId: uidStr,
         isOnline,
         lastSeen: isOnline ? null : new Date(),
       };
