@@ -46,43 +46,22 @@
     </button>
 
     <!-- Navigation Icons -->
-    <button
-      class="rail-btn {activePanel === 'conversations'
-        ? 'rail-btn-active'
-        : ''}"
-      onclick={() => onPanelSelect("conversations")}
-      title="Conversations"
-      aria-label="Conversations"
-    >
-      <Icon name="nav-chat" class="w-5.5 h-5.5" />
-    </button>
-
-    <button
-      class="rail-btn {activePanel === 'profile' ? 'rail-btn-active' : ''}"
-      onclick={() => onPanelSelect("profile")}
-      title="Profile"
-      aria-label="Profile"
-    >
-      <Icon name="profile" class="w-5.5 h-5.5" />
-    </button>
-
-    <button
-      class="rail-btn {activePanel === 'settings' ? 'rail-btn-active' : ''}"
-      onclick={() => onPanelSelect("settings")}
-      title="Settings"
-      aria-label="Settings"
-    >
-      <Icon name="settings" class="w-5.5 h-5.5" />
-    </button>
-
-    <button
-      class="rail-btn {activePanel === 'requests' ? 'rail-btn-active' : ''}"
-      onclick={() => onPanelSelect("requests")}
-      title="Chat Requests"
-      aria-label="Chat Requests"
-    >
-      <Icon name="add" class="w-5.5 h-5.5" />
-    </button>
+    <!-- Navigation Icons -->
+    {#each [
+      { id: 'conversations', title: 'Conversations', icon: 'nav-chat' },
+      { id: 'profile', title: 'Profile', icon: 'profile' },
+      { id: 'settings', title: 'Settings', icon: 'settings' },
+      { id: 'requests', title: 'Chat Requests', icon: 'add' }
+    ] as item}
+      <button
+        class="rail-btn {activePanel === item.id ? 'rail-btn-active' : ''}"
+        onclick={() => onPanelSelect(item.id as PanelId)}
+        title={item.title}
+        aria-label={item.title}
+      >
+        <Icon name={item.icon} class="w-5.5 h-5.5" />
+      </button>
+    {/each}
 
     <!-- Notification bell (opens right-side drawer) -->
     <button

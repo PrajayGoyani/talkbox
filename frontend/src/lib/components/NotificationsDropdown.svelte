@@ -12,17 +12,10 @@
   let {
     onNavigate,
     isOpen = $bindable(false),
-    unreadCount = $bindable(0),
   } = $props<{
     onNavigate: (type: string, referenceId: string) => void;
     isOpen?: boolean;
-    unreadCount?: number;
   }>();
-
-  // Sync unreadCount with notificationStore
-  $effect(() => {
-    unreadCount = notificationStore.unreadCount;
-  });
 
   $effect(() => {
     if (isOpen) {
@@ -101,7 +94,7 @@
     >
       <h2 class="text-lg font-bold text-slate-900 dark:text-white">Notifications</h2>
       <div class="flex items-center gap-2">
-        {#if unreadCount > 0}
+        {#if notificationStore.unreadCount > 0}
           <button
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/50 transition-all active:scale-95"
             onclick={() => notificationStore.markAllAsRead()}

@@ -48,31 +48,40 @@ class ChatService {
       .populate("userA", "username name email avatar_url")
       .populate("userB", "username name email avatar_url");
 
-    return chats.map((chat) => {
-      const otherUser = chat.userA._id.toString() === userId.toString() ? chat.userB : chat.userA;
-      const unread = chat.unreadCounts?.get?.(userId.toString()) || 0;
-      return {
-        id: chat._id,
-        status: chat.status,
-        createdBy: chat.createdBy,
-        otherUser: {
-          id: otherUser._id.toString(),
-          username: otherUser.username,
-          name: otherUser.name || null,
-          email: otherUser.email,
-          avatarUrl: otherUser.avatar_url,
-        },
-        lastMessage: chat.lastMessage?.contentBody
-          ? {
-              contentBody: chat.lastMessage.contentBody,
-              senderId: chat.lastMessage.senderId,
-              sentAt: chat.lastMessage.sentAt,
-            }
-          : null,
-        unreadCount: unread,
-        createdAt: chat.createdAt,
-      };
-    });
+    return chats.map((chat) => this._transformChat(chat, userId));
+  }
+
+  /**
+   * Internal helper to standardize chat object for client
+   * @private
+   */
+  _transformChat(chat, userId) {
+    const userIdStr = userId.toString();
+    const otherUser =
+      chat.userA._id.toString() === userIdStr ? chat.userB : chat.userA;
+    const unread = chat.unreadCounts?.get?.(userIdStr) || 0;
+
+    return {
+      id: chat._id.toString(),
+      status: chat.status,
+      createdBy: chat.createdBy,
+      otherUser: {
+        id: otherUser._id.toString(),
+        username: otherUser.username,
+        name: otherUser.name || null,
+        email: otherUser.email,
+        avatarUrl: otherUser.avatar_url,
+      },
+      lastMessage: chat.lastMessage?.contentBody
+        ? {
+            contentBody: chat.lastMessage.contentBody,
+            senderId: chat.lastMessage.senderId.toString(),
+            sentAt: chat.lastMessage.sentAt,
+          }
+        : null,
+      unreadCount: unread,
+      createdAt: chat.createdAt,
+    };
   }
 
   /**
@@ -176,7 +185,7 @@ class ChatService {
     // 1. Find the target user by exact username match
     const targetUser = await this.User.findOne({ username: targetUsername });
     if (!targetUser) {
-      throw AppError.notFound("User not found", "USER_NOT_FOUND");
+      throw AppError.notFound("User", "USER_NOT_FOUND");
     }
 
     // 2. Prevent self-chat
