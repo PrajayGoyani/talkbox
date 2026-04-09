@@ -5,6 +5,7 @@
   import { formatListTime } from "../utils/date";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
+  import ChatListSkeleton from "./ChatListSkeleton.svelte";
 
   const {
     activeChatId = null,
@@ -17,6 +18,14 @@
     activeTab?: string;
     searchQuery?: string;
   }>();
+
+  let listContainerHeight = $state(0);
+  const SKELETON_ITEM_HEIGHT = 68; // height of ChatListSkeleton
+  const skeletonCount = $derived(
+    listContainerHeight > 0
+      ? Math.ceil(listContainerHeight / SKELETON_ITEM_HEIGHT)
+      : 8,
+  );
 
   let loading = $state(false);
   let error = $state<string | null>(null);
@@ -107,7 +116,7 @@
   });
 </script>
 
-<div class="flex flex-col gap-1 h-full p-2">
+<div class="flex flex-col gap-1 h-full p-2" bind:clientHeight={listContainerHeight}>
   <!-- New Chat Request Button -->
   <div class="mb-2 flex flex-col gap-1.5">
     {#if showRequestInput}
@@ -166,10 +175,15 @@
 
   <!-- Chat Items -->
   {#if loading}
-    <div class="flex items-center justify-center py-10">
-      <span
-        class="w-6 h-6 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
-      ></span>
+    <div class="flex flex-col">
+      {#each Array(skeletonCount) as _, i}
+        <div
+          class="animate-in fade-in slide-in-from-left-4 duration-500 fill-mode-both"
+          style:animation-delay="{i * 75}ms"
+        >
+          <ChatListSkeleton />
+        </div>
+      {/each}
     </div>
   {:else if error}
     <div class="text-center py-10 text-rose-500 text-sm">{error}</div>

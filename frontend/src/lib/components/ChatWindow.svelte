@@ -6,6 +6,7 @@
   import { formatSimpleTime, formatTimeAgo, getDateLabel } from "../utils/date";
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
+  import MessageSkeleton from "./MessageSkeleton.svelte";
 
   let {
     chatId,
@@ -25,6 +26,13 @@
   let messagesContainer: HTMLDivElement | undefined = $state();
   let showJumpButton = $state(false);
   let userHasScrolledUp = $state(false);
+  let windowContainerHeight = $state(0);
+  const MESSAGE_SKELETON_HEIGHT = 80;
+  const messageSkeletonCount = $derived(
+    windowContainerHeight > 0
+      ? Math.ceil(windowContainerHeight / MESSAGE_SKELETON_HEIGHT)
+      : 6,
+  );
 
   // Auto-scroll when messages change
   $effect(() => {
@@ -188,11 +196,19 @@
   <div
     class="flex-1 overflow-y-auto p-6 flex flex-col gap-2"
     bind:this={messagesContainer}
+    bind:clientHeight={windowContainerHeight}
     onscroll={handleMessagesScroll}
   >
     {#if chatStore.isLoadingMessages}
-      <div class="text-center text-xs p-4 mb-auto text-slate-500">
-        Loading messages...
+      <div class="flex flex-col">
+        {#each Array(messageSkeletonCount) as _, i}
+          <div
+            class="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both"
+            style:animation-delay="{i * 100}ms"
+          >
+            <MessageSkeleton sent={i % 2 !== 0} />
+          </div>
+        {/each}
       </div>
     {/if}
 
