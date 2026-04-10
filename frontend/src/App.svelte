@@ -26,8 +26,8 @@
   import Privacy from "./lib/components/Privacy.svelte";
   import Home from "./lib/components/Home.svelte";
   import ThemeToggle from "./lib/components/ThemeToggle.svelte";
-import Icon from "./lib/components/Icon.svelte";
-import { uiStore } from "./lib/state/ui.svelte";
+  import Icon from "./lib/components/Icon.svelte";
+  import { uiStore } from "./lib/state/ui.svelte";
 
   let isHomePage = $derived(routerStore.segments.length === 0);
 
@@ -132,19 +132,46 @@ import { uiStore } from "./lib/state/ui.svelte";
 <!-- Snippets for clear logical separation -->
 
 {#snippet LoadingState()}
-  <div class="flex items-center justify-center w-screen h-dvh bg-slate-50 dark:bg-slate-950">
-    <span class="loader"></span>
+  <div
+    class="flex items-center justify-center w-screen h-dvh bg-slate-50 dark:bg-slate-950"
+  >
+    <div role="status">
+      <svg
+        aria-hidden="true"
+        class="w-8 h-8 text-neutral-tertiary animate-spin fill-indigo-500"
+        viewBox="0 0 100 101"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+          fill="currentColor"
+        />
+        <path
+          d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+          fill="currentFill"
+        />
+      </svg>
+      <span class="sr-only">Loading...</span>
+    </div>
+
+    <!-- <span class="sr-only">Loading...</span> -->
+    <!-- <span class="loader"></span> -->
   </div>
 {/snippet}
 
 {#snippet AuthenticatedApp()}
-  <main class="flex flex-col w-screen h-dvh overflow-hidden bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+  <main
+    class="flex flex-col w-screen h-dvh overflow-hidden bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300"
+  >
     <NotificationsDropdown
       bind:isOpen={uiStore.notificationsOpen}
       onNavigate={handleNotificationNavigate}
     />
 
-    <div class="flex flex-col md:flex-row flex-1 min-h-0 relative w-full overflow-hidden">
+    <div
+      class="flex flex-col md:flex-row flex-1 min-h-0 relative w-full overflow-hidden"
+    >
       <IconRail
         {activePanel}
         onPanelSelect={(p) => uiStore.navigate(`/chat/${p}`)}
@@ -157,7 +184,9 @@ import { uiStore } from "./lib/state/ui.svelte";
       <aside
         class="glass-panel flex-col z-10 min-h-0 shrink-0 transition-all duration-300 {uiStore.isSidebarCollapsed
           ? 'w-0 opacity-0 border-none overflow-hidden hidden md:flex'
-          : 'w-full md:w-[280px] border-r'} {selectedChatId ? 'hidden md:flex' : 'flex flex-1 md:flex-initial'}"
+          : 'w-full md:w-[280px] border-r'} {selectedChatId
+          ? 'hidden md:flex'
+          : 'flex flex-1 md:flex-initial'}"
       >
         {#key activePanel}
           <div
@@ -168,7 +197,10 @@ import { uiStore } from "./lib/state/ui.svelte";
             {#if activePanel === "conversations"}
               <ConversationsPanel
                 activeChatId={selectedChatId}
-                onSelectChat={(id) => uiStore.navigate(`${Route.CONVERSATIONS}/${id}`, { resetSidebar: false })}
+                onSelectChat={(id) =>
+                  uiStore.navigate(`${Route.CONVERSATIONS}/${id}`, {
+                    resetSidebar: false,
+                  })}
                 unreadCount={notificationStore.unreadCount}
                 onNotificationToggle={() => uiStore.toggleNotifications()}
               />
@@ -183,7 +215,11 @@ import { uiStore } from "./lib/state/ui.svelte";
         {/key}
       </aside>
 
-      <section class="flex-1 min-h-0 flex flex-col relative bg-slate-100/50 dark:bg-slate-950/30 {selectedChatId ? 'flex' : 'hidden md:flex flex-col justify-center items-center'}">
+      <section
+        class="flex-1 min-h-0 flex flex-col relative bg-slate-100/50 dark:bg-slate-950/30 {selectedChatId
+          ? 'flex'
+          : 'hidden md:flex flex-col justify-center items-center'}"
+      >
         {#if selectedChatId}
           <ChatWindow
             chatId={selectedChatId}
@@ -193,33 +229,62 @@ import { uiStore } from "./lib/state/ui.svelte";
             onBack={() => uiStore.navigate("/chat/" + activePanel)}
           />
         {:else}
-          <div class="flex flex-col items-center justify-center gap-4 text-slate-500 text-center h-full">
-            <p class="text-base max-w-[300px]">Select a conversation from the sidebar or start a new one to begin chatting.</p>
+          <div
+            class="flex flex-col items-center justify-center gap-4 text-slate-500 text-center h-full"
+          >
+            <p class="text-base max-w-[300px]">
+              Select a conversation from the sidebar or start a new one to begin
+              chatting.
+            </p>
           </div>
         {/if}
       </section>
     </div>
-    <ToastContainer bind:this={toastContainer} onToastClick={(id) => uiStore.navigate(`${Route.CONVERSATIONS}/${id}`)} />
+    <ToastContainer
+      bind:this={toastContainer}
+      onToastClick={(id) => uiStore.navigate(`${Route.CONVERSATIONS}/${id}`)}
+    />
   </main>
 {/snippet}
 
 {#snippet GuestApp()}
-  <div class="flex flex-col w-screen h-dvh bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden">
+  <div
+    class="flex flex-col w-screen h-dvh bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden"
+  >
     <!-- Guest Header -->
-    <header class="h-16 shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md z-50">
-      <div class="max-w-7xl mx-auto px-3 sm:px-4 h-full flex items-center justify-between">
-        <button onclick={() => uiStore.navigate("/")} class="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0 active:scale-95">
-          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+    <header
+      class="h-16 shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md z-50"
+    >
+      <div
+        class="max-w-7xl mx-auto px-3 sm:px-4 h-full flex items-center justify-between"
+      >
+        <button
+          onclick={() => uiStore.navigate("/")}
+          class="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0 active:scale-95"
+        >
+          <div
+            class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0"
+          >
             <span class="text-white font-bold text-xl">T</span>
           </div>
-          <span class="font-bold text-lg sm:text-xl tracking-tight text-slate-900 dark:text-slate-100">Talkbox</span>
+          <span
+            class="font-bold text-lg sm:text-xl tracking-tight text-slate-900 dark:text-slate-100"
+            >Talkbox</span
+          >
         </button>
 
         <div class="flex items-center gap-4">
           {#if routerStore.segments.length === 0}
-            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400 mr-4">
-              <a href="#features" class="hover:text-indigo-600 transition-colors">Features</a>
-              <a href="#faq" class="hover:text-indigo-600 transition-colors">FAQ</a>
+            <nav
+              class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400 mr-4"
+            >
+              <a
+                href="#features"
+                class="hover:text-indigo-600 transition-colors">Features</a
+              >
+              <a href="#faq" class="hover:text-indigo-600 transition-colors"
+                >FAQ</a
+              >
             </nav>
           {/if}
 
@@ -252,12 +317,20 @@ import { uiStore } from "./lib/state/ui.svelte";
     </header>
 
     <!-- Content -->
-    <div class="flex-1 overflow-y-auto w-full flex flex-col {isDocPage || isHomePage ? 'block' : 'items-center p-4 sm:p-8'}">
+    <div
+      class="flex-1 overflow-y-auto w-full flex flex-col {isDocPage ||
+      isHomePage
+        ? 'block'
+        : 'items-center p-4 sm:p-8'}"
+    >
       {#if routerStore.segments[0] === "login"}
         <div class="w-full flex justify-center py-8 my-auto">
           <Login>
             {#snippet toggleSignup()}
-              <button class="text-indigo-600 font-medium" onclick={() => toggleView("SIGNUP")}>Sign up</button>
+              <button
+                class="text-indigo-600 font-medium"
+                onclick={() => toggleView("SIGNUP")}>Sign up</button
+              >
             {/snippet}
           </Login>
         </div>
@@ -265,7 +338,10 @@ import { uiStore } from "./lib/state/ui.svelte";
         <div class="w-full flex justify-center py-8 my-auto">
           <Signup>
             {#snippet toggleLogin()}
-              <button class="text-indigo-600 font-medium" onclick={() => toggleView("LOGIN")}>Log in</button>
+              <button
+                class="text-indigo-600 font-medium"
+                onclick={() => toggleView("LOGIN")}>Log in</button
+              >
             {/snippet}
           </Signup>
         </div>

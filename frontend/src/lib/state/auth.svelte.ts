@@ -24,6 +24,7 @@ class AuthStore {
   }
 
   private async init() {
+    const startTime = Date.now();
     if (typeof window === "undefined") return;
 
     // Try silent refresh first (HttpOnly cookie may have a valid refresh token)
@@ -36,6 +37,13 @@ class AuthStore {
         this.user = storedUser;
       }
     }
+
+    const elapsed = Date.now() - startTime;
+    if (elapsed < 500) {
+      // console.log({ elapsed });
+      await new Promise((r) => setTimeout(r, 500 - elapsed));
+    }
+
     this.isCheckingAuth = false;
   }
 
