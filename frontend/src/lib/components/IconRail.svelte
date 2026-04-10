@@ -1,5 +1,7 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
+  import { chatStore } from "../state/chat.svelte";
+
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
   import { routerStore } from "../state/router.svelte";
@@ -11,6 +13,7 @@
     onPanelSelect,
     onNotificationToggle,
     notificationCount = 0,
+    requestsCount = 0,
     onLogout,
     hideOnMobile = false,
   } = $props<{
@@ -18,9 +21,11 @@
     onPanelSelect: (panel: PanelId) => void;
     onNotificationToggle: () => void;
     notificationCount?: number;
+    requestsCount?: number;
     onLogout: () => void;
     hideOnMobile?: boolean;
   }>();
+
 
   const displayName = $derived(
     authStore.user?.name || authStore.user?.username || "?",
@@ -54,14 +59,22 @@
       { id: 'requests', title: 'Chat Requests', icon: 'add' }
     ] as item}
       <button
-        class="rail-btn {activePanel === item.id ? 'rail-btn-active' : ''}"
+        class="rail-btn {activePanel === item.id ? 'rail-btn-active' : ''} relative"
         onclick={() => onPanelSelect(item.id as PanelId)}
         title={item.title}
         aria-label={item.title}
       >
         <Icon name={item.icon} class="w-5.5 h-5.5" />
+        {#if item.id === 'requests' && requestsCount > 0}
+          <span
+            class="absolute top-1 right-1 bg-indigo-600 text-white text-[9px] font-bold min-w-[15px] h-3.5 rounded-full flex items-center justify-center px-1 shadow-sm animate-in scale-in-60"
+          >
+            {requestsCount > 9 ? "9+" : requestsCount}
+          </span>
+        {/if}
       </button>
     {/each}
+
 
     <!-- Notification bell (opens right-side drawer) -->
     <button

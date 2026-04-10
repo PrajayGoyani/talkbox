@@ -14,6 +14,8 @@ import {
 } from "../config";
 import { authStore } from "./auth.svelte";
 import { notificationStore } from "./notification.svelte";
+import { routerStore } from "./router.svelte";
+
 
 export type ChatStatus = "pending" | "accepted" | "rejected";
 
@@ -69,7 +71,10 @@ class ChatStore {
   onlineStatus = new SvelteMap<string, { isOnline: boolean; lastSeen: Date | null }>();
   typingStatus: Record<string, SvelteSet<string>> = $state({});
   chats: Array<Chat> = $state([]);
+  requests: Array<Chat> = $state([]);
+  pendingRequestCount = $state(0);
   lastError: string | null = $state(null);
+
   private typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   private messagesAbortController: AbortController | null = null;
   private chatsAbortController: AbortController | null = null;
@@ -198,16 +203,43 @@ class ChatStore {
     // When a notification arrives, delegate to notificationStore and refresh chat list
     this.socket.on("notification", (notification: Notification) => {
       notificationStore.addRealTimeNotification(notification);
+      
+      if (notification.type === "chat_request") {
+        this.pendingRequestCount += 1;
+        // Trigger toast for chat request
+        if (this.onToastCallback) {
+          this.onToastCallback({
+            chatId: notification.referenceId,
+            senderUsername: "System", // We don't have sender details here easily, but message has it
+            preview: notification.message,
+          } as any);
+        }
+        // Only fetch list if Requests tab is active
+        if (routerStore.segments[1] === "requests") {
+          this.fetchRequests();
+        }
+      }
+
+
       if (this.onChatListRefresh) {
         this.onChatListRefresh();
       }
     });
 
     this.socket.on("chat_accepted", (_data: { chatId: string }) => {
+      // Refresh chat list so the new active chat appears
+      this.fetchChats();
+      // Also potentially refresh requests to remove the pending one
+      if (routerStore.segments[1] === "requests") {
+        this.fetchRequests();
+      }
+      
       if (this.onChatListRefresh) {
         this.onChatListRefresh();
       }
     });
+
+
   }
 
   /** Show browser-level notification when tab is not focused */
@@ -364,6 +396,30 @@ class ChatStore {
     }
   }
 
+  /** Load pending chat requests via REST */
+  async fetchRequests() {
+    this.lastError = null;
+    try {
+      const resp = await fetch(`${API_BASE}/chat/requests`, {
+        headers: {
+          Authorization: `Bearer ${authStore.accessToken}`,
+        },
+        credentials: "include",
+      });
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.error?.message || "Failed to fetch requests");
+      }
+      const result = await resp.json();
+      this.requests = result.data || [];
+      return this.requests;
+    } catch (e: any) {
+      console.error("Failed to fetch requests:", e);
+      this.lastError = e.message || "Failed to fetch requests";
+    }
+  }
+
+
   /** Mark a chat as read via REST */
   async markChatRead(chatId: string) {
     try {
@@ -389,8 +445,9 @@ class ChatStore {
       });
       const result = await resp.json();
       if (!resp.ok) throw new Error(result.error?.message || "Failed to accept chat");
-      await this.fetchChats();
+      await Promise.all([this.fetchChats(), this.fetchRequests()]);
     } catch (e: any) {
+
       console.error("Failed to accept chat:", e);
       this.lastError = e.message || "Failed to accept chat";
       throw e;
@@ -408,8 +465,9 @@ class ChatStore {
       });
       const result = await resp.json();
       if (!resp.ok) throw new Error(result.error?.message || "Failed to reject chat");
-      await this.fetchChats();
+      await this.fetchRequests();
     } catch (e: any) {
+
       console.error("Failed to reject chat:", e);
       this.lastError = e.message || "Failed to reject chat";
       throw e;
@@ -430,8 +488,9 @@ class ChatStore {
       });
       const result = await resp.json();
       if (!resp.ok) throw new Error(result.error?.message || "Failed to send request");
-      await this.fetchChats();
+      await this.fetchRequests();
       return result;
+
     } catch (e: unknown) {
       console.error("Failed to send chat request:", e);
       throw e;

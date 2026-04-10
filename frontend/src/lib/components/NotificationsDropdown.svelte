@@ -8,6 +8,7 @@
   import { quintOut } from "svelte/easing";
   import { formatTimeAgo } from "../utils/date";
   import Icon from "./Icon.svelte";
+  import NotificationSkeleton from "./NotificationSkeleton.svelte";
 
   let {
     onNavigate,
@@ -160,11 +161,11 @@
       {/each}
 
       {#if notificationStore.loading}
-        <div class="flex justify-center p-6">
-          <span
-            class="w-6 h-6 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
-          ></span>
-        </div>
+        {#if notificationStore.notifications.length === 0}
+          <NotificationSkeleton count={5} />
+        {:else}
+          <NotificationSkeleton count={1} />
+        {/if}
       {/if}
 
       {#if notificationStore.hasMore && !notificationStore.loading && notificationStore.notifications.length > 0}

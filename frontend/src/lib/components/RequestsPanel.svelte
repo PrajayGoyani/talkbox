@@ -21,13 +21,15 @@
   export const refreshRequests = async () => {
     loading = true;
     try {
-      await chatStore.fetchChats();
+      await chatStore.fetchRequests();
+      chatStore.pendingRequestCount = 0; // Reset count when viewed/refreshed
     } catch (e) {
       error = (e as Error).message;
     } finally {
       loading = false;
     }
   };
+
 
   const handleSendRequest = async () => {
     if (!requestUsername.trim()) return;
@@ -69,15 +71,11 @@
     }
   };
 
-  const pendingChats = $derived(
-    chatStore.chats.filter((c) => c.status === "pending"),
-  );
-
   const incomingRequests = $derived(
-    pendingChats.filter((c) => c.createdBy !== authStore.user?.id),
+    chatStore.requests.filter((c) => c.createdBy !== authStore.user?.id),
   );
   const outgoingRequests = $derived(
-    pendingChats.filter((c) => c.createdBy === authStore.user?.id),
+    chatStore.requests.filter((c) => c.createdBy === authStore.user?.id),
   );
 
   onMount(() => {

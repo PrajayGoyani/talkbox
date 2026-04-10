@@ -8,7 +8,9 @@ import { rateLimiter } from "../middlewares/rate-limiter.middleware.js";
 
 import {
   getChatListing,
+  getChatRequests,
   requestChat,
+
   acceptChat,
   rejectChat,
   deleteChat,
@@ -20,8 +22,12 @@ import {
 router.use(authenticateToken);
 router.use(rateLimiter);
 
-// Get chat listing (active + pending)
+// Get chat listing (active only)
 router.get("/", getChatListing);
+
+// Get pending chat requests
+router.get("/requests", getChatRequests);
+
 
 // Search active chats
 router.get("/search", searchChats);

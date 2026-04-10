@@ -80,8 +80,10 @@
   $effect(() => {
     if (authStore.user) {
       chatStore.connect();
-      // Ensure chats are fetched on mount/re-auth
+      // Ensure chats and requests are fetched on mount/re-auth
       chatStore.fetchChats();
+      chatStore.fetchRequests();
+
 
       // Register toast callback
       chatStore.onToast((data) => {
@@ -171,9 +173,11 @@
         onPanelSelect={(p) => uiStore.navigate(`/chat/${p}`)}
         onNotificationToggle={() => uiStore.toggleNotifications()}
         notificationCount={notificationStore.unreadCount}
+        requestsCount={chatStore.pendingRequestCount}
         onLogout={handleLogout}
         hideOnMobile={!!selectedChatId}
       />
+
 
       <aside
         class="glass-panel flex-col z-10 min-h-0 shrink-0 transition-all duration-300 {uiStore.isSidebarCollapsed

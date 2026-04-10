@@ -34,8 +34,7 @@ class ChatService {
   }
 
   /**
-   * Get chat listing for a user. Returns chats with status included.
-   * Filters out rejected and deleted chats.
+   * Get accepted chat listing for a user.
    * @param {string | import('mongodb').ObjectId} userId
    * @returns {Promise<Array<Object>>}
    */
@@ -43,13 +42,31 @@ class ChatService {
     const chats = await this.Chat.find({
       $or: [{ userA: userId }, { userB: userId }],
       isDeleted: false,
-      status: { $ne: "rejected" },
+      status: "accepted",
     })
       .populate("userA", "username name email avatar_url")
       .populate("userB", "username name email avatar_url");
 
     return chats.map((chat) => this._transformChat(chat, userId));
   }
+
+  /**
+   * Get pending chat requests for a user.
+   * @param {string | import('mongodb').ObjectId} userId
+   * @returns {Promise<Array<Object>>}
+   */
+  async getChatRequests(userId) {
+    const chats = await this.Chat.find({
+      $or: [{ userA: userId }, { userB: userId }],
+      isDeleted: false,
+      status: "pending",
+    })
+      .populate("userA", "username name email avatar_url")
+      .populate("userB", "username name email avatar_url");
+
+    return chats.map((chat) => this._transformChat(chat, userId));
+  }
+
 
   /**
    * Internal helper to standardize chat object for client
