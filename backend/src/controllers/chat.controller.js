@@ -5,6 +5,12 @@ export const getChatListing = async (req, res) => {
   res.success(chats);
 };
 
+export const getChatRequests = async (req, res) => {
+  const chats = await chatService.getChatRequests(req.user.id);
+  res.success(chats);
+};
+
+
 export const searchChats = async (req, res) => {
   const query = req.query.q || "";
   const chats = await chatService.searchChats(req.user.id, query);
