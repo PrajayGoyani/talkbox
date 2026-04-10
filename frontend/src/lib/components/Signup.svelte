@@ -93,6 +93,11 @@
 
   <form onsubmit={handleSubmit} class="flex flex-col gap-5" novalidate>
     <div class="flex flex-col gap-2">
+      <label
+        for="username"
+        class="text-sm font-semibold text-slate-600 dark:text-slate-400 ml-1"
+        >Username</label
+      >
       <input
         type="text"
         id="username"
