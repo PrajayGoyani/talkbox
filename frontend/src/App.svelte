@@ -133,7 +133,7 @@
 
 {#snippet LoadingState()}
   <div
-    class="flex items-center justify-center w-screen h-dvh bg-slate-50 dark:bg-slate-950"
+    class="flex flex-col items-center justify-center w-screen h-dvh bg-slate-50 dark:bg-slate-950 gap-4"
   >
     <div role="status">
       <svg
@@ -155,8 +155,14 @@
       <span class="sr-only">Loading...</span>
     </div>
 
-    <!-- <span class="sr-only">Loading...</span> -->
-    <!-- <span class="loader"></span> -->
+    {#if authStore.isSlowBoot}
+      <p
+        class="text-slate-500 dark:text-slate-400 text-sm animate-pulse font-medium"
+        transition:fade
+      >
+        Please wait, server is booting up.
+      </p>
+    {/if}
   </div>
 {/snippet}
 

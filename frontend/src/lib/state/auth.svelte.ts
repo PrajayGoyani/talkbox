@@ -10,6 +10,7 @@ import { storage } from "../utils/storage";
 
 // Access tokens expire in 15min typically; refresh 1 min before
 const REFRESH_INTERVAL_MS = 14 * 60 * 1000;
+const BOOT_TIMEOUT_MS = 3000;
 
 class AuthStore {
   user: UserDto | null = $state(null);
@@ -17,34 +18,53 @@ class AuthStore {
   isCheckingAuth: boolean = $state(true);
   error: string | null = $state(null);
   loading: boolean = $state(false);
+  isSlowBoot: boolean = $state(false);
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private bootTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.init();
   }
 
   private async init() {
+    this.bootTimer = setTimeout(() => {
+      this.isSlowBoot = true;
+    }, BOOT_TIMEOUT_MS);
+
     const startTime = Date.now();
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") {
+      this.clearBootTimer();
+      return;
+    }
 
-    // Try silent refresh first (HttpOnly cookie may have a valid refresh token)
-    const refreshed = await this.silentRefresh();
+    try {
+      // Try silent refresh first (HttpOnly cookie may have a valid refresh token)
+      const refreshed = await this.silentRefresh();
 
-    if (!refreshed) {
-      // Fallback: check storage for cached user (but we no longer store/check tokens here)
-      const storedUser = storage.getUser();
-      if (storedUser) {
-        this.user = storedUser;
+      if (!refreshed) {
+        // Fallback: check storage for cached user (but we no longer store/check tokens here)
+        const storedUser = storage.getUser();
+        if (storedUser) {
+          this.user = storedUser;
+        }
       }
-    }
 
-    const elapsed = Date.now() - startTime;
-    if (elapsed < 500) {
-      // console.log({ elapsed });
-      await new Promise((r) => setTimeout(r, 500 - elapsed));
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 500) {
+        // console.log({ elapsed });
+        await new Promise((r) => setTimeout(r, 500 - elapsed));
+      }
+    } finally {
+      this.clearBootTimer();
+      this.isCheckingAuth = false;
     }
+  }
 
-    this.isCheckingAuth = false;
+  private clearBootTimer() {
+    if (this.bootTimer) {
+      clearTimeout(this.bootTimer);
+      this.bootTimer = null;
+    }
   }
 
   /**
