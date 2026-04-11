@@ -32,6 +32,7 @@
   <img
     src={resolvedAvatarUrl}
     class="rounded-full object-cover shrink-0 {className}"
+    alt={user?.name || user?.username}
   />
 {:else}
   <div
