@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { setServers } from "node:dns/promises";
 import mongoose from "mongoose";
+import { setServers } from "node:dns/promises";
 
 import { configureSocket, startServer } from "./src/app.js";
 import { connectDB } from "./src/config/db.js";
@@ -18,7 +18,7 @@ async function bootstrap() {
   const server = startServer();
 
   // Graceful shutdown
-  const shutdown = async (signal) => {
+  const shutdown = async (signal: string) => {
     console.log(`\n${signal} received. Shutting down gracefully...`);
     server.close(() => {
       console.log("HTTP server closed.");

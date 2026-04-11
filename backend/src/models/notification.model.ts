@@ -1,6 +1,16 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const notificationSchema = new Schema({
+export interface INotification extends Document {
+  recipientId: mongoose.Types.ObjectId;
+  senderId: mongoose.Types.ObjectId;
+  type: "chat_request" | "request_accepted" | "request_rejected" | "new_message";
+  referenceId: mongoose.Types.ObjectId;
+  message: string;
+  isRead: boolean;
+  createdAt: Date;
+}
+
+const notificationSchema = new Schema<INotification>({
   recipientId: { type: Schema.Types.ObjectId, required: true, ref: "User" },
   senderId: { type: Schema.Types.ObjectId, required: true, ref: "User" },
   type: {
@@ -18,6 +28,6 @@ const notificationSchema = new Schema({
 notificationSchema.index({ recipientId: 1, createdAt: -1 });
 notificationSchema.index({ recipientId: 1, isRead: 1 });
 
-const Notification = mongoose.model("Notification", notificationSchema);
+const Notification = mongoose.model<INotification>("Notification", notificationSchema);
 
 export default Notification;

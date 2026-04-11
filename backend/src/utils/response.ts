@@ -10,7 +10,7 @@
 /**
  * Wrap any payload in a standard success envelope.
  */
-export const success = (data) => ({
+export const success = (data: any) => ({
   success: true,
   data,
 });
@@ -19,7 +19,7 @@ export const success = (data) => ({
  * Wrap an error in a standard error envelope.
  * Typically called from the global error handler, not from services.
  */
-export const error = (code, message, details) => ({
+export const error = (code: string, message: string, details?: any) => ({
   success: false,
   error: {
     code,

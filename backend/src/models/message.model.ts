@@ -1,6 +1,18 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const messageSchema = new Schema({
+export interface IMessage extends Document {
+  chatId: mongoose.Types.ObjectId;
+  senderId: mongoose.Types.ObjectId;
+  contentBody: string;
+  attachment: {
+    kind: "image" | "audio" | "video" | null;
+    url: string | null;
+  };
+  createdAt: Date;
+  idempotencyKey: string;
+}
+
+const messageSchema = new Schema<IMessage>({
   chatId: { type: Schema.Types.ObjectId, required: true, ref: "Chat" },
   senderId: { type: Schema.Types.ObjectId, required: true, ref: "User" },
   contentBody: { type: String, default: "", trim: true },
@@ -27,6 +39,6 @@ const messageSchema = new Schema({
  * is deleted messages are forever gone in slack?
  */
 
-const Message = mongoose.model("Message", messageSchema);
+const Message = mongoose.model<IMessage>("Message", messageSchema);
 
 export default Message;

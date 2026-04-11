@@ -8,7 +8,11 @@ export async function connectDB() {
     console.log("Connected to MongoDB");
     await chatLockdownService.hydrate();
   } catch (error) {
-    console.error("Fatal: Could not connect to MongoDB:", error.message);
+    if (error instanceof Error) {
+      console.error("Fatal: Could not connect to MongoDB:", error.message);
+    } else {
+      console.error("Fatal: Could not connect to MongoDB:", error);
+    }
     process.exit(1);
   }
 }

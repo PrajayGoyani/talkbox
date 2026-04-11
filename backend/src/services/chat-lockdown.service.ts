@@ -3,6 +3,9 @@ import ChatModel from "../models/chat.model.js";
 
 // O(1) hash store for deleted chats lockdown logic
 class ChatLockdownService {
+  public deletedChats: any;
+  public Chat: any;
+
   constructor(chatModel) {
     // Store deleted chat IDs as Strings for O(1) lookup
     this.deletedChats = new Set();

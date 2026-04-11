@@ -5,6 +5,10 @@ import UserModel from "../models/user.model.js";
 import { AppError } from "../utils/AppError.js";
 
 class SocketService {
+  public Message: any;
+  public io: any;
+  public activeConnections: any;
+
   constructor(messageModel) {
     this.Message = messageModel;
     this.io = null;
@@ -62,7 +66,7 @@ class SocketService {
 
       for (const partnerId of partnerIds) {
         const isOnline = this.activeConnections.has(partnerId);
-        let lastSeen = null;
+        let lastSeen: Date | null = null;
 
         if (!isOnline) {
           const partner = await UserModel.findById(partnerId);
@@ -195,9 +199,9 @@ class SocketService {
       this.io.to(`user:${receiverId}`).emit("message_alert", {
         chatId,
         senderId,
-        senderName: sender.name || null,
-        senderUsername: sender.username,
-        senderAvatar: sender.avatarUrl,
+        senderName: sender?.name || null,
+        senderUsername: sender?.username,
+        senderAvatar: sender?.avatarUrl,
         preview,
       });
     } catch (err) {

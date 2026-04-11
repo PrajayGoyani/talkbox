@@ -7,7 +7,8 @@
   "type": "module",
   "main": "app.js",
   "scripts": {
-    "start": "bun server.js",
+    "start": "tsx server.ts",
+    "dev": "tsx watch server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -26,5 +27,16 @@
     "sharp": "^0.33.5",
     "socket.io": "^4.8.3",
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^25.6.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
   }
 }

@@ -1,3 +1,4 @@
+import { Request, Response, NextFunction } from "express";
 import multer from "multer";
 import path from "path";
 import crypto from "crypto";
@@ -28,7 +29,8 @@ const memoryStorage = multer.memoryStorage();
 const cloudinaryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "talkbox-avatars",
+    // @ts-ignore
+          folder: "talkbox-avatars",
     allowed_formats: ["jpg", "png", "jpeg", "webp"],
     public_id: (_req, _file) => {
       const uniqueSuffix = Date.now() + "-" + crypto.randomBytes(6).toString("hex");

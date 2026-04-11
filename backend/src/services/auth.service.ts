@@ -7,6 +7,8 @@ import UserModel from "../models/user.model.js";
  */
 
 class AuthService {
+  public User: any;
+
   /**
    * @param {Model} userModel
    */
@@ -76,7 +78,7 @@ class AuthService {
     }
 
     const payload = verifyRefreshToken(refreshToken);
-    const user = await this.User.findById(payload.id);
+    const user = await this.User.findById((payload as any).id);
     if (!user) throw AppError.unauthorized("Invalid user", "INVALID_USER");
     const accessToken = generateAccessToken({ id: user._id.toString() });
 

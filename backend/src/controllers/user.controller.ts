@@ -1,8 +1,9 @@
+import { Request, Response, NextFunction } from "express";
 import { userService } from "../services/user.service.js";
 import { imageService } from "../services/image.service.js";
 import { v2 as cloudinary } from "cloudinary";
 
-export const uploadAvatar = async (req, res) => {
+export const uploadAvatar = async (req: Request, res: Response) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: "No file uploaded" });
   }
@@ -28,27 +29,27 @@ export const uploadAvatar = async (req, res) => {
         );
         uploadStream.end(processedBuffer);
       });
-      avatarPath = uploadResult.secure_url;
+      avatarPath = (uploadResult as any).secure_url;
     } else {
       const filename = await imageService.processAndSaveAvatar(req.file.buffer);
       avatarPath = `/uploads/${filename}`;
     }
 
-    const result = await userService.uploadAvatar(req.user.id, avatarPath);
+    const result = await userService.uploadAvatar(req.user!.id, avatarPath);
     res.success(result);
   } catch (error) {
     console.error("Avatar upload error:", error);
-    res.status(500).json({ success: false, message: error.message || "Failed to upload avatar" });
+    res.status(500).json({ success: false, message: (error as Error).message || "Failed to upload avatar" });
   }
 };
 
-export const updateProfile = async (req, res) => {
+export const updateProfile = async (req: Request, res: Response) => {
   // TODO: Add logic to update user profile along with avatar image
-  const result = await userService.updateProfile(req.user.id, req.body);
+  const result = await userService.updateProfile(req.user!.id, req.body);
   res.success(result);
 };
 
-export const searchByUsername = async (req, res) => {
-  const user = await userService.searchByUsername(req.query.username);
+export const searchByUsername = async (req: Request, res: Response) => {
+  const user = await userService.searchByUsername(req.query.username as string);
   res.success(user);
 };

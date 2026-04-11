@@ -1,6 +1,22 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const chatSchema = new Schema({
+export interface IChat extends Document {
+  userA: mongoose.Types.ObjectId;
+  userB: mongoose.Types.ObjectId;
+  createdBy: mongoose.Types.ObjectId;
+  status: "pending" | "accepted" | "rejected";
+  lastMessage: {
+    contentBody: string | null;
+    senderId: mongoose.Types.ObjectId | null;
+    sentAt: Date | null;
+  };
+  unreadCounts: Map<string, number>;
+  createdAt: Date;
+  isDeleted: boolean;
+  deletedAt: Date | null;
+}
+
+const chatSchema = new Schema<IChat>({
   userA: { type: Schema.Types.ObjectId, required: true, ref: "User" },
   userB: { type: Schema.Types.ObjectId, required: true, ref: "User" },
   createdBy: { type: Schema.Types.ObjectId, required: true, ref: "User" },
@@ -28,7 +44,6 @@ chatSchema.index({ userA: 1, isDeleted: 1, status: 1 });
 chatSchema.index({ userB: 1, isDeleted: 1, status: 1 });
 chatSchema.index({ userA: 1, userB: 1 }, { unique: true });
 
-const Chat = mongoose.model("Chat", chatSchema);
+const Chat = mongoose.model<IChat>("Chat", chatSchema);
 
 export default Chat;
-

@@ -4,6 +4,8 @@ import fs from "fs/promises";
 import crypto from "crypto";
 
 class ImageService {
+  public uploadDir: any;
+
   constructor() {
     this.uploadDir = path.join(process.cwd(), "public", "uploads");
   }
@@ -55,7 +57,7 @@ class ImageService {
       const filePath = path.join(this.uploadDir, filename);
       await fs.unlink(filePath);
     } catch (error) {
-      console.warn(`Failed to delete old avatar: ${avatarUrl}`, error.message);
+      console.warn(`Failed to delete old avatar: ${avatarUrl}`, (error as Error).message);
     }
   }
 }

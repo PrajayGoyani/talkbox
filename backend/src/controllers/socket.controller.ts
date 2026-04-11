@@ -1,3 +1,4 @@
+import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 
@@ -29,7 +30,7 @@ export const configureSocketServer = (server) => {
     try {
       const decoded = jwt.verify(token, JWT_SECRET_KEY);
       // Attach verified user ID to the socket
-      socket.data.user = { id: decoded.id };
+      socket.data.user = { id: (decoded as any).id };
       next();
     } catch (error) {
       if (NODE_ENV === "development") {
@@ -49,7 +50,7 @@ export const configureSocketServer = (server) => {
         const message = await socketService.saveAndDeliverMessage(socket.data.user.id, data);
         if (ack) ack({ status: "ok", message });
       } catch (err) {
-        if (ack) ack({ status: "error", error: err.message });
+        if (ack) ack({ status: "error", error: (err as Error).message });
       }
     });
 

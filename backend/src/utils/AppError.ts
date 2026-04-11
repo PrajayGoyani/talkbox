@@ -5,7 +5,12 @@ import { StatusCodes } from "http-status-codes";
  * All services throw AppError instead of returning ad-hoc responses.
  */
 export class AppError extends Error {
-  constructor(message, statusCode, code, details, isOperational = true) {
+  statusCode: number;
+  code: string;
+  isOperational: boolean;
+  details?: any;
+
+  constructor(message: string, statusCode: number, code: string, details?: any, isOperational = true) {
     super(message);
     this.statusCode = statusCode;
     this.code = code;
@@ -18,7 +23,7 @@ export class AppError extends Error {
 
   // --- Factory methods for common errors ---
 
-  static badRequest(message, code = "BAD_REQUEST", details) {
+  static badRequest(message: string, code = "BAD_REQUEST", details?: any) {
     return new AppError(message, StatusCodes.BAD_REQUEST, code, details);
   }
 
@@ -38,11 +43,11 @@ export class AppError extends Error {
     return new AppError(`${resource} not found`, StatusCodes.NOT_FOUND, code);
   }
 
-  static conflict(message, code = "CONFLICT") {
+  static conflict(message: string, code = "CONFLICT") {
     return new AppError(message, StatusCodes.CONFLICT, code);
   }
 
-  static limitReached(resource, code) {
+  static limitReached(resource: string, code: string) {
     return new AppError(
       `${resource} limit reached for your current plan`,
       StatusCodes.FORBIDDEN,

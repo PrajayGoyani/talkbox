@@ -1,24 +1,14 @@
 import { AppError } from "../utils/AppError.js";
-import UserModel from "../models/user.model.js";
-
-/**
- * @typedef {import('mongoose').Model} Model
- */
+import UserModel, { IUserModel } from "../models/user.model.js";
 
 class UserService {
-  /**
-   * @param {Model} userModel
-   */
-  constructor(userModel) {
-    /** @type {Model} */
+  public User: IUserModel;
+
+  constructor(userModel: IUserModel) {
     this.User = userModel;
   }
 
-  /**
-   * @param {string} username
-   * @returns {Promise<Object>}
-   */
-  async searchByUsername(username) {
+  async searchByUsername(username: string) {
     const user = await this.User.findByEmailOrUsername(username);
     if (!user) {
       throw AppError.notFound("User not found", "USER_NOT_FOUND");
@@ -26,12 +16,7 @@ class UserService {
     return user;
   }
 
-  /**
-   * @param {string | import('mongodb').ObjectId} userId
-   * @param {string} fileOrUrl
-   * @returns {Promise<Object>}
-   */
-  async uploadAvatar(userId, fileOrUrl) {
+  async uploadAvatar(userId: string, fileOrUrl: string) {
     const user = await this.User.findById(userId);
     if (!user) {
       throw AppError.notFound("User not found", "USER_NOT_FOUND");
@@ -42,12 +27,7 @@ class UserService {
     return user;
   }
 
-  /**
-   * @param {string | import('mongodb').ObjectId} userId
-   * @param {Object} data
-   * @returns {Promise<Object>}
-   */
-  async updateProfile(userId, data) {
+  async updateProfile(userId: string, data: { name?: string; avatar_url?: string; }) {
     const user = await this.User.findById(userId);
     if (!user) {
       throw AppError.notFound("User not found", "USER_NOT_FOUND");
@@ -61,5 +41,5 @@ class UserService {
   }
 }
 
-export const userService = new UserService(UserModel);
+export const userService = new UserService(UserModel as unknown as IUserModel);
 

@@ -13,6 +13,11 @@ import { notificationService } from "./notification.service.js";
  */
 
 class ChatService {
+  public Chat: any;
+  public Message: any;
+  public User: any;
+  public io: any;
+
   /**
    * @param {Model} chatModel
    * @param {Model} messageModel
@@ -245,7 +250,7 @@ class ChatService {
       senderId: senderId,
       type: "chat_request",
       referenceId: chat._id,
-      message: `${sender.username} sent you a chat request`,
+      message: `${sender?.username} sent you a chat request`,
     });
 
     // 7. Push real-time notification
@@ -378,7 +383,7 @@ class ChatService {
 
     const query = { chatId: chat._id };
     if (cursor) {
-      query._id = { $lt: cursor };
+      (query as any)._id = { $lt: cursor };
     }
 
     const messages = await this.Message.find(query).sort({ _id: -1 }).limit(limit);

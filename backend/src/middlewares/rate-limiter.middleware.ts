@@ -1,3 +1,4 @@
+import { Request, Response, NextFunction } from "express";
 import { AppError } from "../utils/AppError.js";
 
 // Simple in-memory rate limiter per user
@@ -18,7 +19,7 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000); // every 5 minutes
 
-export const rateLimiter = (req, res, next) => {
+export const rateLimiter = (req: Request, res: Response, next: NextFunction) => {
   const userId = req.user?.id;
   if (!userId) {
     return next();

@@ -1,3 +1,4 @@
+import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../utils/jwt.js";
 
 export function authenticateToken(req, res, next) {
