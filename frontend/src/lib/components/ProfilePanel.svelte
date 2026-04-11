@@ -1,6 +1,8 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
   import { API_ROOT } from "../config";
+  import Tooltip from "./Tooltip.svelte";
+  import Icon from "./Icon.svelte";
 
   let editingName = $state(false);
   let nameInput = $state(authStore.user?.name || "");
@@ -12,6 +14,7 @@
   let avatarInput: HTMLInputElement | undefined = $state();
   let avatarPreview = $state<string | null>(null);
   let uploadingAvatar = $state(false);
+  let copied = $state(false);
 
   const displayName = $derived(
     authStore.user?.name || authStore.user?.username || "",
@@ -112,6 +115,15 @@
     editingName = false;
     nameInput = authStore.user?.name || "";
     saveError = null;
+  };
+
+  const handleCopyUsername = () => {
+    if (!authStore.user?.username) return;
+    const textToCopy = `@${authStore.user.username}`;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      copied = true;
+      setTimeout(() => (copied = false), 2000);
+    });
   };
 </script>
 
@@ -259,13 +271,28 @@
           >Username</label
         >
         <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span
+              id="username-display"
+              class="font-mono text-xs text-indigo-600 dark:text-indigo-400"
+              >@{authStore.user?.username}</span
+            >
+            <Tooltip text={copied ? "Username copied" : "Copy username"}>
+              <button
+                onclick={handleCopyUsername}
+                class="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all active:scale-95 flex items-center justify-center"
+                aria-label="Copy username"
+              >
+                <Icon
+                  name={copied ? "check" : "copy"}
+                  class="w-3 h-3 {copied ? 'text-emerald-500' : ''}"
+                  stroke-width={copied ? 3 : 2}
+                />
+              </button>
+            </Tooltip>
+          </div>
           <span
-            id="username-display"
-            class="font-mono text-xs text-indigo-600 dark:text-indigo-400"
-            >@{authStore.user?.username}</span
-          >
-          <span
-            class="text-[10px] text-slate-500 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 rounded"
+            class="text-[10px] text-slate-500 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 rounded italic"
             >Read-only</span
           >
         </div>

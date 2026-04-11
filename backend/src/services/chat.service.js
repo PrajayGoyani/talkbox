@@ -199,8 +199,9 @@ class ChatService {
    * @returns {Promise<Object>}
    */
   async requestChat(senderId, targetUsername) {
-    // 1. Find the target user by exact username match
-    const targetUser = await this.User.findOne({ username: targetUsername });
+    // 1. Sanitize and find the target user by exact username match
+    const sanitizedUsername = targetUsername.startsWith("@") ? targetUsername.slice(1) : targetUsername;
+    const targetUser = await this.User.findOne({ username: sanitizedUsername });
     if (!targetUser) {
       throw AppError.notFound("User", "USER_NOT_FOUND");
     }

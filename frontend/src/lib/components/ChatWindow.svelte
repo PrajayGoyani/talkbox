@@ -7,6 +7,7 @@
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
   import MessageSkeleton from "./MessageSkeleton.svelte";
+  import Tooltip from "./Tooltip.svelte";
 
   let {
     chatId,
@@ -27,6 +28,8 @@
   let showJumpButton = $state(false);
   let userHasScrolledUp = $state(false);
   let windowContainerHeight = $state(0);
+  let copied = $state(false);
+
   const MESSAGE_SKELETON_HEIGHT = 90;
   const messageSkeletonCount = $derived(
     windowContainerHeight > 0
@@ -103,6 +106,15 @@
       });
     }
   };
+
+  const handleCopyUsername = () => {
+    if (!otherUser?.username) return;
+    const textToCopy = `@${otherUser.username}`;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      copied = true;
+      setTimeout(() => (copied = false), 2000);
+    });
+  };
 </script>
 
 <div class="glass-panel p-4 border-b">
@@ -125,13 +137,28 @@
       <Icon name="sidebar" class="w-5 h-5" />
     </button>
     <Avatar user={otherUser} class="w-9 h-9 bg-indigo-500 text-white text-sm" />
-    <div>
-      <h3
-        class="m-0 text-lg font-semibold leading-none"
-        title="@{otherUser?.username}"
-      >
-        {otherUser?.name || otherUser?.username}
-      </h3>
+    <div class="flex flex-col min-w-0">
+      <div class="flex items-center gap-2">
+        <h3
+          class="m-0 text-lg font-semibold leading-none truncate"
+          title="@{otherUser?.username}"
+        >
+          {otherUser?.name || otherUser?.username}
+        </h3>
+        <Tooltip text={copied ? "Username copied" : "Copy username"}>
+          <button
+            onclick={handleCopyUsername}
+            class="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all active:scale-95 flex items-center justify-center"
+            aria-label="Copy username"
+          >
+            <Icon
+              name={copied ? "check" : "copy"}
+              class="w-3.5 h-3.5 {copied ? 'text-emerald-500' : ''}"
+              stroke-width={copied ? 3 : 2}
+            />
+          </button>
+        </Tooltip>
+      </div>
       {#if status === "pending"}
         <span
           class="inline-block mt-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500"
