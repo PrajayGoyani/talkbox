@@ -1,6 +1,7 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
   import { routerStore } from "../state/router.svelte";
+  import FloatingInput from "./FloatingInput.svelte";
 
   const { toggleSignup } = $props<{ toggleSignup: any }>();
 
@@ -46,46 +47,32 @@
   {/if}
 
   <form onsubmit={handleSubmit} class="flex flex-col gap-5" novalidate>
-    <div class="flex flex-col gap-2">
-      <label
-        for="username"
-        class="text-sm font-semibold text-slate-600 dark:text-slate-400 ml-1"
-        >Username or Email</label
-      >
-      <input
-        type="text"
-        id="username"
-        bind:value={username}
-        placeholder="Enter your username or email"
-        required
-        class="input-field"
-      />
-      {#if errors.username}
-        <span class="text-rose-500 text-xs mt-1 ml-1">{errors.username}</span>
-      {/if}
-    </div>
+    <FloatingInput
+      id="username"
+      label="Username or Email"
+      bind:value={username}
+      autocomplete="username"
+      required
+      error={errors.username}
+    />
 
-    <div class="flex flex-col gap-2">
-      <label
-        for="password"
-        class="text-sm font-semibold text-slate-600 dark:text-slate-400 ml-1"
-        >Password</label
-      >
-      <div class="relative flex items-center">
-        <input
-          type={showPassword ? "text" : "password"}
-          id="password"
-          bind:value={password}
-          placeholder="••••••••"
-          required
-          class="input-field pr-12"
-        />
+    <FloatingInput
+      id="password"
+      label="Password"
+      type={showPassword ? "text" : "password"}
+      bind:value={password}
+      autocomplete="current-password"
+      required
+      error={errors.password}
+    >
+      {#snippet renderRight()}
         <button
           type="button"
-          class="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
           onclick={() => (showPassword = !showPassword)}
           aria-label={showPassword ? "Hide password" : "Show password"}
         >
+
           {#if showPassword}
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -117,11 +104,10 @@
             >
           {/if}
         </button>
-      </div>
-      {#if errors.password}
-        <span class="text-rose-500 text-xs mt-1 ml-1">{errors.password}</span>
-      {/if}
-    </div>
+      {/snippet}
+    </FloatingInput>
+
+
 
     <button type="submit" class="btn-primary mt-2" disabled={authStore.loading}>
       {#if authStore.loading}

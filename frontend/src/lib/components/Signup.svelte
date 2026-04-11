@@ -1,6 +1,7 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
   import { routerStore } from "../state/router.svelte";
+  import FloatingInput from "./FloatingInput.svelte";
 
   const { toggleLogin } = $props<{ toggleLogin: any }>();
 
@@ -92,95 +93,51 @@
   {/if}
 
   <form onsubmit={handleSubmit} class="flex flex-col gap-5" novalidate>
-    <div class="flex flex-col gap-2">
-      <label
-        for="username"
-        class="text-sm font-semibold text-slate-600 dark:text-slate-400 ml-1"
-        >Username</label
-      >
-      <input
-        type="text"
-        id="username"
-        bind:value={username}
-        placeholder="Choose a username"
-        required
-        class="input-field"
-      />
-      {#if errors.username}
-        <span
-          class="text-rose-500 text-xs mt-1 ml-1 animate-in fade-in duration-300"
-          >{errors.username}</span
-        >
-      {/if}
-    </div>
+    <FloatingInput
+      id="username"
+      label="Username"
+      bind:value={username}
+      autocomplete="username"
+      required
+      error={errors.username}
+    />
 
-    <div class="flex flex-col gap-2">
-      <label
-        for="display-name"
-        class="text-sm font-semibold text-slate-600 dark:text-slate-400 ml-1"
-        >Display Name <span class="text-[10px] text-slate-500 font-normal ml-1"
-          >(optional)</span
-        ></label
-      >
-      <input
-        type="text"
-        id="display-name"
-        bind:value={displayName}
-        placeholder="How you'd like to be called"
-        maxlength="50"
-        class="input-field"
-      />
-      {#if errors.displayName}
-        <span
-          class="text-rose-500 text-xs mt-1 ml-1 animate-in fade-in duration-300"
-          >{errors.displayName}</span
-        >
-      {/if}
-    </div>
+    <FloatingInput
+      id="display-name"
+      label="Display Name (optional)"
+      bind:value={displayName}
+      autocomplete="name"
+      maxlength="50"
+      error={errors.displayName}
+    />
 
-    <div class="flex flex-col gap-2">
-      <label
-        for="email"
-        class="text-sm font-semibold text-slate-600 dark:text-slate-400 ml-1"
-        >Email Address</label
-      >
-      <input
-        type="email"
-        id="email"
-        bind:value={email}
-        placeholder="you@example.com"
-        required
-        class="input-field"
-      />
-      {#if errors.email}
-        <span
-          class="text-rose-500 text-xs mt-1 ml-1 animate-in fade-in duration-300"
-          >{errors.email}</span
-        >
-      {/if}
-    </div>
+    <FloatingInput
+      id="email"
+      label="Email Address"
+      type="email"
+      bind:value={email}
+      autocomplete="email"
+      required
+      error={errors.email}
+    />
 
-    <div class="flex flex-col gap-2">
-      <label
-        for="password"
-        class="text-sm font-semibold text-slate-600 dark:text-slate-400 ml-1"
-        >Password</label
-      >
-      <div class="relative flex items-center">
-        <input
-          type={showPassword ? "text" : "password"}
-          id="password"
-          bind:value={password}
-          placeholder="At least 8 characters"
-          required
-          class="input-field pr-12"
-        />
+    <FloatingInput
+      id="password"
+      label="Password"
+      type={showPassword ? "text" : "password"}
+      bind:value={password}
+      autocomplete="new-password"
+      required
+      error={errors.password}
+    >
+      {#snippet renderRight()}
         <button
           type="button"
-          class="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
           onclick={() => (showPassword = !showPassword)}
           aria-label={showPassword ? "Hide password" : "Show password"}
         >
+
           {#if showPassword}
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -212,36 +169,27 @@
             >
           {/if}
         </button>
-      </div>
-      {#if errors.password}
-        <span
-          class="text-rose-500 text-xs mt-1 ml-1 animate-in fade-in duration-300"
-          >{errors.password}</span
-        >
-      {/if}
-    </div>
+      {/snippet}
+    </FloatingInput>
 
-    <div class="flex flex-col gap-2">
-      <label
-        for="confirm-password"
-        class="text-sm font-semibold text-slate-600 dark:text-slate-400 ml-1"
-        >Confirm Password</label
-      >
-      <div class="relative flex items-center">
-        <input
-          type={showConfirmPassword ? "text" : "password"}
-          id="confirm-password"
-          bind:value={confirmPassword}
-          placeholder="Re-enter your password"
-          required
-          class="input-field pr-12"
-        />
+
+    <FloatingInput
+      id="confirm-password"
+      label="Confirm Password"
+      type={showConfirmPassword ? "text" : "password"}
+      bind:value={confirmPassword}
+      autocomplete="new-password"
+      required
+      error={errors.confirmPassword}
+    >
+      {#snippet renderRight()}
         <button
           type="button"
-          class="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
           onclick={() => (showConfirmPassword = !showConfirmPassword)}
           aria-label={showConfirmPassword ? "Hide password" : "Show password"}
         >
+
           {#if showConfirmPassword}
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -273,14 +221,10 @@
             >
           {/if}
         </button>
-      </div>
-      {#if errors.confirmPassword}
-        <span
-          class="text-rose-500 text-xs mt-1 ml-1 animate-in fade-in duration-300"
-          >{errors.confirmPassword}</span
-        >
-      {/if}
-    </div>
+      {/snippet}
+    </FloatingInput>
+
+
 
     <button type="submit" class="btn-primary" disabled={authStore.loading}>
       {#if authStore.loading}
