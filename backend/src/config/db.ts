@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
-import { MONGO_URI } from "./env.js";
+
 import { chatLockdownService } from "../services/chat-lockdown.service.js";
+import { MONGO_URI } from "./env.js";
 
 export async function connectDB() {
   try {

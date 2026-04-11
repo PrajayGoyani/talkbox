@@ -12,4 +12,3 @@ if (!process.env.ALLOWED_ORIGINS) {
   process.exit(1);
 }
 export const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
-

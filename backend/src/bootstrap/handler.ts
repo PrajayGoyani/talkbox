@@ -1,12 +1,13 @@
-import path from "path";
+import cookieParser from "cookie-parser";
+import cors from "cors";
 import express from "express";
+import path from "path";
+
+// import helmet from 'helmet';
+import { app } from "../app.js";
 import { ALLOWED_ORIGINS, NODE_ENV } from "../config/env.js";
 import { AppError } from "../utils/AppError.js";
 import { error as errorResponse, success } from "../utils/response.js";
-import cookieParser from "cookie-parser";
-import cors from "cors";
-// import helmet from 'helmet';
-import { app } from "../app.js";
 
 // global application-level middlewares
 export function initializeMiddlewares() {
