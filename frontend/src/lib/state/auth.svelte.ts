@@ -23,7 +23,7 @@ class AuthStore {
   private bootTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
-    this.init();
+    void this.init();
   }
 
   private async init() {
@@ -100,7 +100,7 @@ class AuthStore {
         return true;
       }
       return false;
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -131,7 +131,7 @@ class AuthStore {
   private scheduleRefresh() {
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
     this.refreshTimer = setTimeout(() => {
-      this.silentRefresh();
+      void this.silentRefresh();
     }, REFRESH_INTERVAL_MS);
   }
 
@@ -155,7 +155,7 @@ class AuthStore {
       } else {
         this.error = res.error?.message || "Login failed";
       }
-    } catch (e) {
+    } catch {
       this.error = "Network error occurred";
     } finally {
       this.loading = false;
@@ -183,7 +183,7 @@ class AuthStore {
       } else {
         this.error = res.error?.message || "Signup failed";
       }
-    } catch (e) {
+    } catch {
       this.error = "Network error occurred";
     } finally {
       this.loading = false;

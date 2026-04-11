@@ -29,7 +29,7 @@ class UIStore {
    */
   navigate(path: string, options: { resetSidebar?: boolean; closeNotifications?: boolean } = {}) {
     const { resetSidebar = true, closeNotifications = true } = options;
-    
+
     routerStore.navigate(path);
     if (resetSidebar) this.isSidebarCollapsed = false;
     if (closeNotifications) this.notificationsOpen = false;

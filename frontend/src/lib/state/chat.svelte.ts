@@ -16,7 +16,6 @@ import { authStore } from "./auth.svelte";
 import { notificationStore } from "./notification.svelte";
 import { routerStore } from "./router.svelte";
 
-
 export type ChatStatus = "pending" | "accepted" | "rejected";
 
 export interface User {
@@ -187,7 +186,7 @@ class ChatStore {
       const isTabFocused = document.hasFocus();
 
       if (isChatOpen && isTabFocused) {
-        this.markChatRead(data.chatId);
+        void this.markChatRead(data.chatId);
         return;
       }
 
@@ -203,7 +202,7 @@ class ChatStore {
     // When a notification arrives, delegate to notificationStore and refresh chat list
     this.socket.on("notification", (notification: Notification) => {
       notificationStore.addRealTimeNotification(notification);
-      
+
       if (notification.type === "chat_request") {
         this.pendingRequestCount += 1;
         // Trigger toast for chat request
@@ -216,10 +215,9 @@ class ChatStore {
         }
         // Only fetch list if Requests tab is active
         if (routerStore.segments[1] === "requests") {
-          this.fetchRequests();
+          void this.fetchRequests();
         }
       }
-
 
       if (this.onChatListRefresh) {
         this.onChatListRefresh();
@@ -228,18 +226,16 @@ class ChatStore {
 
     this.socket.on("chat_accepted", (_data: { chatId: string }) => {
       // Refresh chat list so the new active chat appears
-      this.fetchChats();
+      void this.fetchChats();
       // Also potentially refresh requests to remove the pending one
       if (routerStore.segments[1] === "requests") {
-        this.fetchRequests();
+        void this.fetchRequests();
       }
-      
+
       if (this.onChatListRefresh) {
         this.onChatListRefresh();
       }
     });
-
-
   }
 
   /** Show browser-level notification when tab is not focused */
@@ -292,7 +288,7 @@ class ChatStore {
       });
       if (!resp.ok) return;
       const result = await resp.json();
-      
+
       // Guard against race conditions: only update if this chat is still active
       if (this.activeChatId !== chatId) return;
 
@@ -419,7 +415,6 @@ class ChatStore {
     }
   }
 
-
   /** Mark a chat as read via REST */
   async markChatRead(chatId: string) {
     try {
@@ -447,7 +442,6 @@ class ChatStore {
       if (!resp.ok) throw new Error(result.error?.message || "Failed to accept chat");
       await Promise.all([this.fetchChats(), this.fetchRequests()]);
     } catch (e: any) {
-
       console.error("Failed to accept chat:", e);
       this.lastError = e.message || "Failed to accept chat";
       throw e;
@@ -467,7 +461,6 @@ class ChatStore {
       if (!resp.ok) throw new Error(result.error?.message || "Failed to reject chat");
       await this.fetchRequests();
     } catch (e: any) {
-
       console.error("Failed to reject chat:", e);
       this.lastError = e.message || "Failed to reject chat";
       throw e;
@@ -490,7 +483,6 @@ class ChatStore {
       if (!resp.ok) throw new Error(result.error?.message || "Failed to send request");
       await this.fetchRequests();
       return result;
-
     } catch (e: unknown) {
       console.error("Failed to send chat request:", e);
       throw e;
