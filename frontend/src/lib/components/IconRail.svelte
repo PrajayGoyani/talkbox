@@ -4,7 +4,9 @@
 
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
+  import { uiStore } from "../state/ui.svelte";
   import { routerStore } from "../state/router.svelte";
+  import { tooltip } from "../state/tooltip.svelte";
 
   type PanelId = "conversations" | "profile" | "settings" | "requests";
 
@@ -30,6 +32,8 @@
   const displayName = $derived(
     authStore.user?.name || authStore.user?.username || "?",
   );
+
+  const tooltipPos = $derived(uiStore.windowWidth < 768 ? 'top' : 'right');
 </script>
 
 <nav
@@ -44,7 +48,7 @@
     <button
       class="w-10 h-10 hidden md:flex items-center justify-center text-indigo-500 mb-3 hover:bg-white/10 rounded-xl transition-all active:scale-90"
       onclick={() => routerStore.navigate("/")}
-      title="Talkbox Home"
+      use:tooltip={{ text: "Talkbox Home", position: tooltipPos }}
       aria-label="Back to Home"
     >
       <Icon name="nav-chat" class="w-6 h-6" />
@@ -61,7 +65,7 @@
       <button
         class="rail-btn {activePanel === item.id ? 'rail-btn-active' : ''} relative"
         onclick={() => onPanelSelect(item.id as PanelId)}
-        title={item.title}
+        use:tooltip={{ text: item.title, position: tooltipPos }}
         aria-label={item.title}
       >
         <Icon name={item.icon} class="w-5.5 h-5.5" />
@@ -80,7 +84,7 @@
     <button
       class="w-11 h-11 hidden md:flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all relative active:scale-90"
       onclick={onNotificationToggle}
-      title="Notifications"
+      use:tooltip={{ text: "Notifications", position: tooltipPos }}
       aria-label="Notifications"
     >
       <Icon name="notifications" class="w-5.5 h-5.5" />
@@ -98,7 +102,7 @@
     <button
       class="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all active:scale-90"
       onclick={onLogout}
-      title="Log Out"
+      use:tooltip={{ text: "Log Out", position: tooltipPos }}
       aria-label="Log out"
     >
       <Icon name="logout" class="w-5 h-5" />

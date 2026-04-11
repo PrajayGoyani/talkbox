@@ -201,7 +201,6 @@
         <button
           class="chat-item {activeChatId === chat.id ? 'chat-item-active' : ''}"
           onclick={() => onSelectChat(chat.id, chat.otherUser, chat.status)}
-          title="@{chat.otherUser.username}"
         >
           <div class="relative shrink-0">
             <Avatar

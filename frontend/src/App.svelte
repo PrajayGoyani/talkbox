@@ -28,6 +28,7 @@
   import ThemeToggle from "./lib/components/ThemeToggle.svelte";
   import Icon from "./lib/components/Icon.svelte";
   import { uiStore } from "./lib/state/ui.svelte";
+  import GlobalTooltip from "./lib/components/GlobalTooltip.svelte";
 
   let isHomePage = $derived(routerStore.segments.length === 0);
 
@@ -353,6 +354,8 @@
     </div>
   </div>
 {/snippet}
+
+<GlobalTooltip />
 
 <style>
   /* Base styles moved to app.css */

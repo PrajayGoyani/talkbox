@@ -3,6 +3,15 @@ import { routerStore } from "./router.svelte";
 class UIStore {
   isSidebarCollapsed = $state(false);
   notificationsOpen = $state(false);
+  windowWidth = $state(typeof window !== "undefined" ? window.innerWidth : 1024);
+
+  constructor() {
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", () => {
+        this.windowWidth = window.innerWidth;
+      });
+    }
+  }
 
   toggleSidebar() {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;

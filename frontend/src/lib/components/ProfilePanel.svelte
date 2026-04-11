@@ -1,7 +1,7 @@
 <script lang="ts">
   import { authStore } from "../state/auth.svelte";
   import { API_ROOT } from "../config";
-  import Tooltip from "./Tooltip.svelte";
+  import { tooltip, tooltipStore } from "../state/tooltip.svelte";
   import Icon from "./Icon.svelte";
 
   let editingName = $state(false);
@@ -14,7 +14,8 @@
   let avatarInput: HTMLInputElement | undefined = $state();
   let avatarPreview = $state<string | null>(null);
   let uploadingAvatar = $state(false);
-  let copied = $state(false);
+  let usernameCopied = $state(false);
+  let emailCopied = $state(false);
 
   const displayName = $derived(
     authStore.user?.name || authStore.user?.username || "",
@@ -32,15 +33,17 @@
 
   /** Frontend sanitize: letters, spaces, hyphens, apostrophes only. Capitalize words. */
   function sanitizeName(val: string): string {
-    return val
-      .trim()
-      // .replace(/[^a-zA-Z\s\-']/g, "") // Note: keep for future reference
-      // Allow Unicode letters, spaces, hyphens, and apostrophes
-      .replace(/[^\p{L}\s\-']/gu, "")
-      .replace(/\s+/g, " ")
-      .split(" ")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
+    return (
+      val
+        .trim()
+        // .replace(/[^a-zA-Z\s\-']/g, "") // Note: keep for future reference
+        // Allow Unicode letters, spaces, hyphens, and apostrophes
+        .replace(/[^\p{L}\s\-']/gu, "")
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ")
+    );
   }
 
   const handleSaveName = async () => {
@@ -117,12 +120,28 @@
     saveError = null;
   };
 
-  const handleCopyUsername = () => {
+  const handleCopyUsername = (e: MouseEvent) => {
     if (!authStore.user?.username) return;
     const textToCopy = `@${authStore.user.username}`;
     navigator.clipboard.writeText(textToCopy).then(() => {
-      copied = true;
-      setTimeout(() => (copied = false), 2000);
+      tooltipStore.showTemporary(
+        "Username copied",
+        e.currentTarget as HTMLElement,
+      );
+      usernameCopied = true;
+      setTimeout(() => (usernameCopied = false), 2000);
+    });
+  };
+
+  const handleCopyEmail = (e: MouseEvent) => {
+    if (!authStore.user?.email) return;
+    navigator.clipboard.writeText(authStore.user.email).then(() => {
+      tooltipStore.showTemporary(
+        "Email copied",
+        e.currentTarget as HTMLElement,
+      );
+      emailCopied = true;
+      setTimeout(() => (emailCopied = false), 2000);
     });
   };
 </script>
@@ -140,7 +159,8 @@
       <button
         class="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center relative overflow-hidden shadow-xl shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 border-none p-0"
         onclick={handleAvatarSelect}
-        onkeydown={(e) => (e.key === "Enter" || e.key === " ") && handleAvatarSelect()}
+        onkeydown={(e) =>
+          (e.key === "Enter" || e.key === " ") && handleAvatarSelect()}
         aria-label="Change avatar"
       >
         {#if avatarPreview || resolvedAvatarUrl}
@@ -277,22 +297,21 @@
               class="font-mono text-xs text-indigo-600 dark:text-indigo-400"
               >@{authStore.user?.username}</span
             >
-            <Tooltip text={copied ? "Username copied" : "Copy username"}>
-              <button
-                onclick={handleCopyUsername}
-                class="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all active:scale-95 flex items-center justify-center"
-                aria-label="Copy username"
-              >
-                <Icon
-                  name={copied ? "check" : "copy"}
-                  class="w-3 h-3 {copied ? 'text-emerald-500' : ''}"
-                  stroke-width={copied ? 3 : 2}
-                />
-              </button>
-            </Tooltip>
+            <button
+              use:tooltip={"Copy username"}
+              onclick={handleCopyUsername}
+              class="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all active:scale-95 flex items-center justify-center"
+              aria-label="Copy username"
+            >
+              <Icon
+                name={usernameCopied ? "check" : "copy"}
+                class="w-3 h-3 {usernameCopied ? 'text-emerald-500' : ''}"
+                stroke-width={usernameCopied ? 3 : 2}
+              />
+            </button>
           </div>
           <span
-            class="text-[10px] text-slate-500 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 rounded italic"
+            class="text-[10px] text-slate-500 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 rounded"
             >Read-only</span
           >
         </div>
@@ -306,11 +325,25 @@
           >Email</label
         >
         <div class="flex items-center justify-between gap-2">
-          <span
-            id="email-display"
-            class="text-sm text-slate-900 dark:text-slate-100"
-            >{authStore.user?.email}</span
-          >
+          <div class="flex items-center gap-2">
+            <span
+              id="email-display"
+              class="text-sm text-slate-900 dark:text-slate-100"
+              >{authStore.user?.email}</span
+            >
+            <button
+              use:tooltip={"Copy email"}
+              onclick={handleCopyEmail}
+              class="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all active:scale-95 flex items-center justify-center"
+              aria-label="Copy email"
+            >
+              <Icon
+                name={emailCopied ? "check" : "copy"}
+                class="w-3 h-3 {emailCopied ? 'text-emerald-500' : ''}"
+                stroke-width={emailCopied ? 3 : 2}
+              />
+            </button>
+          </div>
         </div>
       </div>
     </div>

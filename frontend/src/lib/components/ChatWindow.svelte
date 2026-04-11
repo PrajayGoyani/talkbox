@@ -7,7 +7,7 @@
   import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
   import MessageSkeleton from "./MessageSkeleton.svelte";
-  import Tooltip from "./Tooltip.svelte";
+  import { tooltip, tooltipStore } from "../state/tooltip.svelte";
 
   let {
     chatId,
@@ -107,10 +107,11 @@
     }
   };
 
-  const handleCopyUsername = () => {
+  const handleCopyUsername = (e: MouseEvent) => {
     if (!otherUser?.username) return;
     const textToCopy = `@${otherUser.username}`;
     navigator.clipboard.writeText(textToCopy).then(() => {
+      tooltipStore.showTemporary("Username copied", e.currentTarget as HTMLElement);
       copied = true;
       setTimeout(() => (copied = false), 2000);
     });
@@ -145,19 +146,18 @@
         >
           {otherUser?.name || otherUser?.username}
         </h3>
-        <Tooltip text={copied ? "Username copied" : "Copy username"}>
-          <button
-            onclick={handleCopyUsername}
-            class="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all active:scale-95 flex items-center justify-center"
-            aria-label="Copy username"
-          >
-            <Icon
-              name={copied ? "check" : "copy"}
-              class="w-3.5 h-3.5 {copied ? 'text-emerald-500' : ''}"
-              stroke-width={copied ? 3 : 2}
-            />
-          </button>
-        </Tooltip>
+        <button
+          use:tooltip={"Copy username"}
+          onclick={handleCopyUsername}
+          class="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all active:scale-95 flex items-center justify-center"
+          aria-label="Copy username"
+        >
+          <Icon 
+            name={copied ? "check" : "copy"} 
+            class="w-3.5 h-3.5 {copied ? 'text-emerald-500' : ''}" 
+            stroke-width={copied ? 3 : 2}
+          />
+        </button>
       </div>
       {#if status === "pending"}
         <span
