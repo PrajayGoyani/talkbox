@@ -1,10 +1,11 @@
-import { AppError } from "../utils/AppError.js";
 import { ObjectId } from "mongodb";
-import { chatLockdownService } from "./chat-lockdown.service.js";
-import { notificationService } from "./notification.service.js";
+
 import ChatModel from "../models/chat.model.js";
 import MessageModel from "../models/message.model.js";
 import UserModel from "../models/user.model.js";
+import { AppError } from "../utils/AppError.js";
+import { chatLockdownService } from "./chat-lockdown.service.js";
+import { notificationService } from "./notification.service.js";
 
 /**
  * @typedef {import('mongoose').Model} Model
@@ -67,15 +68,13 @@ class ChatService {
     return chats.map((chat) => this._transformChat(chat, userId));
   }
 
-
   /**
    * Internal helper to standardize chat object for client
    * @private
    */
   _transformChat(chat, userId) {
     const userIdStr = userId.toString();
-    const otherUser =
-      chat.userA._id.toString() === userIdStr ? chat.userB : chat.userA;
+    const otherUser = chat.userA._id.toString() === userIdStr ? chat.userB : chat.userA;
     const unread = chat.unreadCounts?.get?.(userIdStr) || 0;
 
     return {
@@ -112,7 +111,8 @@ class ChatService {
 
     const uid = new ObjectId(userId);
     const escapedQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const q = new RegExp(escapedQuery, "i");
+    const searchStr = escapedQuery.startsWith("@") ? escapedQuery.slice(1) : escapedQuery; // managed username search
+    let q = new RegExp(searchStr, "i");
 
     // Aggregation pipeline to join chats and users efficiently in a single round-trip
     const chats = await this.Chat.aggregate([
@@ -134,10 +134,7 @@ class ChatService {
                   $and: [
                     // The user must be one of the chat participants
                     {
-                      $or: [
-                        { $eq: ["$_id", "$$userA"] },
-                        { $eq: ["$_id", "$$userB"] },
-                      ],
+                      $or: [{ $eq: ["$_id", "$$userA"] }, { $eq: ["$_id", "$$userB"] }],
                     },
                     // But NOT the current user searching
                     { $ne: ["$_id", uid] },
@@ -269,15 +266,13 @@ class ChatService {
   async acceptChat(chatId, userId) {
     const chat = await this.Chat.findById(chatId);
     if (!chat) throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
-    if (chat.status !== "pending")
-      throw AppError.badRequest("Chat is not pending", "CHAT_NOT_PENDING");
+    if (chat.status !== "pending") throw AppError.badRequest("Chat is not pending", "CHAT_NOT_PENDING");
     if (chat.createdBy.toString() === userId.toString()) {
       throw AppError.forbidden("Only the receiver can accept a chat request");
     }
 
     // Verify user is part of this chat
-    const isParticipant =
-      chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
+    const isParticipant = chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
     if (!isParticipant) throw AppError.forbidden("You are not part of this chat");
 
     chat.status = "accepted";
@@ -311,14 +306,12 @@ class ChatService {
   async rejectChat(chatId, userId) {
     const chat = await this.Chat.findById(chatId);
     if (!chat) throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
-    if (chat.status !== "pending")
-      throw AppError.badRequest("Chat is not pending", "CHAT_NOT_PENDING");
+    if (chat.status !== "pending") throw AppError.badRequest("Chat is not pending", "CHAT_NOT_PENDING");
     if (chat.createdBy.toString() === userId.toString()) {
       throw AppError.forbidden("Only the receiver can reject a chat request");
     }
 
-    const isParticipant =
-      chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
+    const isParticipant = chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
     if (!isParticipant) throw AppError.forbidden("You are not part of this chat");
 
     chat.status = "rejected";
@@ -353,8 +346,7 @@ class ChatService {
     }
 
     // Verify user is a participant
-    const isParticipant =
-      chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
+    const isParticipant = chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
     if (!isParticipant) throw AppError.forbidden("You are not part of this chat");
 
     chat.isDeleted = true;
@@ -381,8 +373,7 @@ class ChatService {
     }
 
     // Verify user is a participant
-    const isParticipant =
-      chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
+    const isParticipant = chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
     if (!isParticipant) throw AppError.forbidden("You are not part of this chat");
 
     const query = { chatId: chat._id };
@@ -407,8 +398,7 @@ class ChatService {
     if (!chat) {
       throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
     }
-    const isParticipant =
-      chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
+    const isParticipant = chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
     if (!isParticipant) {
       throw AppError.forbidden("You are not part of this chat");
     }
