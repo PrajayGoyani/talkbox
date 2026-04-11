@@ -23,6 +23,8 @@ const localStorage = multer.diskStorage({
   },
 });
 
+const memoryStorage = multer.memoryStorage();
+
 const cloudinaryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -44,8 +46,16 @@ const fileFilter = (req, file, cb) => {
 
 const useCloudinary = process.env.UPLOAD_STRATEGY === "cloudinary";
 
+// Global upload for general multi-strategy use
 export const upload = multer({
   storage: useCloudinary ? cloudinaryStorage : localStorage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: fileFilter,
+});
+
+// Memory upload for Sharp processing (Local only)
+export const memoryUpload = multer({
+  storage: memoryStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: fileFilter,
 });

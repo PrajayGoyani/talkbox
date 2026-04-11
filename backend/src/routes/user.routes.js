@@ -10,13 +10,13 @@ import {
   uploadAvatar,
   updateProfile,
 } from "../controllers/user.controller.js";
-import { upload } from "../middlewares/upload.middleware.js";
+import { upload, memoryUpload } from "../middlewares/upload.middleware.js";
 
 router.use(authenticateToken);
 router.use(rateLimiter);
 
 // Upload avatar
-router.post("/avatar", upload.single("avatar"), uploadAvatar);
+router.post("/avatar", memoryUpload.single("avatar"), uploadAvatar);
 
 // Update user profile
 router.patch("/profile", validate(updateProfileSchema), updateProfile);

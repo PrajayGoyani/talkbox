@@ -1,16 +1,45 @@
 import { userService } from "../services/user.service.js";
+import { imageService } from "../services/image.service.js";
+import { v2 as cloudinary } from "cloudinary";
 
 export const uploadAvatar = async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: "No file uploaded" });
   }
 
-  // Construct path based on storage strategy
   const isCloudinary = process.env.UPLOAD_STRATEGY === "cloudinary";
-  const avatarPath = isCloudinary ? req.file.path : `/uploads/${req.file.filename}`;
+  let avatarPath;
 
-  const result = await userService.uploadAvatar(req.user.id, avatarPath);
-  res.success(result);
+  try {
+    if (isCloudinary) {
+      const processedBuffer = await imageService.getProcessedBuffer(req.file.buffer);
+
+      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: "talkbox-avatars",
+            format: "webp",
+            public_id: `avatar-${Date.now()}`,
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          },
+        );
+        uploadStream.end(processedBuffer);
+      });
+      avatarPath = uploadResult.secure_url;
+    } else {
+      const filename = await imageService.processAndSaveAvatar(req.file.buffer);
+      avatarPath = `/uploads/${filename}`;
+    }
+
+    const result = await userService.uploadAvatar(req.user.id, avatarPath);
+    res.success(result);
+  } catch (error) {
+    console.error("Avatar upload error:", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to upload avatar" });
+  }
 };
 
 export const updateProfile = async (req, res) => {
