@@ -11,6 +11,7 @@ import {
   getChatMessages,
   markChatRead,
   searchChats,
+  uploadAttachment,
 } from "../controllers/chat.controller";
 import { authenticateToken } from "../middlewares/auth.middleware";
 import { rateLimiter } from "../middlewares/rate-limiter.middleware";
@@ -46,5 +47,9 @@ router.get("/:chatId/messages", getChatMessages);
 
 // Mark chat as read for current user
 router.put("/:chatId/read", markChatRead);
+
+// Upload attachment
+import { upload } from "../middlewares/upload.middleware";
+router.post("/:chatId/attachment", upload.single("file"), uploadAttachment);
 
 export default router;

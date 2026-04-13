@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
 import { chatService } from "../services/chat.service";
+import { AppError } from "../utils/AppError";
 
 export const getChatListing = async (req: Request, res: Response) => {
   const chats = await chatService.getChatListing(req.user!.id);
@@ -48,4 +49,38 @@ export const getChatMessages = async (req: Request, res: Response) => {
 export const markChatRead = async (req: Request, res: Response) => {
   const result = await chatService.markChatRead(req.params.chatId as string, req.user!.id);
   res.success(result);
+};
+
+export const uploadAttachment = async (req: Request, res: Response) => {
+  if (!req.file) {
+    throw AppError.badRequest("No file provided");
+  }
+
+  // We should verify if the user is part of the chat they are uploading to
+  const chat = await chatService.Chat.findById(req.params.chatId);
+  if (!chat || chat.isDeleted) {
+    throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
+  }
+  
+  if (chat.status === "rejected") {
+    throw AppError.forbidden("Cannot upload to a rejected chat");
+  }
+
+  const isParticipant =
+    chat.userA.toString() === req.user!.id || chat.userB.toString() === req.user!.id;
+  if (!isParticipant) {
+    throw AppError.forbidden("You are not part of this chat");
+  }
+
+  const url = (req.file as any).path || (req.file as any).location;
+  if (!url) {
+    throw AppError.badRequest("Failed to retrieve file URL");
+  }
+
+  res.success({
+    url,
+    originalName: req.file.originalname,
+    mimetype: req.file.mimetype,
+    size: req.file.size
+  });
 };

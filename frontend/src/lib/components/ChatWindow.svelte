@@ -30,6 +30,15 @@
   let windowContainerHeight = $state(0);
   let copied = $state(false);
 
+  // Escape key closes media overlay
+  $effect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showMediaOverlay) showMediaOverlay = null;
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  });
+
   const MESSAGE_SKELETON_HEIGHT = 90;
   const messageSkeletonCount = $derived(
     windowContainerHeight > 0
@@ -52,6 +61,61 @@
     chatStore.sendMessage(chatId, otherUser.id, messageInput);
     messageInput = "";
     scrollToBottom();
+  };
+
+  import { API_BASE } from "../config";
+  let fileInput: HTMLInputElement;
+  let isUploading = $state(false);
+  let showMediaOverlay = $state<{ url: string, type: 'video'|'image' } | null>(null);
+
+  const handleFileUpload = async (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    if (!target.files || !target.files.length || !chatId || !otherUser?.id) return;
+    
+    const file = target.files[0];
+    if (file.size > 10 * 1024 * 1024) {
+      tooltipStore.showTemporary("File too large (Max 10MB)", document.body);
+      target.value = "";
+      return;
+    }
+    
+    isUploading = true;
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+      const resp = await fetch(`${API_BASE}/chat/${chatId}/attachment`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${authStore.accessToken}` },
+        body: formData,
+      });
+      
+      const result = await resp.json();
+      if (!resp.ok) {
+        throw new Error(result.error?.message || "Upload failed");
+      }
+      
+      const { url, originalName, mimetype } = result.data;
+      let kind: "image" | "audio" | "video" | "document" = "document";
+      if (mimetype.startsWith("image/")) kind = "image";
+      else if (mimetype.startsWith("video/")) kind = "video";
+      else if (mimetype.startsWith("audio/")) kind = "audio";
+      
+      chatStore.sendMessage(chatId, otherUser.id, messageInput, {
+        url,
+        originalName,
+        kind
+      });
+      
+      messageInput = "";
+      scrollToBottom();
+      
+    } catch(e: any) {
+      tooltipStore.showTemporary(e.message || "Failed to upload file", document.body);
+    } finally {
+      isUploading = false;
+      target.value = "";
+    }
   };
 
   const handleKeydown = (e: KeyboardEvent) => {
@@ -265,9 +329,40 @@
             ? 'chat-bubble-sent'
             : 'chat-bubble-received'}"
         >
-          <p class="m-0 text-sm leading-relaxed wrap-break-word">
-            {msg.contentBody}
-          </p>
+          {#if msg.attachment && msg.attachment.url}
+            <div class="mb-2">
+              {#if msg.attachment.kind === 'image'}
+                <button 
+                  class="cursor-zoom-in block w-full max-w-[240px]" 
+                  onclick={() => showMediaOverlay = { url: msg.attachment!.url!, type: 'image' }}
+                >
+                  <img src={msg.attachment.url} alt="Attachment" class="w-full rounded-md max-h-48 object-cover shadow-sm bg-slate-100 dark:bg-white/5" />
+                </button>
+              {:else if msg.attachment.kind === 'video'}
+                <div class="relative w-full max-w-[240px] group">
+                  <video src={msg.attachment.url} class="w-full rounded-md max-h-48 object-cover bg-black" aria-label="Video attachment"></video>
+                  <button 
+                    class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
+                    onclick={() => showMediaOverlay = { url: msg.attachment!.url!, type: 'video' }}
+                  >
+                    <Icon name="play" class="w-10 h-10 text-white opacity-80" />
+                  </button>
+                </div>
+              {:else if msg.attachment.kind === 'audio'}
+                <audio controls src={msg.attachment.url} class="max-w-[240px] w-full"></audio>
+              {:else}
+                <a href={msg.attachment.url} target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 p-3 bg-slate-100 dark:bg-white/5 rounded-md hover:bg-slate-200 dark:hover:bg-white/10 transition-colors text-slate-800 dark:text-slate-200">
+                  <Icon name="document" class="w-6 h-6 shrink-0 opacity-70" />
+                  <span class="text-xs font-semibold truncate hover:underline">{msg.attachment.originalName || "Document"}</span>
+                </a>
+              {/if}
+            </div>
+          {/if}
+          {#if msg.contentBody}
+            <p class="m-0 text-sm leading-relaxed wrap-break-word">
+              {msg.contentBody}
+            </p>
+          {/if}
           <span class="block text-[10px] opacity-70 mt-1 text-right"
             >{formatSimpleTime(msg.createdAt)}</span
           >
@@ -300,7 +395,26 @@
     {/if}
   {/if}
 
-  <div class="p-4 glass-panel border-t flex gap-3 items-center">
+  <div class="p-4 glass-panel border-t flex gap-2 items-center">
+    <!-- Hidden file input -->
+    <input 
+      type="file" 
+      class="hidden" 
+      bind:this={fileInput} 
+      onchange={handleFileUpload}
+      disabled={isUploading || chatStore.isSendingMessage} 
+    />
+    
+    <!-- Attachment Button -->
+    <button
+      class="p-2.5 rounded-full text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-white/10 transition-all active:scale-95 disabled:opacity-50"
+      aria-label="Upload attachment"
+      onclick={() => fileInput.click()}
+      disabled={isUploading || chatStore.isSendingMessage}
+    >
+      <Icon name={isUploading ? "loading" : "paperclip"} class="w-5 h-5 {isUploading ? 'animate-spin' : ''}" />
+    </button>
+
     <input
       type="text"
       placeholder="Type a message..."
@@ -314,7 +428,7 @@
       class="bg-indigo-600 hover:bg-indigo-700 text-white w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
       aria-label="Send message"
       onclick={handleSendMessage}
-      disabled={!messageInput.trim() || chatStore.isSendingMessage}
+      disabled={(!messageInput.trim() && !isUploading) || chatStore.isSendingMessage}
     >
       {#if chatStore.isSendingMessage}
         <span
@@ -324,5 +438,26 @@
         <Icon name="send" class="w-5 h-5" />
       {/if}
     </button>
+  </div>
+{/if}
+
+<!-- Media Overlay Popup -->
+{#if showMediaOverlay}
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 animate-in fade-in duration-200">
+    <!-- Backdrop button to close on click -->
+    <button class="absolute inset-0 w-full h-full cursor-auto" aria-label="Close overlay" onclick={() => showMediaOverlay = null}></button>
+    <button 
+      class="absolute top-6 right-6 text-white/70 hover:text-white transition-colors z-10"
+      onclick={() => showMediaOverlay = null}
+    >
+      <Icon name="close" class="w-8 h-8" stroke-width="2" />
+    </button>
+    <div class="relative w-full h-full p-12 flex items-center justify-center pointer-events-none">
+      {#if showMediaOverlay.type === 'image'}
+        <img src={showMediaOverlay.url} alt="Expanded Attachment" class="max-w-full max-h-full object-contain drop-shadow-2xl pointer-events-auto" />
+      {:else if showMediaOverlay.type === 'video'}
+        <video src={showMediaOverlay.url} controls autoplay class="max-w-full max-h-full drop-shadow-2xl pointer-events-auto" aria-label="Expanded video"></video>
+      {/if}
+    </div>
   </div>
 {/if}

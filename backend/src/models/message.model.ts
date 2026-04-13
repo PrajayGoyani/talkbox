@@ -5,8 +5,9 @@ export interface IMessage extends Document {
   senderId: mongoose.Types.ObjectId;
   contentBody: string;
   attachment: {
-    kind: "image" | "audio" | "video" | null;
+    kind: "image" | "audio" | "video" | "document" | null;
     url: string | null;
+    originalName?: string | null;
   };
   createdAt: Date;
   idempotencyKey: string;
@@ -17,8 +18,9 @@ const messageSchema = new Schema<IMessage>({
   senderId: { type: Schema.Types.ObjectId, required: true, ref: "User" },
   contentBody: { type: String, default: "", trim: true },
   attachment: {
-    kind: { type: String, enum: ["image", "audio", "video"], default: null },
+    kind: { type: String, enum: ["image", "audio", "video", "document"], default: null },
     url: { type: String, default: null },
+    originalName: { type: String, default: null },
     // metadata: { type: Schema.Types.Mixed, default: null }
   },
   // status: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' },

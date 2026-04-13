@@ -32,6 +32,11 @@ export interface Message {
   contentBody: string;
   createdAt: string;
   idempotencyKey?: string;
+  attachment?: {
+    kind: "image" | "audio" | "video" | "document" | null;
+    url: string | null;
+    originalName?: string | null;
+  };
 }
 
 export interface Chat {
@@ -490,8 +495,8 @@ class ChatStore {
   }
 
   /** Send a message via socket with idempotency */
-  async sendMessage(chatId: string, receiverId: string, contentBody: string) {
-    if (!this.socket || !this.isConnected || !contentBody.trim()) return;
+  async sendMessage(chatId: string, receiverId: string, contentBody: string, attachment?: RawMessageDto["attachment"]) {
+    if (!this.socket || !this.isConnected || (!contentBody.trim() && !attachment)) return;
 
     this.isSendingMessage = true;
     this.emitTyping(chatId, receiverId, false);
@@ -509,6 +514,7 @@ class ChatStore {
         receiverId,
         contentBody: contentBody.trim(),
         idempotencyKey,
+        attachment,
       },
       (ack: MessageAckDto) => {
         clearTimeout(timeout);
