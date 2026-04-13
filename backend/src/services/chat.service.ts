@@ -73,16 +73,16 @@ class ChatService {
       status: chat.status,
       createdBy: chat.createdBy,
       otherUser: {
-        id: otherUser._id.toString(),
-        username: otherUser.username,
-        name: otherUser.name || null,
-        email: otherUser.email,
-        avatarUrl: otherUser.avatar_url,
+        id: (otherUser as any)._id?.toString() || otherUser.toString(),
+        username: (otherUser as any).username,
+        name: (otherUser as any).name || null,
+        email: (otherUser as any).email,
+        avatarUrl: (otherUser as any).avatar_url,
       },
       lastMessage: chat.lastMessage?.contentBody
         ? {
             contentBody: chat.lastMessage.contentBody,
-            senderId: chat.lastMessage.senderId.toString(),
+            senderId: chat.lastMessage.senderId?.toString(),
             sentAt: chat.lastMessage.sentAt,
           }
         : null,
@@ -267,7 +267,7 @@ class ChatService {
       senderId: userId,
       type: "request_accepted",
       referenceId: chat._id,
-      message: `${acceptor.username} accepted your chat request`,
+      message: `${acceptor?.username || "A user"} accepted your chat request`,
     });
 
     if (this.io) {
@@ -306,7 +306,7 @@ class ChatService {
       senderId: userId,
       type: "request_rejected",
       referenceId: chat._id,
-      message: `${rejector.username} declined your chat request`,
+      message: `${rejector?.username || "A user"} declined your chat request`,
     });
 
     if (this.io) {
