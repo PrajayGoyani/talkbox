@@ -2,11 +2,11 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 
-import { JWT_SECRET_KEY, NODE_ENV } from "../config/env.js";
-import { ALLOWED_ORIGINS } from "../config/env.js";
-import { chatService } from "../services/chat.service.js";
-import { socketService } from "../services/socket.service.js";
-import { AppError } from "../utils/AppError.js";
+import { JWT_SECRET_KEY, NODE_ENV } from "../config/env";
+import { ALLOWED_ORIGINS } from "../config/env";
+import { chatService } from "../services/chat.service";
+import { socketService } from "../services/socket.service";
+import { AppError } from "../utils/AppError";
 
 export const configureSocketServer = (server) => {
   const io = new Server(server, {

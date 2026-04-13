@@ -1,16 +1,12 @@
 import express from "express";
 const router = express.Router();
 
-import { authenticateToken } from "../middlewares/auth.middleware.js";
-import { rateLimiter } from "../middlewares/rate-limiter.middleware.js";
-import { validate } from "../middlewares/validate.middleware.js";
-import { updateProfileSchema } from "../schemas/user.schema.js";
-import {
-  searchByUsername,
-  uploadAvatar,
-  updateProfile,
-} from "../controllers/user.controller.js";
-import { upload, memoryUpload } from "../middlewares/upload.middleware.js";
+import { searchByUsername, uploadAvatar, updateProfile } from "../controllers/user.controller";
+import { authenticateToken } from "../middlewares/auth.middleware";
+import { rateLimiter } from "../middlewares/rate-limiter.middleware";
+import { upload, memoryUpload } from "../middlewares/upload.middleware";
+import { validate } from "../middlewares/validate.middleware";
+import { updateProfileSchema } from "../schemas/user.schema";
 
 router.use(authenticateToken);
 router.use(rateLimiter);
@@ -25,4 +21,3 @@ router.patch("/profile", validate(updateProfileSchema), updateProfile);
 router.get("/search", searchByUsername);
 
 export default router;
-

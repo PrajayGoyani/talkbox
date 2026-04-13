@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction, CookieOptions } from "express";
-import { authService } from "../services/auth.service.js";
+
+import { authService } from "../services/auth.service";
 
 const COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,

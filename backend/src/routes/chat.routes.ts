@@ -1,23 +1,21 @@
 import express from "express";
 const router = express.Router();
 
-import { validate } from "../middlewares/validate.middleware.js";
-import { chatRequestSchema } from "../schemas/chat.schema.js";
-import { authenticateToken } from "../middlewares/auth.middleware.js";
-import { rateLimiter } from "../middlewares/rate-limiter.middleware.js";
-
 import {
   getChatListing,
   getChatRequests,
   requestChat,
-
   acceptChat,
   rejectChat,
   deleteChat,
   getChatMessages,
   markChatRead,
   searchChats,
-} from "../controllers/chat.controller.js";
+} from "../controllers/chat.controller";
+import { authenticateToken } from "../middlewares/auth.middleware";
+import { rateLimiter } from "../middlewares/rate-limiter.middleware";
+import { validate } from "../middlewares/validate.middleware";
+import { chatRequestSchema } from "../schemas/chat.schema";
 
 router.use(authenticateToken);
 router.use(rateLimiter);
@@ -27,7 +25,6 @@ router.get("/", getChatListing);
 
 // Get pending chat requests
 router.get("/requests", getChatRequests);
-
 
 // Search active chats
 router.get("/search", searchChats);
@@ -51,4 +48,3 @@ router.get("/:chatId/messages", getChatMessages);
 router.put("/:chatId/read", markChatRead);
 
 export default router;
-

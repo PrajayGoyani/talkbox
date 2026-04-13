@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-import { BCRYPT_SALT, BASE_URL } from "../config/env.js";
-import { AppError } from "../utils/AppError.js";
+import { BCRYPT_SALT, BASE_URL } from "../config/env";
+import { AppError } from "../utils/AppError";
 
 export interface IUser extends Document {
   username: string;

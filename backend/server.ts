@@ -2,9 +2,9 @@ import "dotenv/config";
 import mongoose from "mongoose";
 import { setServers } from "node:dns/promises";
 
-import { configureSocket, startServer } from "./src/app.js";
-import { connectDB } from "./src/config/db.js";
-import { startJobs } from "./src/jobs/jobs.js"; // avoided using generic names here.
+import { configureSocket, startServer } from "./src/app";
+import { connectDB } from "./src/config/db";
+import { startJobs } from "./src/jobs/jobs"; // avoided using generic names here.
 
 // windows specific hack
 if (process.platform === "win32") {

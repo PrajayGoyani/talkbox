@@ -1,8 +1,8 @@
-import authRoutes from "./auth.routes.js";
-import userRoutes from "./user.routes.js";
-import chatRoutes from "./chat.routes.js";
-import notificationRoutes from "./notification.routes.js";
-import { app } from "../app.js";
+import { app } from "../app";
+import authRoutes from "./auth.routes";
+import chatRoutes from "./chat.routes";
+import notificationRoutes from "./notification.routes";
+import userRoutes from "./user.routes";
 
 // define route endpoints
 export function registerRoutes() {

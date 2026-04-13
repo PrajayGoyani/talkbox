@@ -1,6 +1,6 @@
-import UserModel, { IUser } from "../models/user.model.js";
-import { AppError } from "../utils/AppError.js";
-import { generateAccessToken, generateTokens, verifyRefreshToken } from "../utils/jwt.js";
+import UserModel, { IUser } from "../models/user.model";
+import { AppError } from "../utils/AppError";
+import { generateAccessToken, generateTokens, verifyRefreshToken } from "../utils/jwt";
 
 /**
  * @typedef {import('mongoose').Model} Model

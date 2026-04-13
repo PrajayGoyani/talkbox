@@ -1,6 +1,6 @@
-import { NODE_ENV } from "../config/env.js";
-import ChatModel from "../models/chat.model.js";
-import MessageModel from "../models/message.model.js";
+import { NODE_ENV } from "../config/env";
+import ChatModel from "../models/chat.model";
+import MessageModel from "../models/message.model";
 
 async function runRetentionCleanup() {
   try {
@@ -47,4 +47,3 @@ export async function startJobs() {
     24 * 60 * 60 * 1000,
   );
 }
-

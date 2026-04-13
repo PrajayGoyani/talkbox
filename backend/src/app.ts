@@ -1,15 +1,15 @@
 import express from "express";
-import { PORT } from "./config/env.js";
-
-import { registerRoutes } from "./routes/routes.js";
 import http from "http";
+
 import {
   initializeMiddlewares,
   initializeErrorHandlers,
   initializeExtensions,
   initializeStatic,
-} from "./bootstrap/handler.js";
-import { configureSocketServer } from "./controllers/socket.controller.js";
+} from "./bootstrap/handler";
+import { PORT } from "./config/env";
+import { configureSocketServer } from "./controllers/socket.controller";
+import { registerRoutes } from "./routes/routes";
 
 export const app = express();
 const server = http.createServer(app);

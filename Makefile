@@ -11,6 +11,7 @@ install:
 up:
 	@echo "Starting in PRODUCTION mode (building frontend first)..."
 	cd frontend && bun run build
+	cd backend && bun run build
 	APP_MODE=prod bunx pm2 start ecosystem.config.cjs
 
 # Development Mode (Backend: dev, Frontend: dev)

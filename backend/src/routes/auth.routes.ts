@@ -1,10 +1,9 @@
 import express from "express";
 
-import { signupSchema, loginSchema } from "../schemas/user.schema.js";
-
-import { signup, login, refresh, getMe, logout } from "../controllers/auth.controller.js";
-import { validate } from "../middlewares/validate.middleware.js";
-import { authenticateToken } from "../middlewares/auth.middleware.js";
+import { signup, login, refresh, getMe, logout } from "../controllers/auth.controller";
+import { authenticateToken } from "../middlewares/auth.middleware";
+import { validate } from "../middlewares/validate.middleware";
+import { signupSchema, loginSchema } from "../schemas/user.schema";
 
 const router = express.Router();
 

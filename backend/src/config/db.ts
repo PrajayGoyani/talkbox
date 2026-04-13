@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
-import { chatLockdownService } from "../services/chat-lockdown.service.js";
-import { MONGO_URI } from "./env.js";
+import { chatLockdownService } from "../services/chat-lockdown.service";
+import { MONGO_URI } from "./env";
 
 export async function connectDB() {
   try {

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { AppError } from "../utils/AppError.js";
+
+import { AppError } from "../utils/AppError";
 
 // Simple in-memory rate limiter per user
 // A Map storing userId -> { count: number, resetTime: number }
@@ -10,14 +11,17 @@ const WINDOW_MS = 60 * 1000; // 1 minute
 const MAX_REQUESTS = 100;
 
 // Periodic cleanup of expired entries to prevent unbounded memory growth
-setInterval(() => {
-  const now = Date.now();
-  for (const [userId, record] of requestCounts) {
-    if (now >= record.resetTime) {
-      requestCounts.delete(userId);
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [userId, record] of requestCounts) {
+      if (now >= record.resetTime) {
+        requestCounts.delete(userId);
+      }
     }
-  }
-}, 5 * 60 * 1000); // every 5 minutes
+  },
+  5 * 60 * 1000,
+); // every 5 minutes
 
 export const rateLimiter = (req: Request, res: Response, next: NextFunction) => {
   const userId = req.user?.id;
@@ -33,10 +37,7 @@ export const rateLimiter = (req: Request, res: Response, next: NextFunction) => 
       userRecord.count++;
       if (userRecord.count > MAX_REQUESTS) {
         return next(
-          AppError.tooMany(
-            "Strict limit of 100 messages per 1-minute window exceeded.",
-            "RATE_LIMIT_EXCEEDED",
-          ),
+          AppError.tooMany("Strict limit of 100 messages per 1-minute window exceeded.", "RATE_LIMIT_EXCEEDED"),
         );
       }
     } else {
@@ -51,4 +52,3 @@ export const rateLimiter = (req: Request, res: Response, next: NextFunction) => 
 
   next();
 };
-

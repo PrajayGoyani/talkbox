@@ -1,8 +1,8 @@
-import { chatLockdownService } from "./chat-lockdown.service.js";
-import MessageModel from "../models/message.model.js";
-import ChatModel from "../models/chat.model.js";
-import UserModel from "../models/user.model.js";
-import { AppError } from "../utils/AppError.js";
+import ChatModel from "../models/chat.model";
+import MessageModel from "../models/message.model";
+import UserModel from "../models/user.model";
+import { AppError } from "../utils/AppError";
+import { chatLockdownService } from "./chat-lockdown.service";
 
 class SocketService {
   public Message: any;

@@ -2,12 +2,12 @@ import { ObjectId } from "mongodb";
 import { Document, DefaultSchemaOptions, Types } from "mongoose";
 import { Server } from "socket.io";
 
-import ChatModel, { IChat } from "../models/chat.model.js";
-import MessageModel from "../models/message.model.js";
-import UserModel from "../models/user.model.js";
-import { AppError } from "../utils/AppError.js";
-import { chatLockdownService } from "./chat-lockdown.service.js";
-import { notificationService } from "./notification.service.js";
+import ChatModel, { IChat } from "../models/chat.model";
+import MessageModel from "../models/message.model";
+import UserModel from "../models/user.model";
+import { AppError } from "../utils/AppError";
+import { chatLockdownService } from "./chat-lockdown.service";
+import { notificationService } from "./notification.service";
 
 class ChatService {
   public Chat: typeof ChatModel;

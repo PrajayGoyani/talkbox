@@ -1,5 +1,5 @@
-import { AppError } from "../utils/AppError.js";
-import UserModel, { IUserModel } from "../models/user.model.js";
+import UserModel, { IUserModel } from "../models/user.model";
+import { AppError } from "../utils/AppError";
 
 class UserService {
   public User: IUserModel;
@@ -27,7 +27,7 @@ class UserService {
     return user;
   }
 
-  async updateProfile(userId: string, data: { name?: string; avatar_url?: string; }) {
+  async updateProfile(userId: string, data: { name?: string; avatar_url?: string }) {
     const user = await this.User.findById(userId);
     if (!user) {
       throw AppError.notFound("User not found", "USER_NOT_FOUND");
@@ -42,4 +42,3 @@ class UserService {
 }
 
 export const userService = new UserService(UserModel as unknown as IUserModel);
-

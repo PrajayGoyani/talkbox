@@ -294,6 +294,40 @@
           <summary
             class="list-none cursor-pointer flex items-center justify-between font-bold text-lg"
           >
+            What is Talkbox?
+            <span
+              class="group-open:rotate-180 transition-transform duration-300"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                ><path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                /></svg
+              >
+            </span>
+          </summary>
+          <div
+            class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400"
+          >
+            Talkbox is a fast, secure messaging app that keeps conversations in
+            sync across your devices
+            <!-- Talkbox is a modern, real-time communication platform designed to connect people seamlessly. It provides a secure and lightning-fast chat experience for both individuals and teams, featuring synchronization across all your devices. -->
+          </div>
+        </details>
+
+        <details
+          class="group bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 overflow-hidden transition-all"
+        >
+          <summary
+            class="list-none cursor-pointer flex items-center justify-between font-bold text-lg"
+          >
             Is Talkbox free to use?
             <span
               class="group-open:rotate-180 transition-transform duration-300"
