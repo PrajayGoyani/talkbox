@@ -1,50 +1,38 @@
 import { ObjectId } from "mongodb";
+import { Document, DefaultSchemaOptions, Types } from "mongoose";
+import { Server } from "socket.io";
 
-import ChatModel from "../models/chat.model.js";
+import ChatModel, { IChat } from "../models/chat.model.js";
 import MessageModel from "../models/message.model.js";
 import UserModel from "../models/user.model.js";
 import { AppError } from "../utils/AppError.js";
 import { chatLockdownService } from "./chat-lockdown.service.js";
 import { notificationService } from "./notification.service.js";
 
-/**
- * @typedef {import('mongoose').Model} Model
- * @typedef {import('socket.io').Server} Server
- */
-
 class ChatService {
-  public Chat: any;
-  public Message: any;
-  public User: any;
-  public io: any;
+  public Chat: typeof ChatModel;
+  public Message: typeof MessageModel;
+  public User: typeof UserModel;
+  public io: Server | null;
 
-  /**
-   * @param {Model} chatModel
-   * @param {Model} messageModel
-   * @param {Model} userModel
-   */
-  constructor(chatModel, messageModel, userModel) {
+  constructor(chatModel: typeof ChatModel, messageModel: typeof MessageModel, userModel: typeof UserModel) {
     this.Chat = chatModel;
     this.Message = messageModel;
     this.User = userModel;
-    /** @type {Server | null} */
     this.io = null;
   }
 
   /**
    * Allow socket controller to inject io instance
-   * @param {Server} io
    */
-  setIO(io) {
+  setIO(io: Server) {
     this.io = io;
   }
 
   /**
    * Get accepted chat listing for a user.
-   * @param {string | import('mongodb').ObjectId} userId
-   * @returns {Promise<Array<Object>>}
    */
-  async getChatListing(userId) {
+  async getChatListing(userId: string | import("mongodb").ObjectId): Promise<Array<object>> {
     const chats = await this.Chat.find({
       $or: [{ userA: userId }, { userB: userId }],
       isDeleted: false,
@@ -58,10 +46,8 @@ class ChatService {
 
   /**
    * Get pending chat requests for a user.
-   * @param {string | import('mongodb').ObjectId} userId
-   * @returns {Promise<Array<Object>>}
    */
-  async getChatRequests(userId) {
+  async getChatRequests(userId: string | import("mongodb").ObjectId): Promise<Array<object>> {
     const chats = await this.Chat.find({
       $or: [{ userA: userId }, { userB: userId }],
       isDeleted: false,
@@ -77,7 +63,7 @@ class ChatService {
    * Internal helper to standardize chat object for client
    * @private
    */
-  _transformChat(chat, userId) {
+  _transformChat(chat: IChat, userId: string | ObjectId) {
     const userIdStr = userId.toString();
     const otherUser = chat.userA._id.toString() === userIdStr ? chat.userB : chat.userA;
     const unread = chat.unreadCounts?.get?.(userIdStr) || 0;
@@ -107,11 +93,8 @@ class ChatService {
 
   /**
    * Search accepted chats by username, name, or email
-   * @param {string | import('mongodb').ObjectId} userId
-   * @param {string} query
-   * @returns {Promise<Array<Object>>}
    */
-  async searchChats(userId, query) {
+  async searchChats(userId: string | import("mongodb").ObjectId, query: string): Promise<Array<object>> {
     if (!query || query.trim().length === 0) return [];
 
     const uid = new ObjectId(userId);
@@ -196,11 +179,8 @@ class ChatService {
    * - We find the target user
    * - We create a pending chat (or return existing)
    * - We send a notification to the receiver
-   * @param {string | import('mongodb').ObjectId} senderId
-   * @param {string} targetUsername
-   * @returns {Promise<Object>}
    */
-  async requestChat(senderId, targetUsername) {
+  async requestChat(senderId: string | import("mongodb").ObjectId, targetUsername: string): Promise<object> {
     // 1. Sanitize and find the target user by exact username match
     const sanitizedUsername = targetUsername.startsWith("@") ? targetUsername.slice(1) : targetUsername;
     const targetUser = await this.User.findOne({ username: sanitizedUsername });
@@ -224,7 +204,7 @@ class ChatService {
       if (existingChat.status === "rejected") {
         // Allow re-requesting a rejected chat
         existingChat.status = "pending";
-        existingChat.createdBy = senderId;
+        existingChat.createdBy = senderId as ObjectId;
         await existingChat.save();
         return existingChat;
       }
@@ -264,11 +244,8 @@ class ChatService {
   /**
    * Accept a pending chat request.
    * Only the receiver (non-creator) can accept.
-   * @param {string | import('mongodb').ObjectId} chatId
-   * @param {string | import('mongodb').ObjectId} userId
-   * @returns {Promise<Object>}
    */
-  async acceptChat(chatId, userId) {
+  async acceptChat(chatId: string, userId: string): Promise<object> {
     const chat = await this.Chat.findById(chatId);
     if (!chat) throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
     if (chat.status !== "pending") throw AppError.badRequest("Chat is not pending", "CHAT_NOT_PENDING");
@@ -304,11 +281,11 @@ class ChatService {
   /**
    * Reject a pending chat request.
    * Only the receiver (non-creator) can reject.
-   * @param {string | import('mongodb').ObjectId} chatId
-   * @param {string | import('mongodb').ObjectId} userId
-   * @returns {Promise<Object>}
    */
-  async rejectChat(chatId, userId) {
+  async rejectChat(
+    chatId: string | import("mongodb").ObjectId,
+    userId: string | import("mongodb").ObjectId,
+  ): Promise<object> {
     const chat = await this.Chat.findById(chatId);
     if (!chat) throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
     if (chat.status !== "pending") throw AppError.badRequest("Chat is not pending", "CHAT_NOT_PENDING");
@@ -339,12 +316,10 @@ class ChatService {
     return chat;
   }
 
-  /**
-   * @param {string | import('mongodb').ObjectId} chatId
-   * @param {string | import('mongodb').ObjectId} userId
-   * @returns {Promise<Object>}
-   */
-  async deleteChat(chatId, userId) {
+  async deleteChat(
+    chatId: string | import("mongodb").ObjectId,
+    userId: string | import("mongodb").ObjectId,
+  ): Promise<object> {
     const chat = await this.Chat.findById(chatId);
     if (!chat) {
       throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
@@ -362,13 +337,12 @@ class ChatService {
     return { message: "Chat successfully deleted" };
   }
 
-  /**
-   * @param {string | import('mongodb').ObjectId} chatId
-   * @param {number} limit
-   * @param {string} cursor
-   * @returns {Promise<Array<Object>>}
-   */
-  async getChatMessages(chatId, userId, limit = 50, cursor = null) {
+  async getChatMessages(
+    chatId: string | import("mongodb").ObjectId,
+    userId: string,
+    limit: number = 50,
+    cursor: string | null,
+  ): Promise<Array<object>> {
     const chat = await this.Chat.findById(chatId);
     if (!chat) {
       throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
@@ -394,11 +368,11 @@ class ChatService {
   /**
    * Mark a chat as read for a specific user.
    * Resets unreadCounts[userId] to 0.
-   * @param {string | import('mongodb').ObjectId} chatId
-   * @param {string | import('mongodb').ObjectId} userId
-   * @returns {Promise<Object>}
    */
-  async markChatRead(chatId, userId) {
+  async markChatRead(
+    chatId: string | import("mongodb").ObjectId,
+    userId: string | import("mongodb").ObjectId,
+  ): Promise<object> {
     const chat = await this.Chat.findById(chatId);
     if (!chat) {
       throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");

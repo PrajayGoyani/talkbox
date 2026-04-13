@@ -1,6 +1,6 @@
-import { generateAccessToken, generateTokens, verifyRefreshToken } from "../utils/jwt.js";
+import UserModel, { IUser } from "../models/user.model.js";
 import { AppError } from "../utils/AppError.js";
-import UserModel from "../models/user.model.js";
+import { generateAccessToken, generateTokens, verifyRefreshToken } from "../utils/jwt.js";
 
 /**
  * @typedef {import('mongoose').Model} Model
@@ -9,23 +9,21 @@ import UserModel from "../models/user.model.js";
 class AuthService {
   public User: any;
 
-  /**
-   * @param {Model} userModel
-   */
-  constructor(userModel) {
-    /** @type {Model} */
+  constructor(userModel: typeof UserModel) {
     this.User = userModel;
   }
 
-  /**
-   * @param {Object} userData
-   * @param {string} userData.username
-   * @param {string} userData.email
-   * @param {string} userData.password
-   * @param {string} [userData.name]
-   * @returns {Promise<Object>}
-   */
-  async signup({ username, email, password, name }) {
+  async signup({
+    username,
+    email,
+    password,
+    name,
+  }: {
+    username: string;
+    email: string;
+    password: string;
+    name?: string;
+  }): Promise<object> {
     const existingUser = await this.User.exists({ email });
     if (existingUser) {
       throw AppError.conflict("User already exists", "USER_EXISTS");
@@ -40,13 +38,7 @@ class AuthService {
     };
   }
 
-  /**
-   * @param {Object} credentials
-   * @param {string} credentials.username
-   * @param {string} credentials.password
-   * @returns {Promise<Object>}
-   */
-  async login({ username, password }) {
+  async login({ username, password }: { username: string; password: string }): Promise<object> {
     const user = await this.User.findByEmailOrUsername(username);
     if (!user) {
       throw AppError.unauthorized("Invalid credentials", "INVALID_CREDENTIALS");
@@ -68,11 +60,7 @@ class AuthService {
     };
   }
 
-  /**
-   * @param {string} refreshToken
-   * @returns {Promise<Object>}
-   */
-  async refresh(refreshToken) {
+  async refresh(refreshToken: string): Promise<object> {
     if (!refreshToken) {
       throw AppError.unauthorized("Refresh token required", "TOKEN_REQUIRED");
     }
@@ -85,21 +73,13 @@ class AuthService {
     return { accessToken };
   }
 
-  /**
-   * @param {string | import('mongodb').ObjectId} userId
-   * @returns {Promise<Object>}
-   */
-  async getMe(userId) {
+  async getMe(userId: string | import("mongodb").ObjectId): Promise<object> {
     const user = await this.User.findById(userId).select("-password -__v").lean();
     if (!user) throw AppError.notFound("User");
     return user;
   }
 
-  /**
-   * @param {Object} user
-   * @returns {Object}
-   */
-  sanitize(user) {
+  sanitize(user: IUser): object {
     return {
       id: user._id,
       username: user.username,
@@ -111,4 +91,3 @@ class AuthService {
 }
 
 export const authService = new AuthService(UserModel);
-

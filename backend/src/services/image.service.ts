@@ -1,7 +1,7 @@
-import sharp from "sharp";
-import path from "path";
-import fs from "fs/promises";
 import crypto from "crypto";
+import fs from "fs/promises";
+import path from "path";
+import sharp from "sharp";
 
 class ImageService {
   public uploadDir: any;
@@ -15,7 +15,7 @@ class ImageService {
    * @param {Buffer} buffer - The image buffer from multer memoryStorage.
    * @returns {Promise<Buffer>} - The processed WebP buffer.
    */
-  async getProcessedBuffer(buffer) {
+  async getProcessedBuffer(buffer: Buffer): Promise<Buffer> {
     return await sharp(buffer)
       .resize(256, 256, {
         fit: "cover",
@@ -31,7 +31,7 @@ class ImageService {
    * @param {string} prefix - Filename prefix (e.g., 'avatar-').
    * @returns {Promise<string>} - The filename of the saved image.
    */
-  async processAndSaveAvatar(buffer, prefix = "avatar-") {
+  async processAndSaveAvatar(buffer: Buffer, prefix: string = "avatar-"): Promise<string> {
     const uniqueSuffix = Date.now() + "-" + crypto.randomBytes(6).toString("hex");
     const filename = `${prefix}${uniqueSuffix}.webp`;
     const outputPath = path.join(this.uploadDir, filename);
@@ -49,7 +49,7 @@ class ImageService {
    * Delete an old avatar from disk.
    * @param {string} avatarUrl - The URL or path stored in the DB (e.g., '/uploads/avatar-xxx.webp').
    */
-  async deleteOldAvatar(avatarUrl) {
+  async deleteOldAvatar(avatarUrl: string) {
     if (!avatarUrl || avatarUrl.startsWith("http")) return; // Don't try to delete remote URLs (Cloudinary)
 
     try {

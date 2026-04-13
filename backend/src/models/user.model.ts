@@ -1,7 +1,7 @@
-import mongoose, { Schema, Document, Model } from "mongoose";
 import bcrypt from "bcrypt";
+import mongoose, { Schema, Document, Model } from "mongoose";
 
-import { BCRYPT_SALT } from "../config/env.js";
+import { BCRYPT_SALT, BASE_URL } from "../config/env.js";
 import { AppError } from "../utils/AppError.js";
 
 export interface IUser extends Document {
@@ -11,7 +11,7 @@ export interface IUser extends Document {
   password?: string;
   avatar_url: string | null;
   lastSeen: Date;
-  
+
   // Virtuals
   avatarUrl: string;
 
@@ -44,10 +44,14 @@ const userSchema = new Schema<IUser, IUserModel>({
 });
 
 userSchema.virtual("avatarUrl").get(function (this: IUser) {
-  return (
-    this.avatar_url ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(this.username || this.email)}`
-  );
+  if (this.avatar_url) {
+    if (!this.avatar_url.startsWith("http")) {
+      return `${BASE_URL}${this.avatar_url}`;
+    }
+    return this.avatar_url;
+  }
+  const slug: string = this.username;
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(slug.substring(0, 2))}`;
 });
 
 userSchema.methods.comparePassword = async function (password: string) {

@@ -7,8 +7,8 @@
   "type": "module",
   "main": "app.js",
   "scripts": {
+    "dev": "tsx watch --inspect=9229 server.ts",
     "start": "tsx server.ts",
-    "dev": "tsx watch server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
