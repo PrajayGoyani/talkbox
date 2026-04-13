@@ -8,6 +8,9 @@
   import Icon from "./Icon.svelte";
   import MessageSkeleton from "./MessageSkeleton.svelte";
   import { tooltip, tooltipStore } from "../state/tooltip.svelte";
+  import ChatMediaDrawer from "./ChatMediaDrawer.svelte";
+
+  let showGallery = $state(false);
 
   let {
     chatId,
@@ -104,7 +107,8 @@
       chatStore.sendMessage(chatId, otherUser.id, messageInput, {
         url,
         originalName,
-        kind
+        kind,
+        fileSize: result.data.size,
       });
       
       messageInput = "";
@@ -248,6 +252,17 @@
         </div>
       {/if}
     </div>
+    <!-- Gallery toggle button -->
+    {#if status === 'accepted'}
+      <button
+        use:tooltip={"View attachments"}
+        class="ml-auto p-2 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-white/10 transition-all active:scale-95"
+        onclick={() => (showGallery = !showGallery)}
+        aria-label="Media & Files"
+      >
+        <Icon name="paperclip" class="w-5 h-5" />
+      </button>
+    {/if}
   </div>
 </div>
 
@@ -460,4 +475,12 @@
       {/if}
     </div>
   </div>
+{/if}
+
+{#if showGallery && chatId}
+  <ChatMediaDrawer
+    {chatId}
+    onClose={() => (showGallery = false)}
+    onMediaClick={(url, type) => (showMediaOverlay = { url, type })}
+  />
 {/if}

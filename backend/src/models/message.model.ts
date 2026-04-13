@@ -8,6 +8,7 @@ export interface IMessage extends Document {
     kind: "image" | "audio" | "video" | "document" | null;
     url: string | null;
     originalName?: string | null;
+    fileSize?: number | null;
   };
   createdAt: Date;
   idempotencyKey: string;
@@ -21,6 +22,7 @@ const messageSchema = new Schema<IMessage>({
     kind: { type: String, enum: ["image", "audio", "video", "document"], default: null },
     url: { type: String, default: null },
     originalName: { type: String, default: null },
+    fileSize: { type: Number, default: null },
     // metadata: { type: Schema.Types.Mixed, default: null }
   },
   // status: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' },

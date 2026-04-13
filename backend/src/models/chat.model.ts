@@ -14,6 +14,7 @@ export interface IChat extends Document {
   createdAt: Date;
   isDeleted: boolean;
   deletedAt: Date | null;
+  storageUsed: number;
 }
 
 const chatSchema = new Schema<IChat>({
@@ -38,6 +39,7 @@ const chatSchema = new Schema<IChat>({
   createdAt: { type: Date, default: Date.now },
   isDeleted: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null },
+  storageUsed: { type: Number, default: 0 },
 });
 
 chatSchema.index({ userA: 1, isDeleted: 1, status: 1 });

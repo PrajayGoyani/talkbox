@@ -12,6 +12,8 @@ import {
   markChatRead,
   searchChats,
   uploadAttachment,
+  getChatAttachments,
+  deleteChatAttachment,
 } from "../controllers/chat.controller";
 import { authenticateToken } from "../middlewares/auth.middleware";
 import { rateLimiter } from "../middlewares/rate-limiter.middleware";
@@ -51,5 +53,11 @@ router.put("/:chatId/read", markChatRead);
 // Upload attachment
 import { upload } from "../middlewares/upload.middleware";
 router.post("/:chatId/attachment", upload.single("file"), uploadAttachment);
+
+// Get paginated attachment list (for Media Gallery Drawer)
+router.get("/:chatId/attachments", getChatAttachments);
+
+// Delete a specific attachment from a message
+router.delete("/:chatId/attachments/:messageId", deleteChatAttachment);
 
 export default router;

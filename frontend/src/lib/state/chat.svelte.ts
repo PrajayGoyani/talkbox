@@ -36,6 +36,7 @@ export interface Message {
     kind: "image" | "audio" | "video" | "document" | null;
     url: string | null;
     originalName?: string | null;
+    fileSize?: number | null;
   };
 }
 
