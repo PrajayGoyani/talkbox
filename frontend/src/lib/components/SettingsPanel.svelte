@@ -92,7 +92,7 @@
     <hr class="border-t border-slate-200 dark:border-white/10 my-1" />
 
     <!-- Placeholder sections -->
-    <div
+    <!-- <div
       class="flex items-center justify-between p-3 rounded-xl opacity-50 cursor-not-allowed"
     >
       <div class="flex flex-col gap-0.5">
@@ -107,9 +107,9 @@
         class="text-[10px] text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded uppercase font-bold tracking-wider"
         >Coming Soon</span
       >
-    </div>
+    </div> -->
 
-    <div
+    <!-- <div
       class="flex items-center justify-between p-3 rounded-xl opacity-50 cursor-not-allowed"
     >
       <div class="flex flex-col gap-0.5">
@@ -124,7 +124,7 @@
         class="text-[10px] text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded uppercase font-bold tracking-wider"
         >Coming Soon</span
       >
-    </div>
+    </div> -->
 
     <!-- Mobile-only User section and Logout -->
     <div

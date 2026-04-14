@@ -1,3 +1,10 @@
+const isLocalhost = (hostname: string) => {
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.")) {
+    return true;
+  }
+  return false;
+};
+
 /**
  * Single source of truth for API configuration.
  *
@@ -14,7 +21,7 @@ const getBaseUrl = (): string => {
 
   const { hostname, protocol } = window.location;
   // Use http for localhost:3000 if not on prod, or use current protocol for prod
-  const isLocal = hostname === "localhost" || hostname === "127.0.0.1";
+  const isLocal = isLocalhost(hostname);
   const port = isLocal ? ":3000" : "";
 
   return `${protocol}//${hostname}${port}`;

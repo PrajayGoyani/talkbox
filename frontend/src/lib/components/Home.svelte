@@ -4,14 +4,14 @@
   import { routerStore } from "../state/router.svelte";
   import { Route } from "../utils/routes";
 
-  // Navigation CTAs
+  // Navigation CTAs - Call-to-Action
   let dashboardLink = Route.CONVERSATIONS;
   let loginLink = Route.LOGIN;
   let signupLink = Route.SIGNUP;
 </script>
 
 <div
-  class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 overflow-x-hidden"
+  class="min-h-dvh-64px bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 overflow-x-hidden"
 >
   <main>
     <!-- Hero Section -->
@@ -317,7 +317,7 @@
             class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400"
           >
             Talkbox is a fast, secure messaging app that keeps conversations in
-            sync across your devices
+            sync across your devices.
             <!-- Talkbox is a modern, real-time communication platform designed to connect people seamlessly. It provides a secure and lightning-fast chat experience for both individuals and teams, featuring synchronization across all your devices. -->
           </div>
         </details>
@@ -350,8 +350,15 @@
           <div
             class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400"
           >
-            Yes, Talkbox offers a robust free tier for individual users. Premium
-            features for teams are coming soon.
+            Yes, Talkbox is free to use in this public preview.
+            <!-- some basic features are complete while others are still being refined. -->
+            <!-- <br /> -->
+            <!-- Yes - Talkbox is free to use. This public preview version offers a free
+            tier for individual users; the platform is actively in development, so
+            some basic features are complete while others are still being refined. -->
+            <!-- <br /> -->
+            <!-- Yes, Talkbox offers a robust free tier for individual users. -->
+            <!-- Premium features for teams are coming soon. : NOTE: future scope -->
           </div>
         </details>
 
@@ -416,7 +423,7 @@
           <div
             class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400"
           >
-            We use industry-standard encryption protocols and never sell your
+            We use <!--industry-standard--> encryption protocols and never sell your
             personal information.
           </div>
         </details>
@@ -439,8 +446,8 @@
             <span class="font-bold text-xl tracking-tight">Talkbox</span>
           </div>
           <p class="text-slate-600 dark:text-slate-400 max-w-sm">
-            Building the future of digital communication. Fast, secure, and
-            beautiful - just like your best conversations.
+            <!-- Building the future of digital communication. -->
+            Fast, secure, and beautiful - just like your best conversations.
           </p>
         </div>
 
