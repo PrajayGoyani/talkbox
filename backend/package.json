@@ -10,6 +10,7 @@
     "build": "tsc",
     "dev": "tsx watch --inspect=9229 server.ts",
     "start": "bun dist/server.js",
+    "seed": "tsx src/scripts/seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
