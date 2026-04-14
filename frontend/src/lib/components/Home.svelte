@@ -216,7 +216,7 @@
             </div>
             <h3 class="text-xl font-bold mb-2">Real-time Sync</h3>
             <p class="text-slate-600 dark:text-slate-400">
-              Messages delivered across all devices in under 100ms. Stay in the
+              Messages delivered across all devices in under 200ms. Stay in the
               loop, always.
             </p>
           </div>
@@ -243,10 +243,10 @@
                 />
               </svg>
             </div>
-            <h3 class="text-xl font-bold mb-2">Bank-grade Security</h3>
+            <h3 class="text-xl font-bold mb-2">Secure & Private</h3>
             <p class="text-slate-600 dark:text-slate-400">
-              Your data is encrypted and secure. We prioritize your privacy
-              above all else.
+              We encrypt your data and keep conversations private, just as they
+              should be.
             </p>
           </div>
 
@@ -275,7 +275,7 @@
             <h3 class="text-xl font-bold mb-2">Unified Dashboard</h3>
             <p class="text-slate-600 dark:text-slate-400">
               Manage all your conversations, settings, and profile from one
-              gorgeous interface.
+              interface.
             </p>
           </div>
         </div>
