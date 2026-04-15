@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Hero from "./home/Hero.svelte";
-  import Features from "./home/Features.svelte";
-  import FAQ from "./home/FAQ.svelte";
   import Footer from "../layout/Footer.svelte";
+  import FAQ from "./home/FAQ.svelte";
+  import Features from "./home/Features.svelte";
+  import Hero from "./home/Hero.svelte";
 </script>
 
 <div

@@ -1,34 +1,31 @@
 <script lang="ts">
-  import { tick, untrack } from "svelte";
-  import { fade, fly, slide } from "svelte/transition";
+  import { untrack } from "svelte";
   import { quintOut } from "svelte/easing";
-  import { authStore } from "./lib/state/auth.svelte";
-  import { chatStore, type User } from "./lib/state/chat.svelte";
-  import { notificationStore } from "./lib/state/notification.svelte";
+  import { fade, fly } from "svelte/transition";
   import Login from "./lib/components/auth/Login.svelte";
   import Signup from "./lib/components/auth/Signup.svelte";
-  import ChatList from "./lib/components/chat/ChatList.svelte";
   import NotificationsDropdown from "./lib/components/layout/NotificationsDropdown.svelte";
   import ToastContainer from "./lib/components/layout/ToastContainer.svelte";
-  import Avatar from "./lib/components/ui/Avatar.svelte";
+  import { authStore } from "./lib/state/auth.svelte";
+  import { chatStore } from "./lib/state/chat.svelte";
+  import { notificationStore } from "./lib/state/notification.svelte";
   import { themeStore } from "./lib/state/theme.svelte";
 
-  import { routerStore } from "./lib/state/router.svelte";
-  import { Route } from "./lib/utils/routes";
-  import { storage } from "./lib/utils/storage";
-  import IconRail from "./lib/components/layout/IconRail.svelte";
-  import ConversationsPanel from "./lib/components/chat/ConversationsPanel.svelte";
-  import ProfilePanel from "./lib/components/panels/ProfilePanel.svelte";
-  import SettingsPanel from "./lib/components/panels/SettingsPanel.svelte";
-  import RequestsPanel from "./lib/components/panels/RequestsPanel.svelte";
   import ChatWindow from "./lib/components/chat/ChatWindow.svelte";
-  import Terms from "./lib/components/views/Terms.svelte";
-  import Privacy from "./lib/components/views/Privacy.svelte";
-  import Home from "./lib/components/views/Home.svelte";
-  import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
-  import Icon from "./lib/components/ui/Icon.svelte";
-  import { uiStore } from "./lib/state/ui.svelte";
+  import ConversationsPanel from "./lib/components/chat/ConversationsPanel.svelte";
+  import IconRail from "./lib/components/layout/IconRail.svelte";
+  import ProfilePanel from "./lib/components/panels/ProfilePanel.svelte";
+  import RequestsPanel from "./lib/components/panels/RequestsPanel.svelte";
+  import SettingsPanel from "./lib/components/panels/SettingsPanel.svelte";
   import GlobalTooltip from "./lib/components/ui/GlobalTooltip.svelte";
+  import Icon from "./lib/components/ui/Icon.svelte";
+  import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
+  import Home from "./lib/components/views/Home.svelte";
+  import Privacy from "./lib/components/views/Privacy.svelte";
+  import Terms from "./lib/components/views/Terms.svelte";
+  import { routerStore } from "./lib/state/router.svelte";
+  import { uiStore } from "./lib/state/ui.svelte";
+  import { Route } from "./lib/utils/routes";
 
   let isHomePage = $derived(routerStore.segments.length === 0);
 
@@ -84,7 +81,6 @@
       // Ensure chats and requests are fetched on mount/re-auth
       chatStore.fetchChats();
       chatStore.fetchRequests();
-
 
       // Register toast callback
       chatStore.onToast((data) => {
@@ -178,7 +174,6 @@
         onLogout={handleLogout}
         hideOnMobile={!!selectedChatId}
       />
-
 
       <aside
         class="glass-panel flex-col z-10 min-h-0 shrink-0 transition-all duration-300 {uiStore.isSidebarCollapsed
