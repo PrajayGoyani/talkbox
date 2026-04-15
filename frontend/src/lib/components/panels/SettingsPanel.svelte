@@ -2,6 +2,7 @@
   import { themeStore } from "../../state/theme.svelte";
   import type { UserDto } from "../../types/auth.dto";
   import Avatar from "../ui/Avatar.svelte";
+  import Icon from "../ui/Icon.svelte";
 
   const { onLogout, user } = $props<{
     onLogout?: () => void;
@@ -51,39 +52,9 @@
             : 'translate-x-5'} text-slate-400"
         >
           {#if currentTheme === "dark"}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              class="text-indigo-600"
-            >
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
+            <Icon name="moon" class="w-3 h-3 text-indigo-600" />
           {:else}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              class="text-amber-500"
-            >
-              <circle cx="12" cy="12" r="5"></circle>
-              <line x1="12" y1="1" x2="12" y2="3"></line>
-              <line x1="12" y1="21" x2="12" y2="23"></line>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-              <line x1="1" y1="12" x2="3" y2="12"></line>
-              <line x1="21" y1="12" x2="23" y2="12"></line>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-            </svg>
+            <Icon name="sun" class="w-3 h-3 text-amber-500" />
           {/if}
         </span>
       </button>
@@ -147,20 +118,7 @@
         class="w-full mt-2 flex items-center justify-center gap-2 p-3.5 rounded-xl bg-rose-500/10 text-rose-500 font-bold hover:bg-rose-500/20 transition-all active:scale-[0.98]"
         onclick={onLogout}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          ><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline
-            points="16 17 21 12 16 7"
-          ></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg
-        >
+        <Icon name="logout" class="w-[18px] h-[18px]" />
         Sign Out
       </button>
     </div>

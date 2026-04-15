@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Icon from "../../ui/Icon.svelte";
+
   // Features section for the landing page
 </script>
 
@@ -19,25 +21,12 @@
         <div
           class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mb-6"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-6 h-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M13 10V3L4 14h7v7l9-11h-7z"
-            />
-          </svg>
+          <Icon name="bolt" class="w-6 h-6" />
         </div>
         <h3 class="text-xl font-bold mb-2">Real-time Sync</h3>
         <p class="text-slate-600 dark:text-slate-400">
-          Messages delivered across all devices in under 200ms. Stay in the loop,
-          always.
+          Messages delivered across all devices in under 200ms. Stay in the
+          loop, always.
         </p>
       </div>
 
@@ -48,20 +37,7 @@
         <div
           class="w-12 h-12 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center mb-6"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-6 h-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-            />
-          </svg>
+          <Icon name="lock" class="w-6 h-6" />
         </div>
         <h3 class="text-xl font-bold mb-2">Secure & Private</h3>
         <p class="text-slate-600 dark:text-slate-400">
@@ -77,20 +53,7 @@
         <div
           class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-6"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-6 h-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h3a1 1 0 011 1v6a1 1 0 01-1 1h-3a1 1 0 01-1-1v-6z"
-            />
-          </svg>
+          <Icon name="grid" class="w-6 h-6" />
         </div>
         <h3 class="text-xl font-bold mb-2">Unified Dashboard</h3>
         <p class="text-slate-600 dark:text-slate-400">

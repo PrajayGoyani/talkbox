@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "../../ui/Icon.svelte";
   // FAQ section with accordion details
 </script>
 
@@ -15,19 +16,7 @@
       >
         What is Talkbox?
         <span class="group-open:rotate-180 transition-transform duration-300">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 9l-7 7-7-7"
-            /></svg
-          >
+          <Icon name="chevron-down" class="w-5 h-5" />
         </span>
       </summary>
       <div
@@ -46,19 +35,7 @@
       >
         Is Talkbox free to use?
         <span class="group-open:rotate-180 transition-transform duration-300">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 9l-7 7-7-7"
-            /></svg
-          >
+          <Icon name="chevron-down" class="w-5 h-5" />
         </span>
       </summary>
       <div
@@ -76,19 +53,7 @@
       >
         Can I use it on multiple devices?
         <span class="group-open:rotate-180 transition-transform duration-300">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 9l-7 7-7-7"
-            /></svg
-          >
+          <Icon name="chevron-down" class="w-5 h-5" />
         </span>
       </summary>
       <div
@@ -107,19 +72,7 @@
       >
         How secure is my data?
         <span class="group-open:rotate-180 transition-transform duration-300">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            ><path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 9l-7 7-7-7"
-            /></svg
-          >
+          <Icon name="chevron-down" class="w-5 h-5" />
         </span>
       </summary>
       <div

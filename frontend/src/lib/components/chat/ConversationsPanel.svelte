@@ -1,6 +1,7 @@
 <script lang="ts">
   import { type User } from "../../state/chat.svelte";
   import ChatList from "../chat/ChatList.svelte";
+  import Icon from "../ui/Icon.svelte";
 
   const {
     activeChatId,
@@ -39,20 +40,7 @@
         onclick={onNotificationToggle}
         aria-label="Notifications"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-        </svg>
+        <Icon name="notifications" class="w-5 h-5" />
         {#if unreadCount > 0}
           <span
             class="absolute top-0.5 right-0.5 bg-rose-600 text-white text-[9px] font-bold min-w-[14px] h-3.5 rounded-full flex items-center justify-center px-1 shadow-sm animate-in scale-in-0 duration-300"
