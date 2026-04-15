@@ -3,32 +3,35 @@
    * Icon component using CSS mask-image for dynamic loading.
    * SVGs are stored in /public/icons/${name}.svg
    */
-  type IconName =
-    | "back"
-    | "sidebar"
-    | "search"
-    | "send"
-    | "notifications"
-    | "settings"
-    | "profile"
-    | "check"
-    | "close"
-    | "clock"
-    | "chevron-down"
-    | "nav-chat"
-    | "logout"
-    | "add"
-    | "copy"
-    | "loader"
-    | "sun"
-    | "moon"
-    | "eye"
-    | "eye-off"
-    | "bolt"
-    | "lock"
-    | "grid"
-    | "camera"
-    | "edit";
+  const VALID_ICONS = [
+    "back",
+    "sidebar",
+    "search",
+    "send",
+    "notifications",
+    "settings",
+    "profile",
+    "check",
+    "close",
+    "clock",
+    "chevron-down",
+    "nav-chat",
+    "logout",
+    "add",
+    "copy",
+    "loader",
+    "sun",
+    "moon",
+    "eye",
+    "eye-off",
+    "bolt",
+    "lock",
+    "grid",
+    "camera",
+    "edit",
+  ] as const;
+
+  type IconName = (typeof VALID_ICONS)[number];
 
   let {
     name,
@@ -39,18 +42,24 @@
     class?: string;
     [key: string]: any;
   } = $props();
+
+  const isValidIcon = (value: unknown): value is IconName => {
+    return VALID_ICONS.includes(value as IconName);
+  };
 </script>
 
 <!-- 
   We use a span with mask-image to load the SVG and background-color: currentColor
   to ensure the icon inherits the surrounding text color.
 -->
-<span
-  class="icon-container shrink-0 {className}"
-  style:--icon-url="url('/icons/{name}.svg')"
-  aria-hidden="true"
-  {...rest}
-></span>
+{#if isValidIcon(name)}
+  <span
+    class="icon-container shrink-0 {className}"
+    style:--icon-url="url('/icons/{name}.svg')"
+    aria-hidden="true"
+    {...rest}
+  ></span>
+{/if}
 
 <style>
   .icon-container {
