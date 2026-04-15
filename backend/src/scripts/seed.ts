@@ -72,7 +72,7 @@ async function seed() {
     for (const [userA, userB] of pairs) {
       const aId = userA._id;
       const bId = userB._id;
-      
+
       // Consistent ordering for unique constraint
       const [first, second] = aId.getTimestamp() < bId.getTimestamp() ? [aId, bId] : [bId, aId];
 

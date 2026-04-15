@@ -1,6 +1,11 @@
 import jwt from "jsonwebtoken";
 
-import { JWT_SECRET_KEY, JWT_EXPIRATION, JWT_REFRESH_SECRET_KEY, JWT_REFRESH_EXPIRATION } from "../config/env";
+import {
+  JWT_SECRET_KEY,
+  JWT_EXPIRATION,
+  JWT_REFRESH_SECRET_KEY,
+  JWT_REFRESH_EXPIRATION,
+} from "../config/env";
 
 export const generateAccessToken = (payload: object) =>
   jwt.sign(payload, JWT_SECRET_KEY, { expiresIn: JWT_EXPIRATION as any });

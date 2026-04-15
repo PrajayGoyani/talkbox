@@ -12,4 +12,3 @@ export const formatZodErrors = (error: ZodError | any) => {
 
   return errors;
 };
-

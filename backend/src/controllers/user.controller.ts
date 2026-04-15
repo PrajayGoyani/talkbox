@@ -40,7 +40,9 @@ export const uploadAvatar = async (req: Request, res: Response) => {
     res.success(result);
   } catch (error) {
     console.error("Avatar upload error:", error);
-    res.status(500).json({ success: false, message: (error as Error).message || "Failed to upload avatar" });
+    res
+      .status(500)
+      .json({ success: false, message: (error as Error).message || "Failed to upload avatar" });
   }
 };
 

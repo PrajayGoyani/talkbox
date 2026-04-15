@@ -1,15 +1,21 @@
-import { Request, Response, NextFunction } from "express";
-import multer from "multer";
-import path from "path";
-import crypto from "crypto";
 import { v2 as cloudinary } from "cloudinary";
+import crypto from "crypto";
+import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
+import path from "path";
+
+import {
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET,
+  CLOUDINARY_CLOUD_NAME,
+  UPLOAD_STRATEGY,
+} from "../config/env";
 
 // Cloudinary configuration (can use CLOUDINARY_URL or individual keys)
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: CLOUDINARY_CLOUD_NAME,
+  api_key: CLOUDINARY_API_KEY,
+  api_secret: CLOUDINARY_API_SECRET,
 });
 
 const uploadDir = path.join(process.cwd(), "public", "uploads");
@@ -30,7 +36,7 @@ const cloudinaryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     // @ts-ignore
-          folder: "talkbox-avatars",
+    folder: "talkbox-avatars",
     allowed_formats: ["jpg", "png", "jpeg", "webp"],
     public_id: (_req, _file) => {
       const uniqueSuffix = Date.now() + "-" + crypto.randomBytes(6).toString("hex");
@@ -46,7 +52,7 @@ const fileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-const useCloudinary = process.env.UPLOAD_STRATEGY === "cloudinary";
+const useCloudinary = UPLOAD_STRATEGY === "cloudinary";
 
 // Global upload for general multi-strategy use
 export const upload = multer({

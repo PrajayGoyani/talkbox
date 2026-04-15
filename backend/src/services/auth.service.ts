@@ -1,3 +1,4 @@
+import { LoginPayload, SignupPayload } from "../controllers/types";
 import UserModel, { IUser } from "../models/user.model";
 import { AppError } from "../utils/AppError";
 import { generateAccessToken, generateTokens, verifyRefreshToken } from "../utils/jwt";
@@ -13,17 +14,7 @@ class AuthService {
     this.User = userModel;
   }
 
-  async signup({
-    username,
-    email,
-    password,
-    name,
-  }: {
-    username: string;
-    email: string;
-    password: string;
-    name?: string;
-  }): Promise<object> {
+  async signup({ username, email, password, name }: SignupPayload): Promise<object> {
     const existingUser = await this.User.exists({ email });
     if (existingUser) {
       throw AppError.conflict("User already exists", "USER_EXISTS");
@@ -38,7 +29,7 @@ class AuthService {
     };
   }
 
-  async login({ username, password }: { username: string; password: string }): Promise<object> {
+  async login({ username, password }: LoginPayload): Promise<object> {
     const user = await this.User.findByEmailOrUsername(username);
     if (!user) {
       throw AppError.unauthorized("Invalid credentials", "INVALID_CREDENTIALS");

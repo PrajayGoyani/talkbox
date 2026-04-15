@@ -1,6 +1,8 @@
-import { Request, Response, NextFunction, CookieOptions } from "express";
+import { Request, Response, NextFunction as _next, CookieOptions } from "express";
 
+import { NODE_ENV } from "../config/env";
 import { authService } from "../services/auth.service";
+import { LoginRequest, RefreshRequest, SignupRequest } from "./types";
 
 const COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,
@@ -12,13 +14,13 @@ const COOKIE_OPTIONS: CookieOptions = {
 };
 
 // Use Lax for local development if not on HTTPS
-if (process.env.NODE_ENV === "development") {
+if (NODE_ENV === "development") {
   COOKIE_OPTIONS.secure = false;
   COOKIE_OPTIONS.sameSite = "lax";
   COOKIE_OPTIONS.partitioned = false;
 }
 
-export const signup = async (req: Request, res: Response) => {
+export const signup = async (req: SignupRequest, res: Response) => {
   const result: any = await authService.signup(req.body);
 
   res.cookie("refresh_token", result.refreshToken, COOKIE_OPTIONS);
@@ -27,7 +29,7 @@ export const signup = async (req: Request, res: Response) => {
   res.success(result);
 };
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: LoginRequest, res: Response) => {
   const result: any = await authService.login(req.body);
 
   res.cookie("refresh_token", result.refreshToken, COOKIE_OPTIONS);
@@ -36,12 +38,12 @@ export const login = async (req: Request, res: Response) => {
   res.success(result);
 };
 
-export const logout = async (req: Request, res: Response) => {
+export const logout = async (_req: Request, res: Response) => {
   res.clearCookie("refresh_token", COOKIE_OPTIONS);
   res.success({ message: "Logged out successfully" });
 };
 
-export const refresh = async (req: Request, res: Response) => {
+export const refresh = async (req: RefreshRequest, res: Response) => {
   const refreshToken = req.cookies.refresh_token;
   const result = await authService.refresh(refreshToken);
   res.success(result);
