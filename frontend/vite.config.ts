@@ -12,7 +12,7 @@ export default defineConfig({
   },
   fmt: {
     printWidth: 120,
-    ignorePatterns: ["routeTree.gen.ts", "docs/changelog/index.mdx"],
+    ignorePatterns: ["routeTree.gen.ts", "docs/changelog/index.mdx", "dist/**"],
     sortPackageJson: {
       sortScripts: true,
     },

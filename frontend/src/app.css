@@ -72,15 +72,14 @@ body {
 }
 
 .floating-label {
-  @apply absolute left-4 top-3.5 px-0 text-[15px] text-slate-500 transition-all duration-200 pointer-events-none;
+  @apply pointer-events-none absolute top-3.5 left-4 px-0 text-[15px] text-slate-500 transition-all duration-200;
 }
 
 .input-field:focus ~ .floating-label,
 .input-field:not(:placeholder-shown) ~ .floating-label {
-  @apply -top-2 left-3 px-1 text-[11px] font-bold uppercase tracking-wider text-indigo-600 bg-white dark:bg-[#0f172a] dark:text-indigo-400;
+  @apply -top-2 left-3 bg-white px-1 text-[11px] font-bold tracking-wider text-indigo-600 uppercase dark:bg-[#0f172a] dark:text-indigo-400;
   line-height: 1;
 }
-
 
 /* Panels & Lists */
 .panel-header {

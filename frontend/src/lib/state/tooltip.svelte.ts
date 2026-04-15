@@ -19,11 +19,21 @@ class TooltipStore {
     position: "bottom",
   });
 
-  get text() { return this.#state.text; }
-  get visible() { return this.#state.visible; }
-  get x() { return this.#state.x; }
-  get y() { return this.#state.y; }
-  get position() { return this.#state.position; }
+  get text() {
+    return this.#state.text;
+  }
+  get visible() {
+    return this.#state.visible;
+  }
+  get x() {
+    return this.#state.x;
+  }
+  get y() {
+    return this.#state.y;
+  }
+  get position() {
+    return this.#state.position;
+  }
 
   show(text: string, element: HTMLElement, position: TooltipPosition = "bottom") {
     if (!text) return;
@@ -66,7 +76,7 @@ class TooltipStore {
    */
   async showTemporary(text: string, element: HTMLElement, duration = 2000) {
     this.show(text, element, "bottom");
-    await new Promise(resolve => setTimeout(resolve, duration));
+    await new Promise((resolve) => setTimeout(resolve, duration));
     // Only hide if the text hasn't changed (prevents conflicting tooltips)
     if (this.#state.text === text) {
       this.hide();
@@ -104,6 +114,6 @@ export function tooltip(node: HTMLElement, options: string | { text: string; pos
       node.removeEventListener("mouseenter", handleMouseEnter);
       node.removeEventListener("mouseleave", handleMouseLeave);
       tooltipStore.hide();
-    }
+    },
   };
 }

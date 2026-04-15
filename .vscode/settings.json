@@ -4,12 +4,18 @@
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+    "source.fixAll.oxc": "explicit"
+  },
   "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
   "oxc.enable.oxfmt": true,
   "oxc.enable.oxlint": true,
   "oxc.configPath": "./frontend/vite.config.ts",
   "oxc.fmt.configPath": "./frontend/vite.config.ts",
   "[svelte]": {
     "editor.defaultFormatter": "svelte.svelte-vscode"
-  }
+  },
+  "typescript.experimental.useTsgo": true
 }

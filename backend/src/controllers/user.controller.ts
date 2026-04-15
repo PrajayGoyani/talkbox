@@ -1,5 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 
 import { imageService } from "../services/image.service";
 import { userService } from "../services/user.service";
@@ -40,9 +40,7 @@ export const uploadAvatar = async (req: Request, res: Response) => {
     res.success(result);
   } catch (error) {
     console.error("Avatar upload error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: (error as Error).message || "Failed to upload avatar" });
+    res.status(500).json({ success: false, message: (error as Error).message || "Failed to upload avatar" });
   }
 };
 
