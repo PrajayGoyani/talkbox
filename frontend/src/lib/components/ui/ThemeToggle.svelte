@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { themeStore } from "../state/theme.svelte";
+  import { themeStore } from "../../state/theme.svelte";
   import { fade, fly, scale } from "svelte/transition";
   import { quintOut, cubicOut } from "svelte/easing";
 

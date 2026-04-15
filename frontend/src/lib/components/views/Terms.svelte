@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { routerStore } from "../state/router.svelte";
-  import { Route } from "../utils/routes";
+  import { routerStore } from "../../state/router.svelte";
+  import { Route } from "../../utils/routes";
 </script>
 
 <div class="max-w-4xl mx-auto px-4 py-12 prose dark:prose-invert">

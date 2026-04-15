@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { type User } from "../state/chat.svelte";
-  import ChatList from "./ChatList.svelte";
+  import { type User } from "../../state/chat.svelte";
+  import ChatList from "../chat/ChatList.svelte";
 
   const {
     activeChatId,

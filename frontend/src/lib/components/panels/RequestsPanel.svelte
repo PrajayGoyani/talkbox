@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { authStore } from "../state/auth.svelte";
-  import { chatStore, type Chat, type User } from "../state/chat.svelte";
+  import { authStore } from "../../state/auth.svelte";
+  import { chatStore, type Chat, type User } from "../../state/chat.svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import Avatar from "./Avatar.svelte";
-  import Icon from "./Icon.svelte";
+  import Avatar from "../ui/Avatar.svelte";
+  import Icon from "../ui/Icon.svelte";
 
   let loading = $state(false);
   let error = $state<string | null>(null);

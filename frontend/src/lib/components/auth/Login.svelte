@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { authStore } from "../state/auth.svelte";
-  import { routerStore } from "../state/router.svelte";
-  import FloatingInput from "./FloatingInput.svelte";
+  import { authStore } from "../../state/auth.svelte";
+  import { routerStore } from "../../state/router.svelte";
+  import FloatingInput from "../ui/FloatingInput.svelte";
 
   const { toggleSignup } = $props<{ toggleSignup: any }>();
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tooltipStore } from "../state/tooltip.svelte";
+  import { tooltipStore } from "../../state/tooltip.svelte";
   import { fade } from "svelte/transition";
 
   const getTranslate = $derived.by(() => {

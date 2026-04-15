@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { themeStore } from "../state/theme.svelte";
-  import type { UserDto } from "../types/auth.dto";
-  import Avatar from "./Avatar.svelte";
+  import { themeStore } from "../../state/theme.svelte";
+  import type { UserDto } from "../../types/auth.dto";
+  import Avatar from "../ui/Avatar.svelte";
 
   const { onLogout, user } = $props<{
     onLogout?: () => void;

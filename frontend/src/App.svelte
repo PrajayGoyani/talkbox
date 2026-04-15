@@ -5,30 +5,30 @@
   import { authStore } from "./lib/state/auth.svelte";
   import { chatStore, type User } from "./lib/state/chat.svelte";
   import { notificationStore } from "./lib/state/notification.svelte";
-  import Login from "./lib/components/Login.svelte";
-  import Signup from "./lib/components/Signup.svelte";
-  import ChatList from "./lib/components/ChatList.svelte";
-  import NotificationsDropdown from "./lib/components/NotificationsDropdown.svelte";
-  import ToastContainer from "./lib/components/ToastContainer.svelte";
-  import Avatar from "./lib/components/Avatar.svelte";
+  import Login from "./lib/components/auth/Login.svelte";
+  import Signup from "./lib/components/auth/Signup.svelte";
+  import ChatList from "./lib/components/chat/ChatList.svelte";
+  import NotificationsDropdown from "./lib/components/layout/NotificationsDropdown.svelte";
+  import ToastContainer from "./lib/components/layout/ToastContainer.svelte";
+  import Avatar from "./lib/components/ui/Avatar.svelte";
   import { themeStore } from "./lib/state/theme.svelte";
 
   import { routerStore } from "./lib/state/router.svelte";
   import { Route } from "./lib/utils/routes";
   import { storage } from "./lib/utils/storage";
-  import IconRail from "./lib/components/IconRail.svelte";
-  import ConversationsPanel from "./lib/components/ConversationsPanel.svelte";
-  import ProfilePanel from "./lib/components/ProfilePanel.svelte";
-  import SettingsPanel from "./lib/components/SettingsPanel.svelte";
-  import RequestsPanel from "./lib/components/RequestsPanel.svelte";
-  import ChatWindow from "./lib/components/ChatWindow.svelte";
-  import Terms from "./lib/components/Terms.svelte";
-  import Privacy from "./lib/components/Privacy.svelte";
-  import Home from "./lib/components/Home.svelte";
-  import ThemeToggle from "./lib/components/ThemeToggle.svelte";
-  import Icon from "./lib/components/Icon.svelte";
+  import IconRail from "./lib/components/layout/IconRail.svelte";
+  import ConversationsPanel from "./lib/components/chat/ConversationsPanel.svelte";
+  import ProfilePanel from "./lib/components/panels/ProfilePanel.svelte";
+  import SettingsPanel from "./lib/components/panels/SettingsPanel.svelte";
+  import RequestsPanel from "./lib/components/panels/RequestsPanel.svelte";
+  import ChatWindow from "./lib/components/chat/ChatWindow.svelte";
+  import Terms from "./lib/components/views/Terms.svelte";
+  import Privacy from "./lib/components/views/Privacy.svelte";
+  import Home from "./lib/components/views/Home.svelte";
+  import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
+  import Icon from "./lib/components/ui/Icon.svelte";
   import { uiStore } from "./lib/state/ui.svelte";
-  import GlobalTooltip from "./lib/components/GlobalTooltip.svelte";
+  import GlobalTooltip from "./lib/components/ui/GlobalTooltip.svelte";
 
   let isHomePage = $derived(routerStore.segments.length === 0);
 

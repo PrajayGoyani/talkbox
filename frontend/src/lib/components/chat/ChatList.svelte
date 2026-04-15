@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { authStore } from "../state/auth.svelte";
-  import { chatStore, type User, type ChatStatus } from "../state/chat.svelte";
+  import { authStore } from "../../state/auth.svelte";
+  import { chatStore, type User, type ChatStatus } from "../../state/chat.svelte";
   import { onMount } from "svelte";
-  import { formatListTime } from "../utils/date";
-  import Avatar from "./Avatar.svelte";
-  import Icon from "./Icon.svelte";
-  import ChatListSkeleton from "./ChatListSkeleton.svelte";
+  import { formatListTime } from "../../utils/date";
+  import Avatar from "../ui/Avatar.svelte";
+  import Icon from "../ui/Icon.svelte";
+  import ChatListSkeleton from "../chat/ChatListSkeleton.svelte";
 
   const {
     activeChatId = null,

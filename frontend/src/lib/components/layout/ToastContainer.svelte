@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import Avatar from "./Avatar.svelte";
+  import Avatar from "../ui/Avatar.svelte";
 
   interface Toast {
     id: number;

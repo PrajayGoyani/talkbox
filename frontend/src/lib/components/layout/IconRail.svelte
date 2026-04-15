@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { authStore } from "../state/auth.svelte";
-  import { chatStore } from "../state/chat.svelte";
+  import { authStore } from "../../state/auth.svelte";
+  import { chatStore } from "../../state/chat.svelte";
 
-  import Avatar from "./Avatar.svelte";
-  import Icon from "./Icon.svelte";
-  import { uiStore } from "../state/ui.svelte";
-  import { routerStore } from "../state/router.svelte";
-  import { tooltip } from "../state/tooltip.svelte";
+  import Avatar from "../ui/Avatar.svelte";
+  import Icon from "../ui/Icon.svelte";
+  import { uiStore } from "../../state/ui.svelte";
+  import { routerStore } from "../../state/router.svelte";
+  import { tooltip } from "../../state/tooltip.svelte";
 
   type PanelId = "conversations" | "profile" | "settings" | "requests";
 

@@ -1,13 +1,13 @@
 <script lang="ts">
   import { tick } from "svelte";
-  import { authStore } from "../state/auth.svelte";
-  import { chatStore } from "../state/chat.svelte";
-  import type { User, Message } from "../state/chat.svelte";
-  import { formatSimpleTime, formatTimeAgo, getDateLabel } from "../utils/date";
-  import Avatar from "./Avatar.svelte";
-  import Icon from "./Icon.svelte";
-  import MessageSkeleton from "./MessageSkeleton.svelte";
-  import { tooltip, tooltipStore } from "../state/tooltip.svelte";
+  import { authStore } from "../../state/auth.svelte";
+  import { chatStore } from "../../state/chat.svelte";
+  import type { User, Message } from "../../state/chat.svelte";
+  import { formatSimpleTime, formatTimeAgo, getDateLabel } from "../../utils/date";
+  import Avatar from "../ui/Avatar.svelte";
+  import Icon from "../ui/Icon.svelte";
+  import MessageSkeleton from "../chat/MessageSkeleton.svelte";
+  import { tooltip, tooltipStore } from "../../state/tooltip.svelte";
 
   let {
     chatId,

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { authStore } from "../state/auth.svelte";
-  import { themeStore } from "../state/theme.svelte";
-  import { routerStore } from "../state/router.svelte";
-  import { Route } from "../utils/routes";
+  import { authStore } from "../../state/auth.svelte";
+  import { themeStore } from "../../state/theme.svelte";
+  import { routerStore } from "../../state/router.svelte";
+  import { Route } from "../../utils/routes";
 
   // Navigation CTAs - Call-to-Action
   let dashboardLink = Route.CONVERSATIONS;

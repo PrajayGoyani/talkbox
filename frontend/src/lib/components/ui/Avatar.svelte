@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { API_ROOT } from "../config";
+  import { API_ROOT } from "../../config";
 
   let { user, class: className = "" } = $props<{
     user: {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Skeleton from "./Skeleton.svelte";
+  import Skeleton from "../ui/Skeleton.svelte";
 </script>
 
 <div class="flex items-center gap-3 p-3 opacity-60">

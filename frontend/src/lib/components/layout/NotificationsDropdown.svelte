@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { authStore } from "../state/auth.svelte";
-  import { chatStore } from "../state/chat.svelte";
-  import { notificationStore } from "../state/notification.svelte";
-  import type { Notification } from "../types/notification";
+  import { authStore } from "../../state/auth.svelte";
+  import { chatStore } from "../../state/chat.svelte";
+  import { notificationStore } from "../../state/notification.svelte";
+  import type { Notification } from "../../types/notification";
   import { onMount, untrack } from "svelte";
   import { fly, fade, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import { formatTimeAgo } from "../utils/date";
-  import Icon from "./Icon.svelte";
-  import NotificationSkeleton from "./NotificationSkeleton.svelte";
+  import { formatTimeAgo } from "../../utils/date";
+  import Icon from "../ui/Icon.svelte";
+  import NotificationSkeleton from "../layout/NotificationSkeleton.svelte";
 
   let {
     onNavigate,
