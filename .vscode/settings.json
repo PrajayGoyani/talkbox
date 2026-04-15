@@ -1,7 +1,13 @@
 {
   "files.eol": "\n",
-  "[typescript]": {
-    "editor.defaultFormatter": "oxc.oxc-vscode"
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "files.watcherExclude": {
+    "pnpm-lock.yaml": true
+  },
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode"
   },
   "editor.defaultFormatter": "oxc.oxc-vscode",
   "editor.codeActionsOnSave": {
@@ -14,8 +20,14 @@
   "oxc.enable.oxlint": true,
   "oxc.configPath": "./frontend/vite.config.ts",
   "oxc.fmt.configPath": "./frontend/vite.config.ts",
-  "[svelte]": {
-    "editor.defaultFormatter": "svelte.svelte-vscode"
+  "search.exclude": {
+    "pnpm-lock.yaml": true
   },
+  "tailwindCSS.classFunctions": ["cn", "cva"],
+  "tailwindCSS.experimental.classRegex": [
+    ["class:\\s*?[\"'`]([^\"'`]*).*?,"],
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
   "typescript.experimental.useTsgo": true
 }
