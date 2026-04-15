@@ -64,7 +64,7 @@ export function initializeErrorHandlers() {
 }
 
 export function initializeExtensions() {
-  // Enhance express prototype
+  // Extend express response prototype
   app.response.success = function (data, statusCode = 200) {
     return this.status(statusCode).json(success(data));
   };

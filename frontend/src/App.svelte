@@ -19,6 +19,7 @@
   import SettingsPanel from "./lib/components/panels/SettingsPanel.svelte";
   import GlobalTooltip from "./lib/components/ui/GlobalTooltip.svelte";
   import Icon from "./lib/components/ui/Icon.svelte";
+  import Spinner from "./lib/components/ui/Spinner.svelte";
   import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
   import Home from "./lib/components/views/Home.svelte";
   import Privacy from "./lib/components/views/Privacy.svelte";
@@ -135,10 +136,7 @@
     class="flex flex-col items-center justify-center w-screen h-dvh bg-slate-50 dark:bg-slate-950 gap-4"
   >
     <div role="status">
-      <Icon
-        name="loader"
-        class="w-8 h-8 text-neutral-tertiary animate-spin fill-indigo-500"
-      />
+      <Spinner class="w-8 h-8 text-slate-200 dark:text-white/10 fill-indigo-500 animate-spin" />
       <span class="sr-only">Loading...</span>
     </div>
 

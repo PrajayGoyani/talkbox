@@ -43,7 +43,7 @@
     [key: string]: any;
   } = $props();
 
-  const isValidIcon = (value: unknown): value is IconName => {
+  const isValidIcon = (value: string): value is IconName => {
     return VALID_ICONS.includes(value as IconName);
   };
 </script>

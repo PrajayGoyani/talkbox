@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { quintOut } from "svelte/easing";
+  import { fly } from "svelte/transition";
   import { themeStore } from "../../state/theme.svelte";
-  import { fade, fly, scale } from "svelte/transition";
-  import { quintOut, cubicOut } from "svelte/easing";
   import Icon from "./Icon.svelte";
 
   let { class: className = "" } = $props();
@@ -30,10 +30,3 @@
     {/key}
   </div>
 </button>
-
-<style>
-  /* Optional: Add a subtle glow for the sun in dark mode */
-  :global([data-theme="dark"]) button:hover svg {
-    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
-  }
-</style>
