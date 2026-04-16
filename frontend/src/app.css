@@ -96,16 +96,18 @@ body {
 
 /* Chat Messages */
 .chat-bubble {
-  @apply relative max-w-[75%] rounded-2xl px-4 py-2 shadow-sm transition-all duration-200;
+  @apply relative max-w-[85%] md:max-w-[70%] px-3.5 py-1.5 shadow-sm transition-all duration-200;
 }
 
+
 .chat-bubble-sent {
-  @apply self-end rounded-br-none bg-indigo-600 text-white;
+  @apply self-end bg-indigo-600 text-white;
 }
 
 .chat-bubble-received {
-  @apply self-start rounded-bl-none bg-slate-200 text-slate-900 dark:bg-white/10 dark:text-slate-100;
+  @apply self-start bg-slate-200 text-slate-900 dark:bg-white/10 dark:text-slate-100;
 }
+
 
 /* Navigation */
 .rail-btn {

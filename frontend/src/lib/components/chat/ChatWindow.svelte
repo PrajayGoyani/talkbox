@@ -300,22 +300,27 @@
             class="before:content-[''] before:absolute before:top-5 before:left-0 before:right-0 before:h-px before:bg-slate-200 dark:before:bg-white/10 before:z-0"
           ></div>
 
-          {#each group.messages as msg (msg.id)}
+          {#each group.messages as msg, i (msg.id)}
+            {@const isFirstInGroup = i === 0 || group.messages[i - 1].senderId !== msg.senderId}
+            {@const isSent = msg.senderId === authStore.user?.id}
+            
             <div
-              class="chat-bubble {msg.senderId === authStore.user?.id
-                ? 'chat-bubble-sent'
-                : 'chat-bubble-received'}"
+              class="chat-bubble rounded-2xl {isSent ? 'chat-bubble-sent' : 'chat-bubble-received'} {isFirstInGroup ? (isSent ? 'rounded-tr-none' : 'rounded-tl-none') : ''} {i > 0 && !isFirstInGroup ? 'mt-1' : 'mt-2'}"
             >
-              <p
-                class="m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap"
-              >
-                {msg.contentBody}
-              </p>
-              <span class="block text-[10px] opacity-70 mt-1 text-right"
-                >{formatSimpleTime(msg.createdAt)}</span
-              >
+
+
+              <div class="relative">
+                <p class="m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap">
+                  {msg.contentBody}<span class="inline-block w-11 h-0"></span>
+                </p>
+                <span class="absolute bottom-0 right-[-4px] text-[9px] opacity-60 leading-none pb-0.5">
+                  {formatSimpleTime(msg.createdAt)}
+                </span>
+              </div>
             </div>
+
           {/each}
+
         </div>
       {/each}
     {/if}

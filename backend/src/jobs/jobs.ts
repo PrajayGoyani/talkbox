@@ -16,12 +16,16 @@ async function runRetentionCleanup() {
     const chatsToDelete = await ChatModel.find({
       isDeleted: true,
       deletedAt: { $lt: fourteenDaysAgo },
-    });
+    }).select("_id");
 
-    for (const chat of chatsToDelete) {
-      await MessageModel.deleteMany({ chatId: chat._id });
-      await ChatModel.deleteOne({ _id: chat._id });
+    const chatIds = chatsToDelete.map((c) => c._id);
+
+    if (chatIds.length > 0) {
+      const msgResult = await MessageModel.deleteMany({ chatId: { $in: chatIds } });
+      const chatResult = await ChatModel.deleteMany({ _id: { $in: chatIds } });
+      console.log(`Deleted ${msgResult.deletedCount} messages and ${chatResult.deletedCount} chats.`);
     }
+
     console.log("Background jobs complete.");
   } catch (error) {
     console.error("Error during background jobs:", error);
