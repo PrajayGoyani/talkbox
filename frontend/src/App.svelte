@@ -136,7 +136,9 @@
     class="flex flex-col items-center justify-center w-screen h-dvh bg-slate-50 dark:bg-slate-950 gap-4"
   >
     <div role="status">
-      <Spinner class="w-8 h-8 text-slate-200 dark:text-white/10 fill-indigo-500 animate-spin" />
+      <Spinner
+        class="w-8 h-8 text-slate-200 dark:text-white/10 fill-indigo-500 animate-spin"
+      />
       <span class="sr-only">Loading...</span>
     </div>
 
@@ -176,7 +178,7 @@
       <aside
         class="glass-panel flex-col z-10 min-h-0 shrink-0 transition-all duration-300 {uiStore.isSidebarCollapsed
           ? 'w-0 opacity-0 border-none overflow-hidden hidden md:flex'
-          : 'w-full md:w-[280px] border-r'} {selectedChatId
+          : 'w-full md:w-[280px] lg:w-[350px] border-r'} {selectedChatId
           ? 'hidden md:flex'
           : 'flex flex-1 md:flex-initial'}"
       >

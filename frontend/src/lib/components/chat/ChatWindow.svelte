@@ -34,6 +34,7 @@
   let userHasScrolledUp = $state(false);
   let windowContainerHeight = $state(0);
   let copied = $state(false);
+  let textareaElement: HTMLTextAreaElement | undefined = $state();
 
   const MESSAGE_SKELETON_HEIGHT = 90;
   const messageSkeletonCount = $derived(
@@ -56,6 +57,9 @@
     if (!messageInput.trim() || !chatId || !otherUser?.id) return;
     chatStore.sendMessage(chatId, otherUser.id, messageInput);
     messageInput = "";
+    if (textareaElement) {
+      textareaElement.style.height = "auto";
+    }
     scrollToBottom();
   };
 
@@ -66,7 +70,11 @@
     }
   };
 
-  const handleInput = () => {
+  const handleInput = (e: Event) => {
+    const target = e.target as HTMLTextAreaElement;
+    target.style.height = "auto";
+    target.style.height = `${target.scrollHeight}px`;
+
     if (chatId && otherUser?.id) {
       chatStore.emitTyping(chatId, otherUser.id, true);
     }
@@ -298,7 +306,9 @@
                 ? 'chat-bubble-sent'
                 : 'chat-bubble-received'}"
             >
-              <p class="m-0 text-sm leading-relaxed wrap-break-word">
+              <p
+                class="m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap"
+              >
                 {msg.contentBody}
               </p>
               <span class="block text-[10px] opacity-70 mt-1 text-right"
@@ -336,15 +346,16 @@
   {/if}
 
   <div class="p-4 glass-panel border-t flex gap-3 items-center">
-    <input
-      type="text"
+    <textarea
       placeholder="Type a message..."
-      class="input-field flex-1 rounded-full! px-5 py-2.5"
+      class="input-field flex-1 rounded-2xl! px-5 py-2.5 resize-none max-h-32 overflow-y-auto"
       bind:value={messageInput}
+      bind:this={textareaElement}
       onkeydown={handleKeydown}
       oninput={handleInput}
       disabled={chatStore.isSendingMessage}
-    />
+      rows="1"
+    ></textarea>
     <button
       class="bg-indigo-600 hover:bg-indigo-700 text-white w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
       aria-label="Send message"
