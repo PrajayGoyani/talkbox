@@ -13,6 +13,8 @@
   import MessageSkeleton from "../chat/MessageSkeleton.svelte";
   import Avatar from "../ui/Avatar.svelte";
   import Icon from "../ui/Icon.svelte";
+  import Spinner from "../ui/Spinner.svelte";
+
 
   let {
     chatId,
@@ -265,7 +267,7 @@
     bind:clientHeight={windowContainerHeight}
     onscroll={handleMessagesScroll}
   >
-    {#if chatStore.isLoadingMessages}
+    {#if chatStore.isLoadingMessages && chatStore.messages.length === 0}
       <div class="flex flex-col">
         {#each Array(messageSkeletonCount) as _, i}
           <div
@@ -277,6 +279,18 @@
         {/each}
       </div>
     {/if}
+
+    {#if chatStore.isLoadingMessages && chatStore.messages.length > 0}
+      <div class="flex justify-center p-4 animate-in fade-in slide-in-from-top-4 duration-300">
+        <div class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm">
+          <Spinner class="w-4 h-4 text-slate-400 fill-indigo-500 animate-spin" />
+          <span class="text-[11px] font-bold text-slate-500 tracking-wider uppercase leading-none">
+            Loading older messages...
+          </span>
+        </div>
+      </div>
+    {/if}
+
 
     {#if chatStore.messages.length === 0 && !chatStore.isLoadingMessages}
       <div class="text-center text-sm text-slate-500 mt-4">

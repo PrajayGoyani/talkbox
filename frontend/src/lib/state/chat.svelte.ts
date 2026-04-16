@@ -1,16 +1,16 @@
 import { io, type Socket } from "socket.io-client";
-import { SvelteSet, SvelteMap } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
-import type { RawMessageDto, MessageAckDto, UserStatusDto, TypingIndicatorDto } from "../types/chat.dto";
+import type { MessageAckDto, RawMessageDto, TypingIndicatorDto, UserStatusDto } from "../types/chat.dto";
 import type { Notification } from "../types/notification";
 
 import {
-  API_ROOT,
   API_BASE,
-  TYPING_INDICATOR_DURATION,
-  TYPING_DEBOUNCE_DURATION,
-  MESSAGE_SEND_FALLBACK_TIMEOUT,
+  API_ROOT,
   ASSETS,
+  MESSAGE_SEND_FALLBACK_TIMEOUT,
+  TYPING_DEBOUNCE_DURATION,
+  TYPING_INDICATOR_DURATION,
 } from "../config";
 import { authStore } from "./auth.svelte";
 import { notificationStore } from "./notification.svelte";
