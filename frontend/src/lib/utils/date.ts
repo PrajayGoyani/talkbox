@@ -1,4 +1,24 @@
 /**
+ * Cache for Intl.DateTimeFormat instances to avoid expensive re-creation
+ */
+const formatterCache = new Map<string, Intl.DateTimeFormat>();
+
+function getFormatter(options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = JSON.stringify(options);
+  if (!formatterCache.has(key)) {
+    formatterCache.set(key, new Intl.DateTimeFormat(undefined, options));
+  }
+  return formatterCache.get(key)!;
+}
+
+/**
+ * Cache for date labels to avoid repeated calculations during list renders
+ */
+const labelCache = new Map<string, string>();
+let lastCacheClear = 0;
+const CACHE_TTL = 60000; // 1 minute
+
+/**
  * Format a timestamp for chat listing:
  * - 'HH:MM' if today
  * - 'Yesterday' if yesterday
@@ -9,24 +29,28 @@ export function formatListTime(date: string | Date): string {
   if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
   const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
   const isToday = d.toDateString() === now.toDateString();
+  if (isToday) {
+    return getFormatter({
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(d);
+  }
+
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   const isYesterday = d.toDateString() === yesterday.toDateString();
-
-  if (isToday) {
-    return d.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
   if (isYesterday) return "Yesterday";
+
+  const diffMs = now.getTime() - d.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
   if (diffDays < 7) {
-    return d.toLocaleDateString([], { weekday: "short" });
+    return getFormatter({ weekday: "short" }).format(d);
   }
-  return d.toLocaleDateString([], { day: "numeric", month: "short" });
+  
+  return getFormatter({ day: "numeric", month: "short" }).format(d);
 }
 
 /**
@@ -60,10 +84,10 @@ export function formatTimeAgo(date: string | Date): string {
 export function formatSimpleTime(date: string | Date): string {
   if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleTimeString([], {
+  return getFormatter({
     hour: "2-digit",
     minute: "2-digit",
-  });
+  }).format(d);
 }
 
 /**
@@ -72,17 +96,42 @@ export function formatSimpleTime(date: string | Date): string {
  */
 export function getDateLabel(date: string | Date): string {
   if (!date) return "";
-  const d = typeof date === "string" ? new Date(date) : date;
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  const dateStr = typeof date === "string" ? date : date.toISOString();
+  // Using the full date string as key is fine, but we only really care about the date part for the label
+  const cacheKey = dateStr.slice(0, 10);
+  
+  // Clear cache occasionally to handle "Today" becoming "Yesterday"
+  const nowTs = Date.now();
+  if (nowTs - lastCacheClear > CACHE_TTL) {
+    labelCache.clear();
+    lastCacheClear = nowTs;
+  }
 
-  if (d.toDateString() === today.toDateString()) return "Today";
-  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+  if (labelCache.has(cacheKey)) {
+    return labelCache.get(cacheKey)!;
+  }
 
-  return d.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: d.getFullYear() !== today.getFullYear() ? "numeric" : undefined,
-  });
+  const d = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dateToCompare = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  const diffDays = Math.round((today.getTime() - dateToCompare.getTime()) / (1000 * 60 * 60 * 24));
+
+  let label = "";
+  if (diffDays === 0) {
+    label = "Today";
+  } else if (diffDays === 1) {
+    label = "Yesterday";
+  } else {
+    label = getFormatter({
+      day: "numeric",
+      month: "long",
+      year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+    }).format(d);
+  }
+
+  labelCache.set(cacheKey, label);
+  return label;
 }
+

@@ -1,13 +1,18 @@
 <script lang="ts">
   import { tick } from "svelte";
   import { authStore } from "../../state/auth.svelte";
+  import type { User } from "../../state/chat.svelte";
   import { chatStore } from "../../state/chat.svelte";
-  import type { User, Message } from "../../state/chat.svelte";
-  import { formatSimpleTime, formatTimeAgo, getDateLabel } from "../../utils/date";
+  import { tooltip, tooltipStore } from "../../state/tooltip.svelte";
+  import type { RawMessageDto } from "../../types/chat.dto";
+  import {
+    formatSimpleTime,
+    formatTimeAgo,
+    getDateLabel,
+  } from "../../utils/date";
+  import MessageSkeleton from "../chat/MessageSkeleton.svelte";
   import Avatar from "../ui/Avatar.svelte";
   import Icon from "../ui/Icon.svelte";
-  import MessageSkeleton from "../chat/MessageSkeleton.svelte";
-  import { tooltip, tooltipStore } from "../../state/tooltip.svelte";
 
   let {
     chatId,
@@ -111,11 +116,37 @@
     if (!otherUser?.username) return;
     const textToCopy = `@${otherUser.username}`;
     navigator.clipboard.writeText(textToCopy).then(() => {
-      tooltipStore.showTemporary("Username copied", e.currentTarget as HTMLElement);
+      tooltipStore.showTemporary(
+        "Username copied",
+        e.currentTarget as HTMLElement,
+      );
       copied = true;
       setTimeout(() => (copied = false), 2000);
     });
   };
+
+  // Group messages for better sticky header handling
+  const groupedMessages = $derived.by(() => {
+    const groups: { label: string; messages: RawMessageDto[] }[] = [];
+    let lastDateKey = "";
+
+    for (const msg of chatStore.messages) {
+      // Use string slicing for O(1) date comparison (YYYY-MM-DD)
+      // This avoids calling expensive date formatting functions for every message.
+      const dateKey = msg.createdAt.slice(0, 10);
+
+      if (groups.length === 0 || dateKey !== lastDateKey) {
+        groups.push({
+          label: getDateLabel(msg.createdAt),
+          messages: [msg],
+        });
+        lastDateKey = dateKey;
+      } else {
+        groups[groups.length - 1].messages.push(msg);
+      }
+    }
+    return groups;
+  });
 </script>
 
 <div class="glass-panel p-4 border-b">
@@ -152,9 +183,9 @@
           class="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all active:scale-95 flex items-center justify-center"
           aria-label="Copy username"
         >
-          <Icon 
-            name={copied ? "check" : "copy"} 
-            class="w-3.5 h-3.5 {copied ? 'text-emerald-500' : ''}" 
+          <Icon
+            name={copied ? "check" : "copy"}
+            class="w-3.5 h-3.5 {copied ? 'text-emerald-500' : ''}"
             stroke-width={copied ? 3 : 2}
           />
         </button>
@@ -244,33 +275,37 @@
         No messages yet. Send a message to start!
       </div>
     {:else}
-      {#each chatStore.messages as msg, i (msg.id)}
-        {@const currentDateLabel = getDateLabel(msg.createdAt)}
-        {@const prevDateLabel =
-          i > 0 ? getDateLabel(chatStore.messages[i - 1].createdAt) : null}
-
-        {#if currentDateLabel !== prevDateLabel}
+      {#each groupedMessages as group (group.label)}
+        <div class="flex flex-col gap-2 relative">
+          <!-- Floating Sticky Date Label -->
           <div
-            class="text-center my-6 relative flex items-center justify-center before:content-[''] before:absolute before:top-1/2 before:left-0 before:right-0 before:h-px before:bg-slate-200 dark:before:bg-white/10 before:z-0"
+            class="sticky -top-4 z-20 flex justify-center pointer-events-none py-2 -mb-2"
           >
             <span
-              class="relative z-10 px-4 py-1 text-[10px] uppercase tracking-widest font-bold text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-full"
-              >{currentDateLabel}</span
+              class="pointer-events-auto px-4 py-1 text-[10px] tracking-widest font-bold text-slate-500 bg-slate-50/90 dark:bg-slate-900/95 border border-slate-200 dark:border-white/10 rounded-full shadow-md backdrop-blur-md transition-all duration-300"
             >
+              {group.label}
+            </span>
           </div>
-        {/if}
+          <!-- Decorative Separator Line (Non-sticky) -->
+          <div
+            class="before:content-[''] before:absolute before:top-5 before:left-0 before:right-0 before:h-px before:bg-slate-200 dark:before:bg-white/10 before:z-0"
+          ></div>
 
-        <div
-          class="chat-bubble {msg.senderId === authStore.user?.id
-            ? 'chat-bubble-sent'
-            : 'chat-bubble-received'}"
-        >
-          <p class="m-0 text-sm leading-relaxed wrap-break-word">
-            {msg.contentBody}
-          </p>
-          <span class="block text-[10px] opacity-70 mt-1 text-right"
-            >{formatSimpleTime(msg.createdAt)}</span
-          >
+          {#each group.messages as msg (msg.id)}
+            <div
+              class="chat-bubble {msg.senderId === authStore.user?.id
+                ? 'chat-bubble-sent'
+                : 'chat-bubble-received'}"
+            >
+              <p class="m-0 text-sm leading-relaxed wrap-break-word">
+                {msg.contentBody}
+              </p>
+              <span class="block text-[10px] opacity-70 mt-1 text-right"
+                >{formatSimpleTime(msg.createdAt)}</span
+              >
+            </div>
+          {/each}
         </div>
       {/each}
     {/if}
