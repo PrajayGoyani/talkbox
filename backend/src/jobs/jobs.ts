@@ -1,6 +1,7 @@
 import { NODE_ENV } from "../config/env";
 import ChatModel from "../models/chat.model";
 import MessageModel from "../models/message.model";
+import NotificationModel from "../models/notification.model";
 
 async function runRetentionCleanup() {
   try {
@@ -11,7 +12,18 @@ async function runRetentionCleanup() {
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
+    // 1. Purge messages older than 30 days
     await MessageModel.deleteMany({ createdAt: { $lt: thirtyDaysAgo } });
+
+    // 2. Purge notifications
+    // Delete already read ones after 14 days
+    await NotificationModel.deleteMany({
+      isRead: true,
+      createdAt: { $lt: fourteenDaysAgo },
+    });
+    // Delete all others after 30 days
+    await NotificationModel.deleteMany({ createdAt: { $lt: thirtyDaysAgo } });
+
 
     const chatsToDelete = await ChatModel.find({
       isDeleted: true,
