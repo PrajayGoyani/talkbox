@@ -185,17 +185,17 @@ class ChatStore {
       const isChatOpen = data.chatId === this.activeChatId;
       const isTabFocused = document.hasFocus();
 
+      // Maintain background logic
       if (isChatOpen && isTabFocused) {
         void this.markChatRead(data.chatId);
-        return;
       }
 
       if (!isTabFocused) {
         this.showBrowserNotification(data);
-      } else {
-        if (this.onToastCallback) {
-          this.onToastCallback(data);
-        }
+      }
+
+      if (this.onToastCallback && !isChatOpen) {
+        this.onToastCallback(data);
       }
     });
 

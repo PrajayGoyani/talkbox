@@ -61,9 +61,11 @@
     messageInput = "";
     if (textareaElement) {
       textareaElement.style.height = "auto";
+      textareaElement.style.overflowY = "hidden";
     }
     scrollToBottom();
   };
+
 
   const handleKeydown = (e: KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -75,12 +77,15 @@
   const handleInput = (e: Event) => {
     const target = e.target as HTMLTextAreaElement;
     target.style.height = "auto";
-    target.style.height = `${target.scrollHeight}px`;
+    const newHeight = Math.min(target.scrollHeight, 128);
+    target.style.height = `${newHeight}px`;
+    target.style.overflowY = target.scrollHeight > 128 ? "auto" : "hidden";
 
     if (chatId && otherUser?.id) {
       chatStore.emitTyping(chatId, otherUser.id, true);
     }
   };
+
 
   const scrollToBottom = () => {
     if (messagesContainer) {
@@ -367,7 +372,8 @@
   <div class="p-4 glass-panel border-t flex gap-3 items-center">
     <textarea
       placeholder="Type a message..."
-      class="input-field flex-1 rounded-2xl! px-5 py-2.5 resize-none max-h-32 overflow-y-auto"
+      class="input-field flex-1 rounded-2xl! pl-5 pr-3 py-2.5 resize-none max-h-32 scrollbar-slim"
+
       bind:value={messageInput}
       bind:this={textareaElement}
       onkeydown={handleKeydown}
