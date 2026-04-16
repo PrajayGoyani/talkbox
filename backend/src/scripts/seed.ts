@@ -2,7 +2,7 @@ import "dotenv/config";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import { connectDB } from "../config/db";
-import User from "../models/user.model";
+import User, { IUser } from "../models/user.model";
 import Chat from "../models/chat.model";
 import Message from "../models/message.model";
 import { BCRYPT_SALT } from "../config/env";
@@ -47,7 +47,7 @@ async function seed() {
     console.log("Seeding started...");
 
     // 1. Create Users
-    const createdUsers = [];
+    const createdUsers: any[] = [];
     for (const userData of demoUsers) {
       let user = await User.findOne({ username: userData.username });
       if (!user) {
@@ -57,7 +57,7 @@ async function seed() {
       } else {
         console.log(`User already exists: ${userData.username}`);
       }
-      createdUsers.push(user);
+      if (user) createdUsers.push(user);
     }
 
     const [alice, bob, charlie] = createdUsers;
@@ -69,7 +69,7 @@ async function seed() {
       [bob, charlie],
     ];
 
-    for (const [userA, userB] of pairs) {
+    for (const [userA, userB] of pairs as any[][]) {
       const aId = userA._id;
       const bId = userB._id;
 
