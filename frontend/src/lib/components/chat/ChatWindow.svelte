@@ -15,7 +15,6 @@
   import Icon from "../ui/Icon.svelte";
   import Spinner from "../ui/Spinner.svelte";
 
-
   let {
     chatId,
     otherUser,
@@ -29,6 +28,11 @@
     isSidebarCollapsed?: boolean;
     onBack: () => void;
   } = $props();
+
+  const isTouchDevice = $derived(
+    typeof window !== "undefined" &&
+      window.matchMedia("(pointer: coarse)").matches,
+  );
 
   let messageInput = $state("");
   let messagesContainer: HTMLDivElement | undefined = $state();
@@ -66,9 +70,10 @@
     scrollToBottom();
   };
 
-
   const handleKeydown = (e: KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // On touch devices, Enter should just create a new line (multiline mode)
+    // On desktop, Enter sends, Shift+Enter new lines
+    if (e.key === "Enter" && !e.shiftKey && !isTouchDevice) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -85,7 +90,6 @@
       chatStore.emitTyping(chatId, otherUser.id, true);
     }
   };
-
 
   const scrollToBottom = () => {
     if (messagesContainer) {
@@ -286,16 +290,23 @@
     {/if}
 
     {#if chatStore.isLoadingMessages && chatStore.messages.length > 0}
-      <div class="flex justify-center p-4 animate-in fade-in slide-in-from-top-4 duration-300">
-        <div class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm">
-          <Spinner class="w-4 h-4 text-slate-400 fill-indigo-500 animate-spin" />
-          <span class="text-[11px] font-bold text-slate-500 tracking-wider uppercase leading-none">
+      <div
+        class="flex justify-center p-4 animate-in fade-in slide-in-from-top-4 duration-300"
+      >
+        <div
+          class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm"
+        >
+          <Spinner
+            class="w-4 h-4 text-slate-400 fill-indigo-500 animate-spin"
+          />
+          <span
+            class="text-[11px] font-bold text-slate-500 tracking-wider uppercase leading-none"
+          >
             Loading older messages...
           </span>
         </div>
       </div>
     {/if}
-
 
     {#if chatStore.messages.length === 0 && !chatStore.isLoadingMessages}
       <div class="text-center text-sm text-slate-500 mt-4">
@@ -320,26 +331,33 @@
           ></div>
 
           {#each group.messages as msg, i (msg.id)}
-            {@const isFirstInGroup = i === 0 || group.messages[i - 1].senderId !== msg.senderId}
+            {@const isFirstInGroup =
+              i === 0 || group.messages[i - 1].senderId !== msg.senderId}
             {@const isSent = msg.senderId === authStore.user?.id}
-            
+
             <div
-              class="chat-bubble rounded-2xl {isSent ? 'chat-bubble-sent' : 'chat-bubble-received'} {isFirstInGroup ? (isSent ? 'rounded-tr-none' : 'rounded-tl-none') : ''} {i > 0 && !isFirstInGroup ? 'mt-1' : 'mt-2'}"
+              class="chat-bubble rounded-2xl {isSent
+                ? 'chat-bubble-sent'
+                : 'chat-bubble-received'} {isFirstInGroup
+                ? isSent
+                  ? 'rounded-tr-none'
+                  : 'rounded-tl-none'
+                : ''} {i > 0 && !isFirstInGroup ? 'mt-1' : 'mt-2'}"
             >
-
-
               <div class="relative">
-                <p class="m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap">
+                <p
+                  class="m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap"
+                >
                   {msg.contentBody}<span class="inline-block w-11 h-0"></span>
                 </p>
-                <span class="absolute bottom-0 right-[-4px] text-[9px] opacity-60 leading-none pb-0.5">
+                <span
+                  class="absolute bottom-0 right-[-4px] text-[9px] opacity-60 leading-none pb-0.5"
+                >
                   {formatSimpleTime(msg.createdAt)}
                 </span>
               </div>
             </div>
-
           {/each}
-
         </div>
       {/each}
     {/if}
@@ -373,11 +391,11 @@
     <textarea
       placeholder="Type a message..."
       class="input-field flex-1 rounded-2xl! pl-5 pr-3 py-2.5 resize-none max-h-32 scrollbar-slim"
-
       bind:value={messageInput}
       bind:this={textareaElement}
       onkeydown={handleKeydown}
       oninput={handleInput}
+      // onfocus={() => setTimeout(scrollToBottom, 300)}
       disabled={chatStore.isSendingMessage}
       rows="1"
     ></textarea>
