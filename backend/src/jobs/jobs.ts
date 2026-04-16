@@ -1,13 +1,11 @@
-import { NODE_ENV } from "../config/env";
+import { NODE_ENV, ENABLE_JOBS } from "../config/env";
 import { startAgenda, getAgenda } from "../config/agenda";
 import { defineJobs, JOBS } from "./agenda-jobs";
 
 export async function startJobs() {
-  if (NODE_ENV !== "production") {
-    // console.log("Skipping background jobs in non-production environment.");
-    // return;
-    // Note: Agenda is useful in dev too for persistence testing, 
-    // but we can skip starting it if the user prefers.
+  if (NODE_ENV !== "production" && !ENABLE_JOBS) {
+    console.log("Skipping background jobs in non-production environment (ENABLE_JOBS != true).");
+    return;
   }
 
   try {

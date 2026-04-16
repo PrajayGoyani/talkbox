@@ -17,3 +17,5 @@ export const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS.split(",").map((o) =>
 export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME as string;
 export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY as string;
 export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET as string;
+export const ENABLE_JOBS = process.env.ENABLE_JOBS === "true";
+export const DEBUG_JOBS = process.env.DEBUG_JOBS === "true";

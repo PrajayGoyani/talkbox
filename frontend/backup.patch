@@ -1,0 +1,357 @@
+diff --git a/backend/server.ts b/backend/server.ts
+index 37ad3f3..5e65dcb 100644
+--- a/backend/server.ts
++++ b/backend/server.ts
+@@ -3,8 +3,8 @@ import mongoose from "mongoose";
+ import { setServers } from "node:dns/promises";
+ 
+ import { configureSocket, startServer } from "./src/app";
+-import { connectDB } from "./src/config/db";
+ import { stopAgenda } from "./src/config/agenda";
++import { connectDB } from "./src/config/db";
+ import { startJobs } from "./src/jobs/jobs"; // avoided using generic names here.
+ 
+ // windows specific hack
+@@ -12,7 +12,6 @@ if (process.platform === "win32") {
+   setServers(["1.1.1.1", "8.8.8.8"]); // for mongodb connection issues
+ }
+ 
+-
+ async function bootstrap() {
+   await connectDB();
+   await configureSocket();
+@@ -31,7 +30,6 @@ async function bootstrap() {
+     process.exit(0);
+   };
+ 
+-
+   process.on("SIGTERM", () => shutdown("SIGTERM"));
+   process.on("SIGINT", () => shutdown("SIGINT"));
+ }
+diff --git a/frontend/package.json b/frontend/package.json
+index 08dddf4..e18a9b9 100644
+--- a/frontend/package.json
++++ b/frontend/package.json
+@@ -12,6 +12,7 @@
+     "preview": "vp preview"
+   },
+   "dependencies": {
++    "emoji-picker-element": "^1.29.1",
+     "socket.io-client": "^4.8.3"
+   },
+   "devDependencies": {
+diff --git a/frontend/pnpm-lock.yaml b/frontend/pnpm-lock.yaml
+index e26cb46..cfa5f88 100644
+--- a/frontend/pnpm-lock.yaml
++++ b/frontend/pnpm-lock.yaml
+@@ -18,6 +18,9 @@ importers:
+ 
+   .:
+     dependencies:
++      emoji-picker-element:
++        specifier: ^1.29.1
++        version: 1.29.1
+       socket.io-client:
+         specifier: ^4.8.3
+         version: 4.8.3
+@@ -765,6 +768,9 @@ packages:
+   devalue@5.6.4:
+     resolution: {integrity: sha512-Gp6rDldRsFh/7XuouDbxMH3Mx8GMCcgzIb1pDTvNyn8pZGQ22u+Wa+lGV9dQCltFQ7uVw0MhRyb8XDskNFOReA==}
+ 
++  emoji-picker-element@1.29.1:
++    resolution: {integrity: sha512-TOiHzu9Dqib3x4MwcAi3wi3RdyT4SoeB4b15AvH1ks4SBwTl7DeebhZ0d3x6dNi4XfNU7IGRZ7NBQllj0RqwrQ==}
++
+   engine.io-client@6.6.4:
+     resolution: {integrity: sha512-+kjUJnZGwzewFDw951CDWcwj35vMNf2fcj7xQWOctq1F2i1jkDdVvdFG9kM/BEChymCH36KgjnW0NsL58JYRxw==}
+ 
+@@ -1494,6 +1500,8 @@ snapshots:
+ 
+   devalue@5.6.4: {}
+ 
++  emoji-picker-element@1.29.1: {}
++
+   engine.io-client@6.6.4:
+     dependencies:
+       '@socket.io/component-emitter': 3.1.2
+diff --git a/frontend/public/icons/smile.svg b/frontend/public/icons/smile.svg
+new file mode 100644
+index 0000000..78c738d
+--- /dev/null
++++ b/frontend/public/icons/smile.svg
+@@ -0,0 +1,6 @@
++<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
++  <circle cx="12" cy="12" r="10"/>
++  <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
++  <line x1="9" y1="9" x2="9.01" y2="9"/>
++  <line x1="15" y1="9" x2="15.01" y2="9"/>
++</svg>
+diff --git a/frontend/src/lib/components/chat/ChatWindow.svelte b/frontend/src/lib/components/chat/ChatWindow.svelte
+index 0525c1d..1c84208 100644
+--- a/frontend/src/lib/components/chat/ChatWindow.svelte
++++ b/frontend/src/lib/components/chat/ChatWindow.svelte
+@@ -13,7 +13,9 @@
+   import MessageSkeleton from "../chat/MessageSkeleton.svelte";
+   import Avatar from "../ui/Avatar.svelte";
+   import Icon from "../ui/Icon.svelte";
++  import Popover from "../ui/Popover.svelte";
+   import Spinner from "../ui/Spinner.svelte";
++  import "emoji-picker-element";
+ 
+   let {
+     chatId,
+@@ -41,6 +43,7 @@
+   let windowContainerHeight = $state(0);
+   let copied = $state(false);
+   let textareaElement: HTMLTextAreaElement | undefined = $state();
++  let showEmojiPicker = $state(false);
+ 
+   const MESSAGE_SKELETON_HEIGHT = 90;
+   const messageSkeletonCount = $derived(
+@@ -91,6 +94,35 @@
+     }
+   };
+ 
++  const insertEmoji = (emoji: string) => {
++    if (textareaElement) {
++      const start = textareaElement.selectionStart;
++      const end = textareaElement.selectionEnd;
++      messageInput =
++        messageInput.substring(0, start) +
++        emoji +
++        messageInput.substring(end);
++
++      // We need tick to update the DOM before setting cursor position
++      tick().then(() => {
++        if (textareaElement) {
++          textareaElement.selectionStart = textareaElement.selectionEnd =
++            start + emoji.length;
++          textareaElement.focus();
++          // Trigger height adjustment
++          handleInput({ target: textareaElement } as any);
++        }
++      });
++    } else {
++      messageInput += emoji;
++    }
++  };
++
++  const handleEmojiSelect = (event: any) => {
++    const emoji = event.detail.unicode;
++    insertEmoji(emoji);
++  };
++
+   const scrollToBottom = () => {
+     if (messagesContainer) {
+       messagesContainer.scrollTo({
+@@ -387,7 +419,25 @@
+     {/if}
+   {/if}
+ 
+-  <div class="p-4 glass-panel border-t flex gap-3 items-center">
++  <div class="p-4 glass-panel border-t flex gap-3 items-center relative z-40">
++    <Popover bind:isOpen={showEmojiPicker} position="top" align="start">
++      {#snippet trigger({ toggle })}
++        <button
++          class="text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 rounded-xl hover:bg-indigo-600/10 transition-all active:scale-95 shrink-0"
++          onclick={toggle}
++          aria-label="Open emoji picker"
++          type="button"
++        >
++          <Icon name="smile" class="w-6 h-6" />
++        </button>
++      {/snippet}
++
++      <emoji-picker
++        class="light-theme"
++        onemoji-click={handleEmojiSelect}
++      ></emoji-picker>
++    </Popover>
++
+     <textarea
+       placeholder="Type a message..."
+       class="input-field flex-1 rounded-2xl! pl-5 pr-3 py-2.5 resize-none max-h-32 scrollbar-slim"
+@@ -415,3 +465,54 @@
+     </button>
+   </div>
+ {/if}
++
++<style>
++  emoji-picker {
++    --num-columns: 8;
++    --category-font-size: 0.875rem;
++    --emoji-size: 1.5rem;
++    width: 310px;
++    height: 380px;
++    border: none;
++    border-radius: 0;
++  }
++
++  @media (max-width: 640px) {
++    emoji-picker {
++      width: 280px;
++      height: 340px;
++      --num-columns: 7;
++    }
++  }
++
++  /* Theme variables for emoji-picker-element */
++  :global(emoji-picker) {
++    --background: transparent;
++    --border-color: rgba(0, 0, 0, 0.05);
++    --button-hover-background: rgba(99, 102, 241, 0.1);
++    --indicator-color: #4f46e5;
++    --outline-color: #4f46e5;
++    --input-font-color: #0f172a;
++    --input-placeholder-color: #94a3b8;
++    --category-font-color: #0f172a;
++    font-family: inherit;
++  }
++
++  :global([data-theme="dark"] emoji-picker) {
++    --background: transparent;
++    --border-color: rgba(255, 255, 255, 0.05);
++    --button-hover-background: rgba(99, 102, 241, 0.2);
++    --indicator-color: #818cf8;
++    --outline-color: #818cf8;
++    --input-font-color: #f1f5f9;
++    --input-placeholder-color: #64748b;
++    --category-font-color: #f1f5f9;
++    color-scheme: dark;
++  }
++
++  .wrap-break-word {
++    word-wrap: break-word;
++    word-break: break-word;
++    overflow-wrap: break-word;
++  }
++</style>
+diff --git a/frontend/src/lib/components/ui/Icon.svelte b/frontend/src/lib/components/ui/Icon.svelte
+index e3d9e0b..429e9b8 100644
+--- a/frontend/src/lib/components/ui/Icon.svelte
++++ b/frontend/src/lib/components/ui/Icon.svelte
+@@ -29,6 +29,7 @@
+     "grid",
+     "camera",
+     "edit",
++    "smile",
+   ] as const;
+ 
+   type IconName = (typeof VALID_ICONS)[number];
+diff --git a/frontend/src/lib/components/ui/Popover.svelte b/frontend/src/lib/components/ui/Popover.svelte
+new file mode 100644
+index 0000000..fe567f2
+--- /dev/null
++++ b/frontend/src/lib/components/ui/Popover.svelte
+@@ -0,0 +1,112 @@
++<script lang="ts">
++  import { onMount, tick, type Snippet } from "svelte";
++
++  let {
++    children,
++    trigger,
++    isOpen = $bindable(false),
++    position = "top", // top, bottom
++    align = "center", // center, end
++    class: className = "",
++  }: {
++    children: Snippet;
++    trigger: Snippet<[{ toggle: () => void }]>;
++    isOpen?: boolean;
++    position?: "top" | "bottom";
++    align?: "center" | "end" | "start";
++    class?: string;
++  } = $props();
++
++  let popoverContent: HTMLDivElement | undefined = $state();
++  let triggerElement: HTMLDivElement | undefined = $state();
++  let coords = $state({ top: 0, left: 0 });
++
++  const toggle = () => (isOpen = !isOpen);
++
++  const updatePosition = () => {
++    if (!triggerElement) return;
++    const rect = triggerElement.getBoundingClientRect();
++
++    coords = {
++      top: position === "top" ? rect.top : rect.bottom,
++      left:
++        align === "center"
++          ? rect.left + rect.width / 2
++          : align === "start"
++            ? rect.left
++            : rect.right,
++    };
++  };
++
++  // Update position whenever it opens
++  $effect(() => {
++    if (isOpen) {
++      tick().then(updatePosition);
++    }
++  });
++
++  const handleClickOutside = (event: MouseEvent) => {
++    const target = event.target as Node;
++    if (
++      isOpen &&
++      popoverContent &&
++      !popoverContent.contains(target) &&
++      triggerElement &&
++      !triggerElement.contains(target)
++    ) {
++      isOpen = false;
++    }
++  };
++
++  const handleKeydown = (event: KeyboardEvent) => {
++    if (event.key === "Escape" && isOpen) {
++      isOpen = false;
++    }
++  };
++
++  function portal(node: HTMLElement) {
++    document.body.appendChild(node);
++    updatePosition();
++    return {
++      destroy: () => node.remove(),
++    };
++  }
++
++  onMount(() => {
++    window.addEventListener("mousedown", handleClickOutside);
++    window.addEventListener("keydown", handleKeydown);
++    window.addEventListener("resize", updatePosition);
++    window.addEventListener("scroll", updatePosition, true);
++    return () => {
++      window.removeEventListener("mousedown", handleClickOutside);
++      window.removeEventListener("keydown", handleKeydown);
++      window.removeEventListener("resize", updatePosition);
++      window.removeEventListener("scroll", updatePosition, true);
++    };
++  });
++</script>
++
++<div class="relative inline-flex {className}" bind:this={triggerElement}>
++  {@render trigger({ toggle })}
++
++  {#if isOpen}
++    <div
++      use:portal
++      bind:this={popoverContent}
++      class="fixed z-[9999] animate-in fade-in zoom-in-95 duration-200"
++      style:top="{coords.top}px"
++      style:left="{coords.left}px"
++      style:transform="translate({align === 'center'
++        ? '-50%'
++        : align === 'start'
++          ? '0'
++          : '-100%'}, {position === 'top' ? 'calc(-100% - 12px)' : '12px'})"
++    >
++      <div
++        class="glass-panel overflow-hidden rounded-2xl border border-slate-200/50 shadow-2xl dark:border-white/10"
++      >
++        {@render children()}
++      </div>
++    </div>
++  {/if}
++</div>

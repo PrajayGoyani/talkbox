@@ -13,7 +13,9 @@
   import MessageSkeleton from "../chat/MessageSkeleton.svelte";
   import Avatar from "../ui/Avatar.svelte";
   import Icon from "../ui/Icon.svelte";
+  import Popover from "../ui/Popover.svelte";
   import Spinner from "../ui/Spinner.svelte";
+  import EmojiPicker from "../chat/EmojiPicker.svelte";
 
   let {
     chatId,
@@ -41,6 +43,7 @@
   let windowContainerHeight = $state(0);
   let copied = $state(false);
   let textareaElement: HTMLTextAreaElement | undefined = $state();
+  let showEmojiPicker = $state(false);
 
   const MESSAGE_SKELETON_HEIGHT = 90;
   const messageSkeletonCount = $derived(
@@ -88,6 +91,30 @@
 
     if (chatId && otherUser?.id) {
       chatStore.emitTyping(chatId, otherUser.id, true);
+    }
+  };
+
+  const insertEmoji = (emoji: string) => {
+    if (textareaElement) {
+      const start = textareaElement.selectionStart;
+      const end = textareaElement.selectionEnd;
+      messageInput =
+        messageInput.substring(0, start) +
+        emoji +
+        messageInput.substring(end);
+
+      // We need tick to update the DOM before setting cursor position
+      tick().then(() => {
+        if (textareaElement) {
+          textareaElement.selectionStart = textareaElement.selectionEnd =
+            start + emoji.length;
+          textareaElement.focus();
+          // Trigger height adjustment
+          handleInput({ target: textareaElement } as any);
+        }
+      });
+    } else {
+      messageInput += emoji;
     }
   };
 
@@ -142,6 +169,11 @@
       copied = true;
       setTimeout(() => (copied = false), 2000);
     });
+  };
+
+  // Pre-fetch the emoji picker when the user hovers over the button
+  const prefetchEmojiPicker = () => {
+    import("emoji-picker-element").catch(() => {});
   };
 
   // Group messages for better sticky header handling
@@ -387,7 +419,23 @@
     {/if}
   {/if}
 
-  <div class="p-4 glass-panel border-t flex gap-3 items-center">
+  <div class="p-4 glass-panel border-t flex gap-3 items-center relative z-40">
+    <Popover bind:isOpen={showEmojiPicker} position="top" align="start">
+      {#snippet trigger({ toggle })}
+        <button
+          class="text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 rounded-xl hover:bg-indigo-600/10 transition-all active:scale-95 shrink-0"
+          onclick={toggle}
+          onmouseenter={prefetchEmojiPicker}
+          aria-label="Open emoji picker"
+          type="button"
+        >
+          <Icon name="smile" class="w-6 h-6" />
+        </button>
+      {/snippet}
+
+      <EmojiPicker onSelect={insertEmoji} />
+    </Popover>
+
     <textarea
       placeholder="Type a message..."
       class="input-field flex-1 rounded-2xl! pl-5 pr-3 py-2.5 resize-none max-h-32 scrollbar-slim"
@@ -395,7 +443,6 @@
       bind:this={textareaElement}
       onkeydown={handleKeydown}
       oninput={handleInput}
-      // onfocus={() => setTimeout(scrollToBottom, 300)}
       disabled={chatStore.isSendingMessage}
       rows="1"
     ></textarea>
@@ -415,3 +462,15 @@
     </button>
   </div>
 {/if}
+
+<style>
+  :global([data-theme="dark"] emoji-picker) {
+    color-scheme: dark;
+  }
+
+  .wrap-break-word {
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+</style>

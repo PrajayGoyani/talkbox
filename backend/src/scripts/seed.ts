@@ -7,7 +7,7 @@ import Chat from "../models/chat.model";
 import Message from "../models/message.model";
 import { BCRYPT_SALT } from "../config/env";
 
-const DEMO_PASSWORD = "password123";
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "password123";
 
 const demoUsers = [
   {

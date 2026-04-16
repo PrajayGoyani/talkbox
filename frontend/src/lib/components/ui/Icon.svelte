@@ -29,6 +29,7 @@
     "grid",
     "camera",
     "edit",
+    "smile",
   ] as const;
 
   type IconName = (typeof VALID_ICONS)[number];
