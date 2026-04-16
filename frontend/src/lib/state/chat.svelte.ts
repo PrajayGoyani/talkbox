@@ -15,6 +15,7 @@ import {
 import { authStore } from "./auth.svelte";
 import { notificationStore } from "./notification.svelte";
 import { routerStore } from "./router.svelte";
+import { encryptMessage, decryptMessage } from "../utils/encryption";
 
 export type ChatStatus = "pending" | "accepted" | "rejected";
 
@@ -114,8 +115,12 @@ class ChatStore {
     });
 
     // Listen for incoming messages
-    this.socket.on("receive_message", (rawMessage: RawMessageDto) => {
-      const message: Message = { ...rawMessage, id: rawMessage._id || rawMessage.id! };
+    this.socket.on("receive_message", async (rawMessage: RawMessageDto) => {
+      const message: Message = {
+        ...rawMessage,
+        id: rawMessage._id || rawMessage.id!,
+        contentBody: await decryptMessage(rawMessage.contentBody),
+      };
       if (message.chatId === this.activeChatId) {
         this.messages = [...this.messages, message];
       }
@@ -181,7 +186,10 @@ class ChatStore {
     });
 
     // Listen for message alerts (toast / browser notification)
-    this.socket.on("message_alert", (data: MessageAlert) => {
+    this.socket.on("message_alert", async (data: MessageAlert) => {
+      // Decrypt preview for display
+      data.preview = await decryptMessage(data.preview);
+
       const isChatOpen = data.chatId === this.activeChatId;
       const isTabFocused = document.hasFocus();
 
@@ -293,7 +301,13 @@ class ChatStore {
       if (this.activeChatId !== chatId) return;
 
       const rawLoaded: any[] = result.data || result || [];
-      const loadedMessages: Message[] = rawLoaded.map((m) => ({ ...m, id: m._id || m.id }));
+      const loadedMessages: Message[] = await Promise.all(
+        rawLoaded.map(async (m) => ({
+          ...m,
+          id: m._id || m.id,
+          contentBody: await decryptMessage(m.contentBody),
+        })),
+      );
       this.messages = loadedMessages;
       this.hasMoreMessages = loadedMessages.length === 50;
     } catch (e) {
@@ -322,7 +336,13 @@ class ChatStore {
       if (!resp.ok) return;
       const result = await resp.json();
       const rawOlder: any[] = result.data || result || [];
-      const olderMessages: Message[] = rawOlder.map((m) => ({ ...m, id: m._id || m.id }));
+      const olderMessages: Message[] = await Promise.all(
+        rawOlder.map(async (m) => ({
+          ...m,
+          id: m._id || m.id,
+          contentBody: await decryptMessage(m.contentBody),
+        })),
+      );
 
       if (olderMessages.length > 0) {
         this.messages = [...olderMessages, ...this.messages];
@@ -383,7 +403,16 @@ class ChatStore {
         throw new Error(err.error?.message || "Failed to fetch chats");
       }
       const result = await resp.json();
-      this.chats = result.data || [];
+      const rawChats: Chat[] = result.data || [];
+      // Decrypt last message preview for sidebar display
+      this.chats = await Promise.all(
+        rawChats.map(async (c) => ({
+          ...c,
+          lastMessage: c.lastMessage
+            ? { ...c.lastMessage, contentBody: await decryptMessage(c.lastMessage.contentBody) }
+            : c.lastMessage,
+        })),
+      );
       return this.chats;
     } catch (e: any) {
       if (e instanceof Error && e.name === "AbortError") return;
@@ -502,20 +531,27 @@ class ChatStore {
       this.isSendingMessage = false;
     }, MESSAGE_SEND_FALLBACK_TIMEOUT);
 
+    const encrypted = await encryptMessage(contentBody.trim());
+
     this.socket.emit(
       "send_message",
       {
         chatId,
         receiverId,
-        contentBody: contentBody.trim(),
+        contentBody: encrypted,
         idempotencyKey,
       },
-      (ack: MessageAckDto) => {
+      async (ack: MessageAckDto) => {
         clearTimeout(timeout);
         this.isSendingMessage = false;
         if (ack?.status === "ok" && ack.message) {
-          // Map _id from backend to id
-          const message = { ...ack.message, id: ack.message._id || ack.message.id! };
+          // Map _id from backend to id and decrypt the echoed content
+          const decryptedBody = await decryptMessage(ack.message.contentBody);
+          const message = {
+            ...ack.message,
+            id: ack.message._id || ack.message.id!,
+            contentBody: decryptedBody,
+          };
           const exists = this.messages.some((m: Message) => m.idempotencyKey === message.idempotencyKey);
           if (!exists) {
             this.messages = [...this.messages, message];
