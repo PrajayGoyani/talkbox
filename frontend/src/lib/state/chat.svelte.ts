@@ -16,6 +16,8 @@ import { authStore } from "./auth.svelte";
 import { notificationStore } from "./notification.svelte";
 import { routerStore } from "./router.svelte";
 
+const LOADER_AWAIT_MS = 500;
+
 export type ChatStatus = "pending" | "accepted" | "rejected";
 
 export interface User {
@@ -280,7 +282,7 @@ class ChatStore {
     this.messages = [];
     this.hasMoreMessages = true;
     this.isLoadingMessages = true;
-    await new Promise((r) => setTimeout(r, 4000));
+    const startTime = Date.now();
     try {
       const resp = await fetch(`${API_BASE}/chat/${chatId}/messages?limit=50`, {
         headers: { Authorization: `Bearer ${authStore.accessToken}` },
@@ -292,6 +294,12 @@ class ChatStore {
 
       // Guard against race conditions: only update if this chat is still active
       if (this.activeChatId !== chatId) return;
+
+      // conditional await to show progressive loader for user feedback
+      const elapsed = Date.now() - startTime;
+      if (elapsed < LOADER_AWAIT_MS) {
+        await new Promise((r) => setTimeout(r, LOADER_AWAIT_MS - elapsed));
+      }
 
       const rawLoaded: any[] = result.data || result || [];
       const loadedMessages: Message[] = rawLoaded.map((m) => ({ ...m, id: m._id || m.id }));
@@ -314,6 +322,7 @@ class ChatStore {
     this.isLoadingMessages = true;
     const oldestMessageId = this.messages[0].id;
 
+    const startTime = Date.now();
     try {
       const resp = await fetch(`${API_BASE}/chat/${this.activeChatId}/messages?limit=50&cursor=${oldestMessageId}`, {
         headers: { Authorization: `Bearer ${authStore.accessToken}` },
@@ -322,6 +331,13 @@ class ChatStore {
       });
       if (!resp.ok) return;
       const result = await resp.json();
+
+      // conditional await to show progressive loader for user feedback
+      const elapsed = Date.now() - startTime;
+      if (elapsed < LOADER_AWAIT_MS) {
+        await new Promise((r) => setTimeout(r, LOADER_AWAIT_MS - elapsed));
+      }
+
       const rawOlder: any[] = result.data || result || [];
       const olderMessages: Message[] = rawOlder.map((m) => ({ ...m, id: m._id || m.id }));
 
