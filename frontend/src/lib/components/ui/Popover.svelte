@@ -161,7 +161,7 @@
       use:portal
       bind:this={popoverContent}
       bind:clientWidth={contentWidth}
-      class="fixed z-[9999] animate-in fade-in zoom-in-95 duration-200"
+      class="fixed z-9999 animate-in fade-in duration-200 transition-opacity"
       style:top="{coords.top}px"
       style:left="{coords.left}px"
       style:transform="translate({align === 'center'
