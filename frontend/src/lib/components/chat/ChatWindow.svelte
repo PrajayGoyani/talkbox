@@ -5,12 +5,12 @@
   import { chatStore } from "../../state/chat.svelte";
   import { tooltip, tooltipStore } from "../../state/tooltip.svelte";
   import type { RawMessageDto } from "../../types/chat.dto";
+  import { cn } from "../../utils/cn";
   import {
     formatSimpleTime,
     formatTimeAgo,
     getDateLabel,
   } from "../../utils/date";
-  import { cn } from "../../utils/cn";
   import EmojiPicker from "../chat/EmojiPicker.svelte";
   import MessageSkeleton from "../chat/MessageSkeleton.svelte";
   import Avatar from "../ui/Avatar.svelte";
@@ -416,20 +416,20 @@
 
             {@const emojiMode = getEmojiDisplayMode(msg.contentBody)}
 
-            {#if emojiMode !== 'normal'}
+            {#if emojiMode !== "normal"}
               <div
                 class={cn(
                   "flex flex-col",
                   isSent ? "items-end" : "items-start",
-                  i > 0 && !isFirstInGroup ? "mt-1" : "mt-2"
+                  i > 0 && !isFirstInGroup ? "mt-1" : "mt-2",
                 )}
               >
                 <div
                   class={cn(
                     "m-0 select-none",
-                    emojiMode === 'jumbo-1' && "text-6xl py-2",
-                    emojiMode === 'jumbo-2' && "text-5xl py-1.5",
-                    emojiMode === 'jumbo-3' && "text-4xl py-1"
+                    emojiMode === "jumbo-1" && "text-6xl py-2",
+                    emojiMode === "jumbo-2" && "text-5xl py-1.5",
+                    emojiMode === "jumbo-3" && "text-4xl py-1",
                   )}
                 >
                   {msg.contentBody}
@@ -437,10 +437,12 @@
                 <div
                   class={cn(
                     "chat-bubble rounded-2xl px-2.5 py-1 mt-1 flex items-center justify-center min-w-0",
-                    isSent ? "chat-bubble-sent" : "chat-bubble-received"
+                    isSent ? "chat-bubble-sent" : "chat-bubble-received",
                   )}
                 >
-                  <span class="text-[9px] opacity-70 leading-none font-medium whitespace-nowrap">
+                  <span
+                    class="text-[9px] opacity-70 leading-none font-medium whitespace-nowrap"
+                  >
                     {formatSimpleTime(msg.createdAt)}
                   </span>
                 </div>
@@ -450,8 +452,9 @@
                 class={cn(
                   "chat-bubble rounded-2xl",
                   isSent ? "chat-bubble-sent" : "chat-bubble-received",
-                  isFirstInGroup && (isSent ? "rounded-tr-none" : "rounded-tl-none"),
-                  i > 0 && !isFirstInGroup ? "mt-1" : "mt-2"
+                  isFirstInGroup &&
+                    (isSent ? "rounded-tr-none" : "rounded-tl-none"),
+                  i > 0 && !isFirstInGroup ? "mt-1" : "mt-2",
                 )}
               >
                 <div class="relative">
