@@ -499,15 +499,26 @@
           {@const reactionStyles = hasReacted
             ? "bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-500/30"
             : "bg-white text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"}
+          {@const reactorNames = reaction.users.map((id) => {
+            if (id === authStore.user?.id) return "You";
+            if (id === otherUser?.id)
+              return otherUser.name || otherUser.username;
+            return "Someone";
+          })}
+
+          {@const tooltipContent = `${reaction.emoji}\n${reactorNames.join(", ")}${hasReacted ? " (click to remove)" : ""} reacted`}
+
           <button
             onclick={() => chatStore.reactToMessage(msg.id, reaction.emoji)}
+            use:tooltip={{
+              text: tooltipContent,
+              position: "top",
+              variant: "jumbo",
+            }}
             class={cn(
-              "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs transition-all active:scale-90 border shadow-xs",
+              "flex items-center gap-1 px-1.5 py-1 md:py-0.5 rounded-full text-xs transition-all active:scale-90 border shadow-xs",
               reactionStyles,
             )}
-            title={reaction.users.length > 1
-              ? `${reaction.users.length} reactions`
-              : "1 reaction"}
           >
             <span class="text-sm">{reaction.emoji}</span>
             {#if reaction.users.length > 1}

@@ -13,6 +13,7 @@
 
   import ChatWindow from "./lib/components/chat/ChatWindow.svelte";
   import ConversationsPanel from "./lib/components/chat/ConversationsPanel.svelte";
+  import ReactionTooltip from "./lib/components/chat/ReactionTooltip.svelte";
   import IconRail from "./lib/components/layout/IconRail.svelte";
   import ProfilePanel from "./lib/components/panels/ProfilePanel.svelte";
   import RequestsPanel from "./lib/components/panels/RequestsPanel.svelte";
@@ -351,6 +352,7 @@
 {/snippet}
 
 <GlobalTooltip />
+<ReactionTooltip />
 
 <style>
   /* Base styles moved to app.css */
