@@ -10,12 +10,12 @@
     formatTimeAgo,
     getDateLabel,
   } from "../../utils/date";
+  import EmojiPicker from "../chat/EmojiPicker.svelte";
   import MessageSkeleton from "../chat/MessageSkeleton.svelte";
   import Avatar from "../ui/Avatar.svelte";
   import Icon from "../ui/Icon.svelte";
   import Popover from "../ui/Popover.svelte";
   import Spinner from "../ui/Spinner.svelte";
-  import EmojiPicker from "../chat/EmojiPicker.svelte";
 
   let {
     chatId,
@@ -73,6 +73,18 @@
     scrollToBottom();
   };
 
+  // Keep textarea focused after sending a message or when switching chats
+  $effect(() => {
+    // We want to focus the textarea whenever the chat is not currently sending,
+    // which effectively restores focus after the 'disabled' state is removed.
+    if (!chatStore.isSendingMessage && textareaElement && chatId) {
+      // Small delay with tick to ensure DOM is fully ready and not disabled
+      tick().then(() => {
+        textareaElement?.focus();
+      });
+    }
+  });
+
   const handleKeydown = (e: KeyboardEvent) => {
     // On touch devices, Enter should just create a new line (multiline mode)
     // On desktop, Enter sends, Shift+Enter new lines
@@ -99,9 +111,7 @@
       const start = textareaElement.selectionStart;
       const end = textareaElement.selectionEnd;
       messageInput =
-        messageInput.substring(0, start) +
-        emoji +
-        messageInput.substring(end);
+        messageInput.substring(0, start) + emoji + messageInput.substring(end);
 
       // We need tick to update the DOM before setting cursor position
       tick().then(() => {
