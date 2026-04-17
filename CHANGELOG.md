@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-04-17
+
+### Added
+- **Emoji Disallowance**: Implemented a validation system to block disallowed emojis (💩, 💋, 🫦) across picking, messaging, and reactions.
+- **Global Alert System**: Added a premium, glassmorphic alert component for instantaneous user feedback with smooth transitions.
+- **Mobile Tooltips**: Enhanced tooltip system with `touchstart` support and viewport-relative positioning for touch devices.
+
+### Changed
+- Optimized emoji scanning using Unicode-aware regex for better performance in fallback environments.
+- Centralized UI alert management via the `uiStore` for consistent feedback across the app.
+
 ## [1.1.0] - 2026-04-17
 
 ### Added
