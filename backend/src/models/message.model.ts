@@ -10,6 +10,10 @@ export interface IMessage extends Document {
   };
   createdAt: Date;
   idempotencyKey: string;
+  reactions: {
+    emoji: string;
+    users: mongoose.Types.ObjectId[];
+  }[];
 }
 
 const messageSchema = new Schema<IMessage>({
@@ -31,6 +35,12 @@ const messageSchema = new Schema<IMessage>({
   // sentAt: { type: Date, default: Date.now }, // - can refer to createdAt
   createdAt: { type: Date, default: Date.now },
   idempotencyKey: { type: String, required: true, unique: true },
+  reactions: [
+    {
+      emoji: { type: String, required: true },
+      users: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    },
+  ],
 });
 
 /**

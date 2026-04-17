@@ -13,6 +13,7 @@
 
   import ChatWindow from "./lib/components/chat/ChatWindow.svelte";
   import ConversationsPanel from "./lib/components/chat/ConversationsPanel.svelte";
+  import ReactionTooltip from "./lib/components/chat/ReactionTooltip.svelte";
   import IconRail from "./lib/components/layout/IconRail.svelte";
   import ProfilePanel from "./lib/components/panels/ProfilePanel.svelte";
   import RequestsPanel from "./lib/components/panels/RequestsPanel.svelte";
@@ -21,6 +22,7 @@
   import Icon from "./lib/components/ui/Icon.svelte";
   import Spinner from "./lib/components/ui/Spinner.svelte";
   import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
+  import Alert from "./lib/components/ui/Alert.svelte";
   import Home from "./lib/components/views/Home.svelte";
   import Privacy from "./lib/components/views/Privacy.svelte";
   import Terms from "./lib/components/views/Terms.svelte";
@@ -351,6 +353,14 @@
 {/snippet}
 
 <GlobalTooltip />
+<ReactionTooltip />
+
+<!-- Global Alerts -->
+<div class="fixed top-8 left-1/2 -translate-x-1/2 z-10001 flex flex-col gap-3 pointer-events-none w-full items-center px-4">
+  {#each uiStore.alerts as alert (alert.id)}
+    <Alert {alert} />
+  {/each}
+</div>
 
 <style>
   /* Base styles moved to app.css */

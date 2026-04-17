@@ -1,22 +1,23 @@
 <script lang="ts">
   import { tick } from "svelte";
   import { authStore } from "../../state/auth.svelte";
-  import type { User } from "../../state/chat.svelte";
-  import { chatStore } from "../../state/chat.svelte";
+  import { chatStore, type Message, type User } from "../../state/chat.svelte";
   import { tooltip, tooltipStore } from "../../state/tooltip.svelte";
-  import type { RawMessageDto } from "../../types/chat.dto";
+  import { uiStore } from "../../state/ui.svelte";
   import { cn } from "../../utils/cn";
   import {
     formatSimpleTime,
     formatTimeAgo,
     getDateLabel,
   } from "../../utils/date";
+  import { getDisallowedEmojis } from "../../utils/emoji";
   import EmojiPicker from "../chat/EmojiPicker.svelte";
   import MessageSkeleton from "../chat/MessageSkeleton.svelte";
   import Avatar from "../ui/Avatar.svelte";
   import Icon from "../ui/Icon.svelte";
   import Popover from "../ui/Popover.svelte";
   import Spinner from "../ui/Spinner.svelte";
+  import MessageReactionPicker from "./MessageReactionPicker.svelte";
 
   let {
     chatId,
@@ -65,6 +66,16 @@
 
   const handleSendMessage = () => {
     if (!messageInput.trim() || !chatId || !otherUser?.id) return;
+
+    const found = getDisallowedEmojis(messageInput);
+    if (found.length > 0) {
+      uiStore.addAlert(
+        `Message contains disallowed emojis (${found.join(", ")}). Please remove them.`,
+        "danger",
+      );
+      return;
+    }
+
     chatStore.sendMessage(chatId, otherUser.id, messageInput);
     messageInput = "";
     if (textareaElement) {
@@ -189,7 +200,7 @@
 
   // Group messages for better sticky header handling
   const groupedMessages = $derived.by(() => {
-    const groups: { label: string; messages: RawMessageDto[] }[] = [];
+    const groups: { label: string; messages: Message[] }[] = [];
     let lastDateKey = "";
 
     for (const msg of chatStore.messages) {
@@ -436,7 +447,7 @@
                 </div>
                 <div
                   class={cn(
-                    "chat-bubble rounded-2xl px-2.5 py-1 mt-1 flex items-center justify-center min-w-0",
+                    "chat-bubble rounded-2xl px-2.5 py-1 mt-1 flex items-center justify-center min-w-0 relative group",
                     isSent ? "chat-bubble-sent" : "chat-bubble-received",
                   )}
                 >
@@ -445,12 +456,15 @@
                   >
                     {formatSimpleTime(msg.createdAt)}
                   </span>
+                  <MessageReactionPicker {msg} {isSent} />
                 </div>
+                <!-- Reactions rendering for jumbo -->
+                {@render reactionList(msg, isSent)}
               </div>
             {:else}
               <div
                 class={cn(
-                  "chat-bubble rounded-2xl",
+                  "chat-bubble rounded-2xl relative group",
                   isSent ? "chat-bubble-sent" : "chat-bubble-received",
                   isFirstInGroup &&
                     (isSent ? "rounded-tr-none" : "rounded-tl-none"),
@@ -469,6 +483,11 @@
                     {formatSimpleTime(msg.createdAt)}
                   </span>
                 </div>
+                <MessageReactionPicker {msg} {isSent} />
+                <!-- Reaction list for normal -->
+                <div class="flex flex-col gap-1 items-start">
+                  {@render reactionList(msg, isSent)}
+                </div>
               </div>
             {/if}
           {/each}
@@ -476,6 +495,54 @@
       {/each}
     {/if}
   </div>
+
+  {#snippet reactionList(msg: Message, isSent: boolean)}
+    {#if msg.reactions && msg.reactions.length > 0}
+      <div
+        class={cn(
+          "flex flex-wrap gap-1 mt-1",
+          isSent ? "justify-end" : "justify-start",
+        )}
+      >
+        {#each msg.reactions ?? [] as reaction}
+          {@const hasReacted = reaction.users.includes(
+            authStore.user?.id || "",
+          )}
+          {@const reactionStyles = hasReacted
+            ? "bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-500/30"
+            : "bg-white text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"}
+          {@const reactorNames = reaction.users.map((id) => {
+            if (id === authStore.user?.id) return "You";
+            if (id === otherUser?.id)
+              return otherUser.name || otherUser.username;
+            return "Someone";
+          })}
+
+          {@const tooltipContent = `${reaction.emoji}\n${reactorNames.join(", ")}${hasReacted ? " (click to remove)" : ""} reacted`}
+
+          <button
+            onclick={() => chatStore.reactToMessage(msg.id, reaction.emoji)}
+            use:tooltip={{
+              text: tooltipContent,
+              position: "top",
+              variant: "jumbo",
+            }}
+            class={cn(
+              "flex items-center gap-1 px-1.5 py-1 md:py-0.5 rounded-full text-xs transition-all active:scale-90 border shadow-xs",
+              reactionStyles,
+            )}
+          >
+            <span class="text-sm">{reaction.emoji}</span>
+            {#if reaction.users.length > 1}
+              <span class="text-[10px] font-bold opacity-70 leading-none"
+                >{reaction.users.length}</span
+              >
+            {/if}
+          </button>
+        {/each}
+      </div>
+    {/if}
+  {/snippet}
 
   <!-- Jump to Latest Button -->
   {#if showJumpButton}

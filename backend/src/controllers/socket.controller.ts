@@ -1,9 +1,7 @@
-import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 
-import { JWT_SECRET_KEY, NODE_ENV } from "../config/env";
-import { ALLOWED_ORIGINS } from "../config/env";
+import { ALLOWED_ORIGINS, JWT_SECRET_KEY, NODE_ENV } from "../config/env";
 import { chatService } from "../services/chat.service";
 import { socketService } from "../services/socket.service";
 import { AppError } from "../utils/AppError";
@@ -44,6 +42,7 @@ export const configureSocketServer = (server) => {
     socketService.handleConnection(socket);
 
     socket.on("send_message", async (data, ack) => {
+      console.log(`[SocketController] send_message received from user ${socket.data.user.id}:`, data);
       try {
         // Ensure userId is never trusted from the client payload without server-side validation.
         // we use socket.data.user.id
@@ -52,6 +51,10 @@ export const configureSocketServer = (server) => {
       } catch (err) {
         if (ack) ack({ status: "error", error: (err as Error).message });
       }
+    });
+
+    socket.on("react_message", async (data) => {
+      socketService.handleReaction(socket.data.user.id, data);
     });
 
     // E2EE Key exchange setup

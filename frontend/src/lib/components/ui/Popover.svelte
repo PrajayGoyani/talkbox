@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick, type Snippet } from "svelte";
+  import { onMount, untrack, type Snippet } from "svelte";
 
   let {
     children,
@@ -20,28 +20,95 @@
   let popoverContent: HTMLDivElement | undefined = $state();
   let triggerElement: HTMLDivElement | undefined = $state();
   let coords = $state({ top: 0, left: 0 });
+  let contentWidth = $state(0);
 
+  let effectivePosition = $state(untrack(() => position));
   const toggle = () => (isOpen = !isOpen);
 
-  const updatePosition = () => {
-    if (!triggerElement) return;
-    const rect = triggerElement.getBoundingClientRect();
+  // Sync effectivePosition when the prop changes
+  $effect(() => {
+    effectivePosition = position;
+  });
 
-    coords = {
-      top: position === "top" ? rect.top : rect.bottom,
-      left:
-        align === "center"
-          ? rect.left + rect.width / 2
-          : align === "start"
-            ? rect.left
-            : rect.right,
-    };
+  const calculateVerticalPosition = (rect: DOMRect) => {
+    let nextPosition = position;
+    if (position === "top" && rect.top < 420) {
+      return "bottom";
+    }
+    if (position === "bottom" && window.innerHeight - rect.bottom < 420) {
+      return "top";
+    }
+    return nextPosition;
   };
 
-  // Update position whenever it opens
+  const calculateHorizontalOffset = (rect: DOMRect, initialLeft: number) => {
+    if (contentWidth <= 0) return 0;
+
+    const margin = 12;
+    const screenWidth = window.innerWidth;
+    let offset = 0;
+
+    if (align === "center") {
+      const leftEdge = initialLeft - contentWidth / 2;
+      const rightEdge = initialLeft + contentWidth / 2;
+      if (leftEdge < margin) offset = margin - leftEdge;
+      else if (rightEdge > screenWidth - margin)
+        offset = screenWidth - margin - rightEdge;
+    } else if (align === "start") {
+      const rightEdge = initialLeft + contentWidth;
+      if (rightEdge > screenWidth - margin)
+        offset = screenWidth - margin - rightEdge;
+    } else if (align === "end") {
+      const leftEdge = initialLeft - contentWidth;
+      if (leftEdge < margin) offset = margin - leftEdge;
+    }
+
+    return offset;
+  };
+
+  const updatePosition = () => {
+    if (!triggerElement || !isOpen) return;
+    const rect = triggerElement.getBoundingClientRect();
+
+    // 1. Determine vertical placement (smart detection)
+    const nextPosition = calculateVerticalPosition(rect);
+    if (nextPosition !== effectivePosition) {
+      effectivePosition = nextPosition;
+    }
+
+    // 2. Determine initial horizontal anchor
+    const initialLeft =
+      align === "center"
+        ? rect.left + rect.width / 2
+        : align === "start"
+          ? rect.left
+          : rect.right;
+
+    // 3. Calculate horizontal offset to prevent screen overflow
+    const hOffset = calculateHorizontalOffset(rect, initialLeft);
+
+    // 4. Set final coordinates
+    const nextTop = effectivePosition === "top" ? rect.top : rect.bottom;
+    const nextLeft = initialLeft + hOffset;
+
+    // Jitter protection
+    if (
+      Math.abs(coords.top - nextTop) > 0.5 ||
+      Math.abs(coords.left - nextLeft) > 0.5
+    ) {
+      coords = { top: nextTop, left: nextLeft };
+    }
+  };
+
+  // Centralized effect for positioning
   $effect(() => {
+    // Only track isOpen and contentWidth
     if (isOpen) {
-      tick().then(updatePosition);
+      // Accessing contentWidth here ensures the effect re-runs when it changes
+      const _width = contentWidth;
+
+      // Perform the update untracked to prevent infinite loops from reading coords
+      untrack(() => updatePosition());
     }
   });
 
@@ -93,14 +160,17 @@
     <div
       use:portal
       bind:this={popoverContent}
-      class="fixed z-[9999] animate-in fade-in zoom-in-95 duration-200"
+      bind:clientWidth={contentWidth}
+      class="fixed z-9999 animate-in fade-in duration-200 transition-opacity"
       style:top="{coords.top}px"
       style:left="{coords.left}px"
       style:transform="translate({align === 'center'
         ? '-50%'
         : align === 'start'
           ? '0'
-          : '-100%'}, {position === 'top' ? 'calc(-100% - 12px)' : '12px'})"
+          : '-100%'}, {effectivePosition === 'top'
+        ? 'calc(-100% - 12px)'
+        : '12px'})"
     >
       <div
         class="glass-panel overflow-hidden rounded-2xl border border-slate-200/50 shadow-2xl dark:border-white/10"
