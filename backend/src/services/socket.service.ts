@@ -4,6 +4,8 @@ import UserModel from "../models/user.model";
 import { AppError } from "../utils/AppError";
 import { chatLockdownService } from "./chat-lockdown.service";
 
+const MAX_UNIQUE_REACTIONS = 20;
+
 class SocketService {
   public Message: any;
   public io: any;
@@ -149,6 +151,84 @@ class SocketService {
       chatId,
       userId: senderId,
     });
+  }
+
+  async handleReaction(senderId, payload) {
+    const { messageId, emoji } = payload;
+    if (!messageId || !emoji) {
+      return;
+    }
+
+    try {
+      const message = await this.Message.findById(messageId);
+      if (!message) return;
+
+      const chat = await ChatModel.findById(message.chatId);
+      if (!chat) return;
+
+      // Security: Check if user is part of the chat
+      const isParticipant =
+        chat.userA.toString() === senderId.toString() ||
+        chat.userB.toString() === senderId.toString();
+      
+      if (!isParticipant) {
+        return;
+      }
+
+      const reactionIndex = message.reactions.findIndex((r) => r.emoji === emoji);
+
+      if (reactionIndex > -1) {
+        const userIndex = message.reactions[reactionIndex].users.findIndex(
+          (u) => u.toString() === senderId.toString(),
+        );
+
+        if (userIndex > -1) {
+          // Remove user's reaction
+          message.reactions[reactionIndex].users.splice(userIndex, 1);
+          // If no more users, remove the emoji reaction entry entirely
+          if (message.reactions[reactionIndex].users.length === 0) {
+            message.reactions.splice(reactionIndex, 1);
+          }
+        } else {
+          // Add user to existing emoji reaction
+          message.reactions[reactionIndex].users.push(senderId);
+        }
+      } else {
+        // Create new emoji reaction entry if limit not reached
+        if (message.reactions.length < MAX_UNIQUE_REACTIONS) {
+          message.reactions.push({
+            emoji,
+            users: [senderId],
+          });
+        }
+      }
+
+      message.markModified("reactions");
+      await message.save();
+
+      // Determine receiver
+      const receiverId =
+        chat.userA.toString() === senderId.toString()
+          ? chat.userB.toString()
+          : chat.userA.toString();
+
+      const savedMessage = message.toObject();
+      const updatePayload = {
+        messageId: messageId.toString(),
+        chatId: message.chatId.toString(),
+        // Serialize ObjectIds to plain strings so the frontend string-comparison works
+        reactions: savedMessage.reactions.map((r: { emoji: string; users: any[] }) => ({
+          emoji: r.emoji,
+          users: r.users.map((u: any) => u.toString()),
+        })),
+      };
+
+      // Emit to both users
+      this.io.to(`user:${senderId}`).emit("message_reaction_update", updatePayload);
+      this.io.to(`user:${receiverId}`).emit("message_reaction_update", updatePayload);
+    } catch (err) {
+      console.error("[SocketService] Error handling reaction:", err);
+    }
   }
 
   async saveAndDeliverMessage(senderId, payload) {

@@ -34,6 +34,10 @@ export interface Message {
   contentBody: string;
   createdAt: string;
   idempotencyKey?: string;
+  reactions?: Array<{
+    emoji: string;
+    users: string[];
+  }>;
 }
 
 export interface Chat {
@@ -236,6 +240,17 @@ class ChatStore {
 
       if (this.onChatListRefresh) {
         this.onChatListRefresh();
+      }
+    });
+
+    this.socket.on("message_reaction_update", (data: { messageId: string; chatId: string; reactions: Array<{ emoji: string; users: string[] }> }) => {
+      if (data.chatId === this.activeChatId) {
+        const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
+        if (msgIndex !== -1) {
+          const updatedMessages = [...this.messages];
+          updatedMessages[msgIndex] = { ...updatedMessages[msgIndex], reactions: data.reactions };
+          this.messages = updatedMessages;
+        }
       }
     });
   }
@@ -578,6 +593,18 @@ class ChatStore {
         this.myTypingTimeouts.delete(key);
       }, TYPING_DEBOUNCE_DURATION),
     );
+  }
+
+  /** React to a message via socket */
+  reactToMessage(messageId: string, emoji: string) {
+    if (!this.socket || !this.isConnected || !this.activeChatId) {
+      return;
+    }
+
+    this.socket.emit("react_message", {
+      messageId,
+      emoji,
+    });
   }
 }
 

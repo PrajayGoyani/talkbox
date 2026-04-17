@@ -9,6 +9,10 @@ export interface RawMessageDto {
   contentBody: string;
   createdAt: string;
   idempotencyKey?: string;
+  reactions?: Array<{
+    emoji: string;
+    users: string[];
+  }>;
 }
 
 /**

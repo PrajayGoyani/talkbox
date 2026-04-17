@@ -21,14 +21,28 @@
   let triggerElement: HTMLDivElement | undefined = $state();
   let coords = $state({ top: 0, left: 0 });
 
+  let effectivePosition = $state(position);
   const toggle = () => (isOpen = !isOpen);
 
   const updatePosition = () => {
     if (!triggerElement) return;
     const rect = triggerElement.getBoundingClientRect();
 
+    // Smart viewport detection:
+    // If we're at the top and there's not enough room (approx 400px for emoji picker), flip to bottom
+    if (position === "top" && rect.top < 420) {
+      effectivePosition = "bottom";
+    } else if (
+      position === "bottom" &&
+      window.innerHeight - rect.bottom < 420
+    ) {
+      effectivePosition = "top";
+    } else {
+      effectivePosition = position;
+    }
+
     coords = {
-      top: position === "top" ? rect.top : rect.bottom,
+      top: effectivePosition === "top" ? rect.top : rect.bottom,
       left:
         align === "center"
           ? rect.left + rect.width / 2
@@ -100,7 +114,9 @@
         ? '-50%'
         : align === 'start'
           ? '0'
-          : '-100%'}, {position === 'top' ? 'calc(-100% - 12px)' : '12px'})"
+          : '-100%'}, {effectivePosition === 'top'
+        ? 'calc(-100% - 12px)'
+        : '12px'})"
     >
       <div
         class="glass-panel overflow-hidden rounded-2xl border border-slate-200/50 shadow-2xl dark:border-white/10"
