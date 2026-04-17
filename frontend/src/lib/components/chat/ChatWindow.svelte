@@ -10,6 +10,7 @@
     formatTimeAgo,
     getDateLabel,
   } from "../../utils/date";
+  import { cn } from "../../utils/cn";
   import EmojiPicker from "../chat/EmojiPicker.svelte";
   import MessageSkeleton from "../chat/MessageSkeleton.svelte";
   import Avatar from "../ui/Avatar.svelte";
@@ -208,6 +209,42 @@
     }
     return groups;
   });
+
+  const getEmojiDisplayMode = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return "normal";
+
+    // Accurate emoji counting using Intl.Segmenter
+    if (typeof Intl?.Segmenter !== "function") {
+      const emojiOnlyRegex = /^(\p{Extended_Pictographic}|\s)+$/u;
+      if (!emojiOnlyRegex.test(trimmed)) return "normal";
+      const emojis = trimmed.match(/\p{Extended_Pictographic}/gu) || [];
+      if (emojis.length === 1) return "jumbo-1";
+      if (emojis.length === 2) return "jumbo-2";
+      if (emojis.length === 3) return "jumbo-3";
+      return "normal";
+    }
+
+    const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
+    const segments = Array.from(segmenter.segment(trimmed));
+    const emojiRegex = /\p{Extended_Pictographic}/u;
+    let count = 0;
+
+    for (const seg of segments) {
+      const char = seg.segment.trim();
+      if (!char) continue;
+      if (emojiRegex.test(char)) {
+        count++;
+      } else {
+        return "normal";
+      }
+    }
+
+    if (count === 1) return "jumbo-1";
+    if (count === 2) return "jumbo-2";
+    if (count === 3) return "jumbo-3";
+    return "normal";
+  };
 </script>
 
 <div class="glass-panel p-4 border-b">
@@ -377,28 +414,60 @@
               i === 0 || group.messages[i - 1].senderId !== msg.senderId}
             {@const isSent = msg.senderId === authStore.user?.id}
 
-            <div
-              class="chat-bubble rounded-2xl {isSent
-                ? 'chat-bubble-sent'
-                : 'chat-bubble-received'} {isFirstInGroup
-                ? isSent
-                  ? 'rounded-tr-none'
-                  : 'rounded-tl-none'
-                : ''} {i > 0 && !isFirstInGroup ? 'mt-1' : 'mt-2'}"
-            >
-              <div class="relative">
-                <p
-                  class="m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap"
+            {@const emojiMode = getEmojiDisplayMode(msg.contentBody)}
+
+            {#if emojiMode !== 'normal'}
+              <div
+                class={cn(
+                  "flex flex-col",
+                  isSent ? "items-end" : "items-start",
+                  i > 0 && !isFirstInGroup ? "mt-1" : "mt-2"
+                )}
+              >
+                <div
+                  class={cn(
+                    "m-0 select-none",
+                    emojiMode === 'jumbo-1' && "text-6xl py-2",
+                    emojiMode === 'jumbo-2' && "text-5xl py-1.5",
+                    emojiMode === 'jumbo-3' && "text-4xl py-1"
+                  )}
                 >
-                  {msg.contentBody}<span class="inline-block w-11 h-0"></span>
-                </p>
-                <span
-                  class="absolute bottom-0 right-[-4px] text-[9px] opacity-60 leading-none pb-0.5"
+                  {msg.contentBody}
+                </div>
+                <div
+                  class={cn(
+                    "chat-bubble rounded-2xl px-2.5 py-1 mt-1 flex items-center justify-center min-w-0",
+                    isSent ? "chat-bubble-sent" : "chat-bubble-received"
+                  )}
                 >
-                  {formatSimpleTime(msg.createdAt)}
-                </span>
+                  <span class="text-[9px] opacity-70 leading-none font-medium whitespace-nowrap">
+                    {formatSimpleTime(msg.createdAt)}
+                  </span>
+                </div>
               </div>
-            </div>
+            {:else}
+              <div
+                class={cn(
+                  "chat-bubble rounded-2xl",
+                  isSent ? "chat-bubble-sent" : "chat-bubble-received",
+                  isFirstInGroup && (isSent ? "rounded-tr-none" : "rounded-tl-none"),
+                  i > 0 && !isFirstInGroup ? "mt-1" : "mt-2"
+                )}
+              >
+                <div class="relative">
+                  <p
+                    class="m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap"
+                  >
+                    {msg.contentBody}<span class="inline-block w-11 h-0"></span>
+                  </p>
+                  <span
+                    class="absolute bottom-0 right-[-4px] text-[9px] opacity-60 leading-none pb-0.5"
+                  >
+                    {formatSimpleTime(msg.createdAt)}
+                  </span>
+                </div>
+              </div>
+            {/if}
           {/each}
         </div>
       {/each}
@@ -479,7 +548,6 @@
   }
 
   .wrap-break-word {
-    word-wrap: break-word;
     word-break: break-word;
     overflow-wrap: break-word;
   }

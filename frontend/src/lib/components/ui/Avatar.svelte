@@ -1,5 +1,6 @@
 <script lang="ts">
   import { API_ROOT } from "../../config";
+  import { cn } from "../../utils/cn";
 
   let { user, class: className = "" } = $props<{
     user: {
@@ -31,13 +32,15 @@
 {#if resolvedAvatarUrl}
   <img
     src={resolvedAvatarUrl}
-    class="rounded-full object-cover shrink-0 {className}"
+    class={cn("rounded-full object-cover shrink-0", className)}
     alt={user?.name || user?.username}
   />
 {:else}
   <div
-    class="rounded-full flex items-center justify-center font-bold shrink-0 {' ' +
-      className}"
+    class={cn(
+      "rounded-full flex items-center justify-center font-bold shrink-0",
+      className
+    )}
   >
     {((user?.name || user?.username)?.[0] || "?").toUpperCase()}
   </div>

@@ -280,6 +280,7 @@ class ChatStore {
     this.messages = [];
     this.hasMoreMessages = true;
     this.isLoadingMessages = true;
+    await new Promise((r) => setTimeout(r, 4000));
     try {
       const resp = await fetch(`${API_BASE}/chat/${chatId}/messages?limit=50`, {
         headers: { Authorization: `Bearer ${authStore.accessToken}` },

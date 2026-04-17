@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { cn } from "../../utils/cn";
   let {
     width = "100%",
     height = "1rem",
@@ -8,7 +9,7 @@
 </script>
 
 <div
-  class="skeleton {className}"
+  class={cn("skeleton", className)}
   style:width
   style:height
   style:border-radius={rounded}
@@ -21,8 +22,8 @@
     background-color: #e2e8f0; /* slate-200 */
   }
 
-  :global(.dark) .skeleton {
-    background-color: rgba(255, 255, 255, 0.05);
+  :global([data-theme="dark"]) .skeleton {
+    background-color: rgba(255, 255, 255, 0.08); /* slightly brighter base for dark mode */
   }
 
   .skeleton::after {
@@ -36,20 +37,22 @@
     background-image: linear-gradient(
       90deg,
       rgba(255, 255, 255, 0) 0,
-      rgba(255, 255, 255, 0.2) 20%,
-      rgba(255, 255, 255, 0.5) 60%,
-      rgba(255, 255, 255, 0)
+      rgba(255, 255, 255, 0.3) 30%,
+      rgba(255, 255, 255, 0.6) 50%,
+      rgba(255, 255, 255, 0.3) 70%,
+      rgba(255, 255, 255, 0) 100%
     );
-    animation: shimmer 2s infinite;
+    animation: shimmer 1.8s infinite linear;
   }
 
-  :global(.dark) .skeleton::after {
+  :global([data-theme="dark"]) .skeleton::after {
     background-image: linear-gradient(
       90deg,
       rgba(255, 255, 255, 0) 0,
-      rgba(255, 255, 255, 0.05) 20%,
-      rgba(255, 255, 255, 0.1) 60%,
-      rgba(255, 255, 255, 0)
+      rgba(255, 255, 255, 0.06) 20%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0.06) 80%,
+      rgba(255, 255, 255, 0) 100%
     );
   }
 
