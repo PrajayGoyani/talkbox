@@ -53,8 +53,12 @@ export const configureSocketServer = (server) => {
       }
     });
 
-    socket.on("react_message", async (data) => {
+     socket.on("react_message", async (data) => {
       socketService.handleReaction(socket.data.user.id, data);
+    });
+
+    socket.on("delete_message", async (data) => {
+      socketService.handleDeleteMessage(socket.data.user.id, data);
     });
 
     // E2EE Key exchange setup

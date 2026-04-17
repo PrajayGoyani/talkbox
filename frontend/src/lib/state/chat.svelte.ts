@@ -40,6 +40,7 @@ export interface Message {
     emoji: string;
     users: string[];
   }>;
+  isDeleted?: boolean;
 }
 
 export interface Chat {
@@ -252,6 +253,41 @@ class ChatStore {
           const updatedMessages = [...this.messages];
           updatedMessages[msgIndex] = { ...updatedMessages[msgIndex], reactions: data.reactions };
           this.messages = updatedMessages;
+        }
+      }
+    });
+
+    this.socket.on("message_deleted", (data: { messageId: string; chatId: string }) => {
+      if (data.chatId === this.activeChatId) {
+        const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
+        if (msgIndex !== -1) {
+          const updatedMessages = [...this.messages];
+          updatedMessages[msgIndex] = {
+            ...updatedMessages[msgIndex],
+            contentBody: "This message was deleted",
+            isDeleted: true,
+            reactions: [],
+          };
+          this.messages = updatedMessages;
+        }
+      }
+
+      // Update last message preview in chat list if needed
+      const chat = this.chats.find((c) => c.id === data.chatId);
+      if (chat && chat.lastMessage) {
+        // If we are currently viewing this chat, we can check if the deleted message is the last one
+        const isLatest =
+          this.activeChatId === data.chatId &&
+          this.messages.length > 0 &&
+          this.messages[this.messages.length - 1].id === data.messageId;
+
+        if (isLatest) {
+          this.patchChatLocally(data.chatId, {
+            lastMessage: {
+              ...chat.lastMessage,
+              contentBody: "Message deleted",
+            },
+          });
         }
       }
     });
@@ -612,6 +648,17 @@ class ChatStore {
     this.socket.emit("react_message", {
       messageId,
       emoji,
+    });
+  }
+
+  /** Delete a message via socket */
+  deleteMessage(messageId: string) {
+    if (!this.socket || !this.isConnected || !this.activeChatId) {
+      return;
+    }
+
+    this.socket.emit("delete_message", {
+      messageId,
     });
   }
 }

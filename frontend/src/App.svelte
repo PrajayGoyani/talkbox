@@ -23,6 +23,7 @@
   import Spinner from "./lib/components/ui/Spinner.svelte";
   import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
   import Alert from "./lib/components/ui/Alert.svelte";
+  import ConfirmationDialog from "./lib/components/ui/ConfirmationDialog.svelte";
   import Home from "./lib/components/views/Home.svelte";
   import Privacy from "./lib/components/views/Privacy.svelte";
   import Terms from "./lib/components/views/Terms.svelte";
@@ -354,6 +355,7 @@
 
 <GlobalTooltip />
 <ReactionTooltip />
+<ConfirmationDialog />
 
 <!-- Global Alerts -->
 <div class="fixed top-8 left-1/2 -translate-x-1/2 z-10001 flex flex-col gap-3 pointer-events-none w-full items-center px-4">

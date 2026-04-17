@@ -380,7 +380,17 @@ class ChatService {
 
     const messages = await this.Message.find(query).sort({ _id: -1 }).limit(limit);
 
-    return messages.reverse();
+    const transformed = messages.map((m) => {
+      const msg = m.toObject();
+      if (msg.isDeleted) {
+        msg.contentBody = "This message was deleted";
+        msg.reactions = [];
+        msg.attachment = { kind: null, url: null };
+      }
+      return { ...msg, id: msg._id.toString() };
+    });
+
+    return transformed.reverse();
   }
 
   /**

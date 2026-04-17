@@ -231,7 +231,7 @@ class SocketService {
     }
   }
 
-  async saveAndDeliverMessage(senderId, payload) {
+   async saveAndDeliverMessage(senderId, payload) {
     const { chatId, receiverId, contentBody, idempotencyKey } = payload;
 
     // 1. Deleted Chat Lockdown Check
@@ -289,6 +289,55 @@ class SocketService {
     }
 
     return message;
+  }
+
+  async handleDeleteMessage(senderId: string, payload: { messageId: string }) {
+    const { messageId } = payload;
+    if (!messageId) return;
+
+    try {
+      const message = await this.Message.findById(messageId);
+      if (!message || message.isDeleted) return;
+
+      const chat = await ChatModel.findById(message.chatId);
+      if (!chat) return;
+
+      // Security: Only sender can delete their message
+      if (message.senderId.toString() !== senderId.toString()) {
+        return;
+      }
+
+      message.isDeleted = true;
+      message.deletedAt = new Date();
+      message.contentBody = "This message was deleted";
+      message.attachment = { kind: null, url: null };
+      message.reactions = [];
+      await message.save();
+
+      // Determine participants
+      const participants = [chat.userA.toString(), chat.userB.toString()];
+      const updatePayload = {
+        messageId: messageId.toString(),
+        chatId: message.chatId.toString(),
+      };
+
+      // notify both
+      participants.forEach((uid) => {
+        this.io.to(`user:${uid}`).emit("message_deleted", updatePayload);
+      });
+
+      // Update chat's lastMessage if it was this one
+      if (
+        chat.lastMessage &&
+        chat.lastMessage.sentAt &&
+        chat.lastMessage.sentAt.getTime() === message.createdAt.getTime()
+      ) {
+        chat.lastMessage.contentBody = "Message deleted";
+        await chat.save();
+      }
+    } catch (err) {
+      console.error("[SocketService] Error deleting message:", err);
+    }
   }
 }
 
