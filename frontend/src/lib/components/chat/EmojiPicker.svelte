@@ -12,7 +12,7 @@
 
   async function loadLibrary() {
     if (loadingPromise) return loadingPromise;
-    
+
     loadingPromise = (async () => {
       try {
         // Dynamic import triggers Vite to create a separate chunk
@@ -23,7 +23,7 @@
         throw e;
       }
     })();
-    
+
     return loadingPromise;
   }
 
@@ -47,35 +47,35 @@
 
 <div class="emoji-picker-container">
   {#if error}
-    <div class="flex items-center justify-center h-full text-rose-500 text-sm p-4 text-center">
+    <div
+      class="flex items-center justify-center h-full text-rose-500 text-sm p-4 text-center"
+    >
       {error}
     </div>
   {:else if isLoading}
-    <div class="p-3 flex flex-col gap-3 w-[310px] h-[380px] max-w-full">
+    <div class="p-3 flex flex-col gap-3 w-[350px] h-[400px] max-w-full">
       <div class="flex gap-2 mb-2">
-        {#each Array(8) as _}
+        {#each Array(9) as _}
           <Skeleton width="24px" height="24px" rounded="4px" />
         {/each}
       </div>
       <Skeleton width="100%" height="32px" rounded="8px" />
-      <div class="grid grid-cols-8 gap-2 mt-2">
-        {#each Array(32) as _}
+      <div class="grid grid-cols-9 gap-2 mt-2">
+        {#each Array(36) as _}
           <Skeleton width="28px" height="28px" rounded="6px" />
         {/each}
       </div>
     </div>
   {:else}
-    <emoji-picker
-      class="light-theme"
-      onemoji-click={handleEmojiClick}
+    <emoji-picker class="light-theme" onemoji-click={handleEmojiClick}
     ></emoji-picker>
   {/if}
 </div>
 
 <style>
   .emoji-picker-container {
-    width: 310px;
-    height: 380px;
+    width: 400px;
+    height: 400px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -83,13 +83,13 @@
 
   @media (max-width: 640px) {
     .emoji-picker-container {
-      width: 280px;
-      height: 340px;
+      width: 300px;
+      height: 360px;
     }
   }
 
   emoji-picker {
-    --num-columns: 8;
+    --num-columns: 9;
     --category-font-size: 0.875rem;
     --emoji-size: 1.5rem;
     width: 100%;
@@ -100,7 +100,7 @@
 
   @media (max-width: 640px) {
     emoji-picker {
-      --num-columns: 7;
+      --num-columns: 8;
     }
   }
 
