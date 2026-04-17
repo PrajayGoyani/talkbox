@@ -15,6 +15,8 @@ import {
 import { authStore } from "./auth.svelte";
 import { notificationStore } from "./notification.svelte";
 import { routerStore } from "./router.svelte";
+import { uiStore } from "./ui.svelte";
+import { getDisallowedEmojis } from "../utils/emoji";
 
 const LOADER_AWAIT_MS = 500;
 
@@ -598,6 +600,12 @@ class ChatStore {
   /** React to a message via socket */
   reactToMessage(messageId: string, emoji: string) {
     if (!this.socket || !this.isConnected || !this.activeChatId) {
+      return;
+    }
+
+    const found = getDisallowedEmojis(emoji);
+    if (found.length > 0) {
+      uiStore.addAlert(`The emoji ${found[0]} is not allowed.`, "danger");
       return;
     }
 

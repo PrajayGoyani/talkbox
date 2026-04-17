@@ -1,9 +1,16 @@
 import { routerStore } from "./router.svelte";
 
+export interface AlertData {
+  id: string;
+  message: string;
+  type: "danger" | "success";
+}
+
 class UIStore {
   isSidebarCollapsed = $state(false);
   notificationsOpen = $state(false);
   windowWidth = $state(typeof window !== "undefined" ? window.innerWidth : 1024);
+  alerts = $state<AlertData[]>([]);
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -42,6 +49,21 @@ class UIStore {
     routerStore.navigate(path);
     if (resetSidebar) this.isSidebarCollapsed = false;
     if (closeNotifications) this.notificationsOpen = false;
+  }
+
+  addAlert(message: string, type: "danger" | "success" = "danger", duration = 4000) {
+    const id = crypto.randomUUID();
+    this.alerts = [...this.alerts, { id, message, type }];
+
+    if (duration > 0) {
+      setTimeout(() => {
+        this.removeAlert(id);
+      }, duration);
+    }
+  }
+
+  removeAlert(id: string) {
+    this.alerts = this.alerts.filter((a) => a.id !== id);
   }
 }
 

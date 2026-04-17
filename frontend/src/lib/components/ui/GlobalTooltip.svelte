@@ -31,7 +31,7 @@
 {#if tooltipStore.visible && tooltipStore.text && tooltipStore.variant === "default"}
   <div
     bind:clientWidth={tooltipWidth}
-    class="fixed z-[9999] pointer-events-none"
+    class="fixed z-9999 pointer-events-none"
     style="left: {leftPos}px; top: {tooltipStore.y}px; transform: {getTranslate}"
     transition:fade={{ duration: 150 }}
   >

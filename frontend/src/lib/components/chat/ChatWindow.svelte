@@ -3,12 +3,14 @@
   import { authStore } from "../../state/auth.svelte";
   import { chatStore, type Message, type User } from "../../state/chat.svelte";
   import { tooltip, tooltipStore } from "../../state/tooltip.svelte";
+  import { uiStore } from "../../state/ui.svelte";
   import { cn } from "../../utils/cn";
   import {
     formatSimpleTime,
     formatTimeAgo,
     getDateLabel,
   } from "../../utils/date";
+  import { getDisallowedEmojis } from "../../utils/emoji";
   import EmojiPicker from "../chat/EmojiPicker.svelte";
   import MessageReactionPicker from "../chat/MessageReactionPicker.svelte";
   import MessageSkeleton from "../chat/MessageSkeleton.svelte";
@@ -64,6 +66,16 @@
 
   const handleSendMessage = () => {
     if (!messageInput.trim() || !chatId || !otherUser?.id) return;
+
+    const found = getDisallowedEmojis(messageInput);
+    if (found.length > 0) {
+      uiStore.addAlert(
+        `Message contains disallowed emojis (${found.join(", ")}). Please remove them.`,
+        "danger",
+      );
+      return;
+    }
+
     chatStore.sendMessage(chatId, otherUser.id, messageInput);
     messageInput = "";
     if (textareaElement) {

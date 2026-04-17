@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import Skeleton from "../ui/Skeleton.svelte";
+  import { getDisallowedEmojis } from "../../utils/emoji";
+  import { uiStore } from "../../state/ui.svelte";
 
   let { onSelect } = $props<{ onSelect: (emoji: string) => void }>();
 
@@ -39,8 +41,16 @@
   });
 
   const handleEmojiClick = (event: any) => {
+    const emoji = event.detail.unicode;
+    const items = getDisallowedEmojis(emoji);
+    
+    if (items.length > 0) {
+      uiStore.addAlert(`The emoji ${items[0]} is not allowed.`, "danger");
+      return;
+    }
+
     if (onSelect) {
-      onSelect(event.detail.unicode);
+      onSelect(emoji);
     }
   };
 </script>
