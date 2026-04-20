@@ -1,8 +1,11 @@
+import { Types } from "mongoose";
+
 import ChatModel from "../models/chat.model";
 import MessageModel from "../models/message.model";
 import UserModel from "../models/user.model";
-import { TypedIO, TypedSocket, AuthenticatedSocketUser } from "../types/socket.types";
+import { AuthenticatedSocketUser, TypedIO, TypedSocket } from "../types/socket.types";
 import { AppError } from "../utils/AppError";
+import { getCanonicalSlug } from "../utils/emoji.utils";
 import { chatLockdownService } from "./chat-lockdown.service";
 
 const MAX_UNIQUE_REACTIONS = 20;
@@ -68,12 +71,14 @@ class SocketService {
       });
 
       const partnerIdsArr = Array.from(partnerIds);
-      const offlinePartnerIds = partnerIdsArr.filter(id => !this.activeConnections.has(id));
-      
+      const offlinePartnerIds = partnerIdsArr.filter((id) => !this.activeConnections.has(id));
+
       let offlineUserMap = new Map();
       if (offlinePartnerIds.length > 0) {
-        const offlineUsers = await UserModel.find({ _id: { $in: offlinePartnerIds } }).select("lastSeen").lean();
-        offlineUserMap = new Map(offlineUsers.map(u => [u._id.toString(), u.lastSeen]));
+        const offlineUsers = await UserModel.find({ _id: { $in: offlinePartnerIds } })
+          .select("lastSeen")
+          .lean();
+        offlineUserMap = new Map(offlineUsers.map((u) => [u._id.toString(), u.lastSeen]));
       }
 
       for (const partnerId of partnerIdsArr) {
@@ -162,8 +167,8 @@ class SocketService {
   }
 
   async handleReaction(sender: AuthenticatedSocketUser, payload: any) {
-    const senderId = sender.id;
-    const { messageId, emoji } = payload;
+    const senderId = new Types.ObjectId(sender.id);
+    const { messageId, emoji, slug } = payload;
     if (!messageId || !emoji) {
       return;
     }
@@ -177,9 +182,8 @@ class SocketService {
 
       // Security: Check if user is part of the chat
       const isParticipant =
-        chat.userA.toString() === senderId.toString() ||
-        chat.userB.toString() === senderId.toString();
-      
+        chat.userA.toString() === senderId.toString() || chat.userB.toString() === senderId.toString();
+
       if (!isParticipant) {
         return;
       }
@@ -187,26 +191,36 @@ class SocketService {
       const reactionIndex = message.reactions.findIndex((r) => r.emoji === emoji);
 
       if (reactionIndex > -1) {
-        const userIndex = message.reactions[reactionIndex].users.findIndex(
-          (u) => u.toString() === senderId.toString(),
-        );
+        const reactionGroup = message.reactions[reactionIndex];
+        const userIndex = reactionGroup.users.findIndex((u) => u.toString() === senderId.toString());
 
         if (userIndex > -1) {
-          // Remove user's reaction
-          message.reactions[reactionIndex].users.splice(userIndex, 1);
+          // Toggle off: Remove user's reaction
+          reactionGroup.users.splice(userIndex, 1);
           // If no more users, remove the emoji reaction entry entirely
-          if (message.reactions[reactionIndex].users.length === 0) {
+          if (reactionGroup.users.length === 0) {
             message.reactions.splice(reactionIndex, 1);
           }
         } else {
-          // Add user to existing emoji reaction
-          message.reactions[reactionIndex].users.push(senderId);
+          // Toggle on: Add user to existing emoji reaction group
+          reactionGroup.users.push(senderId);
+
+          // Canonical Normalization: Ensure the reaction group always uses
+          // a standardized slug derived from the backend registry.
+          const canonicalSlug = getCanonicalSlug(emoji, slug);
+          if (
+            canonicalSlug &&
+            (!reactionGroup.slug || reactionGroup.slug === "emoji" || reactionGroup.slug !== canonicalSlug)
+          ) {
+            reactionGroup.slug = canonicalSlug;
+          }
         }
       } else {
         // Create new emoji reaction entry if limit not reached
         if (message.reactions.length < MAX_UNIQUE_REACTIONS) {
           message.reactions.push({
             emoji,
+            slug: getCanonicalSlug(emoji, slug),
             users: [senderId],
           });
         }
@@ -216,18 +230,16 @@ class SocketService {
       await message.save();
 
       // Determine receiver
-      const receiverId =
-        chat.userA.toString() === senderId.toString()
-          ? chat.userB.toString()
-          : chat.userA.toString();
+      const receiverId = chat.userA.toString() === senderId.toString() ? chat.userB.toString() : chat.userA.toString();
 
       const savedMessage = message.toObject();
       const updatePayload = {
         messageId: messageId.toString(),
         chatId: message.chatId.toString(),
         // Serialize ObjectIds to plain strings so the frontend string-comparison works
-        reactions: savedMessage.reactions.map((r: { emoji: string; users: any[] }) => ({
+        reactions: savedMessage.reactions.map((r: { emoji: string; slug: string; users: any[] }) => ({
           emoji: r.emoji,
+          slug: r.slug,
           users: r.users.map((u: any) => u.toString()),
         })),
       };
@@ -240,7 +252,7 @@ class SocketService {
     }
   }
 
-   async saveAndDeliverMessage(sender: AuthenticatedSocketUser, payload: any) {
+  async saveAndDeliverMessage(sender: AuthenticatedSocketUser, payload: any) {
     const senderId = sender.id;
     const { chatId, receiverId, contentBody, idempotencyKey } = payload;
 
@@ -326,8 +338,8 @@ class SocketService {
 
       const isLastMessage = Boolean(
         chat.lastMessage &&
-          chat.lastMessage.sentAt &&
-          chat.lastMessage.sentAt.getTime() === message.createdAt.getTime()
+        chat.lastMessage.sentAt &&
+        chat.lastMessage.sentAt.getTime() === message.createdAt.getTime(),
       );
 
       // Determine participants

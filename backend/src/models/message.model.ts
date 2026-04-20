@@ -14,6 +14,7 @@ export interface IMessage extends Document {
   idempotencyKey: string;
   reactions: {
     emoji: string;
+    slug: string;
     users: mongoose.Types.ObjectId[];
   }[];
 }
@@ -33,6 +34,7 @@ const messageSchema = new Schema<IMessage>({
   reactions: [
     {
       emoji: { type: String, required: true },
+      slug: { type: String, default: "" },
       users: [{ type: Schema.Types.ObjectId, ref: "User" }],
     },
   ],

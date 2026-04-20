@@ -38,6 +38,7 @@ export interface Message {
   idempotencyKey?: string;
   reactions?: Array<{
     emoji: string;
+    slug?: string;
     users: string[];
   }>;
   isDeleted?: boolean;
@@ -248,7 +249,7 @@ class ChatStore {
 
     this.socket.on(
       "message_reaction_update",
-      (data: { messageId: string; chatId: string; reactions: Array<{ emoji: string; users: string[] }> }) => {
+      (data: { messageId: string; chatId: string; reactions: Array<{ emoji: string; slug?: string; users: string[] }> }) => {
         if (data.chatId === this.activeChatId) {
           const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
           if (msgIndex !== -1) {
@@ -638,7 +639,7 @@ class ChatStore {
   }
 
   /** React to a message via socket */
-  reactToMessage(messageId: string, emoji: string) {
+  reactToMessage(messageId: string, emoji: string, slug?: string) {
     if (!this.socket || !this.isConnected || !this.activeChatId) {
       return;
     }
@@ -652,6 +653,7 @@ class ChatStore {
     this.socket.emit("react_message", {
       messageId,
       emoji,
+      slug,
     });
   }
 

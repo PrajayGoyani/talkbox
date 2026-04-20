@@ -114,7 +114,7 @@
     }
   };
 
-  const insertEmoji = (emoji: string) => {
+  const insertEmoji = ({ emoji }: { emoji: string }) => {
     if (textareaElement) {
       const start = textareaElement.selectionStart;
       const end = textareaElement.selectionEnd;
@@ -534,10 +534,14 @@
             return "Someone";
           })}
 
-          {@const tooltipContent = `${reaction.emoji}\n${reactorNames.join(", ")}${hasReacted ? " (click to remove)" : ""} reacted`}
+          {@const displaySlug = reaction.slug
+            ? `:${reaction.slug}:`
+            : ":emoji:"}
+          {@const tooltipContent = `${reaction.emoji}\n${reactorNames.join(", ")}${hasReacted ? " (click to remove)" : ""} reacted with ${displaySlug}`}
 
           <button
-            onclick={() => chatStore.reactToMessage(msg.id, reaction.emoji)}
+            onclick={() =>
+              chatStore.reactToMessage(msg.id, reaction.emoji, reaction.slug)}
             use:tooltip={{
               text: tooltipContent,
               position: "top",

@@ -4,7 +4,9 @@
   import { getDisallowedEmojis } from "$utils/emoji";
   import { onMount, tick } from "svelte";
 
-  let { onSelect } = $props<{ onSelect: (emoji: string) => void }>();
+  let { onSelect } = $props<{
+    onSelect: (data: { emoji: string; slug?: string }) => void;
+  }>();
 
   let isLoading = $state(true);
   let error = $state<string | null>(null);
@@ -42,6 +44,8 @@
 
   const handleEmojiClick = (event: any) => {
     const emoji = event.detail.unicode;
+    const slug = event.detail.emoji?.shortcodes?.[0] || undefined;
+
     const items = getDisallowedEmojis(emoji);
 
     if (items.length > 0) {
@@ -50,7 +54,7 @@
     }
 
     if (onSelect) {
-      onSelect(emoji);
+      onSelect({ emoji, slug });
     }
   };
 </script>

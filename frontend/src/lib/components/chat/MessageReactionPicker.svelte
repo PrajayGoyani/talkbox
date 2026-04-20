@@ -17,8 +17,8 @@
 
   let isOpen = $state(false);
 
-  const handleSelect = (emoji: string) => {
-    chatStore.reactToMessage(msg.id, emoji);
+  const handleSelect = ({ emoji, slug }: { emoji: string; slug?: string }) => {
+    chatStore.reactToMessage(msg.id, emoji, slug);
     isOpen = false;
   };
 
