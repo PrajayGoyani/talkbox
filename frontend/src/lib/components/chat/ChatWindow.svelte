@@ -164,13 +164,12 @@
       !chatStore.isLoadingMessages
     ) {
       const scrollBottom = target.scrollHeight - target.scrollTop;
-      chatStore.loadOlderMessages().then(() => {
-        setTimeout(() => {
-          if (messagesContainer) {
-            messagesContainer.scrollTop =
-              messagesContainer.scrollHeight - scrollBottom;
-          }
-        }, 0);
+      chatStore.loadOlderMessages().then(async () => {
+        await tick();
+        if (messagesContainer) {
+          messagesContainer.scrollTop =
+            messagesContainer.scrollHeight - scrollBottom;
+        }
       });
     }
   }, 100);

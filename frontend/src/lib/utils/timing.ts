@@ -5,12 +5,26 @@ export function throttle<T extends (...args: any[]) => any>(
   func: T,
   limit: number,
 ): (...args: Parameters<T>) => void {
-  let inThrottle: boolean;
+  let inThrottle: boolean = false;
+  let trailingCall: (() => void) | null = null;
+
+  const run = () => {
+    if (trailingCall) {
+      trailingCall();
+      trailingCall = null;
+      setTimeout(run, limit);
+    } else {
+      inThrottle = false;
+    }
+  };
+
   return function (this: any, ...args: Parameters<T>) {
     if (!inThrottle) {
       func.apply(this, args);
       inThrottle = true;
-      setTimeout(() => (inThrottle = false), limit);
+      setTimeout(run, limit);
+    } else {
+      trailingCall = () => func.apply(this, args);
     }
   };
 }

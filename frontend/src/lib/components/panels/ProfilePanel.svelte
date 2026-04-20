@@ -205,7 +205,8 @@
         <label
           for="display-name-input"
           class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
-          >Display Name</label
+        >
+          Display Name</label
         >
         {#if editingName}
           <div class="flex gap-2 items-center">

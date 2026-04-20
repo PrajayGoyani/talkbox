@@ -12,6 +12,7 @@
   import { fade, fly } from "svelte/transition";
 
   import IconRail from "$components/layout/IconRail.svelte";
+  import WelcomeDashboard from "$components/chat/WelcomeDashboard.svelte";
   import Alert from "$components/ui/Alert.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Spinner from "$components/ui/Spinner.svelte";
@@ -58,6 +59,8 @@
     // Eager load Home component immediately in the background
     // This happens while authStore.isCheckingAuth is true (initial loader)
     Views.Home();
+    Views.Login();
+    Views.Signup();
 
     // Apply theme reactively
     document.documentElement.setAttribute("data-theme", themeStore.theme);
@@ -230,14 +233,7 @@
             onBack={() => uiStore.navigate("/chat/" + activePanel)}
           />
         {:else}
-          <div
-            class="flex flex-col items-center justify-center gap-4 text-slate-500 text-center h-full"
-          >
-            <p class="text-base max-w-[300px]">
-              Select a conversation from the sidebar or start a new one to begin
-              chatting.
-            </p>
-          </div>
+          <WelcomeDashboard />
         {/if}
       </section>
     </div>

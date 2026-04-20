@@ -1,3 +1,5 @@
 onlyBuiltDependencies:
   - bcrypt
   - core-js
+  - esbuild
+  - sharp
