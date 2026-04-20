@@ -107,7 +107,7 @@ class ChatService {
     const uid = new ObjectId(userId);
     const escapedQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const searchStr = escapedQuery.startsWith("@") ? escapedQuery.slice(1) : escapedQuery; // managed username search
-    let q = new RegExp(searchStr, "i");
+    let q = new RegExp("^" + searchStr, "i");
 
     // Aggregation pipeline to join chats and users efficiently in a single round-trip
     const chats = await this.Chat.aggregate([
