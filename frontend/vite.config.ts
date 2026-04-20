@@ -23,7 +23,22 @@ export default defineConfig({
       "@": "/src",
     },
   },
-  run: { cache: true },
+  run: {
+    cache: {
+      tasks: true,
+    },
+    tasks: {
+      "build-task": {
+        command: "vp build",
+        input: ["src/**/*", "public/**/*", "package.json", "vite.config.ts", "tsconfig.app.json"],
+      },
+    },
+  },
+
+
+
+
+
   staged: {
     "*": "vp check --fix",
   },
