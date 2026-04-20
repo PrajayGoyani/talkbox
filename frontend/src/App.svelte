@@ -82,6 +82,12 @@
           toastContainer.addToast(data);
         }
       });
+
+      // Eager load authenticated components to improve perceived performance
+      Views.ProfilePanel();
+      Views.RequestsPanel();
+      Views.SettingsPanel();
+      Views.ChatWindow();
     } else if (!authStore.user && !authStore.isCheckingAuth) {
       chatStore.disconnect();
     }
