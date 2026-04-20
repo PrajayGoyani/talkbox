@@ -31,3 +31,27 @@ export const getCanonicalSlug = (unicode: string, clientSlug?: string): string =
   // Final fallback if no metadata exists
   return "emoji";
 };
+
+const EMOJI_REGEX = /\p{Extended_Pictographic}/gu;
+
+/**
+ * Extracts all emojis from a message body and returns a dictionary of their canonical slugs.
+ * Used to inject `emojiMetadata` into message DTOs so the frontend doesn't need to load
+ * a large emoji name library.
+ */
+export const extractEmojiMetadata = (contentBody: string): Record<string, string> | undefined => {
+  if (!contentBody) return undefined;
+
+  const matches = contentBody.match(EMOJI_REGEX);
+  
+  if (!matches || matches.length === 0) return undefined;
+
+  const metadata: Record<string, string> = {};
+  for (const char of matches) {
+    if (!metadata[char]) {
+      metadata[char] = getCanonicalSlug(char);
+    }
+  }
+
+  return metadata;
+};

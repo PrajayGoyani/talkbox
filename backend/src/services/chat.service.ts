@@ -7,6 +7,7 @@ import UserModel from "../models/user.model";
 import { AppError } from "../utils/AppError";
 import { chatLockdownService } from "./chat-lockdown.service";
 import { notificationService } from "./notification.service";
+import { extractEmojiMetadata } from "../utils/emoji.utils";
 
 class ChatService {
   public Chat: typeof ChatModel;
@@ -368,7 +369,8 @@ class ChatService {
         msg.reactions = [];
         msg.attachment = { kind: null, url: null };
       }
-      return { ...msg, id: msg._id.toString() };
+      const emojiMetadata = msg.isDeleted ? undefined : extractEmojiMetadata(msg.contentBody);
+      return { ...msg, id: msg._id.toString(), emojiMetadata };
     });
 
     return transformed.reverse();

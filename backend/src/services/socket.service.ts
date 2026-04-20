@@ -5,8 +5,8 @@ import MessageModel from "../models/message.model";
 import UserModel from "../models/user.model";
 import { AuthenticatedSocketUser, TypedIO, TypedSocket } from "../types/socket.types";
 import { AppError } from "../utils/AppError";
-import { getCanonicalSlug } from "../utils/emoji.utils";
 import { chatLockdownService } from "./chat-lockdown.service";
+import { getCanonicalSlug, extractEmojiMetadata } from "../utils/emoji.utils";
 
 const MAX_UNIQUE_REACTIONS = 20;
 
@@ -292,7 +292,16 @@ class SocketService {
     });
 
     // 6. Deliver Message to receiver if connected
-    this.io?.to(`user:${receiverId}`).emit("receive_message", message);
+    // Create DTO with emojiMetadata for the frontend tooltips
+    const messageDto = { 
+      ...message.toObject(), 
+      id: message._id.toString(),
+      emojiMetadata: extractEmojiMetadata(contentBody) 
+    };
+    
+    this.io?.to(`user:${receiverId}`).emit("receive_message", messageDto);
+    // Also echo back to sender for full metadata if they have multiple devices or need it
+    this.io?.to(`user:${senderId}`).emit("receive_message", messageDto);
 
     // 7. Emit lightweight message_alert for toast/browser notification
     try {
@@ -309,7 +318,7 @@ class SocketService {
       console.error("Failed to emit message_alert:", err);
     }
 
-    return message;
+    return messageDto;
   }
 
   async handleDeleteMessage(sender: AuthenticatedSocketUser, payload: { messageId: string }) {

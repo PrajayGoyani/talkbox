@@ -12,7 +12,7 @@
   import { uiStore } from "$state/ui.svelte";
   import { cn } from "$utils/cn";
   import { formatSimpleTime, formatTimeAgo, getDateLabel } from "$utils/date";
-  import { getDisallowedEmojis } from "$utils/emoji";
+  import { getDisallowedEmojis, parseMessageContent, segmenter } from "$utils/emoji";
   import { tick } from "svelte";
 
   let {
@@ -222,7 +222,7 @@
     if (!trimmed) return "normal";
 
     // Accurate emoji counting using Intl.Segmenter
-    if (typeof Intl?.Segmenter !== "function") {
+    if (!segmenter) {
       const emojiOnlyRegex = /^(\p{Extended_Pictographic}|\s)+$/u;
       if (!emojiOnlyRegex.test(trimmed)) return "normal";
       const emojis = trimmed.match(/\p{Extended_Pictographic}/gu) || [];
@@ -232,7 +232,6 @@
       return "normal";
     }
 
-    const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
     const segments = Array.from(segmenter.segment(trimmed));
     const emojiRegex = /\p{Extended_Pictographic}/u;
     let count = 0;
@@ -444,13 +443,24 @@
                 {:else}
                   <div
                     class={cn(
-                      "m-0 select-none",
+                      "m-0 select-none flex gap-1",
                       emojiMode === "jumbo-1" && "text-6xl py-2",
                       emojiMode === "jumbo-2" && "text-5xl py-1.5",
                       emojiMode === "jumbo-3" && "text-4xl py-1",
                     )}
                   >
-                    {msg.contentBody}
+                    {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
+                      {#if segment.type === "emoji"}
+                        <span
+                          use:tooltip={{
+                            text: ":" + segment.name + ":",
+                            position: "top",
+                          }}>{segment.content}</span
+                        >
+                      {:else}
+                        {segment.content}
+                      {/if}
+                    {/each}
                   </div>
                 {/if}
                 <div
@@ -489,7 +499,20 @@
                       msg.isDeleted && "italic opacity-80",
                     )}
                   >
-                    {msg.contentBody}<span class="inline-block w-11 h-0"></span>
+                    {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
+                      {#if segment.type === "emoji"}
+                        <span
+                          class="cursor-default inline-block align-middle px-0.5"
+                          use:tooltip={{
+                            text: segment.content + "\n:" + segment.name + ":",
+                            variant: "jumbo",
+                            position: "top",
+                          }}>{segment.content}</span
+                        >
+                      {:else}
+                        {segment.content}
+                      {/if}
+                    {/each}<span class="inline-block w-11 h-0"></span>
                   </p>
                   <span
                     class="absolute bottom-0 right-[-4px] text-[9px] opacity-60 leading-none pb-0.5"

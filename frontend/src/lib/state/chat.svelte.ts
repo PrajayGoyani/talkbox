@@ -42,6 +42,7 @@ export interface Message {
     users: string[];
   }>;
   isDeleted?: boolean;
+  emojiMetadata?: Record<string, string>;
 }
 
 export interface Chat {
