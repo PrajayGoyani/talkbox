@@ -1,8 +1,7 @@
 <script lang="ts">
-  import Login from "$components/auth/Login.svelte";
-  import Signup from "$components/auth/Signup.svelte";
   import NotificationsDropdown from "$components/layout/NotificationsDropdown.svelte";
   import ToastContainer from "$components/layout/ToastContainer.svelte";
+  import Lazy from "$components/ui/Lazy.svelte";
   import { authStore } from "$state/auth.svelte";
   import { chatStore } from "$state/chat.svelte";
   import { notificationStore } from "$state/notification.svelte";
@@ -11,22 +10,14 @@
   import { quintOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
 
-  import ChatWindow from "$components/chat/ChatWindow.svelte";
-  import ConversationsPanel from "$components/chat/ConversationsPanel.svelte";
   import ReactionTooltip from "$components/chat/ReactionTooltip.svelte";
   import IconRail from "$components/layout/IconRail.svelte";
-  import ProfilePanel from "$components/panels/ProfilePanel.svelte";
-  import RequestsPanel from "$components/panels/RequestsPanel.svelte";
-  import SettingsPanel from "$components/panels/SettingsPanel.svelte";
   import Alert from "$components/ui/Alert.svelte";
   import ConfirmationDialog from "$components/ui/ConfirmationDialog.svelte";
   import GlobalTooltip from "$components/ui/GlobalTooltip.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Spinner from "$components/ui/Spinner.svelte";
   import ThemeToggle from "$components/ui/ThemeToggle.svelte";
-  import Home from "$components/views/Home.svelte";
-  import Privacy from "$components/views/Privacy.svelte";
-  import Terms from "$components/views/Terms.svelte";
   import { routerStore } from "$state/router.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { Route } from "$utils/routes";
@@ -170,7 +161,7 @@
     >
       <IconRail
         {activePanel}
-        onPanelSelect={(p) => uiStore.navigate(`/chat/${p}`)}
+        onPanelSelect={(p: PanelId) => uiStore.navigate(`/chat/${p}`)}
         onNotificationToggle={() => uiStore.toggleNotifications()}
         notificationCount={notificationStore.unreadCount}
         requestsCount={chatStore.pendingRequestCount}
@@ -192,9 +183,10 @@
             class="flex flex-col h-full overflow-hidden"
           >
             {#if activePanel === "conversations"}
-              <ConversationsPanel
+              <Lazy
+                component={() => import("$components/chat/ConversationsPanel.svelte")}
                 activeChatId={selectedChatId}
-                onSelectChat={(id) =>
+                onSelectChat={(id: string) =>
                   uiStore.navigate(`${Route.CONVERSATIONS}/${id}`, {
                     resetSidebar: false,
                   })}
@@ -202,11 +194,15 @@
                 onNotificationToggle={() => uiStore.toggleNotifications()}
               />
             {:else if activePanel === "profile"}
-              <ProfilePanel />
+              <Lazy component={() => import("$components/panels/ProfilePanel.svelte")} />
             {:else if activePanel === "settings"}
-              <SettingsPanel user={authStore.user} onLogout={handleLogout} />
+              <Lazy
+                component={() => import("$components/panels/SettingsPanel.svelte")}
+                user={authStore.user}
+                onLogout={handleLogout}
+              />
             {:else if activePanel === "requests"}
-              <RequestsPanel />
+              <Lazy component={() => import("$components/panels/RequestsPanel.svelte")} />
             {/if}
           </div>
         {/key}
@@ -218,11 +214,11 @@
           : 'hidden md:flex flex-col justify-center items-center'}"
       >
         {#if selectedChatId}
-          <ChatWindow
+          <Lazy
+            component={() => import("$components/chat/ChatWindow.svelte")}
             chatId={selectedChatId}
             otherUser={selectedOtherUser}
             status={selectedChatStatus}
-            bind:isSidebarCollapsed={uiStore.isSidebarCollapsed}
             onBack={() => uiStore.navigate("/chat/" + activePanel)}
           />
         {:else}
@@ -239,7 +235,7 @@
     </div>
     <ToastContainer
       bind:this={toastContainer}
-      onToastClick={(id) => uiStore.navigate(`${Route.CONVERSATIONS}/${id}`)}
+      onToastClick={(id: string) => uiStore.navigate(`${Route.CONVERSATIONS}/${id}`)}
     />
   </main>
 {/snippet}
@@ -322,32 +318,32 @@
     >
       {#if routerStore.segments[0] === "login"}
         <div class="w-full flex justify-center py-8 my-auto">
-          <Login>
+          <Lazy component={() => import("$components/auth/Login.svelte")}>
             {#snippet toggleSignup()}
               <button
                 class="text-indigo-600 font-medium"
                 onclick={() => toggleView("SIGNUP")}>Sign up</button
               >
             {/snippet}
-          </Login>
+          </Lazy>
         </div>
       {:else if routerStore.segments[0] === "signup"}
         <div class="w-full flex justify-center py-8 my-auto">
-          <Signup>
+          <Lazy component={() => import("$components/auth/Signup.svelte")}>
             {#snippet toggleLogin()}
               <button
                 class="text-indigo-600 font-medium"
                 onclick={() => toggleView("LOGIN")}>Log in</button
               >
             {/snippet}
-          </Signup>
+          </Lazy>
         </div>
       {:else if routerStore.segments[0] === "terms"}
-        <Terms />
+        <Lazy component={() => import("$components/views/Terms.svelte")} />
       {:else if routerStore.segments[0] === "privacy"}
-        <Privacy />
+        <Lazy component={() => import("$components/views/Privacy.svelte")} />
       {:else}
-        <Home />
+        <Lazy component={() => import("$components/views/Home.svelte")} />
       {/if}
     </div>
   </div>
