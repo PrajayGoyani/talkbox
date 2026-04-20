@@ -20,9 +20,12 @@ export const Views = {
   SettingsPanel: () => import("$components/panels/SettingsPanel.svelte"),
 
   // Views / Documentation
-  Home: () => import("$components/views/Home.svelte"),
   Privacy: () => import("$components/views/Privacy.svelte"),
   Terms: () => import("$components/views/Terms.svelte"),
+
+  // Global
+  GlobalTooltip: () => import("$components/ui/GlobalTooltip.svelte"),
+  ConfirmationDialog: () => import("$components/ui/ConfirmationDialog.svelte"),
 } as const;
 
 export type ViewName = keyof typeof Views;

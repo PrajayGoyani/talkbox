@@ -11,14 +11,12 @@
   import { quintOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
 
-  import ReactionTooltip from "$components/chat/ReactionTooltip.svelte";
   import IconRail from "$components/layout/IconRail.svelte";
   import Alert from "$components/ui/Alert.svelte";
-  import ConfirmationDialog from "$components/ui/ConfirmationDialog.svelte";
-  import GlobalTooltip from "$components/ui/GlobalTooltip.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Spinner from "$components/ui/Spinner.svelte";
   import ThemeToggle from "$components/ui/ThemeToggle.svelte";
+  import Home from "$lib/components/views/Home.svelte";
   import { routerStore } from "$state/router.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { Route } from "$utils/routes";
@@ -236,7 +234,8 @@
     </div>
     <ToastContainer
       bind:this={toastContainer}
-      onToastClick={(id: string) => uiStore.navigate(`${Route.CONVERSATIONS}/${id}`)}
+      onToastClick={(id: string) =>
+        uiStore.navigate(`${Route.CONVERSATIONS}/${id}`)}
     />
   </main>
 {/snippet}
@@ -344,15 +343,15 @@
       {:else if routerStore.segments[0] === "privacy"}
         <Lazy component={Views.Privacy} />
       {:else}
-        <Lazy component={Views.Home} />
+        <Home />
       {/if}
     </div>
   </div>
 {/snippet}
 
-<GlobalTooltip />
-<ReactionTooltip />
-<ConfirmationDialog />
+<Lazy component={Views.GlobalTooltip} />
+<Lazy component={Views.ReactionTooltip} />
+<Lazy component={Views.ConfirmationDialog} />
 
 <!-- Global Alerts -->
 <div
