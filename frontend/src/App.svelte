@@ -2,6 +2,7 @@
   import NotificationsDropdown from "$components/layout/NotificationsDropdown.svelte";
   import ToastContainer from "$components/layout/ToastContainer.svelte";
   import Lazy from "$components/ui/Lazy.svelte";
+  import { Views } from "$lib/views";
   import { authStore } from "$state/auth.svelte";
   import { chatStore } from "$state/chat.svelte";
   import { notificationStore } from "$state/notification.svelte";
@@ -184,7 +185,7 @@
           >
             {#if activePanel === "conversations"}
               <Lazy
-                component={() => import("$components/chat/ConversationsPanel.svelte")}
+                component={Views.ConversationsPanel}
                 activeChatId={selectedChatId}
                 onSelectChat={(id: string) =>
                   uiStore.navigate(`${Route.CONVERSATIONS}/${id}`, {
@@ -194,15 +195,15 @@
                 onNotificationToggle={() => uiStore.toggleNotifications()}
               />
             {:else if activePanel === "profile"}
-              <Lazy component={() => import("$components/panels/ProfilePanel.svelte")} />
+              <Lazy component={Views.ProfilePanel} />
             {:else if activePanel === "settings"}
               <Lazy
-                component={() => import("$components/panels/SettingsPanel.svelte")}
+                component={Views.SettingsPanel}
                 user={authStore.user}
                 onLogout={handleLogout}
               />
             {:else if activePanel === "requests"}
-              <Lazy component={() => import("$components/panels/RequestsPanel.svelte")} />
+              <Lazy component={Views.RequestsPanel} />
             {/if}
           </div>
         {/key}
@@ -215,7 +216,7 @@
       >
         {#if selectedChatId}
           <Lazy
-            component={() => import("$components/chat/ChatWindow.svelte")}
+            component={Views.ChatWindow}
             chatId={selectedChatId}
             otherUser={selectedOtherUser}
             status={selectedChatStatus}
@@ -318,7 +319,7 @@
     >
       {#if routerStore.segments[0] === "login"}
         <div class="w-full flex justify-center py-8 my-auto">
-          <Lazy component={() => import("$components/auth/Login.svelte")}>
+          <Lazy component={Views.Login}>
             {#snippet toggleSignup()}
               <button
                 class="text-indigo-600 font-medium"
@@ -329,7 +330,7 @@
         </div>
       {:else if routerStore.segments[0] === "signup"}
         <div class="w-full flex justify-center py-8 my-auto">
-          <Lazy component={() => import("$components/auth/Signup.svelte")}>
+          <Lazy component={Views.Signup}>
             {#snippet toggleLogin()}
               <button
                 class="text-indigo-600 font-medium"
@@ -339,11 +340,11 @@
           </Lazy>
         </div>
       {:else if routerStore.segments[0] === "terms"}
-        <Lazy component={() => import("$components/views/Terms.svelte")} />
+        <Lazy component={Views.Terms} />
       {:else if routerStore.segments[0] === "privacy"}
-        <Lazy component={() => import("$components/views/Privacy.svelte")} />
+        <Lazy component={Views.Privacy} />
       {:else}
-        <Lazy component={() => import("$components/views/Home.svelte")} />
+        <Lazy component={Views.Home} />
       {/if}
     </div>
   </div>
