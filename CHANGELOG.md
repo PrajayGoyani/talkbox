@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-04-20
+
+### Added
+
+- **Component Lazy Loading**: Implemented a centralized view registry and a dedicated `Lazy` component to manage on-demand loading and reduce initial resource usage.
+- **Incremental Build Support**: Added task caching and incremental build capabilities to the Makefile for more efficient development cycles.
+- **Loading Feedback**: Added retry functionality and visual error indicators for components that fail to load dynamically.
+
+### Changed
+
+- **Load Management**: Introduced scroll throttling and configurable loading delays to improve interface responsiveness during rapid interaction.
+- **App Structure**: Refactored the main application shell to integrate the initial view directly, reducing transition time.
+- **Component Prioritization**: Implemented eager loading for essential authenticated components to reduce perceived latency after login.
+
+### Maintenance
+
+- Updated backend build configuration for improved type safety and consistency.
+- Refined frontend dependency management to optimize overall bundle size.
+
 ## [1.3.0] - 2026-04-20
 
 ### Added
