@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 
 import { ALLOWED_ORIGINS, JWT_SECRET_KEY, NODE_ENV } from "../config/env";
+import UserModel from "../models/user.model";
 import { chatService } from "../services/chat.service";
 import { socketService } from "../services/socket.service";
 import { AppError } from "../utils/AppError";
@@ -19,7 +20,7 @@ export const configureSocketServer = (server) => {
   chatService.setIO(io);
 
   // Chat Security Auditor: Authenticate socket connection
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) {
       return next(AppError.unauthorized("Socket authentication error: Token required."));
@@ -27,8 +28,19 @@ export const configureSocketServer = (server) => {
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET_KEY);
+      const user = await UserModel.findById((decoded as any).id);
+      
+      if (!user) {
+        return next(AppError.unauthorized("User not found"));
+      }
+      
       // Attach verified user ID to the socket
-      socket.data.user = { id: (decoded as any).id };
+      socket.data.user = { 
+        id: user._id.toString(),
+        username: user.username,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+      };
       next();
     } catch (error) {
       if (NODE_ENV === "development") {
@@ -45,8 +57,8 @@ export const configureSocketServer = (server) => {
       console.log(`[SocketController] send_message received from user ${socket.data.user.id}:`, data);
       try {
         // Ensure userId is never trusted from the client payload without server-side validation.
-        // we use socket.data.user.id
-        const message = await socketService.saveAndDeliverMessage(socket.data.user.id, data);
+        // we use socket.data.user obj
+        const message = await socketService.saveAndDeliverMessage(socket.data.user, data);
         if (ack) ack({ status: "ok", message });
       } catch (err) {
         if (ack) ack({ status: "error", error: (err as Error).message });

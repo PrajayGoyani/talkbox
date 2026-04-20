@@ -56,9 +56,9 @@ class SocketService {
       const chats = await ChatModel.find({
         $or: [{ userA: uidStr }, { userB: uidStr }],
         status: "accepted",
-      });
+      }).select("userA userB");
 
-      const partnerIds = new Set();
+      const partnerIds = new Set<string>();
       chats.forEach((chat) => {
         const aStr = chat.userA.toString();
         const bStr = chat.userB.toString();
@@ -66,15 +66,21 @@ class SocketService {
         if (bStr !== uidStr) partnerIds.add(bStr);
       });
 
-      for (const partnerId of partnerIds) {
+      const partnerIdsArr = Array.from(partnerIds);
+      const offlinePartnerIds = partnerIdsArr.filter(id => !this.activeConnections.has(id));
+      
+      let offlineUserMap = new Map();
+      if (offlinePartnerIds.length > 0) {
+        const offlineUsers = await UserModel.find({ _id: { $in: offlinePartnerIds } }).select("lastSeen").lean();
+        offlineUserMap = new Map(offlineUsers.map(u => [u._id.toString(), u.lastSeen]));
+      }
+
+      for (const partnerId of partnerIdsArr) {
         const isOnline = this.activeConnections.has(partnerId);
         let lastSeen: Date | null = null;
 
         if (!isOnline) {
-          const partner = await UserModel.findById(partnerId);
-          if (partner) {
-            lastSeen = partner.lastSeen;
-          }
+          lastSeen = offlineUserMap.get(partnerId) || null;
         }
 
         socket.emit("user_status", {
@@ -101,7 +107,7 @@ class SocketService {
         $or: [{ userA: uidStr }, { userB: uidStr }],
         status: "accepted",
         isDeleted: false,
-      });
+      }).select("userA userB");
 
       // Extract unique partner IDs
       const partnerIds = new Set();
@@ -231,7 +237,8 @@ class SocketService {
     }
   }
 
-   async saveAndDeliverMessage(senderId, payload) {
+   async saveAndDeliverMessage(sender, payload) {
+    const senderId = sender.id;
     const { chatId, receiverId, contentBody, idempotencyKey } = payload;
 
     // 1. Deleted Chat Lockdown Check
@@ -274,14 +281,13 @@ class SocketService {
 
     // 7. Emit lightweight message_alert for toast/browser notification
     try {
-      const sender = await UserModel.findById(senderId);
       const preview = contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
       this.io.to(`user:${receiverId}`).emit("message_alert", {
         chatId,
         senderId,
-        senderName: sender?.name || null,
-        senderUsername: sender?.username,
-        senderAvatar: sender?.avatarUrl,
+        senderName: sender.name || null,
+        senderUsername: sender.username,
+        senderAvatar: sender.avatarUrl,
         preview,
       });
     } catch (err) {

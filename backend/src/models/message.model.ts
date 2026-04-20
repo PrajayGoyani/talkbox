@@ -44,6 +44,8 @@ const messageSchema = new Schema<IMessage>({
   ],
 });
 
+messageSchema.index({ chatId: 1, _id: -1 });
+
 /**
  * QA: for future
  * slack does not maintain delivered receipt (also delete as well)
