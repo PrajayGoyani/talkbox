@@ -1,8 +1,8 @@
 <script lang="ts">
+  import Icon from "$components/ui/Icon.svelte";
+  import { themeStore } from "$state/theme.svelte";
   import { quintOut } from "svelte/easing";
   import { fly } from "svelte/transition";
-  import { themeStore } from "../../state/theme.svelte";
-  import Icon from "./Icon.svelte";
 
   let { class: className = "" } = $props();
 </script>

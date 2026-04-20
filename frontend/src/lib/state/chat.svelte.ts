@@ -1,8 +1,13 @@
+import type { MessageAckDto, RawMessageDto, TypingIndicatorDto, UserStatusDto } from "$types/chat.dto";
+import type { Notification } from "$types/notification";
+
+import { authStore } from "$state/auth.svelte";
+import { notificationStore } from "$state/notification.svelte";
+import { routerStore } from "$state/router.svelte";
+import { uiStore } from "$state/ui.svelte";
+import { getDisallowedEmojis } from "$utils/emoji";
 import { io, type Socket } from "socket.io-client";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
-
-import type { MessageAckDto, RawMessageDto, TypingIndicatorDto, UserStatusDto } from "../types/chat.dto";
-import type { Notification } from "../types/notification";
 
 import {
   API_BASE,
@@ -12,11 +17,6 @@ import {
   TYPING_DEBOUNCE_DURATION,
   TYPING_INDICATOR_DURATION,
 } from "../config";
-import { authStore } from "./auth.svelte";
-import { notificationStore } from "./notification.svelte";
-import { routerStore } from "./router.svelte";
-import { uiStore } from "./ui.svelte";
-import { getDisallowedEmojis } from "../utils/emoji";
 
 const LOADER_AWAIT_MS = 500;
 
@@ -246,16 +246,19 @@ class ChatStore {
       }
     });
 
-    this.socket.on("message_reaction_update", (data: { messageId: string; chatId: string; reactions: Array<{ emoji: string; users: string[] }> }) => {
-      if (data.chatId === this.activeChatId) {
-        const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
-        if (msgIndex !== -1) {
-          const updatedMessages = [...this.messages];
-          updatedMessages[msgIndex] = { ...updatedMessages[msgIndex], reactions: data.reactions };
-          this.messages = updatedMessages;
+    this.socket.on(
+      "message_reaction_update",
+      (data: { messageId: string; chatId: string; reactions: Array<{ emoji: string; users: string[] }> }) => {
+        if (data.chatId === this.activeChatId) {
+          const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
+          if (msgIndex !== -1) {
+            const updatedMessages = [...this.messages];
+            updatedMessages[msgIndex] = { ...updatedMessages[msgIndex], reactions: data.reactions };
+            this.messages = updatedMessages;
+          }
         }
-      }
-    });
+      },
+    );
 
     this.socket.on("message_deleted", (data: { messageId: string; chatId: string }) => {
       if (data.chatId === this.activeChatId) {

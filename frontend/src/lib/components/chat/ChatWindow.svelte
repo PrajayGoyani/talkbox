@@ -1,23 +1,19 @@
 <script lang="ts">
+  import EmojiPicker from "$components/chat/EmojiPicker.svelte";
+  import MessageReactionPicker from "$components/chat/MessageReactionPicker.svelte";
+  import MessageSkeleton from "$components/chat/MessageSkeleton.svelte";
+  import Avatar from "$components/ui/Avatar.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import Popover from "$components/ui/Popover.svelte";
+  import Spinner from "$components/ui/Spinner.svelte";
+  import { authStore } from "$state/auth.svelte";
+  import { chatStore, type Message, type User } from "$state/chat.svelte";
+  import { tooltip, tooltipStore } from "$state/tooltip.svelte";
+  import { uiStore } from "$state/ui.svelte";
+  import { cn } from "$utils/cn";
+  import { formatSimpleTime, formatTimeAgo, getDateLabel } from "$utils/date";
+  import { getDisallowedEmojis } from "$utils/emoji";
   import { tick } from "svelte";
-  import { authStore } from "../../state/auth.svelte";
-  import { chatStore, type Message, type User } from "../../state/chat.svelte";
-  import { tooltip, tooltipStore } from "../../state/tooltip.svelte";
-  import { uiStore } from "../../state/ui.svelte";
-  import { cn } from "../../utils/cn";
-  import {
-    formatSimpleTime,
-    formatTimeAgo,
-    getDateLabel,
-  } from "../../utils/date";
-  import { getDisallowedEmojis } from "../../utils/emoji";
-  import EmojiPicker from "../chat/EmojiPicker.svelte";
-  import MessageSkeleton from "../chat/MessageSkeleton.svelte";
-  import Avatar from "../ui/Avatar.svelte";
-  import Icon from "../ui/Icon.svelte";
-  import Popover from "../ui/Popover.svelte";
-  import Spinner from "../ui/Spinner.svelte";
-  import MessageReactionPicker from "./MessageReactionPicker.svelte";
 
   let {
     chatId,

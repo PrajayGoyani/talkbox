@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { chatStore, type Message } from "../../state/chat.svelte";
-  import { confirmStore } from "../../state/confirm.svelte";
-  import { tooltip } from "../../state/tooltip.svelte";
-  import { cn } from "../../utils/cn";
-  import EmojiPicker from "../chat/EmojiPicker.svelte";
-  import Icon from "../ui/Icon.svelte";
-  import Popover from "../ui/Popover.svelte";
+  import EmojiPicker from "$components/chat/EmojiPicker.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import Popover from "$components/ui/Popover.svelte";
+  import { chatStore, type Message } from "$state/chat.svelte";
+  import { confirmStore } from "$state/confirm.svelte";
+  import { tooltip } from "$state/tooltip.svelte";
+  import { cn } from "$utils/cn";
 
   let {
     msg,
@@ -39,7 +39,9 @@
 <div
   class={cn(
     "absolute -top-4 transition-all duration-200 flex items-center gap-0.5 z-20 p-0.5 rounded-xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200 dark:border-white/10 shadow-xl",
-    isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100",
+    isOpen
+      ? "opacity-100 scale-100"
+      : "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100",
     isSent ? "-left-2 -translate-x-full" : "-right-2 translate-x-full",
   )}
 >

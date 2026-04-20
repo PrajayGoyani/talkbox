@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { type User } from "../../state/chat.svelte";
-  import ChatList from "../chat/ChatList.svelte";
-  import Icon from "../ui/Icon.svelte";
+  import ChatList from "$components/chat/ChatList.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import { type User } from "$state/chat.svelte";
 
   const {
     activeChatId,

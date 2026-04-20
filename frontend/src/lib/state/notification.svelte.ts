@@ -1,7 +1,7 @@
-import type { Notification, NotificationResponse } from "../types/notification";
+import type { Notification, NotificationResponse } from "$types/notification";
 
-import { API_BASE } from "../config";
-import { authStore } from "./auth.svelte";
+import { API_BASE } from "$lib/config";
+import { authStore } from "$state/auth.svelte";
 
 class NotificationStore {
   notifications = $state<Notification[]>([]);

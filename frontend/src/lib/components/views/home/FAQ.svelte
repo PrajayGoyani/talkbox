@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Icon from "../../ui/Icon.svelte";
+  import Icon from "$components/ui/Icon.svelte";
   // FAQ section with accordion details
 </script>
 

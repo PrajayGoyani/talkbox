@@ -1,4 +1,4 @@
-import { routerStore } from "./router.svelte";
+import { routerStore } from "$state/router.svelte";
 
 export interface AlertData {
   id: string;

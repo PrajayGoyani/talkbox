@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Skeleton from "../ui/Skeleton.svelte";
+  import Skeleton from "$components/ui/Skeleton.svelte";
 
   let { count = 1 } = $props<{ count?: number }>();
 </script>

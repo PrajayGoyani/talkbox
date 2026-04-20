@@ -1,19 +1,14 @@
 <script lang="ts">
-  import { authStore } from "../../state/auth.svelte";
-  import { chatStore } from "../../state/chat.svelte";
-  import { notificationStore } from "../../state/notification.svelte";
-  import type { Notification } from "../../types/notification";
+  import NotificationSkeleton from "$components/layout/NotificationSkeleton.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import { notificationStore } from "$state/notification.svelte";
+  import type { Notification } from "$types/notification";
+  import { formatTimeAgo } from "$utils/date";
   import { onMount, untrack } from "svelte";
-  import { fly, fade, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import { formatTimeAgo } from "../../utils/date";
-  import Icon from "../ui/Icon.svelte";
-  import NotificationSkeleton from "../layout/NotificationSkeleton.svelte";
+  import { fade, fly, slide } from "svelte/transition";
 
-  let {
-    onNavigate,
-    isOpen = $bindable(false),
-  } = $props<{
+  let { onNavigate, isOpen = $bindable(false) } = $props<{
     onNavigate: (type: string, referenceId: string) => void;
     isOpen?: boolean;
   }>();
@@ -93,7 +88,9 @@
     <div
       class="p-5 border-b border-slate-200 dark:border-white/5 flex items-center justify-between shrink-0"
     >
-      <h2 class="text-lg font-bold text-slate-900 dark:text-white">Notifications</h2>
+      <h2 class="text-lg font-bold text-slate-900 dark:text-white">
+        Notifications
+      </h2>
       <div class="flex items-center gap-2">
         {#if notificationStore.unreadCount > 0}
           <button
@@ -135,14 +132,18 @@
             <div
               class="w-10 h-10 rounded-xl bg-slate-200 dark:bg-white/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300"
             >
-              <Icon name={getIcon(notification.type) as any} class="w-5 h-5 text-indigo-400" />
+              <Icon
+                name={getIcon(notification.type) as any}
+                class="w-5 h-5 text-indigo-400"
+              />
             </div>
             <div class="flex flex-col flex-1 min-w-0 gap-0.5">
               <span
                 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
                 >{getLabel(notification.type)}</span
               >
-              <span class="text-sm text-slate-700 dark:text-slate-200 leading-snug wrap-break-word group-hover:text-slate-900 dark:group-hover:text-white transition-colors"
+              <span
+                class="text-sm text-slate-700 dark:text-slate-200 leading-snug wrap-break-word group-hover:text-slate-900 dark:group-hover:text-white transition-colors"
                 >{notification.message}</span
               >
               <span class="text-[10px] text-slate-500 mt-0.5"
@@ -151,9 +152,14 @@
             </div>
             <div class="flex items-start shrink-0 pt-1">
               {#if !notification.isRead}
-                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></span>
+                <span
+                  class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"
+                ></span>
               {:else}
-                <span class="text-[10px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">✓</span>
+                <span
+                  class="text-[10px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >✓</span
+                >
               {/if}
             </div>
           </button>

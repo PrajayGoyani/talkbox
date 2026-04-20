@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { cn } from "../../utils/cn";
+  import { cn } from "$utils/cn";
   let {
     width = "100%",
     height = "1rem",

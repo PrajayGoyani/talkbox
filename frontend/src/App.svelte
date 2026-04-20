@@ -1,35 +1,35 @@
 <script lang="ts">
+  import Login from "$components/auth/Login.svelte";
+  import Signup from "$components/auth/Signup.svelte";
+  import NotificationsDropdown from "$components/layout/NotificationsDropdown.svelte";
+  import ToastContainer from "$components/layout/ToastContainer.svelte";
+  import { authStore } from "$state/auth.svelte";
+  import { chatStore } from "$state/chat.svelte";
+  import { notificationStore } from "$state/notification.svelte";
+  import { themeStore } from "$state/theme.svelte";
   import { untrack } from "svelte";
   import { quintOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
-  import Login from "./lib/components/auth/Login.svelte";
-  import Signup from "./lib/components/auth/Signup.svelte";
-  import NotificationsDropdown from "./lib/components/layout/NotificationsDropdown.svelte";
-  import ToastContainer from "./lib/components/layout/ToastContainer.svelte";
-  import { authStore } from "./lib/state/auth.svelte";
-  import { chatStore } from "./lib/state/chat.svelte";
-  import { notificationStore } from "./lib/state/notification.svelte";
-  import { themeStore } from "./lib/state/theme.svelte";
 
-  import ChatWindow from "./lib/components/chat/ChatWindow.svelte";
-  import ConversationsPanel from "./lib/components/chat/ConversationsPanel.svelte";
-  import ReactionTooltip from "./lib/components/chat/ReactionTooltip.svelte";
-  import IconRail from "./lib/components/layout/IconRail.svelte";
-  import ProfilePanel from "./lib/components/panels/ProfilePanel.svelte";
-  import RequestsPanel from "./lib/components/panels/RequestsPanel.svelte";
-  import SettingsPanel from "./lib/components/panels/SettingsPanel.svelte";
-  import GlobalTooltip from "./lib/components/ui/GlobalTooltip.svelte";
-  import Icon from "./lib/components/ui/Icon.svelte";
-  import Spinner from "./lib/components/ui/Spinner.svelte";
-  import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
-  import Alert from "./lib/components/ui/Alert.svelte";
-  import ConfirmationDialog from "./lib/components/ui/ConfirmationDialog.svelte";
-  import Home from "./lib/components/views/Home.svelte";
-  import Privacy from "./lib/components/views/Privacy.svelte";
-  import Terms from "./lib/components/views/Terms.svelte";
-  import { routerStore } from "./lib/state/router.svelte";
-  import { uiStore } from "./lib/state/ui.svelte";
-  import { Route } from "./lib/utils/routes";
+  import ChatWindow from "$components/chat/ChatWindow.svelte";
+  import ConversationsPanel from "$components/chat/ConversationsPanel.svelte";
+  import ReactionTooltip from "$components/chat/ReactionTooltip.svelte";
+  import IconRail from "$components/layout/IconRail.svelte";
+  import ProfilePanel from "$components/panels/ProfilePanel.svelte";
+  import RequestsPanel from "$components/panels/RequestsPanel.svelte";
+  import SettingsPanel from "$components/panels/SettingsPanel.svelte";
+  import Alert from "$components/ui/Alert.svelte";
+  import ConfirmationDialog from "$components/ui/ConfirmationDialog.svelte";
+  import GlobalTooltip from "$components/ui/GlobalTooltip.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import Spinner from "$components/ui/Spinner.svelte";
+  import ThemeToggle from "$components/ui/ThemeToggle.svelte";
+  import Home from "$components/views/Home.svelte";
+  import Privacy from "$components/views/Privacy.svelte";
+  import Terms from "$components/views/Terms.svelte";
+  import { routerStore } from "$state/router.svelte";
+  import { uiStore } from "$state/ui.svelte";
+  import { Route } from "$utils/routes";
 
   let isHomePage = $derived(routerStore.segments.length === 0);
 
@@ -358,7 +358,9 @@
 <ConfirmationDialog />
 
 <!-- Global Alerts -->
-<div class="fixed top-8 left-1/2 -translate-x-1/2 z-10001 flex flex-col gap-3 pointer-events-none w-full items-center px-4">
+<div
+  class="fixed top-8 left-1/2 -translate-x-1/2 z-10001 flex flex-col gap-3 pointer-events-none w-full items-center px-4"
+>
   {#each uiStore.alerts as alert (alert.id)}
     <Alert {alert} />
   {/each}
