@@ -260,7 +260,7 @@ class ChatStore {
       },
     );
 
-    this.socket.on("message_deleted", (data: { messageId: string; chatId: string }) => {
+    this.socket.on("message_deleted", (data: { messageId: string; chatId: string; isLastMessage?: boolean }) => {
       if (data.chatId === this.activeChatId) {
         const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
         if (msgIndex !== -1) {
@@ -278,11 +278,12 @@ class ChatStore {
       // Update last message preview in chat list if needed
       const chat = this.chats.find((c) => c.id === data.chatId);
       if (chat && chat.lastMessage) {
-        // If we are currently viewing this chat, we can check if the deleted message is the last one
+        // Fallback to active chat check if the backend doesn't send "isLastMessage"
         const isLatest =
-          this.activeChatId === data.chatId &&
-          this.messages.length > 0 &&
-          this.messages[this.messages.length - 1].id === data.messageId;
+          data.isLastMessage ??
+          (this.activeChatId === data.chatId &&
+            this.messages.length > 0 &&
+            this.messages[this.messages.length - 1].id === data.messageId);
 
         if (isLatest) {
           this.patchChatLocally(data.chatId, {

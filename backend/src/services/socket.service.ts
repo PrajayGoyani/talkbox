@@ -300,7 +300,7 @@ class SocketService {
       if (!message || message.isDeleted) return;
 
       const chat = await ChatModel.findById(message.chatId);
-      if (!chat) return;
+      if (!chat || chat.isDeleted) return;
 
       // Security: Only sender can delete their message
       if (message.senderId.toString() !== senderId.toString()) {
@@ -314,11 +314,18 @@ class SocketService {
       message.reactions = [];
       await message.save();
 
+      const isLastMessage = Boolean(
+        chat.lastMessage &&
+          chat.lastMessage.sentAt &&
+          chat.lastMessage.sentAt.getTime() === message.createdAt.getTime()
+      );
+
       // Determine participants
       const participants = [chat.userA.toString(), chat.userB.toString()];
       const updatePayload = {
         messageId: messageId.toString(),
         chatId: message.chatId.toString(),
+        isLastMessage,
       };
 
       // notify both
@@ -327,11 +334,7 @@ class SocketService {
       });
 
       // Update chat's lastMessage if it was this one
-      if (
-        chat.lastMessage &&
-        chat.lastMessage.sentAt &&
-        chat.lastMessage.sentAt.getTime() === message.createdAt.getTime()
-      ) {
+      if (isLastMessage) {
         chat.lastMessage.contentBody = "Message deleted";
         await chat.save();
       }
