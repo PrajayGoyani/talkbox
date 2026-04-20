@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { API_ROOT } from "../../config";
-  import { cn } from "../../utils/cn";
+  import { API_ROOT } from "$lib/config";
+  import { cn } from "$utils/cn";
 
   let { user, class: className = "" } = $props<{
     user: {

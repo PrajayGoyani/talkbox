@@ -1,4 +1,4 @@
-import type { UserDto } from "../types/auth.dto";
+import type { UserDto } from "$types/auth.dto";
 
 const IS_BROWSER = typeof window !== "undefined";
 

@@ -6,6 +6,17 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   lint: { options: { typeAware: true, typeCheck: true } },
   plugins: [tailwindcss(), svelte()],
+  resolve: {
+    alias: {
+      $lib: "/src/lib",
+      $components: "/src/lib/components",
+      $state: "/src/lib/state",
+      $utils: "/src/lib/utils",
+      $types: "/src/lib/types",
+      $assets: "/src/assets",
+      "@": "/src",
+    },
+  },
   run: { cache: true },
   staged: {
     "*": "vp check --fix",

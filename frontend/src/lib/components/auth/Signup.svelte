@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { authStore } from "../../state/auth.svelte";
-  import { routerStore } from "../../state/router.svelte";
-  import FloatingInput from "../ui/FloatingInput.svelte";
-  import Icon from "../ui/Icon.svelte";
+  import FloatingInput from "$components/ui/FloatingInput.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import { authStore } from "$state/auth.svelte";
+  import { routerStore } from "$state/router.svelte";
 
   const { toggleLogin } = $props<{ toggleLogin: any }>();
 
@@ -138,7 +138,6 @@
           onclick={() => (showPassword = !showPassword)}
           aria-label={showPassword ? "Hide password" : "Show password"}
         >
-
           {#if showPassword}
             <Icon name="eye-off" class="w-[18px] h-[18px]" />
           {:else}
@@ -147,7 +146,6 @@
         </button>
       {/snippet}
     </FloatingInput>
-
 
     <FloatingInput
       id="confirm-password"
@@ -165,7 +163,6 @@
           onclick={() => (showConfirmPassword = !showConfirmPassword)}
           aria-label={showConfirmPassword ? "Hide password" : "Show password"}
         >
-
           {#if showConfirmPassword}
             <Icon name="eye-off" class="w-[18px] h-[18px]" />
           {:else}
@@ -174,8 +171,6 @@
         </button>
       {/snippet}
     </FloatingInput>
-
-
 
     <button type="submit" class="btn-primary" disabled={authStore.loading}>
       {#if authStore.loading}

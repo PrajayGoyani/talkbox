@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { authStore } from "../../state/auth.svelte";
-  import { API_ROOT } from "../../config";
-  import { tooltip, tooltipStore } from "../../state/tooltip.svelte";
-  import Icon from "../ui/Icon.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import { API_ROOT } from "$lib/config";
+  import { authStore } from "$state/auth.svelte";
+  import { tooltip, tooltipStore } from "$state/tooltip.svelte";
 
   let editingName = $state(false);
   let nameInput = $state(authStore.user?.name || "");

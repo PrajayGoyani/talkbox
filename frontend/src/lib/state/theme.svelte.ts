@@ -1,4 +1,4 @@
-import { storage, type Theme } from "../utils/storage";
+import { storage, type Theme } from "$utils/storage";
 
 class ThemeStore {
   theme = $state<Theme>(storage.getTheme());

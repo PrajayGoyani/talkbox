@@ -1,12 +1,12 @@
-import { API_BASE } from "../config";
+import { API_BASE } from "$lib/config";
 import {
-  type UserDto,
+  type ApiResponse,
   type AuthResponseDto,
   type LoginRequestDto,
   type SignupRequestDto,
-  type ApiResponse,
-} from "../types/auth.dto";
-import { storage } from "../utils/storage";
+  type UserDto,
+} from "$types/auth.dto";
+import { storage } from "$utils/storage";
 
 // Access tokens expire in 15min typically; refresh 1 min before
 const REFRESH_INTERVAL_MS = 14 * 60 * 1000;

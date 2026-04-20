@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { authStore } from "../../state/auth.svelte";
-  import { routerStore } from "../../state/router.svelte";
-  import FloatingInput from "../ui/FloatingInput.svelte";
-  import Icon from "../ui/Icon.svelte";
+  import FloatingInput from "$components/ui/FloatingInput.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import { authStore } from "$state/auth.svelte";
+  import { routerStore } from "$state/router.svelte";
 
   const { toggleSignup } = $props<{ toggleSignup: any }>();
 
@@ -81,8 +81,6 @@
         </button>
       {/snippet}
     </FloatingInput>
-
-
 
     <button type="submit" class="btn-primary mt-2" disabled={authStore.loading}>
       {#if authStore.loading}

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { authStore } from "../../state/auth.svelte";
-  import { routerStore } from "../../state/router.svelte";
-  import { Route } from "../../utils/routes";
+  import { authStore } from "$state/auth.svelte";
+  import { routerStore } from "$state/router.svelte";
+  import { Route } from "$utils/routes";
 
   let dashboardLink = Route.CONVERSATIONS;
   let loginLink = Route.LOGIN;

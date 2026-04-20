@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { authStore } from "../../../state/auth.svelte";
-  import { routerStore } from "../../../state/router.svelte";
-  import { Route } from "../../../utils/routes";
-  import AppPreview from "./AppPreview.svelte";
+  import AppPreview from "$components/views/home/AppPreview.svelte";
+  import { authStore } from "$state/auth.svelte";
+  import { routerStore } from "$state/router.svelte";
+  import { Route } from "$utils/routes";
 
   // Navigation CTAs
   let dashboardLink = Route.CONVERSATIONS;
@@ -20,7 +20,9 @@
     Experience real-time messaging with a premium interface.
   </p>
 
-  <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
+  <div
+    class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20"
+  >
     {#if authStore.user}
       <button
         onclick={() => routerStore.navigate(dashboardLink)}

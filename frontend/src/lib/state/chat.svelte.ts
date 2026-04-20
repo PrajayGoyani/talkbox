@@ -1,8 +1,13 @@
+import type { MessageAckDto, RawMessageDto, TypingIndicatorDto, UserStatusDto } from "$types/chat.dto";
+import type { Notification } from "$types/notification";
+
+import { authStore } from "$state/auth.svelte";
+import { notificationStore } from "$state/notification.svelte";
+import { routerStore } from "$state/router.svelte";
+import { uiStore } from "$state/ui.svelte";
+import { getDisallowedEmojis } from "$utils/emoji";
 import { io, type Socket } from "socket.io-client";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
-
-import type { MessageAckDto, RawMessageDto, TypingIndicatorDto, UserStatusDto } from "../types/chat.dto";
-import type { Notification } from "../types/notification";
 
 import {
   API_BASE,
@@ -12,11 +17,6 @@ import {
   TYPING_DEBOUNCE_DURATION,
   TYPING_INDICATOR_DURATION,
 } from "../config";
-import { authStore } from "./auth.svelte";
-import { notificationStore } from "./notification.svelte";
-import { routerStore } from "./router.svelte";
-import { uiStore } from "./ui.svelte";
-import { getDisallowedEmojis } from "../utils/emoji";
 
 const LOADER_AWAIT_MS = 500;
 
@@ -40,6 +40,7 @@ export interface Message {
     emoji: string;
     users: string[];
   }>;
+  isDeleted?: boolean;
 }
 
 export interface Chat {
@@ -245,13 +246,52 @@ class ChatStore {
       }
     });
 
-    this.socket.on("message_reaction_update", (data: { messageId: string; chatId: string; reactions: Array<{ emoji: string; users: string[] }> }) => {
+    this.socket.on(
+      "message_reaction_update",
+      (data: { messageId: string; chatId: string; reactions: Array<{ emoji: string; users: string[] }> }) => {
+        if (data.chatId === this.activeChatId) {
+          const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
+          if (msgIndex !== -1) {
+            const updatedMessages = [...this.messages];
+            updatedMessages[msgIndex] = { ...updatedMessages[msgIndex], reactions: data.reactions };
+            this.messages = updatedMessages;
+          }
+        }
+      },
+    );
+
+    this.socket.on("message_deleted", (data: { messageId: string; chatId: string; isLastMessage?: boolean }) => {
       if (data.chatId === this.activeChatId) {
         const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
         if (msgIndex !== -1) {
           const updatedMessages = [...this.messages];
-          updatedMessages[msgIndex] = { ...updatedMessages[msgIndex], reactions: data.reactions };
+          updatedMessages[msgIndex] = {
+            ...updatedMessages[msgIndex],
+            contentBody: "This message was deleted",
+            isDeleted: true,
+            reactions: [],
+          };
           this.messages = updatedMessages;
+        }
+      }
+
+      // Update last message preview in chat list if needed
+      const chat = this.chats.find((c) => c.id === data.chatId);
+      if (chat && chat.lastMessage) {
+        // Fallback to active chat check if the backend doesn't send "isLastMessage"
+        const isLatest =
+          data.isLastMessage ??
+          (this.activeChatId === data.chatId &&
+            this.messages.length > 0 &&
+            this.messages[this.messages.length - 1].id === data.messageId);
+
+        if (isLatest) {
+          this.patchChatLocally(data.chatId, {
+            lastMessage: {
+              ...chat.lastMessage,
+              contentBody: "Message deleted",
+            },
+          });
         }
       }
     });
@@ -612,6 +652,17 @@ class ChatStore {
     this.socket.emit("react_message", {
       messageId,
       emoji,
+    });
+  }
+
+  /** Delete a message via socket */
+  deleteMessage(messageId: string) {
+    if (!this.socket || !this.isConnected || !this.activeChatId) {
+      return;
+    }
+
+    this.socket.emit("delete_message", {
+      messageId,
     });
   }
 }

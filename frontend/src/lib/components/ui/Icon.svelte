@@ -31,6 +31,7 @@
     "edit",
     "smile",
     "smile-plus",
+    "trash",
   ] as const;
 
   type IconName = (typeof VALID_ICONS)[number];

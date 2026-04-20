@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
 export interface IMessage extends Document {
   chatId: mongoose.Types.ObjectId;
@@ -8,6 +8,8 @@ export interface IMessage extends Document {
     kind: "image" | "audio" | "video" | null;
     url: string | null;
   };
+  isDeleted: boolean;
+  deletedAt: Date | null;
   createdAt: Date;
   idempotencyKey: string;
   reactions: {
@@ -30,9 +32,8 @@ const messageSchema = new Schema<IMessage>({
   // readAt: { type: Date, default: null },
   // isEdited: { type: Boolean, default: false },
   // editedAt: { type: Date, default: null },
-  // isDeleted: { type: Boolean, default: false },
-  // deletedAt: { type: Date, default: null },
-  // sentAt: { type: Date, default: Date.now }, // - can refer to createdAt
+  isDeleted: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
   idempotencyKey: { type: String, required: true, unique: true },
   reactions: [

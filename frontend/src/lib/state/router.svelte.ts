@@ -1,5 +1,5 @@
-import { Route } from "../utils/routes";
-import { authStore } from "./auth.svelte";
+import { authStore } from "$state/auth.svelte";
+import { Route } from "$utils/routes";
 
 class RouterStore {
   hash = $state("");

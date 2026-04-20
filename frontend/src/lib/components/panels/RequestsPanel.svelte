@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { authStore } from "../../state/auth.svelte";
-  import { chatStore, type Chat, type User } from "../../state/chat.svelte";
+  import Avatar from "$components/ui/Avatar.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import { authStore } from "$state/auth.svelte";
+  import { chatStore } from "$state/chat.svelte";
   import { onMount } from "svelte";
-  import { slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import Avatar from "../ui/Avatar.svelte";
-  import Icon from "../ui/Icon.svelte";
+  import { slide } from "svelte/transition";
 
   let loading = $state(false);
   let error = $state<string | null>(null);
@@ -29,7 +29,6 @@
       loading = false;
     }
   };
-
 
   const handleSendRequest = async () => {
     if (!requestUsername.trim()) return;
@@ -166,13 +165,18 @@
               class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
             >
               <div class="flex items-center gap-3 flex-1 min-w-0">
-                <Avatar user={chat.otherUser} class="w-9 h-9 bg-indigo-600 text-white text-sm group-hover:scale-105 transition-transform" />
+                <Avatar
+                  user={chat.otherUser}
+                  class="w-9 h-9 bg-indigo-600 text-white text-sm group-hover:scale-105 transition-transform"
+                />
                 <div class="flex flex-col min-w-0">
                   <span
                     class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate"
                     title="@{chat.otherUser.username}">{displayName}</span
                   >
-                  <span class="text-[11px] text-slate-500">Wants to connect</span>
+                  <span class="text-[11px] text-slate-500"
+                    >Wants to connect</span
+                  >
                 </div>
               </div>
               <div class="flex gap-1.5 shrink-0">
@@ -182,8 +186,10 @@
                   aria-label="Accept"
                   disabled={!!processingStates[chat.id]}
                 >
-                  {#if processingStates[chat.id] === 'accepting'}
-                    <span class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></span>
+                  {#if processingStates[chat.id] === "accepting"}
+                    <span
+                      class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"
+                    ></span>
                   {:else}
                     <Icon name={"check"} class="w-4 h-4" stroke-width="2.5" />
                   {/if}
@@ -194,8 +200,10 @@
                   aria-label="Reject"
                   disabled={!!processingStates[chat.id]}
                 >
-                  {#if processingStates[chat.id] === 'rejecting'}
-                    <span class="w-3.5 h-3.5 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin"></span>
+                  {#if processingStates[chat.id] === "rejecting"}
+                    <span
+                      class="w-3.5 h-3.5 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin"
+                    ></span>
                   {:else}
                     <Icon name={"close"} class="w-4 h-4" stroke-width="2.5" />
                   {/if}
@@ -223,7 +231,10 @@
               class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
             >
               <div class="flex items-center gap-3 flex-1 min-w-0">
-                <Avatar user={chat.otherUser} class="w-9 h-9 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm group-hover:scale-105 transition-transform" />
+                <Avatar
+                  user={chat.otherUser}
+                  class="w-9 h-9 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm group-hover:scale-105 transition-transform"
+                />
                 <div class="flex flex-col min-w-0">
                   <span
                     class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate"

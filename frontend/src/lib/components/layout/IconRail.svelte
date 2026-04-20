@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { authStore } from "../../state/auth.svelte";
-  import { chatStore } from "../../state/chat.svelte";
+  import { authStore } from "$state/auth.svelte";
 
-  import Avatar from "../ui/Avatar.svelte";
-  import Icon from "../ui/Icon.svelte";
-  import { uiStore } from "../../state/ui.svelte";
-  import { routerStore } from "../../state/router.svelte";
-  import { tooltip } from "../../state/tooltip.svelte";
+  import Avatar from "$components/ui/Avatar.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import { routerStore } from "$state/router.svelte";
+  import { tooltip } from "$state/tooltip.svelte";
+  import { uiStore } from "$state/ui.svelte";
 
   type PanelId = "conversations" | "profile" | "settings" | "requests";
 
@@ -28,12 +27,11 @@
     hideOnMobile?: boolean;
   }>();
 
-
   const displayName = $derived(
     authStore.user?.name || authStore.user?.username || "?",
   );
 
-  const tooltipPos = $derived(uiStore.windowWidth < 768 ? 'top' : 'right');
+  const tooltipPos = $derived(uiStore.windowWidth < 768 ? "top" : "right");
 </script>
 
 <nav
@@ -56,20 +54,17 @@
 
     <!-- Navigation Icons -->
     <!-- Navigation Icons -->
-    {#each [
-      { id: 'conversations', title: 'Conversations', icon: 'nav-chat' },
-      { id: 'profile', title: 'Profile', icon: 'profile' },
-      { id: 'settings', title: 'Settings', icon: 'settings' },
-      { id: 'requests', title: 'Chat Requests', icon: 'add' }
-    ] as item}
+    {#each [{ id: "conversations", title: "Conversations", icon: "nav-chat" }, { id: "profile", title: "Profile", icon: "profile" }, { id: "settings", title: "Settings", icon: "settings" }, { id: "requests", title: "Chat Requests", icon: "add" }] as item}
       <button
-        class="rail-btn {activePanel === item.id ? 'rail-btn-active' : ''} relative"
+        class="rail-btn {activePanel === item.id
+          ? 'rail-btn-active'
+          : ''} relative"
         onclick={() => onPanelSelect(item.id as PanelId)}
         use:tooltip={{ text: item.title, position: tooltipPos }}
         aria-label={item.title}
       >
         <Icon name={item.icon} class="w-5.5 h-5.5" />
-        {#if item.id === 'requests' && requestsCount > 0}
+        {#if item.id === "requests" && requestsCount > 0}
           <span
             class="absolute top-1 right-1 bg-indigo-600 text-white text-[9px] font-bold min-w-[15px] h-3.5 rounded-full flex items-center justify-center px-1 shadow-sm animate-in scale-in-60"
           >
@@ -78,7 +73,6 @@
         {/if}
       </button>
     {/each}
-
 
     <!-- Notification bell (opens right-side drawer) -->
     <button

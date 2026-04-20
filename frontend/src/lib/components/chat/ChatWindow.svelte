@@ -1,23 +1,19 @@
 <script lang="ts">
+  import EmojiPicker from "$components/chat/EmojiPicker.svelte";
+  import MessageReactionPicker from "$components/chat/MessageReactionPicker.svelte";
+  import MessageSkeleton from "$components/chat/MessageSkeleton.svelte";
+  import Avatar from "$components/ui/Avatar.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import Popover from "$components/ui/Popover.svelte";
+  import Spinner from "$components/ui/Spinner.svelte";
+  import { authStore } from "$state/auth.svelte";
+  import { chatStore, type Message, type User } from "$state/chat.svelte";
+  import { tooltip, tooltipStore } from "$state/tooltip.svelte";
+  import { uiStore } from "$state/ui.svelte";
+  import { cn } from "$utils/cn";
+  import { formatSimpleTime, formatTimeAgo, getDateLabel } from "$utils/date";
+  import { getDisallowedEmojis } from "$utils/emoji";
   import { tick } from "svelte";
-  import { authStore } from "../../state/auth.svelte";
-  import { chatStore, type Message, type User } from "../../state/chat.svelte";
-  import { tooltip, tooltipStore } from "../../state/tooltip.svelte";
-  import { uiStore } from "../../state/ui.svelte";
-  import { cn } from "../../utils/cn";
-  import {
-    formatSimpleTime,
-    formatTimeAgo,
-    getDateLabel,
-  } from "../../utils/date";
-  import { getDisallowedEmojis } from "../../utils/emoji";
-  import EmojiPicker from "../chat/EmojiPicker.svelte";
-  import MessageSkeleton from "../chat/MessageSkeleton.svelte";
-  import Avatar from "../ui/Avatar.svelte";
-  import Icon from "../ui/Icon.svelte";
-  import Popover from "../ui/Popover.svelte";
-  import Spinner from "../ui/Spinner.svelte";
-  import MessageReactionPicker from "./MessageReactionPicker.svelte";
 
   let {
     chatId,
@@ -433,18 +429,30 @@
                   "flex flex-col",
                   isSent ? "items-end" : "items-start",
                   i > 0 && !isFirstInGroup ? "mt-1" : "mt-2",
+                  msg.isDeleted && "opacity-60",
                 )}
               >
-                <div
-                  class={cn(
-                    "m-0 select-none",
-                    emojiMode === "jumbo-1" && "text-6xl py-2",
-                    emojiMode === "jumbo-2" && "text-5xl py-1.5",
-                    emojiMode === "jumbo-3" && "text-4xl py-1",
-                  )}
-                >
-                  {msg.contentBody}
-                </div>
+                {#if msg.isDeleted}
+                  <div
+                    class={cn(
+                      "chat-bubble rounded-2xl px-3 py-1.5 text-xs italic opacity-80",
+                      isSent ? "chat-bubble-sent" : "chat-bubble-received",
+                    )}
+                  >
+                    This message was deleted
+                  </div>
+                {:else}
+                  <div
+                    class={cn(
+                      "m-0 select-none",
+                      emojiMode === "jumbo-1" && "text-6xl py-2",
+                      emojiMode === "jumbo-2" && "text-5xl py-1.5",
+                      emojiMode === "jumbo-3" && "text-4xl py-1",
+                    )}
+                  >
+                    {msg.contentBody}
+                  </div>
+                {/if}
                 <div
                   class={cn(
                     "chat-bubble rounded-2xl px-2.5 py-1 mt-1 flex items-center justify-center min-w-0 relative group",
@@ -452,11 +460,13 @@
                   )}
                 >
                   <span
-                    class="text-[9px] opacity-70 leading-none font-medium whitespace-nowrap"
+                    class="text-[9px] font-medium whitespace-nowrap opacity-70"
                   >
                     {formatSimpleTime(msg.createdAt)}
                   </span>
-                  <MessageReactionPicker {msg} {isSent} />
+                  {#if !msg.isDeleted}
+                    <MessageReactionPicker {msg} {isSent} />
+                  {/if}
                 </div>
                 <!-- Reactions rendering for jumbo -->
                 {@render reactionList(msg, isSent)}
@@ -469,11 +479,15 @@
                   isFirstInGroup &&
                     (isSent ? "rounded-tr-none" : "rounded-tl-none"),
                   i > 0 && !isFirstInGroup ? "mt-1" : "mt-2",
+                  msg.isDeleted && "opacity-60",
                 )}
               >
                 <div class="relative">
                   <p
-                    class="m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap"
+                    class={cn(
+                      "m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap",
+                      msg.isDeleted && "italic opacity-80",
+                    )}
                   >
                     {msg.contentBody}<span class="inline-block w-11 h-0"></span>
                   </p>
@@ -483,7 +497,9 @@
                     {formatSimpleTime(msg.createdAt)}
                   </span>
                 </div>
-                <MessageReactionPicker {msg} {isSent} />
+                {#if !msg.isDeleted}
+                  <MessageReactionPicker {msg} {isSent} />
+                {/if}
                 <!-- Reaction list for normal -->
                 <div class="flex flex-col gap-1 items-start">
                   {@render reactionList(msg, isSent)}

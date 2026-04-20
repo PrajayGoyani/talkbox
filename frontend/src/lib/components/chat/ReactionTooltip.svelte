@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { tooltipStore } from "$state/tooltip.svelte";
   import { fade } from "svelte/transition";
-  import { tooltipStore } from "../../state/tooltip.svelte";
 
   // Split lines for rendering
   const lines = $derived(tooltipStore.text.split("\n"));
@@ -21,15 +21,15 @@
     const x = tooltipStore.x;
     const margin = 12;
     const screenWidth = tooltipStore.screenWidth;
-    
+
     // If we don't know the width yet, use a safe default
     if (tooltipWidth === 0) return x;
-    
+
     // The tooltip is translated -50%, so its left edge is x - width/2
     // We want left edge >= margin AND right edge <= screenWidth - margin
     const minX = tooltipWidth / 2 + margin;
     const maxX = screenWidth - tooltipWidth / 2 - margin;
-    
+
     return Math.max(minX, Math.min(x, maxX));
   });
 </script>
