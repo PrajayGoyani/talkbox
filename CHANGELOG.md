@@ -1,92 +1,74 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ## [1.4.0] - 2026-04-20
 
 ### Added
-
-- **Component Lazy Loading**: Implemented a centralized view registry and a dedicated `Lazy` component to manage on-demand loading and reduce initial resource usage.
-- **Incremental Build Support**: Added task caching and incremental build capabilities to the Makefile for more efficient development cycles.
-- **Loading Feedback**: Added retry functionality and visual error indicators for components that fail to load dynamically.
+- View registry and lazy loading component.
+- Makefile task caching and incremental builds.
+- Retry logic and error indicators for dynamic imports.
 
 ### Changed
-
-- **Load Management**: Introduced scroll throttling and configurable loading delays to improve interface responsiveness during rapid interaction.
-- **App Structure**: Refactored the main application shell to integrate the initial view directly, reducing transition time.
-- **Component Prioritization**: Implemented eager loading for essential authenticated components to reduce perceived latency after login.
+- Scroll throttling for lazy components.
+- Integrated Home view into App shell.
+- Authenticated component pre-loading.
 
 ### Maintenance
-
-- Updated backend build configuration for improved type safety and consistency.
-- Refined frontend dependency management to optimize overall bundle size.
+- Backend build configuration.
+- Frontend dependency tree.
 
 ## [1.3.0] - 2026-04-20
 
 ### Added
-
-- **Message Deletion**: Implemented backend and frontend support for removing messages.
-- **Confirmation Dialog**: Added a reusable modal for verifying user actions before execution.
+- Backend and frontend message deletion.
+- Modal confirmation dialog.
 
 ### Changed
-
-- **Path Aliases**: Improved frontend source code organization by using standardized path aliases.
-- **Socket Synchronization**: Updated chat previews to reflect message removal in real-time.
+- Frontend path aliases.
+- Real-time socket synchronization for deletions.
 
 ### Fixed
-
-- **Validation**: Prevented deletion of messages in chats that are marked as inactive or deleted.
+- Inactive chat message validation.
 
 ## [1.2.0] - 2026-04-17
 
 ### Added
-
-- **Emoji Disallowance**: Blocked disallowed emojis in the picker, messages, and reactions.
-- **Alert System**: Added a global alert component for user feedback.
-- **Mobile Tooltips**: Added touch support and improved positioning for mobile devices.
+- Emoji blocking in picker and messages.
+- Global alert system.
+- Mobile tooltip support.
 
 ### Changed
-
-- Optimized emoji scanning using a Unicode-aware regex.
-- Centralized alert management in `uiStore`.
+- Regex-based emoji scanning.
+- Centralized alert management.
 
 ## [1.1.0] - 2026-04-17
 
 ### Added
-
-- **Emoji System**: Integrated emoji picker with popover and large emoji rendering.
-- **Background Actions**: Added job scheduling for data retention and cleanup.
-- **Date Headers**: Added grouped message headers by date.
-- **Loading States**: Added progressive loading for UI components.
-- **Image Service**: Added WebP image optimization for avatars.
-- **UI Components**: Added `Spinner` and `Icon` components.
-- **Navigation**: Added "Jump to Latest" and username copy functionality.
+- Emoji picker and rendering.
+- Scheduled cleanup jobs.
+- Message date headers.
+- UI loading states.
+- WebP avatar optimization.
+- Spinner and Icon components.
+- Username copy and scroll-to-latest.
 
 ### Changed
-
-- **Backend**: Migrated backend to TypeScript.
-- **Styles**: Standardized class management using `cn` utility.
-- **State**: Centralized UI state and migrated status tracking to `SvelteMap`.
-- **Responsive**: Updated mobile layout and sidebar behavior.
-- **Input**: Replaced inputs with auto-resizing textareas.
+- Backend TypeScript migration.
+- CSS class management utility.
+- Centralized UI state management.
+- Mobile sidebar layout.
+- Auto-resizing textareas.
 
 ### Fixed
-
-- Improved avatar path handling.
-- Optimized chat deletion and message grouping.
-- Fixed layout spacing on touch devices.
-- Improved origin and cookie handling for auth.
+- Avatar path handling.
+- Chat deletion and grouping logic.
+- Mobile layout spacing.
+- Auth cookie handling.
 
 ### Maintenance
-
-- Switched build tool to `vite-plus`.
-- Standardized package management with `pnpm`.
-- Added Makefile and PM2 configuration.
-- Added database seeder script.
+- vite-plus build tool.
+- pnpm package management.
+- Makefile and PM2 configuration.
+- Database seeder.
 
 ## [1.0.0] - 2026-04-03
-
-- Initial release with chat, auth, and real-time messaging.
+- Initial release.
