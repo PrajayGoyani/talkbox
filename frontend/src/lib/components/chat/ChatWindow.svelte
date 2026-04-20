@@ -13,6 +13,7 @@
   import { cn } from "$utils/cn";
   import { formatSimpleTime, formatTimeAgo, getDateLabel } from "$utils/date";
   import { getDisallowedEmojis, parseMessageContent, segmenter } from "$utils/emoji";
+  import { throttle } from "$utils/timing";
   import { tick } from "svelte";
 
   let {
@@ -145,7 +146,7 @@
     }
   };
 
-  const handleMessagesScroll = (e: Event) => {
+  const handleMessagesScroll = throttle((e: Event) => {
     const target = e.target as HTMLElement;
     const distanceFromBottom =
       target.scrollHeight - target.scrollTop - target.clientHeight;
@@ -172,7 +173,7 @@
         }, 0);
       });
     }
-  };
+  }, 100);
 
   const handleCopyUsername = (e: MouseEvent) => {
     if (!otherUser?.username) return;

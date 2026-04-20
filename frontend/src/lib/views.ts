@@ -20,6 +20,7 @@ export const Views = {
   SettingsPanel: () => import("$components/panels/SettingsPanel.svelte"),
 
   // Views / Documentation
+  Home: () => import("$components/views/Home.svelte"),
   Privacy: () => import("$components/views/Privacy.svelte"),
   Terms: () => import("$components/views/Terms.svelte"),
 

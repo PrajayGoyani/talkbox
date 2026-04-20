@@ -16,7 +16,6 @@
   import Icon from "$components/ui/Icon.svelte";
   import Spinner from "$components/ui/Spinner.svelte";
   import ThemeToggle from "$components/ui/ThemeToggle.svelte";
-  import Home from "$lib/components/views/Home.svelte";
   import { routerStore } from "$state/router.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { Route } from "$utils/routes";
@@ -56,6 +55,10 @@
   });
 
   $effect(() => {
+    // Eager load Home component immediately in the background
+    // This happens while authStore.isCheckingAuth is true (initial loader)
+    Views.Home();
+
     // Apply theme reactively
     document.documentElement.setAttribute("data-theme", themeStore.theme);
 
@@ -349,7 +352,7 @@
       {:else if routerStore.segments[0] === "privacy"}
         <Lazy component={Views.Privacy} />
       {:else}
-        <Home />
+        <Lazy component={Views.Home} />
       {/if}
     </div>
   </div>

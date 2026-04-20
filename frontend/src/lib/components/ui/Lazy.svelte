@@ -7,20 +7,29 @@
    * Reusable Lazy loader for Svelte 5 components.
    * Usage: <Lazy component={() => import('./MyComponent.svelte')} prop1={value} />
    */
-  let { component, ...props } = $props<{
+  let { component, delay = 200, ...props } = $props<{
     /** A function that returns a dynamic import promise */
     component: () => Promise<{ default: Component<any> }>;
+    /** How long to wait before showing the loading spinner (ms) */
+    delay?: number;
     /** Any other props to pass to the component once loaded */
     [key: string]: any;
   }>();
 
   let LoadedComponent = $state<Component<any>>();
   let isLoading = $state(true);
+  let showLoading = $state(false);
   let error = $state<any>(null);
 
   async function loadComponent() {
     isLoading = true;
     error = null;
+
+    // Start delay timer for spinner visibility
+    const timer = setTimeout(() => {
+      if (isLoading) showLoading = true;
+    }, delay);
+
     try {
       const module = await component();
       LoadedComponent = module.default;
@@ -28,7 +37,9 @@
       console.error("Lazy component load failed:", err);
       error = err;
     } finally {
+      clearTimeout(timer);
       isLoading = false;
+      showLoading = false;
     }
   }
 
@@ -37,7 +48,7 @@
   });
 </script>
 
-{#if isLoading}
+{#if isLoading && showLoading}
   <div
     class="flex items-center justify-center p-12 w-full h-full min-h-[100px]"
   >
@@ -48,6 +59,9 @@
       >
     </div>
   </div>
+{:else if isLoading}
+  <!-- Content is loading but we are within the delay grace period - render nothing -->
+  <div class="w-full h-full min-h-[100px]"></div>
 {:else if error}
   <div
     class="p-8 flex flex-col items-center justify-center text-center gap-4 h-full"
