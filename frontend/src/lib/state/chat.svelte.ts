@@ -18,7 +18,7 @@ import {
   TYPING_INDICATOR_DURATION,
 } from "../config";
 
-const LOADER_AWAIT_MS = 200;
+const LOADER_AWAIT_MS = 300;
 
 export type ChatStatus = "pending" | "accepted" | "rejected";
 

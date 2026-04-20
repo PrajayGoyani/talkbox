@@ -7,7 +7,11 @@
    * Reusable Lazy loader for Svelte 5 components.
    * Usage: <Lazy component={() => import('./MyComponent.svelte')} prop1={value} />
    */
-  let { component, delay = 200, ...props } = $props<{
+  let {
+    component,
+    delay = 300,
+    ...props
+  } = $props<{
     /** A function that returns a dynamic import promise */
     component: () => Promise<{ default: Component<any> }>;
     /** How long to wait before showing the loading spinner (ms) */
