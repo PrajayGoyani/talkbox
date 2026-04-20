@@ -96,9 +96,8 @@ body {
 
 /* Chat Messages */
 .chat-bubble {
-  @apply relative max-w-[85%] md:max-w-[70%] px-3.5 py-1.5 shadow-sm transition-all duration-200;
+  @apply relative max-w-[85%] px-3.5 py-1.5 shadow-sm transition-all duration-200 md:max-w-[70%];
 }
-
 
 .chat-bubble-sent {
   @apply self-end bg-indigo-600 text-white;
@@ -107,7 +106,6 @@ body {
 .chat-bubble-received {
   @apply self-start bg-slate-200 text-slate-900 dark:bg-white/10 dark:text-slate-100;
 }
-
 
 /* Navigation */
 .rail-btn {
@@ -176,4 +174,3 @@ body {
 .scrollbar-slim::-webkit-scrollbar-thumb:hover {
   @apply bg-slate-400 dark:bg-white/20;
 }
-

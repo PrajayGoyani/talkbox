@@ -17,15 +17,14 @@
     "allowJs": true,
     "checkJs": true,
     "moduleDetection": "force",
-    "baseUrl": ".",
     "paths": {
-      "$lib/*": ["src/lib/*"],
-      "$components/*": ["src/lib/components/*"],
-      "$state/*": ["src/lib/state/*"],
-      "$utils/*": ["src/lib/utils/*"],
-      "$types/*": ["src/lib/types/*"],
-      "$assets/*": ["src/assets/*"],
-      "@/*": ["src/*"]
+      "$lib/*": ["./src/lib/*"],
+      "$components/*": ["./src/lib/components/*"],
+      "$state/*": ["./src/lib/state/*"],
+      "$utils/*": ["./src/lib/utils/*"],
+      "$types/*": ["./src/lib/types/*"],
+      "$assets/*": ["./src/assets/*"],
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"]

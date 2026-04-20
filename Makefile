@@ -7,12 +7,19 @@ install:
 	cd frontend && pnpm install
 	@echo "Installation complete!"
 
+# Unified build command (incremental)
+build:
+	@echo "Building applications..."
+	cd backend && pnpm build
+	cd frontend && pnpm build
+	@echo "Build complete!"
+
 # Production Mode (Backend: start, Frontend: build + preview)
 up:
-	@echo "Starting in PRODUCTION mode (building frontend first)..."
-	cd frontend && bun run build
-	cd backend && bun run build
+	@echo "Starting in PRODUCTION mode..."
+	$(MAKE) build
 	APP_MODE=prod bunx pm2 start ecosystem.config.cjs
+
 
 # Development Mode (Backend: dev, Frontend: dev)
 dev:

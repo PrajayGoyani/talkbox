@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Login from "$components/auth/Login.svelte";
-  import Signup from "$components/auth/Signup.svelte";
   import NotificationsDropdown from "$components/layout/NotificationsDropdown.svelte";
   import ToastContainer from "$components/layout/ToastContainer.svelte";
+  import Lazy from "$components/ui/Lazy.svelte";
+  import { Views } from "$lib/views";
   import { authStore } from "$state/auth.svelte";
   import { chatStore } from "$state/chat.svelte";
   import { notificationStore } from "$state/notification.svelte";
@@ -11,22 +11,11 @@
   import { quintOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
 
-  import ChatWindow from "$components/chat/ChatWindow.svelte";
-  import ConversationsPanel from "$components/chat/ConversationsPanel.svelte";
-  import ReactionTooltip from "$components/chat/ReactionTooltip.svelte";
   import IconRail from "$components/layout/IconRail.svelte";
-  import ProfilePanel from "$components/panels/ProfilePanel.svelte";
-  import RequestsPanel from "$components/panels/RequestsPanel.svelte";
-  import SettingsPanel from "$components/panels/SettingsPanel.svelte";
   import Alert from "$components/ui/Alert.svelte";
-  import ConfirmationDialog from "$components/ui/ConfirmationDialog.svelte";
-  import GlobalTooltip from "$components/ui/GlobalTooltip.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Spinner from "$components/ui/Spinner.svelte";
   import ThemeToggle from "$components/ui/ThemeToggle.svelte";
-  import Home from "$components/views/Home.svelte";
-  import Privacy from "$components/views/Privacy.svelte";
-  import Terms from "$components/views/Terms.svelte";
   import { routerStore } from "$state/router.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { Route } from "$utils/routes";
@@ -66,6 +55,10 @@
   });
 
   $effect(() => {
+    // Eager load Home component immediately in the background
+    // This happens while authStore.isCheckingAuth is true (initial loader)
+    Views.Home();
+
     // Apply theme reactively
     document.documentElement.setAttribute("data-theme", themeStore.theme);
 
@@ -92,6 +85,12 @@
           toastContainer.addToast(data);
         }
       });
+
+      // Eager load authenticated components to improve perceived performance
+      Views.ProfilePanel();
+      Views.RequestsPanel();
+      Views.SettingsPanel();
+      Views.ChatWindow();
     } else if (!authStore.user && !authStore.isCheckingAuth) {
       chatStore.disconnect();
     }
@@ -170,7 +169,7 @@
     >
       <IconRail
         {activePanel}
-        onPanelSelect={(p) => uiStore.navigate(`/chat/${p}`)}
+        onPanelSelect={(p: PanelId) => uiStore.navigate(`/chat/${p}`)}
         onNotificationToggle={() => uiStore.toggleNotifications()}
         notificationCount={notificationStore.unreadCount}
         requestsCount={chatStore.pendingRequestCount}
@@ -192,9 +191,10 @@
             class="flex flex-col h-full overflow-hidden"
           >
             {#if activePanel === "conversations"}
-              <ConversationsPanel
+              <Lazy
+                component={Views.ConversationsPanel}
                 activeChatId={selectedChatId}
-                onSelectChat={(id) =>
+                onSelectChat={(id: string) =>
                   uiStore.navigate(`${Route.CONVERSATIONS}/${id}`, {
                     resetSidebar: false,
                   })}
@@ -202,11 +202,15 @@
                 onNotificationToggle={() => uiStore.toggleNotifications()}
               />
             {:else if activePanel === "profile"}
-              <ProfilePanel />
+              <Lazy component={Views.ProfilePanel} />
             {:else if activePanel === "settings"}
-              <SettingsPanel user={authStore.user} onLogout={handleLogout} />
+              <Lazy
+                component={Views.SettingsPanel}
+                user={authStore.user}
+                onLogout={handleLogout}
+              />
             {:else if activePanel === "requests"}
-              <RequestsPanel />
+              <Lazy component={Views.RequestsPanel} />
             {/if}
           </div>
         {/key}
@@ -218,11 +222,11 @@
           : 'hidden md:flex flex-col justify-center items-center'}"
       >
         {#if selectedChatId}
-          <ChatWindow
+          <Lazy
+            component={Views.ChatWindow}
             chatId={selectedChatId}
             otherUser={selectedOtherUser}
             status={selectedChatStatus}
-            bind:isSidebarCollapsed={uiStore.isSidebarCollapsed}
             onBack={() => uiStore.navigate("/chat/" + activePanel)}
           />
         {:else}
@@ -239,7 +243,8 @@
     </div>
     <ToastContainer
       bind:this={toastContainer}
-      onToastClick={(id) => uiStore.navigate(`${Route.CONVERSATIONS}/${id}`)}
+      onToastClick={(id: string) =>
+        uiStore.navigate(`${Route.CONVERSATIONS}/${id}`)}
     />
   </main>
 {/snippet}
@@ -322,40 +327,40 @@
     >
       {#if routerStore.segments[0] === "login"}
         <div class="w-full flex justify-center py-8 my-auto">
-          <Login>
+          <Lazy component={Views.Login}>
             {#snippet toggleSignup()}
               <button
                 class="text-indigo-600 font-medium"
                 onclick={() => toggleView("SIGNUP")}>Sign up</button
               >
             {/snippet}
-          </Login>
+          </Lazy>
         </div>
       {:else if routerStore.segments[0] === "signup"}
         <div class="w-full flex justify-center py-8 my-auto">
-          <Signup>
+          <Lazy component={Views.Signup}>
             {#snippet toggleLogin()}
               <button
                 class="text-indigo-600 font-medium"
                 onclick={() => toggleView("LOGIN")}>Log in</button
               >
             {/snippet}
-          </Signup>
+          </Lazy>
         </div>
       {:else if routerStore.segments[0] === "terms"}
-        <Terms />
+        <Lazy component={Views.Terms} />
       {:else if routerStore.segments[0] === "privacy"}
-        <Privacy />
+        <Lazy component={Views.Privacy} />
       {:else}
-        <Home />
+        <Lazy component={Views.Home} />
       {/if}
     </div>
   </div>
 {/snippet}
 
-<GlobalTooltip />
-<ReactionTooltip />
-<ConfirmationDialog />
+<Lazy component={Views.GlobalTooltip} />
+<Lazy component={Views.ReactionTooltip} />
+<Lazy component={Views.ConfirmationDialog} />
 
 <!-- Global Alerts -->
 <div

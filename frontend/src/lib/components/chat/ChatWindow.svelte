@@ -13,19 +13,18 @@
   import { cn } from "$utils/cn";
   import { formatSimpleTime, formatTimeAgo, getDateLabel } from "$utils/date";
   import { getDisallowedEmojis, parseMessageContent, segmenter } from "$utils/emoji";
+  import { throttle } from "$utils/timing";
   import { tick } from "svelte";
 
   let {
     chatId,
     otherUser,
     status,
-    isSidebarCollapsed = $bindable<boolean>(false),
     onBack,
   }: {
     chatId: string;
     otherUser: User | null;
     status: string;
-    isSidebarCollapsed?: boolean;
     onBack: () => void;
   } = $props();
 
@@ -147,7 +146,7 @@
     }
   };
 
-  const handleMessagesScroll = (e: Event) => {
+  const handleMessagesScroll = throttle((e: Event) => {
     const target = e.target as HTMLElement;
     const distanceFromBottom =
       target.scrollHeight - target.scrollTop - target.clientHeight;
@@ -174,7 +173,7 @@
         }, 0);
       });
     }
-  };
+  }, 100);
 
   const handleCopyUsername = (e: MouseEvent) => {
     if (!otherUser?.username) return;
@@ -267,7 +266,7 @@
     <!-- Desktop Sidebar Toggle Button -->
     <button
       class="hidden md:flex p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10 transition-all mr-2 active:scale-90"
-      onclick={() => (isSidebarCollapsed = !isSidebarCollapsed)}
+      onclick={() => (uiStore.isSidebarCollapsed = !uiStore.isSidebarCollapsed)}
       aria-label="Toggle Sidebar"
     >
       <Icon name="sidebar" class="w-5 h-5" />

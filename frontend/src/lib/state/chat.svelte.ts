@@ -1,12 +1,12 @@
 import type { MessageAckDto, RawMessageDto, TypingIndicatorDto, UserStatusDto } from "$types/chat.dto";
 import type { Notification } from "$types/notification";
+import type { Socket } from "socket.io-client";
 
 import { authStore } from "$state/auth.svelte";
 import { notificationStore } from "$state/notification.svelte";
 import { routerStore } from "$state/router.svelte";
 import { uiStore } from "$state/ui.svelte";
 import { getDisallowedEmojis } from "$utils/emoji";
-import { io, type Socket } from "socket.io-client";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import {
@@ -18,7 +18,7 @@ import {
   TYPING_INDICATOR_DURATION,
 } from "../config";
 
-const LOADER_AWAIT_MS = 500;
+const LOADER_AWAIT_MS = 300;
 
 export type ChatStatus = "pending" | "accepted" | "rejected";
 
@@ -103,9 +103,10 @@ class ChatStore {
     this.onToastCallback = cb;
   }
 
-  connect() {
+  async connect() {
     if (this.socket || !authStore.accessToken) return;
 
+    const { io } = await import("socket.io-client");
     this.socket = io(API_ROOT, {
       auth: { token: authStore.accessToken },
       withCredentials: true,
@@ -250,7 +251,11 @@ class ChatStore {
 
     this.socket.on(
       "message_reaction_update",
-      (data: { messageId: string; chatId: string; reactions: Array<{ emoji: string; slug?: string; users: string[] }> }) => {
+      (data: {
+        messageId: string;
+        chatId: string;
+        reactions: Array<{ emoji: string; slug?: string; users: string[] }>;
+      }) => {
         if (data.chatId === this.activeChatId) {
           const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
           if (msgIndex !== -1) {

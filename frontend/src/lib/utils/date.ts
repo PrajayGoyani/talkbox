@@ -29,7 +29,7 @@ export function formatListTime(date: string | Date): string {
   if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
   const now = new Date();
-  
+
   const isToday = d.toDateString() === now.toDateString();
   if (isToday) {
     return getFormatter({
@@ -45,11 +45,11 @@ export function formatListTime(date: string | Date): string {
 
   const diffMs = now.getTime() - d.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays < 7) {
     return getFormatter({ weekday: "short" }).format(d);
   }
-  
+
   return getFormatter({ day: "numeric", month: "short" }).format(d);
 }
 
@@ -99,7 +99,7 @@ export function getDateLabel(date: string | Date): string {
   const dateStr = typeof date === "string" ? date : date.toISOString();
   // Using the full date string as key is fine, but we only really care about the date part for the label
   const cacheKey = dateStr.slice(0, 10);
-  
+
   // Clear cache occasionally to handle "Today" becoming "Yesterday"
   const nowTs = Date.now();
   if (nowTs - lastCacheClear > CACHE_TTL) {
@@ -134,4 +134,3 @@ export function getDateLabel(date: string | Date): string {
   labelCache.set(cacheKey, label);
   return label;
 }
-

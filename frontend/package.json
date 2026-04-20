@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vp build",
+    "build": "vp run --cache build-task",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "dev": "vp dev",
     "fmt": "vp fmt",
