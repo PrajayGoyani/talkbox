@@ -1,28 +1,29 @@
 import ChatModel from "../models/chat.model";
 import MessageModel from "../models/message.model";
 import UserModel from "../models/user.model";
+import { TypedIO, TypedSocket, AuthenticatedSocketUser } from "../types/socket.types";
 import { AppError } from "../utils/AppError";
 import { chatLockdownService } from "./chat-lockdown.service";
 
 const MAX_UNIQUE_REACTIONS = 20;
 
 class SocketService {
-  public Message: any;
-  public io: any;
-  public activeConnections: any;
+  public Message: typeof MessageModel;
+  public io: TypedIO | null;
+  public activeConnections: Map<string, TypedSocket>;
 
-  constructor(messageModel) {
+  constructor(messageModel: typeof MessageModel) {
     this.Message = messageModel;
     this.io = null;
     // Map of userId -> socket instance
     this.activeConnections = new Map();
   }
 
-  init(io) {
+  init(io: TypedIO) {
     this.io = io;
   }
 
-  handleConnection(socket) {
+  handleConnection(socket: TypedSocket) {
     const userId = socket.data.user.id;
 
     // Single Socket Connection Zone Security
@@ -50,7 +51,7 @@ class SocketService {
     });
   }
 
-  async emitPartnersStatus(userId, socket) {
+  async emitPartnersStatus(userId: string, socket: TypedSocket) {
     try {
       const uidStr = userId.toString();
       const chats = await ChatModel.find({
@@ -94,7 +95,7 @@ class SocketService {
     }
   }
 
-  async notifyStatusChange(userId, isOnline) {
+  async notifyStatusChange(userId: string, isOnline: boolean) {
     try {
       const uidStr = userId.toString();
 
@@ -110,7 +111,7 @@ class SocketService {
       }).select("userA userB");
 
       // Extract unique partner IDs
-      const partnerIds = new Set();
+      const partnerIds = new Set<string>();
       chats.forEach((chat) => {
         const aStr = chat.userA.toString();
         const bStr = chat.userB.toString();
@@ -126,14 +127,15 @@ class SocketService {
       };
 
       for (const partnerId of partnerIds) {
-        this.io.to(`user:${partnerId}`).emit("user_status", statusPayload);
+        this.io?.to(`user:${partnerId}`).emit("user_status", statusPayload);
       }
     } catch (err) {
       console.error("Error notifying status change:", err);
     }
   }
 
-  async handleTyping(senderId, payload, isTyping) {
+  async handleTyping(sender: AuthenticatedSocketUser, payload: any, isTyping: boolean) {
+    const senderId = sender.id;
     const { receiverId, chatId } = payload;
     if (!receiverId || !chatId) return;
 
@@ -153,13 +155,14 @@ class SocketService {
       return;
     }
 
-    this.io.to(`user:${receiverId}`).emit(isTyping ? "typing_start" : "typing_stop", {
+    this.io?.to(`user:${receiverId}`).emit(isTyping ? "typing_start" : "typing_stop", {
       chatId,
       userId: senderId,
     });
   }
 
-  async handleReaction(senderId, payload) {
+  async handleReaction(sender: AuthenticatedSocketUser, payload: any) {
+    const senderId = sender.id;
     const { messageId, emoji } = payload;
     if (!messageId || !emoji) {
       return;
@@ -230,14 +233,14 @@ class SocketService {
       };
 
       // Emit to both users
-      this.io.to(`user:${senderId}`).emit("message_reaction_update", updatePayload);
-      this.io.to(`user:${receiverId}`).emit("message_reaction_update", updatePayload);
+      this.io?.to(`user:${senderId}`).emit("message_reaction_update", updatePayload);
+      this.io?.to(`user:${receiverId}`).emit("message_reaction_update", updatePayload);
     } catch (err) {
       console.error("[SocketService] Error handling reaction:", err);
     }
   }
 
-   async saveAndDeliverMessage(sender, payload) {
+   async saveAndDeliverMessage(sender: AuthenticatedSocketUser, payload: any) {
     const senderId = sender.id;
     const { chatId, receiverId, contentBody, idempotencyKey } = payload;
 
@@ -277,12 +280,12 @@ class SocketService {
     });
 
     // 6. Deliver Message to receiver if connected
-    this.io.to(`user:${receiverId}`).emit("receive_message", message);
+    this.io?.to(`user:${receiverId}`).emit("receive_message", message);
 
     // 7. Emit lightweight message_alert for toast/browser notification
     try {
       const preview = contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
-      this.io.to(`user:${receiverId}`).emit("message_alert", {
+      this.io?.to(`user:${receiverId}`).emit("message_alert", {
         chatId,
         senderId,
         senderName: sender.name || null,
@@ -297,7 +300,8 @@ class SocketService {
     return message;
   }
 
-  async handleDeleteMessage(senderId: string, payload: { messageId: string }) {
+  async handleDeleteMessage(sender: AuthenticatedSocketUser, payload: { messageId: string }) {
+    const senderId = sender.id;
     const { messageId } = payload;
     if (!messageId) return;
 
@@ -336,7 +340,7 @@ class SocketService {
 
       // notify both
       participants.forEach((uid) => {
-        this.io.to(`user:${uid}`).emit("message_deleted", updatePayload);
+        this.io?.to(`user:${uid}`).emit("message_deleted", updatePayload);
       });
 
       // Update chat's lastMessage if it was this one

@@ -25,13 +25,7 @@ const messageSchema = new Schema<IMessage>({
   attachment: {
     kind: { type: String, enum: ["image", "audio", "video"], default: null },
     url: { type: String, default: null },
-    // metadata: { type: Schema.Types.Mixed, default: null }
   },
-  // status: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' },
-  // deliveredAt: { type: Date, default: null },
-  // readAt: { type: Date, default: null },
-  // isEdited: { type: Boolean, default: false },
-  // editedAt: { type: Date, default: null },
   isDeleted: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
@@ -47,6 +41,14 @@ const messageSchema = new Schema<IMessage>({
 messageSchema.index({ chatId: 1, _id: -1 });
 
 /**
+ * Future Considerations:
+ * - status: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' }
+ * - deliveredAt: { type: Date }
+ * - readAt: { type: Date }
+ * - isEdited: { type: Boolean, default: false }
+ * - editedAt: { type: Date }
+ * - attachment.metadata: { type: Schema.Types.Mixed }
+ *
  * QA: for future
  * slack does not maintain delivered receipt (also delete as well)
  * is deleted messages are forever gone in slack?
