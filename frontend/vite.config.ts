@@ -1,11 +1,17 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
+import { compression } from "vite-plugin-compression2";
 import { defineConfig } from "vite-plus";
 
 // https://viteplus.dev/config/
 export default defineConfig({
   lint: { options: { typeAware: true, typeCheck: true } },
-  plugins: [tailwindcss(), svelte()],
+  plugins: [
+    tailwindcss(),
+    svelte(),
+    compression({ algorithm: "gzip", exclude: [/\.(br)$/, /\.(gz)$/] }),
+    compression({ algorithm: "brotliCompress", exclude: [/\.(br)$/, /\.(gz)$/] }),
+  ],
   resolve: {
     alias: {
       $lib: "/src/lib",
