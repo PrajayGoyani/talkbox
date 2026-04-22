@@ -1,16 +1,17 @@
-import { LoginPayload, SignupPayload } from "../controllers/types";
-import UserModel, { IUser } from "../models/user.model";
-import { AppError } from "../utils/AppError";
-import { generateAccessToken, generateTokens, verifyRefreshToken } from "../utils/jwt";
+import User, { IUser, IUserModel } from "@models/user.model";
+import { AppError } from "@utils/AppError";
+import { generateAccessToken, generateTokens, verifyRefreshToken } from "@utils/jwt";
+
+import { LoginPayload, SignupPayload } from "@/controllers/types";
 
 /**
  * @typedef {import('mongoose').Model} Model
  */
 
 class AuthService {
-  public User: any;
+  public User: IUserModel;
 
-  constructor(userModel: typeof UserModel) {
+  constructor(userModel: IUserModel) {
     this.User = userModel;
   }
 
@@ -71,14 +72,31 @@ class AuthService {
   }
 
   sanitize(user: IUser): object {
+    const obj = user.toObject ? user.toObject() : user;
     return {
-      id: user._id,
-      username: user.username,
-      name: user.name || null,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
+      id: obj._id,
+      username: obj.username,
+      name: obj.name || null,
+      email: obj.email,
+      avatarUrl: obj.avatarUrl,
+      plan: obj.plan,
+      subscriptionExpiresAt: obj.subscriptionExpiresAt,
     };
+  }
+
+  async upgradeToPro(userId: string | import("mongodb").ObjectId): Promise<object> {
+    const user = await this.User.findById(userId);
+    if (!user) throw AppError.notFound("User");
+
+    user.plan = "pro";
+    // Set expiry to 30 days from now
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 30);
+    user.subscriptionExpiresAt = expiry;
+
+    await user.save();
+    return this.sanitize(user);
   }
 }
 
-export const authService = new AuthService(UserModel);
+export const authService = new AuthService(User);

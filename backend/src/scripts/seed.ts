@@ -1,11 +1,8 @@
 import "dotenv/config";
-import mongoose from "mongoose";
-import bcrypt from "bcrypt";
 import { connectDB } from "../config/db";
-import User, { IUser } from "../models/user.model";
 import Chat from "../models/chat.model";
 import Message from "../models/message.model";
-import { BCRYPT_SALT } from "../config/env";
+import User from "../models/user.model";
 
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "password123";
 

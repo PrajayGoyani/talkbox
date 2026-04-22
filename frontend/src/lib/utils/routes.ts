@@ -8,4 +8,6 @@ export enum Route {
   REQUESTS = "/chat/requests",
   TERMS = "/terms",
   PRIVACY = "/privacy",
+  PRICING = "/pricing",
+  FAQ = "/faq",
 }

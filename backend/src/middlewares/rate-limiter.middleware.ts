@@ -37,10 +37,7 @@ export const rateLimiter = (req: Request, res: Response, next: NextFunction) => 
       userRecord.count++;
       if (userRecord.count > MAX_REQUESTS) {
         return next(
-          AppError.tooMany(
-            "Strict limit of 100 messages per 1-minute window exceeded.",
-            "RATE_LIMIT_EXCEEDED",
-          ),
+          AppError.tooMany("Strict limit of 100 messages per 1-minute window exceeded.", "RATE_LIMIT_EXCEEDED"),
         );
       }
     } else {

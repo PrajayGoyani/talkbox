@@ -1,11 +1,11 @@
 import "dotenv/config";
+import { stopAgenda } from "@config/agenda";
+import { connectDB } from "@config/db";
+import { startJobs } from "@jobs/jobs";
 import mongoose from "mongoose";
 import { setServers } from "node:dns/promises";
 
-import { configureSocket, startServer } from "./src/app";
-import { stopAgenda } from "./src/config/agenda";
-import { connectDB } from "./src/config/db";
-import { startJobs } from "./src/jobs/jobs"; // avoided using generic names here.
+import { configureSocket, startServer } from "@/app";
 
 // windows specific hack
 if (process.platform === "win32") {
@@ -21,10 +21,10 @@ async function bootstrap() {
   // Graceful shutdown
   const shutdown = async (signal: string) => {
     console.log(`\n${signal} received. Shutting down gracefully...`);
-    
+
     try {
       await stopAgenda();
-      
+
       // Properly await server close
       await new Promise<void>((resolve) => {
         server.close(() => {
@@ -39,7 +39,7 @@ async function bootstrap() {
       console.error("Error during graceful shutdown:", err);
       process.exit(1);
     }
-    
+
     process.exit(0);
   };
 

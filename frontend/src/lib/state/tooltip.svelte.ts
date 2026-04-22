@@ -154,9 +154,15 @@ export function tooltip(
             variant?: TooltipVariant;
           },
     ) {
+      const oldText = text;
       text = typeof newOptions === "string" ? newOptions : newOptions.text;
       position = typeof newOptions === "object" ? newOptions.position || "bottom" : "bottom";
       variant = typeof newOptions === "object" ? newOptions.variant || "default" : "default";
+
+      // Reactive update: if the tooltip is already visible and text changed, refresh it immediately
+      if (tooltipStore.visible && tooltipStore.text === oldText && text !== oldText) {
+        tooltipStore.show(text, node, position, variant);
+      }
     },
     destroy() {
       if (touchTimeout) clearTimeout(touchTimeout);

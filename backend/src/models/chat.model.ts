@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IChat extends Document {
   userA: mongoose.Types.ObjectId;
@@ -15,6 +15,8 @@ export interface IChat extends Document {
   isDeleted: boolean;
   deletedAt: Date | null;
 }
+
+export interface IChatModel extends Model<IChat> {}
 
 const chatSchema = new Schema<IChat>({
   userA: { type: Schema.Types.ObjectId, required: true, ref: "User" },
@@ -43,6 +45,7 @@ const chatSchema = new Schema<IChat>({
 chatSchema.index({ userA: 1, isDeleted: 1, status: 1 });
 chatSchema.index({ userB: 1, isDeleted: 1, status: 1 });
 chatSchema.index({ userA: 1, userB: 1 }, { unique: true });
+chatSchema.index({ "lastMessage.sentAt": -1, createdAt: -1, _id: -1 });
 
 const Chat = mongoose.model<IChat>("Chat", chatSchema);
 

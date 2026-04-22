@@ -1,5 +1,5 @@
-import UserModel, { IUserModel } from "../models/user.model";
-import { AppError } from "../utils/AppError";
+import User, { IUserModel } from "@models/user.model";
+import { AppError } from "@utils/AppError";
 
 class UserService {
   public User: IUserModel;
@@ -41,4 +41,4 @@ class UserService {
   }
 }
 
-export const userService = new UserService(UserModel as unknown as IUserModel);
+export const userService = new UserService(User as unknown as IUserModel);

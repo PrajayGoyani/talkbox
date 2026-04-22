@@ -1,76 +1,21 @@
-import type { MessageAckDto, RawMessageDto, TypingIndicatorDto, UserStatusDto } from "$types/chat.dto";
+import type { Chat, Message, MessageAlert } from "$types/chat";
 import type { Notification } from "$types/notification";
 import type { Socket } from "socket.io-client";
 
+import { chatService } from "$services/chat.service";
+import { SocketManager } from "$services/socket.manager.svelte";
 import { authStore } from "$state/auth.svelte";
-import { notificationStore } from "$state/notification.svelte";
 import { routerStore } from "$state/router.svelte";
-import { uiStore } from "$state/ui.svelte";
-import { getDisallowedEmojis } from "$utils/emoji";
-import { SvelteMap, SvelteSet } from "svelte/reactivity";
+import { SvelteMap } from "svelte/reactivity";
 
-import {
-  API_BASE,
-  API_ROOT,
-  ASSETS,
-  MESSAGE_SEND_FALLBACK_TIMEOUT,
-  TYPING_DEBOUNCE_DURATION,
-  TYPING_INDICATOR_DURATION,
-} from "../config";
+import { ASSETS } from "../config";
+
+export * from "$types/chat";
 
 const LOADER_AWAIT_MS = 300;
 
-export type ChatStatus = "pending" | "accepted" | "rejected";
-
-export interface User {
-  id: string;
-  username: string;
-  name?: string | null;
-  avatar?: string | null;
-}
-
-export interface Message {
-  id: string; // Map from backend _id
-  chatId: string;
-  senderId: string;
-  contentBody: string;
-  createdAt: string;
-  idempotencyKey?: string;
-  reactions?: Array<{
-    emoji: string;
-    slug?: string;
-    users: string[];
-  }>;
-  isDeleted?: boolean;
-  emojiMetadata?: Record<string, string>;
-}
-
-export interface Chat {
-  id: string;
-  participants: string[];
-  status: ChatStatus;
-  createdBy: string;
-  otherUser: User;
-  unreadCount?: number;
-  lastMessage?: {
-    contentBody: string;
-    senderId: string;
-    sentAt: string;
-  };
-  createdAt: string;
-}
-
-export interface MessageAlert {
-  chatId: string;
-  senderId: string;
-  senderName?: string | null;
-  senderUsername: string;
-  senderAvatar?: string | null;
-  preview: string;
-}
-
 class ChatStore {
-  socket: Socket | null = $state(null);
+  // State
   isConnected = $state(false);
   messages: Array<Message> = $state([]);
   hasMoreMessages = $state(true);
@@ -79,19 +24,39 @@ class ChatStore {
   activeChatId: string | null = $state(null);
 
   onlineStatus = new SvelteMap<string, { isOnline: boolean; lastSeen: Date | null }>();
-  typingStatus: Record<string, SvelteSet<string>> = $state({});
+  typingStatus: Record<string, any> = $state({}); // SvelteSet managed by SocketManager
   chats: Array<Chat> = $state([]);
+  hasMoreChats = $state(true);
+  chatCursor: string | null = $state(null);
+  isLoadingMoreChats = $state(false);
+
   requests: Array<Chat> = $state([]);
+  hasMoreRequests = $state(true);
+  requestCursor: string | null = $state(null);
+  isLoadingMoreRequests = $state(false);
+
   pendingRequestCount = $state(0);
   lastError: string | null = $state(null);
+  currentSearchQuery = $state("");
 
-  private typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   private messagesAbortController: AbortController | null = null;
   private chatsAbortController: AbortController | null = null;
+  private requestsAbortController: AbortController | null = null;
 
   // Callbacks for UI refresh
   private onChatListRefresh: (() => void) | null = null;
   private onToastCallback: ((data: MessageAlert) => void) | null = null;
+
+  // Services
+  private socketManager: SocketManager;
+
+  constructor() {
+    this.socketManager = new SocketManager(this);
+  }
+
+  get socket(): Socket | null {
+    return this.socketManager.socket;
+  }
 
   /** Register a callback that gets called when chats should be refreshed */
   onRefreshChats(cb: () => void) {
@@ -103,232 +68,14 @@ class ChatStore {
     this.onToastCallback = cb;
   }
 
+  // --- Connection Management ---
+
   async connect() {
-    if (this.socket || !authStore.accessToken) return;
-
-    const { io } = await import("socket.io-client");
-    this.socket = io(API_ROOT, {
-      auth: { token: authStore.accessToken },
-      withCredentials: true,
-      transports: ["websocket", "polling"],
-    });
-
-    this.socket.on("connect", () => {
-      this.isConnected = true;
-    });
-
-    this.socket.on("disconnect", () => {
-      this.isConnected = false;
-    });
-
-    this.socket.on("connect_error", (err) => {
-      console.error("Socket connection error:", err.message);
-    });
-
-    // Listen for incoming messages
-    this.socket.on("receive_message", (rawMessage: RawMessageDto) => {
-      const message: Message = { ...rawMessage, id: rawMessage._id || rawMessage.id! };
-      if (message.chatId === this.activeChatId) {
-        this.messages = [...this.messages, message];
-      }
-      // Clear typing indicator instantly when a message is received
-      if (this.typingStatus[message.chatId]) {
-        this.typingStatus[message.chatId].delete(message.senderId);
-      }
-
-      // Update local last message preview and unread count
-      const isViewing = message.chatId === this.activeChatId;
-      const shouldInc = !isViewing && message.senderId !== authStore.user?.id;
-
-      const chat = this.chats.find((c) => c.id === message.chatId);
-      const currentUnread = chat?.unreadCount || 0;
-
-      this.patchChatLocally(
-        message.chatId,
-        {
-          lastMessage: {
-            contentBody: message.contentBody,
-            senderId: message.senderId,
-            sentAt: message.createdAt,
-          },
-          unreadCount: shouldInc ? currentUnread + 1 : currentUnread,
-        },
-        true,
-      );
-    });
-
-    // Listen for User Presence changes
-    this.socket.on("user_status", (data: UserStatusDto) => {
-      this.onlineStatus.set(data.userId, {
-        isOnline: data.isOnline,
-        lastSeen: data.lastSeen ? new Date(data.lastSeen) : null,
-      });
-    });
-
-    // Listen for Typing Indicators
-    this.socket.on("typing_start", (data: TypingIndicatorDto) => {
-      if (!this.typingStatus[data.chatId]) {
-        this.typingStatus[data.chatId] = new SvelteSet();
-      }
-      this.typingStatus[data.chatId].add(data.userId);
-
-      // Auto-clear after timeout just in case typing_stop never arrives
-      const key = `${data.chatId}-${data.userId}`;
-      if (this.typingTimeouts.has(key)) clearTimeout(this.typingTimeouts.get(key));
-
-      this.typingTimeouts.set(
-        key,
-        setTimeout(() => {
-          if (this.typingStatus[data.chatId]) {
-            this.typingStatus[data.chatId].delete(data.userId);
-          }
-        }, TYPING_INDICATOR_DURATION),
-      );
-    });
-
-    this.socket.on("typing_stop", (data: TypingIndicatorDto) => {
-      if (this.typingStatus[data.chatId]) {
-        this.typingStatus[data.chatId].delete(data.userId);
-      }
-    });
-
-    // Listen for message alerts (toast / browser notification)
-    this.socket.on("message_alert", (data: MessageAlert) => {
-      const isChatOpen = data.chatId === this.activeChatId;
-      const isTabFocused = document.hasFocus();
-
-      // Maintain background logic
-      if (isChatOpen && isTabFocused) {
-        void this.markChatRead(data.chatId);
-      }
-
-      if (!isTabFocused) {
-        this.showBrowserNotification(data);
-      }
-
-      if (this.onToastCallback && !isChatOpen) {
-        this.onToastCallback(data);
-      }
-    });
-
-    // When a notification arrives, delegate to notificationStore and refresh chat list
-    this.socket.on("notification", (notification: Notification) => {
-      notificationStore.addRealTimeNotification(notification);
-
-      if (notification.type === "chat_request") {
-        this.pendingRequestCount += 1;
-        // Trigger toast for chat request
-        if (this.onToastCallback) {
-          this.onToastCallback({
-            chatId: notification.referenceId,
-            senderUsername: "System", // We don't have sender details here easily, but message has it
-            preview: notification.message,
-          } as any);
-        }
-        // Only fetch list if Requests tab is active
-        if (routerStore.segments[1] === "requests") {
-          void this.fetchRequests();
-        }
-      }
-
-      if (this.onChatListRefresh) {
-        this.onChatListRefresh();
-      }
-    });
-
-    this.socket.on("chat_accepted", (_data: { chatId: string }) => {
-      // Refresh chat list so the new active chat appears
-      void this.fetchChats();
-      // Also potentially refresh requests to remove the pending one
-      if (routerStore.segments[1] === "requests") {
-        void this.fetchRequests();
-      }
-
-      if (this.onChatListRefresh) {
-        this.onChatListRefresh();
-      }
-    });
-
-    this.socket.on(
-      "message_reaction_update",
-      (data: {
-        messageId: string;
-        chatId: string;
-        reactions: Array<{ emoji: string; slug?: string; users: string[] }>;
-      }) => {
-        if (data.chatId === this.activeChatId) {
-          const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
-          if (msgIndex !== -1) {
-            const updatedMessages = [...this.messages];
-            updatedMessages[msgIndex] = { ...updatedMessages[msgIndex], reactions: data.reactions };
-            this.messages = updatedMessages;
-          }
-        }
-      },
-    );
-
-    this.socket.on("message_deleted", (data: { messageId: string; chatId: string; isLastMessage?: boolean }) => {
-      if (data.chatId === this.activeChatId) {
-        const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
-        if (msgIndex !== -1) {
-          const updatedMessages = [...this.messages];
-          updatedMessages[msgIndex] = {
-            ...updatedMessages[msgIndex],
-            contentBody: "This message was deleted",
-            isDeleted: true,
-            reactions: [],
-          };
-          this.messages = updatedMessages;
-        }
-      }
-
-      // Update last message preview in chat list if needed
-      const chat = this.chats.find((c) => c.id === data.chatId);
-      if (chat && chat.lastMessage) {
-        // Fallback to active chat check if the backend doesn't send "isLastMessage"
-        const isLatest =
-          data.isLastMessage ??
-          (this.activeChatId === data.chatId &&
-            this.messages.length > 0 &&
-            this.messages[this.messages.length - 1].id === data.messageId);
-
-        if (isLatest) {
-          this.patchChatLocally(data.chatId, {
-            lastMessage: {
-              ...chat.lastMessage,
-              contentBody: "Message deleted",
-            },
-          });
-        }
-      }
-    });
-  }
-
-  /** Show browser-level notification when tab is not focused */
-  private showBrowserNotification(data: MessageAlert) {
-    if (!("Notification" in window) || Notification.permission !== "granted") return;
-
-    const displayName = data.senderName || data.senderUsername;
-
-    const notification = new Notification(displayName, {
-      body: data.preview,
-      icon: ASSETS.NOTIFICATION_ICON,
-      tag: `msg-${data.chatId}-${Date.now()}`,
-      silent: false,
-    });
-
-    notification.onclick = () => {
-      window.focus();
-      notification.close();
-    };
+    return this.socketManager.connect();
   }
 
   disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
-      this.isConnected = false;
-    }
+    this.socketManager.disconnect();
     this.messagesAbortController?.abort();
     this.chatsAbortController?.abort();
     this.messagesAbortController = null;
@@ -337,7 +84,8 @@ class ChatStore {
     this.activeChatId = null;
   }
 
-  /** Load messages for a chat via REST */
+  // --- REST API Operations (Delegated to ChatService) ---
+
   async loadMessages(chatId: string) {
     this.messagesAbortController?.abort();
     this.messagesAbortController = new AbortController();
@@ -348,25 +96,16 @@ class ChatStore {
     this.isLoadingMessages = true;
     const startTime = Date.now();
     try {
-      const resp = await fetch(`${API_BASE}/chat/${chatId}/messages?limit=50`, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: "include",
-        signal: this.messagesAbortController.signal,
-      });
-      if (!resp.ok) return;
-      const result = await resp.json();
+      const loadedMessages = await chatService.loadMessages(chatId, this.messagesAbortController.signal);
 
-      // Guard against race conditions: only update if this chat is still active
+      // Guard against race conditions
       if (this.activeChatId !== chatId) return;
 
-      // conditional await to show progressive loader for user feedback
       const elapsed = Date.now() - startTime;
       if (elapsed < LOADER_AWAIT_MS) {
         await new Promise((r) => setTimeout(r, LOADER_AWAIT_MS - elapsed));
       }
 
-      const rawLoaded: any[] = result.data || result || [];
-      const loadedMessages: Message[] = rawLoaded.map((m) => ({ ...m, id: m._id || m.id }));
       this.messages = loadedMessages;
       this.hasMoreMessages = loadedMessages.length === 50;
     } catch (e) {
@@ -378,32 +117,23 @@ class ChatStore {
     }
   }
 
-  /** Load older messages using cursor */
   async loadOlderMessages() {
     if (!this.activeChatId || !this.hasMoreMessages || this.isLoadingMessages || this.messages.length === 0) return;
 
-    const signal = this.messagesAbortController?.signal;
     this.isLoadingMessages = true;
     const oldestMessageId = this.messages[0].id;
-
     const startTime = Date.now();
     try {
-      const resp = await fetch(`${API_BASE}/chat/${this.activeChatId}/messages?limit=50&cursor=${oldestMessageId}`, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: "include",
-        signal,
-      });
-      if (!resp.ok) return;
-      const result = await resp.json();
+      const olderMessages = await chatService.loadOlderMessages(
+        this.activeChatId,
+        oldestMessageId,
+        this.messagesAbortController?.signal,
+      );
 
-      // conditional await to show progressive loader for user feedback
       const elapsed = Date.now() - startTime;
       if (elapsed < LOADER_AWAIT_MS) {
         await new Promise((r) => setTimeout(r, LOADER_AWAIT_MS - elapsed));
       }
-
-      const rawOlder: any[] = result.data || result || [];
-      const olderMessages: Message[] = rawOlder.map((m) => ({ ...m, id: m._id || m.id }));
 
       if (olderMessages.length > 0) {
         this.messages = [...olderMessages, ...this.messages];
@@ -418,10 +148,293 @@ class ChatStore {
     }
   }
 
-  /**
-   * Update a single chat in the local 'chats' list without a full fetch.
-   * If moveToTop is true, also re-orders the list (useful for new messages).
-   */
+  async fetchChats(query = "") {
+    this.chatsAbortController?.abort();
+    this.chatsAbortController = new AbortController();
+    this.lastError = null;
+    try {
+      const result = await chatService.fetchChats(query, 20, null, this.chatsAbortController.signal);
+
+      this.currentSearchQuery = query;
+      this.chats = result.data || [];
+      this.hasMoreChats = result.hasMore ?? false;
+      this.chatCursor = result.nextCursor ?? null;
+
+      return this.chats;
+    } catch (e: any) {
+      if (e instanceof Error && e.name === "AbortError") return;
+      console.error("Failed to fetch chats:", e);
+      this.lastError = e.message || "Failed to fetch chats";
+    }
+  }
+
+  async loadMoreChats() {
+    if (!this.hasMoreChats || this.isLoadingMoreChats || this.chatsAbortController?.signal.aborted) return;
+
+    this.isLoadingMoreChats = true;
+    try {
+      const result = await chatService.fetchChats(
+        this.currentSearchQuery,
+        20,
+        this.chatCursor,
+        this.chatsAbortController?.signal,
+      );
+      this.chats = [...this.chats, ...result.data];
+      this.hasMoreChats = result.hasMore;
+      this.chatCursor = result.nextCursor;
+    } catch (e: any) {
+      if (e instanceof Error && e.name === "AbortError") return;
+      console.error("Failed to load more chats:", e);
+      this.lastError = e.message || "Failed to load more chats";
+    } finally {
+      this.isLoadingMoreChats = false;
+    }
+  }
+
+  async fetchRequests() {
+    this.requestsAbortController?.abort();
+    this.requestsAbortController = new AbortController();
+    this.lastError = null;
+    try {
+      const result = await chatService.fetchRequests(20, null);
+      this.requests = result.data;
+      this.hasMoreRequests = result.hasMore;
+      this.requestCursor = result.nextCursor;
+      return this.requests;
+    } catch (e: any) {
+      if (e instanceof Error && e.name === "AbortError") return;
+      console.error("Failed to fetch requests:", e);
+      this.lastError = e.message || "Failed to fetch requests";
+    }
+  }
+
+  async loadMoreRequests() {
+    if (!this.hasMoreRequests || this.isLoadingMoreRequests) return;
+
+    this.isLoadingMoreRequests = true;
+    try {
+      const result = await chatService.fetchRequests(20, this.requestCursor);
+      this.requests = [...this.requests, ...result.data];
+      this.hasMoreRequests = result.hasMore;
+      this.requestCursor = result.nextCursor;
+    } catch (e: any) {
+      console.error("Failed to load more requests:", e);
+      this.lastError = e.message || "Failed to load more requests";
+    } finally {
+      this.isLoadingMoreRequests = false;
+    }
+  }
+
+  async markChatRead(chatId: string) {
+    try {
+      await chatService.markChatRead(chatId);
+      this.patchChatLocally(chatId, { unreadCount: 0 });
+    } catch (e: unknown) {
+      console.error("Failed to mark chat as read:", e);
+    }
+  }
+
+  async acceptChat(chatId: string) {
+    this.lastError = null;
+    try {
+      await chatService.acceptChat(chatId);
+      await Promise.all([this.fetchChats(), this.fetchRequests()]);
+    } catch (e: any) {
+      console.error("Failed to accept chat:", e);
+      this.lastError = e.message || "Failed to accept chat";
+      throw e;
+    }
+  }
+
+  async rejectChat(chatId: string) {
+    this.lastError = null;
+    try {
+      await chatService.rejectChat(chatId);
+      await this.fetchRequests();
+    } catch (e: any) {
+      console.error("Failed to reject chat:", e);
+      this.lastError = e.message || "Failed to reject chat";
+      throw e;
+    }
+  }
+
+  async sendChatRequest(username: string) {
+    try {
+      const result = await chatService.sendChatRequest(username);
+      await this.fetchRequests();
+      return result;
+    } catch (e: unknown) {
+      console.error("Failed to send chat request:", e);
+      throw e;
+    }
+  }
+
+  // --- Socket Operations (Delegated to SocketManager) ---
+
+  async sendMessage(chatId: string, receiverId: string, contentBody: string) {
+    this.socketManager.sendMessage(chatId, receiverId, contentBody);
+  }
+
+  emitTyping(chatId: string, receiverId: string, isTyping: boolean) {
+    this.socketManager.emitTyping(chatId, receiverId, isTyping);
+  }
+
+  reactToMessage(messageId: string, emoji: string, slug?: string) {
+    this.socketManager.reactToMessage(messageId, emoji, slug);
+  }
+
+  deleteMessage(messageId: string) {
+    this.socketManager.deleteMessage(messageId);
+  }
+
+  // --- Internal Handlers for SocketManager ---
+
+  handleReceiveMessage(message: Message) {
+    if (message.chatId === this.activeChatId) {
+      this.messages = [...this.messages, message];
+    }
+
+    // Clear typing indicator instantly
+    if (this.typingStatus[message.chatId]) {
+      this.typingStatus[message.chatId].delete(message.senderId);
+    }
+
+    const isViewing = message.chatId === this.activeChatId;
+    const shouldInc = !isViewing && message.senderId !== authStore.user?.id;
+
+    const chat = this.chats.find((c) => c.id === message.chatId);
+    const currentUnread = chat?.unreadCount || 0;
+
+    this.patchChatLocally(
+      message.chatId,
+      {
+        lastMessage: {
+          contentBody: message.contentBody,
+          senderId: message.senderId,
+          sentAt: message.createdAt,
+        },
+        unreadCount: shouldInc ? currentUnread + 1 : currentUnread,
+      },
+      true,
+    );
+  }
+
+  handleMessageAlert(data: MessageAlert) {
+    const isChatOpen = data.chatId === this.activeChatId;
+    const isTabFocused = document.hasFocus();
+
+    if (isChatOpen && isTabFocused) {
+      void this.markChatRead(data.chatId);
+    }
+
+    if (!isTabFocused) {
+      this.showBrowserNotification(data);
+    }
+
+    if (this.onToastCallback && !isChatOpen) {
+      this.onToastCallback(data);
+    }
+  }
+
+  handleNotification(notification: Notification) {
+    if (notification.type === "chat_request") {
+      this.pendingRequestCount += 1;
+      if (this.onToastCallback) {
+        this.onToastCallback({
+          chatId: notification.referenceId,
+          senderUsername: "System",
+          preview: notification.message,
+        } as any);
+      }
+      if (routerStore.segments[1] === "requests") {
+        void this.fetchRequests();
+      }
+    }
+
+    if (this.onChatListRefresh) {
+      this.onChatListRefresh();
+    }
+  }
+
+  handleChatAccepted(_data: { chatId: string }) {
+    void this.fetchChats();
+    if (routerStore.segments[1] === "requests") {
+      void this.fetchRequests();
+    }
+    if (this.onChatListRefresh) {
+      this.onChatListRefresh();
+    }
+  }
+
+  handleReactionUpdate(data: {
+    messageId: string;
+    chatId: string;
+    reactions: Array<{ emoji: string; slug?: string; users: string[] }>;
+  }) {
+    if (data.chatId === this.activeChatId) {
+      const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
+      if (msgIndex !== -1) {
+        const updatedMessages = [...this.messages];
+        updatedMessages[msgIndex] = { ...updatedMessages[msgIndex], reactions: data.reactions };
+        this.messages = updatedMessages;
+      }
+    }
+  }
+
+  handleMessageDeleted(data: { messageId: string; chatId: string; isLastMessage?: boolean }) {
+    if (data.chatId === this.activeChatId) {
+      const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
+      if (msgIndex !== -1) {
+        const updatedMessages = [...this.messages];
+        updatedMessages[msgIndex] = {
+          ...updatedMessages[msgIndex],
+          contentBody: "This message was deleted",
+          isDeleted: true,
+          reactions: [],
+        };
+        this.messages = updatedMessages;
+      }
+    }
+
+    const chat = this.chats.find((c) => c.id === data.chatId);
+    if (chat && chat.lastMessage) {
+      const isLatest =
+        data.isLastMessage ??
+        (this.activeChatId === data.chatId &&
+          this.messages.length > 0 &&
+          this.messages[this.messages.length - 1].id === data.messageId);
+
+      if (isLatest) {
+        this.patchChatLocally(data.chatId, {
+          lastMessage: {
+            ...chat.lastMessage,
+            contentBody: "Message deleted",
+          },
+        });
+      }
+    }
+  }
+
+  handleMessageSentAck(chatId: string, message: Message) {
+    const exists = this.messages.some((m: Message) => m.idempotencyKey === message.idempotencyKey);
+    if (!exists) {
+      this.messages = [...this.messages, message];
+    }
+    this.patchChatLocally(
+      chatId,
+      {
+        lastMessage: {
+          contentBody: message.contentBody,
+          senderId: message.senderId,
+          sentAt: message.createdAt,
+        },
+      },
+      true,
+    );
+  }
+
+  // --- UI Helpers ---
+
   private patchChatLocally(chatId: string, updates: Partial<Chat>, moveToTop = false) {
     const chatIndex = this.chats.findIndex((c: Chat) => c.id === chatId);
     if (chatIndex === -1) {
@@ -442,236 +455,21 @@ class ChatStore {
     this.chats = newChats;
   }
 
-  /** Load chats list via REST */
-  async fetchChats(query = "") {
-    this.chatsAbortController?.abort();
-    this.chatsAbortController = new AbortController();
-    this.lastError = null;
-    try {
-      const endpoint =
-        query.trim().length > 0 ? `${API_BASE}/chat/search?q=${encodeURIComponent(query.trim())}` : `${API_BASE}/chat`;
+  private showBrowserNotification(data: MessageAlert) {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
 
-      const resp = await fetch(endpoint, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authStore.accessToken}`,
-        },
-        credentials: "include",
-        signal: this.chatsAbortController.signal,
-      });
-      if (!resp.ok) {
-        const err = await resp.json();
-        throw new Error(err.error?.message || "Failed to fetch chats");
-      }
-      const result = await resp.json();
-      this.chats = result.data || [];
-      return this.chats;
-    } catch (e: any) {
-      if (e instanceof Error && e.name === "AbortError") return;
-      console.error("Failed to fetch chats:", e);
-      this.lastError = e.message || "Failed to fetch chats";
-    }
-  }
-
-  /** Load pending chat requests via REST */
-  async fetchRequests() {
-    this.lastError = null;
-    try {
-      const resp = await fetch(`${API_BASE}/chat/requests`, {
-        headers: {
-          Authorization: `Bearer ${authStore.accessToken}`,
-        },
-        credentials: "include",
-      });
-      if (!resp.ok) {
-        const err = await resp.json();
-        throw new Error(err.error?.message || "Failed to fetch requests");
-      }
-      const result = await resp.json();
-      this.requests = result.data || [];
-      return this.requests;
-    } catch (e: any) {
-      console.error("Failed to fetch requests:", e);
-      this.lastError = e.message || "Failed to fetch requests";
-    }
-  }
-
-  /** Mark a chat as read via REST */
-  async markChatRead(chatId: string) {
-    try {
-      await fetch(`${API_BASE}/chat/${chatId}/read`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: "include",
-      });
-      this.patchChatLocally(chatId, { unreadCount: 0 });
-    } catch (e: unknown) {
-      console.error("Failed to mark chat as read:", e);
-    }
-  }
-
-  /** Accept a chat request */
-  async acceptChat(chatId: string) {
-    this.lastError = null;
-    try {
-      const resp = await fetch(`${API_BASE}/chat/${chatId}/accept`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: "include",
-      });
-      const result = await resp.json();
-      if (!resp.ok) throw new Error(result.error?.message || "Failed to accept chat");
-      await Promise.all([this.fetchChats(), this.fetchRequests()]);
-    } catch (e: any) {
-      console.error("Failed to accept chat:", e);
-      this.lastError = e.message || "Failed to accept chat";
-      throw e;
-    }
-  }
-
-  /** Reject a chat request */
-  async rejectChat(chatId: string) {
-    this.lastError = null;
-    try {
-      const resp = await fetch(`${API_BASE}/chat/${chatId}/reject`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
-        credentials: "include",
-      });
-      const result = await resp.json();
-      if (!resp.ok) throw new Error(result.error?.message || "Failed to reject chat");
-      await this.fetchRequests();
-    } catch (e: any) {
-      console.error("Failed to reject chat:", e);
-      this.lastError = e.message || "Failed to reject chat";
-      throw e;
-    }
-  }
-
-  /** Send a new chat request to a username */
-  async sendChatRequest(username: string) {
-    try {
-      const resp = await fetch(`${API_BASE}/chat/request`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authStore.accessToken}`,
-        },
-        credentials: "include",
-        body: JSON.stringify({ username: username.trim() }),
-      });
-      const result = await resp.json();
-      if (!resp.ok) throw new Error(result.error?.message || "Failed to send request");
-      await this.fetchRequests();
-      return result;
-    } catch (e: unknown) {
-      console.error("Failed to send chat request:", e);
-      throw e;
-    }
-  }
-
-  /** Send a message via socket with idempotency */
-  async sendMessage(chatId: string, receiverId: string, contentBody: string) {
-    if (!this.socket || !this.isConnected || !contentBody.trim()) return;
-
-    this.isSendingMessage = true;
-    this.emitTyping(chatId, receiverId, false);
-
-    const idempotencyKey = crypto.randomUUID();
-
-    const timeout = setTimeout(() => {
-      this.isSendingMessage = false;
-    }, MESSAGE_SEND_FALLBACK_TIMEOUT);
-
-    this.socket.emit(
-      "send_message",
-      {
-        chatId,
-        receiverId,
-        contentBody: contentBody.trim(),
-        idempotencyKey,
-      },
-      (ack: MessageAckDto) => {
-        clearTimeout(timeout);
-        this.isSendingMessage = false;
-        if (ack?.status === "ok" && ack.message) {
-          // Map _id from backend to id
-          const message = { ...ack.message, id: ack.message._id || ack.message.id! };
-          const exists = this.messages.some((m: Message) => m.idempotencyKey === message.idempotencyKey);
-          if (!exists) {
-            this.messages = [...this.messages, message];
-          }
-          this.patchChatLocally(
-            chatId,
-            {
-              lastMessage: {
-                contentBody: message.contentBody,
-                senderId: message.senderId,
-                sentAt: message.createdAt,
-              },
-            },
-            true,
-          );
-        }
-      },
-    );
-  }
-
-  // --- Typing Indicator Emitters ---
-  private myTypingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
-
-  emitTyping(chatId: string, receiverId: string, isTyping: boolean) {
-    if (!this.socket || !this.isConnected) return;
-
-    if (!isTyping) {
-      this.socket.emit("typing_stop", { chatId, receiverId });
-      return;
-    }
-
-    const key = `${chatId}-${receiverId}`;
-    if (!this.myTypingTimeouts.has(key)) {
-      this.socket.emit("typing_start", { chatId, receiverId });
-    } else {
-      clearTimeout(this.myTypingTimeouts.get(key));
-    }
-
-    this.myTypingTimeouts.set(
-      key,
-      setTimeout(() => {
-        this.socket?.emit("typing_stop", { chatId, receiverId });
-        this.myTypingTimeouts.delete(key);
-      }, TYPING_DEBOUNCE_DURATION),
-    );
-  }
-
-  /** React to a message via socket */
-  reactToMessage(messageId: string, emoji: string, slug?: string) {
-    if (!this.socket || !this.isConnected || !this.activeChatId) {
-      return;
-    }
-
-    const found = getDisallowedEmojis(emoji);
-    if (found.length > 0) {
-      uiStore.addAlert(`The emoji ${found[0]} is not allowed.`, "danger");
-      return;
-    }
-
-    this.socket.emit("react_message", {
-      messageId,
-      emoji,
-      slug,
+    const displayName = data.senderName || data.senderUsername;
+    const notification = new Notification(displayName, {
+      body: data.preview,
+      icon: ASSETS.NOTIFICATION_ICON,
+      tag: `msg-${data.chatId}-${Date.now()}`,
+      silent: false,
     });
-  }
 
-  /** Delete a message via socket */
-  deleteMessage(messageId: string) {
-    if (!this.socket || !this.isConnected || !this.activeChatId) {
-      return;
-    }
-
-    this.socket.emit("delete_message", {
-      messageId,
-    });
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
   }
 }
 

@@ -107,6 +107,27 @@ body {
   @apply self-start bg-slate-200 text-slate-900 dark:bg-white/10 dark:text-slate-100;
 }
 
+/* Rich Message Segments */
+.chat-link {
+  @apply inline-block font-medium break-all text-indigo-600 underline decoration-indigo-500/30 underline-offset-2 transition-all hover:text-indigo-800 hover:decoration-indigo-800;
+}
+
+.chat-bubble-sent .chat-link {
+  @apply text-white underline decoration-white/40 hover:text-indigo-50/90 hover:decoration-white;
+}
+
+[data-theme="dark"] .chat-link {
+  @apply text-indigo-300 decoration-indigo-300/30 hover:text-indigo-100 hover:decoration-indigo-100;
+}
+
+.chat-code {
+  @apply mx-0.5 inline-block rounded-md border border-slate-700 bg-slate-900 px-1.5 py-0.5 align-middle font-mono text-[0.85em] leading-none text-amber-400 shadow-sm;
+}
+
+[data-theme="dark"] .chat-code {
+  @apply border-white/10 bg-slate-950 text-amber-500;
+}
+
 /* Navigation */
 .rail-btn {
   @apply relative rounded-xl p-2.5 text-slate-400 transition-all hover:bg-white/10 hover:text-indigo-500 active:scale-90;

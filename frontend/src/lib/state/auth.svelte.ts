@@ -51,7 +51,6 @@ class AuthStore {
 
       const elapsed = Date.now() - startTime;
       if (elapsed < 500) {
-        // console.log({ elapsed });
         await new Promise((r) => setTimeout(r, 500 - elapsed));
       }
     } finally {
@@ -270,6 +269,30 @@ class AuthStore {
     } catch (e: unknown) {
       console.error("Avatar upload error", e);
       throw e;
+    }
+  }
+
+  /** Simulate Pro upgrade */
+  async upgradeToPro() {
+    this.loading = true;
+    try {
+      const resp = await fetch(`${API_BASE}/auth/upgrade-pro`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${this.accessToken}` },
+        credentials: "include",
+      });
+      const res = await resp.json();
+      if (!resp.ok) throw new Error(res.error?.message || "Upgrade failed");
+      if (res.success && res.data) {
+        this.user = { ...this.user, ...res.data } as UserDto;
+        storage.setUser(this.user);
+      }
+      return res;
+    } catch (e: unknown) {
+      console.error("Upgrade error", e);
+      throw e;
+    } finally {
+      this.loading = false;
     }
   }
 }

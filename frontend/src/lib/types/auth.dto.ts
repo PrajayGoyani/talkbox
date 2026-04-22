@@ -7,6 +7,8 @@ export interface UserDto {
   name?: string | null;
   email: string;
   avatarUrl?: string;
+  plan: "free" | "pro";
+  subscriptionExpiresAt?: string | null;
 }
 
 /**

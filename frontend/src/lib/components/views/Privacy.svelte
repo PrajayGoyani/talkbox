@@ -42,7 +42,31 @@
   </section>
 
   <section class="mb-12">
-    <h2 class="text-2xl font-bold mb-4">4. Compliance</h2>
+    <h2 class="text-2xl font-bold mb-4">4. Data Retention Policy</h2>
+    <p>
+      <strong>Message History:</strong> For users on the Free tier, message
+      content is automatically masked ("scrubbed") after 7 days. This content
+      remains securely stored in our database for 365 days but is inaccessible
+      on the Free plan. Upgrading to a Pro subscription immediately restores
+      access to your full history. Messages in chats where both participants are
+      on the Free tier are permanently purged after 12 months.
+    </p>
+    <p class="mt-4">
+      <strong>System Notifications:</strong> Notifications, alerts, and
+      metadata related to your account activity are retained for up to 30 days
+      to ensure a consistent experience across your devices.
+    </p>
+    <p class="mt-4">
+      <strong>User-Initiated Deletion:</strong> If you choose to manually delete
+      a message or chat thread, it is masked immediately. To ensure system
+      integrity and technical consistency, data may persist in our technical logs
+      and backups for up to 14 days before being permanently purged from all
+      storage systems.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-2xl font-bold mb-4">5. Compliance</h2>
     <p>
       By using Talkbox, you consent to our practices as described in this Policy
       and our <button

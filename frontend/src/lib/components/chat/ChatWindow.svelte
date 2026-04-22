@@ -12,7 +12,12 @@
   import { uiStore } from "$state/ui.svelte";
   import { cn } from "$utils/cn";
   import { formatSimpleTime, formatTimeAgo, getDateLabel } from "$utils/date";
-  import { getDisallowedEmojis, parseMessageContent, segmenter } from "$utils/emoji";
+  import {
+    getDisallowedEmojis,
+    getEmojiDisplayMode,
+    parseMessageContent,
+    segmenter,
+  } from "$utils/emoji";
   import { throttle } from "$utils/timing";
   import { tick } from "svelte";
 
@@ -60,7 +65,7 @@
   });
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || !chatId || !otherUser?.id) return;
+    if (chatStore.isSendingMessage || !messageInput.trim() || !chatId || !otherUser?.id) return;
 
     const found = getDisallowedEmojis(messageInput);
     if (found.length > 0) {
@@ -214,44 +219,9 @@
     }
     return groups;
   });
-
-  const getEmojiDisplayMode = (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) return "normal";
-
-    // Accurate emoji counting using Intl.Segmenter
-    if (!segmenter) {
-      const emojiOnlyRegex = /^(\p{Extended_Pictographic}|\s)+$/u;
-      if (!emojiOnlyRegex.test(trimmed)) return "normal";
-      const emojis = trimmed.match(/\p{Extended_Pictographic}/gu) || [];
-      if (emojis.length === 1) return "jumbo-1";
-      if (emojis.length === 2) return "jumbo-2";
-      if (emojis.length === 3) return "jumbo-3";
-      return "normal";
-    }
-
-    const segments = Array.from(segmenter.segment(trimmed));
-    const emojiRegex = /\p{Extended_Pictographic}/u;
-    let count = 0;
-
-    for (const seg of segments) {
-      const char = seg.segment.trim();
-      if (!char) continue;
-      if (emojiRegex.test(char)) {
-        count++;
-      } else {
-        return "normal";
-      }
-    }
-
-    if (count === 1) return "jumbo-1";
-    if (count === 2) return "jumbo-2";
-    if (count === 3) return "jumbo-3";
-    return "normal";
-  };
 </script>
 
-<div class="glass-panel p-4 border-b">
+<div class="glass-panel p-2.5 md:p-4 border-b shrink-0">
   <div class="flex items-center gap-3">
     <!-- Mobile Back Button -->
     <button
@@ -270,15 +240,26 @@
     >
       <Icon name="sidebar" class="w-5 h-5" />
     </button>
-    <Avatar user={otherUser} class="w-9 h-9 bg-indigo-500 text-white text-sm" />
-    <div class="flex flex-col min-w-0">
+    <Avatar
+      user={otherUser}
+      showBadge={true}
+      class="w-9 h-9 bg-indigo-500 text-white text-sm"
+    />
+    <div class="flex flex-col min-w-0 font-sans">
       <div class="flex items-center gap-2">
         <h3
-          class="m-0 text-lg font-semibold leading-none truncate"
+          class="m-0 text-base md:text-lg font-semibold leading-none truncate"
           title="@{otherUser?.username}"
         >
           {otherUser?.name || otherUser?.username}
         </h3>
+        {#if otherUser?.plan === "pro"}
+          <span
+            class="badge-pro select-none px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter bg-linear-to-r from-indigo-600 to-purple-600 text-white shadow-sm ring-1 ring-white/20"
+          >
+            PRO
+          </span>
+        {/if}
         <button
           use:tooltip={"Copy username"}
           onclick={handleCopyUsername}
@@ -426,10 +407,10 @@
                   "flex flex-col",
                   isSent ? "items-end" : "items-start",
                   i > 0 && !isFirstInGroup ? "mt-1" : "mt-2",
-                  msg.isDeleted && "opacity-60",
+                  (msg.isDeleted || msg.isScrubbed) && "italic opacity-60",
                 )}
               >
-                {#if msg.isDeleted}
+                {#if msg.isDeleted || msg.isScrubbed}
                   <div
                     class={cn(
                       "chat-bubble rounded-2xl px-3 py-1.5 text-xs italic opacity-80",
@@ -455,6 +436,18 @@
                             position: "top",
                           }}>{segment.content}</span
                         >
+                      {:else if segment.type === "link"}
+                        <a
+                          href={segment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="chat-link"
+                          onclick={(e) => e.stopPropagation()}
+                        >
+                          {segment.content}
+                        </a>
+                      {:else if segment.type === "code"}
+                        <code class="chat-code">{segment.content}</code>
                       {:else}
                         {segment.content}
                       {/if}
@@ -472,7 +465,7 @@
                   >
                     {formatSimpleTime(msg.createdAt)}
                   </span>
-                  {#if !msg.isDeleted}
+                  {#if !msg.isDeleted && !msg.isScrubbed}
                     <MessageReactionPicker {msg} {isSent} />
                   {/if}
                 </div>
@@ -487,14 +480,14 @@
                   isFirstInGroup &&
                     (isSent ? "rounded-tr-none" : "rounded-tl-none"),
                   i > 0 && !isFirstInGroup ? "mt-1" : "mt-2",
-                  msg.isDeleted && "opacity-60",
+                  (msg.isDeleted || msg.isScrubbed) && "opacity-60",
                 )}
               >
                 <div class="relative">
                   <p
                     class={cn(
                       "m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap",
-                      msg.isDeleted && "italic opacity-80",
+                      (msg.isDeleted || msg.isScrubbed) && "italic opacity-80",
                     )}
                   >
                     {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
@@ -507,6 +500,18 @@
                             position: "top",
                           }}>{segment.content}</span
                         >
+                      {:else if segment.type === "link"}
+                        <a
+                          href={segment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="chat-link"
+                          onclick={(e) => e.stopPropagation()}
+                        >
+                          {segment.content}
+                        </a>
+                      {:else if segment.type === "code"}
+                        <code class="chat-code">{segment.content}</code>
                       {:else}
                         {segment.content}
                       {/if}
@@ -518,7 +523,7 @@
                     {formatSimpleTime(msg.createdAt)}
                   </span>
                 </div>
-                {#if !msg.isDeleted}
+                {#if !msg.isDeleted && !msg.isScrubbed}
                   <MessageReactionPicker {msg} {isSent} />
                 {/if}
                 <!-- Reaction list for normal -->
@@ -561,10 +566,12 @@
           {@const tooltipContent = `${reaction.emoji}\n${reactorNames.join(", ")}${hasReacted ? " (click to remove)" : ""} reacted with ${displaySlug}`}
 
           <button
-            onclick={() =>
-              chatStore.reactToMessage(msg.id, reaction.emoji, reaction.slug)}
+            onclick={() => {
+              if (msg.isScrubbed) return;
+              chatStore.reactToMessage(msg.id, reaction.emoji, reaction.slug);
+            }}
             use:tooltip={{
-              text: tooltipContent,
+              text: msg.isScrubbed ? "Upgrade to Pro to react" : tooltipContent,
               position: "top",
               variant: "jumbo",
             }}
@@ -609,11 +616,13 @@
     {/if}
   {/if}
 
-  <div class="p-4 glass-panel border-t flex gap-3 items-center relative z-40">
+  <div
+    class="p-2.5 md:p-4 glass-panel border-t flex gap-2 md:gap-3 items-center relative z-40"
+  >
     <Popover bind:isOpen={showEmojiPicker} position="top" align="start">
       {#snippet trigger({ toggle })}
         <button
-          class="text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 rounded-xl hover:bg-indigo-600/10 transition-all active:scale-95 shrink-0"
+          class="text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 p-1.5 md:p-2 rounded-xl hover:bg-indigo-600/10 transition-all active:scale-95 shrink-0"
           onclick={toggle}
           onmouseenter={prefetchEmojiPicker}
           aria-label="Open emoji picker"
@@ -628,16 +637,15 @@
 
     <textarea
       placeholder="Type a message..."
-      class="input-field flex-1 rounded-2xl! pl-5 pr-3 py-2.5 resize-none max-h-32 scrollbar-slim"
+      class="input-field flex-1 rounded-2xl! pl-3 md:pl-5 pr-3 py-1.5 md:py-2.5 resize-none max-h-32 scrollbar-slim text-sm md:text-base leading-tight md:leading-normal"
       bind:value={messageInput}
       bind:this={textareaElement}
       onkeydown={handleKeydown}
       oninput={handleInput}
-      disabled={chatStore.isSendingMessage}
       rows="1"
     ></textarea>
     <button
-      class="bg-indigo-600 hover:bg-indigo-700 text-white w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
+      class="bg-indigo-600 hover:bg-indigo-700 text-white w-9 h-9 md:w-[42px] md:h-[42px] rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
       aria-label="Send message"
       onclick={handleSendMessage}
       disabled={!messageInput.trim() || chatStore.isSendingMessage}

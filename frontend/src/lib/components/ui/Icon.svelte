@@ -13,6 +13,7 @@
     "profile",
     "check",
     "close",
+    "info",
     "clock",
     "chevron-down",
     "nav-chat",

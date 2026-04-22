@@ -1,4 +1,5 @@
-import { app } from "../app";
+import { app } from "@/app";
+
 import authRoutes from "./auth.routes";
 import chatRoutes from "./chat.routes";
 import notificationRoutes from "./notification.routes";

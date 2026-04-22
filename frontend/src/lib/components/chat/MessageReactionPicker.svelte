@@ -16,10 +16,23 @@
   } = $props();
 
   let isOpen = $state(false);
+  let isCopied = $state(false);
 
   const handleSelect = ({ emoji, slug }: { emoji: string; slug?: string }) => {
     chatStore.reactToMessage(msg.id, emoji, slug);
     isOpen = false;
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(msg.contentBody);
+      isCopied = true;
+      setTimeout(() => {
+        isCopied = false;
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy text:", err);
+    }
   };
 
   const handleDelete = async () => {
@@ -65,6 +78,26 @@
 
     <EmojiPicker onSelect={handleSelect} />
   </Popover>
+
+  {#if !msg.isDeleted}
+    <button
+      class={cn(
+        "p-1 rounded-lg transition-all active:scale-90",
+        isCopied
+          ? "text-emerald-500 bg-emerald-500/10"
+          : "text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-white/10",
+      )}
+      onclick={handleCopy}
+      aria-label="Copy message"
+      use:tooltip={{
+        text: isCopied ? "Copied!" : "Copy message",
+        position: "top",
+      }}
+      type="button"
+    >
+      <Icon name="copy" class="w-3.5 h-3.5" />
+    </button>
+  {/if}
 
   {#if isSent && !msg.isDeleted}
     <button

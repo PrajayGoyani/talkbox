@@ -19,6 +19,7 @@ export default defineConfig({
       $state: "/src/lib/state",
       $utils: "/src/lib/utils",
       $types: "/src/lib/types",
+      $services: "/src/lib/services",
       $assets: "/src/assets",
       "@": "/src",
     },
@@ -34,10 +35,6 @@ export default defineConfig({
       },
     },
   },
-
-
-
-
 
   staged: {
     "*": "vp check --fix",

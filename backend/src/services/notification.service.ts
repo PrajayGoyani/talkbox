@@ -1,5 +1,5 @@
-import Notification from "../models/notification.model";
-import { AppError } from "../utils/AppError";
+import Notification from "@models/notification.model";
+import { AppError } from "@utils/AppError";
 
 class NotificationService {
   /**

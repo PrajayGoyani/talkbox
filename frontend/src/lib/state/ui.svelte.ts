@@ -3,7 +3,7 @@ import { routerStore } from "$state/router.svelte";
 export interface AlertData {
   id: string;
   message: string;
-  type: "danger" | "success";
+  type: "danger" | "success" | "info";
 }
 
 class UIStore {
@@ -51,7 +51,7 @@ class UIStore {
     if (closeNotifications) this.notificationsOpen = false;
   }
 
-  addAlert(message: string, type: "danger" | "success" = "danger", duration = 4000) {
+  addAlert(message: string, type: "danger" | "success" | "info" = "danger", duration = 4000) {
     const id = crypto.randomUUID();
     this.alerts = [...this.alerts, { id, message, type }];
 

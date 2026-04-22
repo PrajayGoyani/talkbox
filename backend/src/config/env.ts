@@ -19,3 +19,12 @@ export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY as string;
 export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET as string;
 export const ENABLE_JOBS = process.env.ENABLE_JOBS === "true";
 export const DEBUG_JOBS = process.env.DEBUG_JOBS === "true";
+
+// Feature Limits & Retention
+export const REACTIONS_MAX_UNIQUE = Number(process.env.REACTIONS_MAX_UNIQUE) || 20;
+export const FREE_PLAN_SCRUB_DAYS = Number(process.env.FREE_PLAN_SCRUB_DAYS) || 7;
+export const FREE_PLAN_CHAT_LIMIT = Number(process.env.FREE_PLAN_CHAT_LIMIT) || 5;
+export const PRO_PLAN_SESSION_LIMIT = Number(process.env.PRO_PLAN_SESSION_LIMIT) || 10;
+export const RETENTION_MESSAGE_DAYS = Number(process.env.RETENTION_MESSAGE_DAYS) || 365;
+export const RETENTION_DELETED_CHAT_DAYS = Number(process.env.RETENTION_DELETED_CHAT_DAYS) || 14;
+export const RETENTION_NOTIFICATION_DAYS = Number(process.env.RETENTION_NOTIFICATION_DAYS) || 30;

@@ -40,12 +40,43 @@
   </section>
 
   <section class="mb-12">
-    <h2 class="text-2xl font-bold mb-4">4. Privacy Policy</h2>
+    <h2 class="text-2xl font-bold mb-4">5. Subscription Plans</h2>
+    <p>
+      Talkbox offers a Free tier and a Pro subscription. By subscribing to the
+      Pro plan, you gain access to increased usage limits, including up to 10
+      concurrent sessions and <strong>unlimited message history</strong>. Free
+      tier users are limited to 1 concurrent session, 5 active chat threads, and
+      <strong>365 days of message retention</strong>.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-2xl font-bold mb-4">6. Refund Policy</h2>
+    <p>
+      All subscriptions are processed as a public preview simulation. However,
+      for the purposes of these terms, all subscription purchases are final and
+      non-refundable.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-2xl font-bold mb-4">7. Privacy Policy</h2>
     <p>
       Your use of Talkbox is also governed by our <button
         onclick={() => routerStore.navigate(Route.PRIVACY)}
         class="text-indigo-600 underline">Privacy Policy</button
       >.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-2xl font-bold mb-4">8. Data Deletion</h2>
+    <p>
+      Please be advised that user-initiated deletion is permanent and
+      irreversible. While content is masked immediately upon deletion, technical
+      records may persist in our systems for up to 14 days during the background
+      purging process. Deleted content cannot be recovered or restored by the
+      Talkbox team under any circumstances.
     </p>
   </section>
 </div>

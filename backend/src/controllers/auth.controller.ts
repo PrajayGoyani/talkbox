@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction as _next, CookieOptions } from "express";
+import { NODE_ENV } from "@config/env";
+import { authService } from "@services/auth.service";
+import { CookieOptions, Request, Response } from "express";
 
-import { NODE_ENV } from "../config/env";
-import { authService } from "../services/auth.service";
 import { LoginRequest, RefreshRequest, SignupRequest } from "./types";
 
 const COOKIE_OPTIONS: CookieOptions = {
@@ -21,7 +21,7 @@ if (NODE_ENV === "development") {
 }
 
 export const signup = async (req: SignupRequest, res: Response) => {
-  const result: any = await authService.signup(req.body);
+  const result = (await authService.signup(req.body)) as { refreshToken?: string };
 
   res.cookie("refresh_token", result.refreshToken, COOKIE_OPTIONS);
   delete result.refreshToken;
@@ -30,7 +30,7 @@ export const signup = async (req: SignupRequest, res: Response) => {
 };
 
 export const login = async (req: LoginRequest, res: Response) => {
-  const result: any = await authService.login(req.body);
+  const result = (await authService.login(req.body)) as { refreshToken?: string };
 
   res.cookie("refresh_token", result.refreshToken, COOKIE_OPTIONS);
   delete result.refreshToken;
@@ -51,5 +51,10 @@ export const refresh = async (req: RefreshRequest, res: Response) => {
 
 export const getMe = async (req: Request, res: Response) => {
   const user = await authService.getMe(req.user!.id);
+  res.success(user);
+};
+
+export const upgradeToPro = async (req: Request, res: Response) => {
+  const user = await authService.upgradeToPro(req.user!.id);
   res.success(user);
 };

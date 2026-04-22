@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IMessage extends Document {
   chatId: mongoose.Types.ObjectId;
@@ -11,6 +11,7 @@ export interface IMessage extends Document {
   isDeleted: boolean;
   deletedAt: Date | null;
   createdAt: Date;
+  isScrubbed?: boolean;
   idempotencyKey: string;
   reactions: {
     emoji: string;
@@ -18,6 +19,8 @@ export interface IMessage extends Document {
     users: mongoose.Types.ObjectId[];
   }[];
 }
+
+export interface IMessageModel extends Model<IMessage> {}
 
 const messageSchema = new Schema<IMessage>({
   chatId: { type: Schema.Types.ObjectId, required: true, ref: "Chat" },

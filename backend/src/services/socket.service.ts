@@ -1,24 +1,23 @@
+import { FREE_PLAN_SCRUB_DAYS, PRO_PLAN_SESSION_LIMIT, REACTIONS_MAX_UNIQUE } from "@config/env";
+import Chat from "@models/chat.model";
+import Message from "@models/message.model";
+import User from "@models/user.model";
+import { chatLockdownService } from "@services/chat-lockdown.service";
+import { AppError } from "@utils/AppError";
+import { extractEmojiMetadata, getCanonicalSlug } from "@utils/emoji.utils";
 import { Types } from "mongoose";
 
-import ChatModel from "../models/chat.model";
-import MessageModel from "../models/message.model";
-import UserModel from "../models/user.model";
-import { AuthenticatedSocketUser, TypedIO, TypedSocket } from "../types/socket.types";
-import { AppError } from "../utils/AppError";
-import { chatLockdownService } from "./chat-lockdown.service";
-import { getCanonicalSlug, extractEmojiMetadata } from "../utils/emoji.utils";
-
-const MAX_UNIQUE_REACTIONS = 20;
+import { AuthenticatedSocketUser, MessageDto, TypedIO, TypedSocket } from "@/types/socket.types";
 
 class SocketService {
-  public Message: typeof MessageModel;
+  public Message: typeof Message;
   public io: TypedIO | null;
-  public activeConnections: Map<string, TypedSocket>;
+  public activeConnections: Map<string, Set<TypedSocket>>;
 
-  constructor(messageModel: typeof MessageModel) {
+  constructor(messageModel: typeof Message) {
     this.Message = messageModel;
     this.io = null;
-    // Map of userId -> socket instance
+    // Map of userId -> Set of active socket instances
     this.activeConnections = new Map();
   }
 
@@ -28,26 +27,52 @@ class SocketService {
 
   handleConnection(socket: TypedSocket) {
     const userId = socket.data.user.id;
+    const plan = socket.data.user.plan;
 
-    // Single Socket Connection Zone Security
-    // Enforce strict connection takeover
-    const existingSocket = this.activeConnections.get(userId);
-    if (existingSocket) {
-      existingSocket.emit("error", { message: "Connection taken over by a new device/tab." });
-      existingSocket.disconnect();
+    // Session Limit Enforcement
+    let userSockets = this.activeConnections.get(userId);
+    if (!userSockets) {
+      userSockets = new Set();
+      this.activeConnections.set(userId, userSockets);
     }
 
-    this.activeConnections.set(userId, socket);
+    if (plan === "free") {
+      // Free users: 1 connection limit (Strict Takeover)
+      if (userSockets.size > 0) {
+        userSockets.forEach((s) => {
+          s.emit("session_error", {
+            reason: "takeover",
+            message: "Session opened in another window.",
+          });
+          s.disconnect();
+        });
+        userSockets.clear();
+      }
+    } else if (plan === "pro") {
+      // Pro users: configured session limit
+      if (userSockets.size >= PRO_PLAN_SESSION_LIMIT) {
+        socket.emit("error", {
+          message: `Pro session limit reached (max ${PRO_PLAN_SESSION_LIMIT} tabs).`,
+        });
+        socket.disconnect();
+        return;
+      }
+    }
+
+    userSockets.add(socket);
     socket.join(`user:${userId}`);
 
-    // Broadcast online presence
-    this.notifyStatusChange(userId, true);
+    // Broadcast online presence if this is the FIRST connection
+    if (userSockets.size === 1) {
+      this.notifyStatusChange(userId, true);
+    }
 
     // Fetch and send partners' status to the newly connected user
     this.emitPartnersStatus(userId, socket);
 
     socket.on("disconnect", () => {
-      if (this.activeConnections.get(userId)?.id === socket.id) {
+      userSockets?.delete(socket);
+      if (userSockets?.size === 0) {
         this.activeConnections.delete(userId);
         this.notifyStatusChange(userId, false);
       }
@@ -57,7 +82,7 @@ class SocketService {
   async emitPartnersStatus(userId: string, socket: TypedSocket) {
     try {
       const uidStr = userId.toString();
-      const chats = await ChatModel.find({
+      const chats = await Chat.find({
         $or: [{ userA: uidStr }, { userB: uidStr }],
         status: "accepted",
       }).select("userA userB");
@@ -75,7 +100,7 @@ class SocketService {
 
       let offlineUserMap = new Map();
       if (offlinePartnerIds.length > 0) {
-        const offlineUsers = await UserModel.find({ _id: { $in: offlinePartnerIds } })
+        const offlineUsers = await User.find({ _id: { $in: offlinePartnerIds } })
           .select("lastSeen")
           .lean();
         offlineUserMap = new Map(offlineUsers.map((u) => [u._id.toString(), u.lastSeen]));
@@ -105,11 +130,11 @@ class SocketService {
       const uidStr = userId.toString();
 
       if (!isOnline) {
-        await UserModel.findByIdAndUpdate(userId, { lastSeen: new Date() });
+        await User.findByIdAndUpdate(userId, { lastSeen: new Date() });
       }
 
       // Find all accepted chats for this user
-      const chats = await ChatModel.find({
+      const chats = await Chat.find({
         $or: [{ userA: uidStr }, { userB: uidStr }],
         status: "accepted",
         isDeleted: false,
@@ -139,14 +164,18 @@ class SocketService {
     }
   }
 
-  async handleTyping(sender: AuthenticatedSocketUser, payload: any, isTyping: boolean) {
+  async handleTyping(
+    sender: AuthenticatedSocketUser,
+    payload: { receiverId: string; chatId: string },
+    isTyping: boolean,
+  ) {
     const senderId = sender.id;
     const { receiverId, chatId } = payload;
     if (!receiverId || !chatId) return;
 
     // Security: Prevent arbitrary users from flooding target room bindings unless they share an active chat
     try {
-      const isValid = await ChatModel.exists({
+      const isValid = await Chat.exists({
         _id: chatId,
         status: "accepted",
         $or: [
@@ -156,6 +185,7 @@ class SocketService {
       });
 
       if (!isValid) return;
+      // oxlint-disable-next-line no-unused-vars
     } catch (_e) {
       return;
     }
@@ -166,7 +196,7 @@ class SocketService {
     });
   }
 
-  async handleReaction(sender: AuthenticatedSocketUser, payload: any) {
+  async handleReaction(sender: AuthenticatedSocketUser, payload: { messageId: string; emoji: string; slug?: string }) {
     const senderId = new Types.ObjectId(sender.id);
     const { messageId, emoji, slug } = payload;
     if (!messageId || !emoji) {
@@ -177,8 +207,16 @@ class SocketService {
       const message = await this.Message.findById(messageId);
       if (!message) return;
 
-      const chat = await ChatModel.findById(message.chatId);
+      const chat = await Chat.findById(message.chatId);
       if (!chat) return;
+
+      // --- Zenith: Restrict actions on scrubbed messages ---
+      const scrubCutoff = new Date();
+      scrubCutoff.setDate(scrubCutoff.getDate() - FREE_PLAN_SCRUB_DAYS);
+      if (sender.plan === "free" && message.createdAt < scrubCutoff) {
+        return;
+      }
+      // -----------------------------------------------------
 
       // Security: Check if user is part of the chat
       const isParticipant =
@@ -217,7 +255,7 @@ class SocketService {
         }
       } else {
         // Create new emoji reaction entry if limit not reached
-        if (message.reactions.length < MAX_UNIQUE_REACTIONS) {
+        if (message.reactions.length < REACTIONS_MAX_UNIQUE) {
           message.reactions.push({
             emoji,
             slug: getCanonicalSlug(emoji, slug),
@@ -237,11 +275,13 @@ class SocketService {
         messageId: messageId.toString(),
         chatId: message.chatId.toString(),
         // Serialize ObjectIds to plain strings so the frontend string-comparison works
-        reactions: savedMessage.reactions.map((r: { emoji: string; slug: string; users: any[] }) => ({
-          emoji: r.emoji,
-          slug: r.slug,
-          users: r.users.map((u: any) => u.toString()),
-        })),
+        reactions: savedMessage.reactions.map(
+          (r: { emoji: string; slug: string; users: string[] | Types.ObjectId[] }) => ({
+            emoji: r.emoji,
+            slug: r.slug,
+            users: r.users.map((u) => u.toString()),
+          }),
+        ),
       };
 
       // Emit to both users
@@ -252,7 +292,10 @@ class SocketService {
     }
   }
 
-  async saveAndDeliverMessage(sender: AuthenticatedSocketUser, payload: any) {
+  async saveAndDeliverMessage(
+    sender: AuthenticatedSocketUser,
+    payload: { chatId: string; receiverId: string; contentBody: string; idempotencyKey: string },
+  ): Promise<MessageDto> {
     const senderId = sender.id;
     const { chatId, receiverId, contentBody, idempotencyKey } = payload;
 
@@ -262,7 +305,7 @@ class SocketService {
     }
 
     // 2. Verify chat is accepted
-    const chat = await ChatModel.findById(chatId);
+    const chat = await Chat.findById(chatId);
     if (!chat || chat.status !== "accepted") {
       throw AppError.forbidden("Chat must be accepted before sending messages.");
     }
@@ -270,7 +313,18 @@ class SocketService {
     // 3. Real-time Reliability Enforcer: Deduplication
     const existingMessage = await this.Message.findOne({ idempotencyKey });
     if (existingMessage) {
-      return existingMessage;
+      const msgObj = existingMessage.toObject();
+      return {
+        ...msgObj,
+        id: existingMessage._id.toString(),
+        chatId: existingMessage.chatId.toString(),
+        senderId: existingMessage.senderId.toString(),
+        reactions: msgObj.reactions?.map((r: any) => ({
+          emoji: r.emoji,
+          slug: r.slug,
+          users: r.users.map((u: any) => u.toString()),
+        })),
+      } as MessageDto;
     }
 
     // 4. Save Message
@@ -282,7 +336,7 @@ class SocketService {
     });
 
     // 5. Update chat's lastMessage + increment receiver's unreadCounts
-    await ChatModel.findByIdAndUpdate(chatId, {
+    await Chat.findByIdAndUpdate(chatId, {
       lastMessage: {
         contentBody,
         senderId,
@@ -293,12 +347,20 @@ class SocketService {
 
     // 6. Deliver Message to receiver if connected
     // Create DTO with emojiMetadata for the frontend tooltips
-    const messageDto = { 
-      ...message.toObject(), 
+    const messageObj = message.toObject();
+    const messageDto: MessageDto = {
+      ...messageObj,
       id: message._id.toString(),
-      emojiMetadata: extractEmojiMetadata(contentBody) 
+      chatId: message.chatId.toString(),
+      senderId: message.senderId.toString(),
+      emojiMetadata: extractEmojiMetadata(contentBody),
+      reactions: messageObj.reactions?.map((r: any) => ({
+        emoji: r.emoji,
+        slug: r.slug,
+        users: r.users.map((u: any) => u.toString()),
+      })),
     };
-    
+
     this.io?.to(`user:${receiverId}`).emit("receive_message", messageDto);
     // Also echo back to sender for full metadata if they have multiple devices or need it
     this.io?.to(`user:${senderId}`).emit("receive_message", messageDto);
@@ -330,8 +392,16 @@ class SocketService {
       const message = await this.Message.findById(messageId);
       if (!message || message.isDeleted) return;
 
-      const chat = await ChatModel.findById(message.chatId);
+      const chat = await Chat.findById(message.chatId);
       if (!chat || chat.isDeleted) return;
+
+      // --- Zenith: Restrict actions on scrubbed messages ---
+      const scrubCutoff = new Date();
+      scrubCutoff.setDate(scrubCutoff.getDate() - FREE_PLAN_SCRUB_DAYS);
+      if (sender.plan === "free" && message.createdAt < scrubCutoff) {
+        return;
+      }
+      // -----------------------------------------------------
 
       // Security: Only sender can delete their message
       if (message.senderId.toString() !== senderId.toString()) {
@@ -375,4 +445,4 @@ class SocketService {
   }
 }
 
-export const socketService = new SocketService(MessageModel);
+export const socketService = new SocketService(Message);

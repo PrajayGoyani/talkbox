@@ -1,5 +1,5 @@
-import { Agenda } from "agenda";
 import { MongoBackend } from "@agendajs/mongo-backend";
+import { Agenda } from "agenda";
 import mongoose from "mongoose";
 
 let agenda: Agenda | null = null;
@@ -9,13 +9,13 @@ export const getAgenda = () => {
     if (!mongoose.connection.db) {
       throw new Error("Mongoose connection not established. Cannot initialize Agenda.");
     }
-    
-    const backend = new MongoBackend({ 
-      mongo: mongoose.connection.db as any
+
+    const backend = new MongoBackend({
+      mongo: mongoose.connection.db as any,
     });
 
-    agenda = new Agenda({ 
-      backend: backend
+    agenda = new Agenda({
+      backend: backend,
     });
   }
   return agenda;

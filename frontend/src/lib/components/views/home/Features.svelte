@@ -23,10 +23,10 @@
         >
           <Icon name="bolt" class="w-6 h-6" />
         </div>
-        <h3 class="text-xl font-bold mb-2">Real-time Sync</h3>
+        <h3 class="text-xl font-bold mb-2">Multi-Device Sync</h3>
         <p class="text-slate-600 dark:text-slate-400">
-          Messages delivered across all devices in under 200ms. Stay in the
-          loop, always.
+          Stay connected everywhere. Pro users can maintain up to 10 active
+          sessions across all their devices simultaneously.
         </p>
       </div>
 
@@ -42,7 +42,7 @@
         <h3 class="text-xl font-bold mb-2">Secure & Private</h3>
         <p class="text-slate-600 dark:text-slate-400">
           We encrypt your data and keep conversations private, just as they
-          should be.
+          should be. Your data is yours.
         </p>
       </div>
 
@@ -53,12 +53,12 @@
         <div
           class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-6"
         >
-          <Icon name="grid" class="w-6 h-6" />
+          <Icon name="clock" class="w-6 h-6" />
         </div>
-        <h3 class="text-xl font-bold mb-2">Unified Dashboard</h3>
+        <h3 class="text-xl font-bold mb-2">Unrestricted History</h3>
         <p class="text-slate-600 dark:text-slate-400">
-          Manage all your conversations, settings, and profile from one
-          interface.
+          Never lose a word. Upgrade to Pro to unlock unlimited message history
+          and access your entire archive.
         </p>
       </div>
     </div>

@@ -1,13 +1,13 @@
+import { ALLOWED_ORIGINS, NODE_ENV } from "@config/env";
+import { AppError } from "@utils/AppError";
+import { error as errorResponse, success } from "@utils/response";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import path from "path";
 
 // import helmet from 'helmet';
-import { app } from "../app";
-import { ALLOWED_ORIGINS, NODE_ENV } from "../config/env";
-import { AppError } from "../utils/AppError";
-import { error as errorResponse, success } from "../utils/response";
+import { app } from "@/app";
 
 // global application-level middlewares
 export function initializeMiddlewares() {

@@ -30,6 +30,12 @@
       >
         Go to Dashboard
       </button>
+      <button
+        onclick={() => routerStore.navigate(Route.PRICING)}
+        class="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+      >
+        View Plans
+      </button>
     {:else}
       <button
         onclick={() => routerStore.navigate(signupLink)}
@@ -38,10 +44,10 @@
         Get Started for Free
       </button>
       <button
-        onclick={() => routerStore.navigate(loginLink)}
+        onclick={() => routerStore.navigate(Route.PRICING)}
         class="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
       >
-        Sign In
+        Plans & Pricing
       </button>
     {/if}
   </div>

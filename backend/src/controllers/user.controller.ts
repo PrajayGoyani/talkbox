@@ -1,8 +1,7 @@
+import { imageService } from "@services/image.service";
+import { userService } from "@services/user.service";
 import { v2 as cloudinary } from "cloudinary";
 import { Request, Response } from "express";
-
-import { imageService } from "../services/image.service";
-import { userService } from "../services/user.service";
 
 export const uploadAvatar = async (req: Request, res: Response) => {
   if (!req.file) {

@@ -1,5 +1,27 @@
 # Changelog
+ 
+## [1.5.0] - 2026-04-22
 
+### Added
+- **Zenith Ascension**: Tiered subscription model (Free vs. Pro).
+- "Exclusive Pro Badge" visible to chat partners in header and list.
+- Premium glassmorphic Pricing page with simulated checkout.
+- Cursor-based pagination for chats, requests, and search queries.
+- Rich text rendering for links and code blocks in chat messages.
+- Comprehensive unit testing suite for chat and socket services using Vitest.
+- Automated background jobs for subscription expiry and message retention.
+- Virtual Scrubbing (masking) for Free users on messages older than 7 days.
+
+### Changed
+- Updated Message Retention policy to 365 days for Free accounts (Unlimited for Pro).
+- Enforced session limits: 1 for Free users (with takeover), 10 for Pro users.
+- Enforced 5 active chat limit for Free users.
+- Refactored message parsing logic for improved reliability.
+- Standardized backend project structure and implemented path aliasing.
+- Improved mobile responsiveness in ChatWindow and simplified ConversationsPanel UI.
+- Updated Terms of Use and Privacy Policy for full data policy transparency.
+- Synchronized all environment variables in `.env.example`.
+ 
 ## [1.4.0] - 2026-04-20
 
 ### Added

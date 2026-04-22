@@ -1,22 +1,28 @@
+import { chatService } from "@services/chat.service";
 import { Request, Response } from "express";
 
-import { chatService } from "../services/chat.service";
 import { AcceptChatRequest, RejectChatRequest } from "./types";
 
 export const getChatListing = async (req: Request, res: Response) => {
-  const chats = await chatService.getChatListing(req.user!.id);
-  res.success(chats);
+  const limit = parseInt(req.query.limit as string) || 20;
+  const cursor = (req.query.cursor as string) || null;
+  const result = await chatService.getChatListing(req.user!.id, limit, cursor);
+  res.success(result);
 };
 
 export const getChatRequests = async (req: Request, res: Response) => {
-  const chats = await chatService.getChatRequests(req.user!.id);
-  res.success(chats);
+  const limit = parseInt(req.query.limit as string) || 20;
+  const cursor = (req.query.cursor as string) || null;
+  const result = await chatService.getChatRequests(req.user!.id, limit, cursor);
+  res.success(result);
 };
 
 export const searchChats = async (req: Request, res: Response) => {
   const query = (req.query.q || "") as string;
-  const chats = await chatService.searchChats(req.user!.id, query);
-  res.success(chats);
+  const limit = parseInt(req.query.limit as string) || 20;
+  const cursor = (req.query.cursor as string) || null;
+  const result = await chatService.searchChats(req.user!.id, query, limit, cursor);
+  res.success(result);
 };
 
 export const requestChat = async (req: Request, res: Response) => {
@@ -42,12 +48,7 @@ export const deleteChat = async (req: Request, res: Response) => {
 export const getChatMessages = async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const cursor = (req.query.cursor as string) || undefined;
-  const messages = await chatService.getChatMessages(
-    req.params.chatId as string,
-    req.user!.id,
-    limit,
-    cursor as any,
-  );
+  const messages = await chatService.getChatMessages(req.params.chatId as string, req.user!.id, limit, cursor as any);
   res.success(messages);
 };
 

@@ -202,12 +202,11 @@
     <div class="flex flex-col gap-5">
       <!-- Display Name -->
       <div class="flex flex-col gap-1.5">
-        <label
-          for="display-name-input"
+        <span
           class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
         >
-          Display Name</label
-        >
+          Display Name
+        </span>
         {#if editingName}
           <div class="flex gap-2 items-center">
             <input
@@ -240,11 +239,20 @@
           </div>
         {:else}
           <div class="flex items-center justify-between gap-2">
-            <span
-              id="display-name-value"
-              class="text-sm text-slate-900 dark:text-slate-100 wrap-break-word"
-              >{authStore.user?.name || "Not set"}</span
-            >
+            <div class="flex items-center gap-2">
+              <span
+                id="display-name-value"
+                class="text-sm text-slate-900 dark:text-slate-100 wrap-break-word"
+                >{authStore.user?.name || "Not set"}</span
+              >
+              {#if authStore.user?.plan === "pro"}
+                <span
+                  class="px-1.5 py-0.5 bg-indigo-600 text-[10px] font-black text-white rounded uppercase tracking-tighter shadow-sm shadow-indigo-500/20"
+                >
+                  Pro
+                </span>
+              {/if}
+            </div>
             <button
               class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all active:scale-90"
               onclick={startEditName}
@@ -258,10 +266,9 @@
 
       <!-- Username (read-only) -->
       <div class="flex flex-col gap-1.5">
-        <label
-          for="username-display"
+        <span
           class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
-          >Username</label
+          >Username</span
         >
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-2">
@@ -292,10 +299,9 @@
 
       <!-- Email (read-only) -->
       <div class="flex flex-col gap-1.5">
-        <label
-          for="email-display"
+        <span
           class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
-          >Email</label
+          >Email</span
         >
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-2">
@@ -317,6 +323,38 @@
               />
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- Subscription Plan -->
+      <div
+        class="flex flex-col gap-1.5 pt-4 border-t border-slate-100 dark:border-white/5"
+      >
+        <span
+          class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
+          >Subscription Plan</span
+        >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span
+              class="text-sm font-medium {authStore.user?.plan === 'pro'
+                ? 'text-indigo-600 dark:text-indigo-400'
+                : 'text-slate-600 dark:text-slate-400'}"
+            >
+              {authStore.user?.plan === "pro" ? "Pro" : "Free"}
+            </span>
+            {#if authStore.user?.plan === "pro"}
+              <Icon name="star" class="w-4 h-4 text-indigo-600" />
+            {/if}
+          </div>
+          {#if authStore.user?.plan === "free"}
+            <a
+              href="/pricing"
+              class="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-600/10 hover:bg-indigo-600/20 px-3 py-1.5 rounded-full transition-all active:scale-95 no-underline"
+            >
+              Upgrade to Pro
+            </a>
+          {/if}
         </div>
       </div>
     </div>

@@ -1,21 +1,24 @@
+import { FREE_PLAN_CHAT_LIMIT, FREE_PLAN_SCRUB_DAYS } from "@config/env";
+import Chat, { IChat, IChatModel } from "@models/chat.model";
+import Message, { IMessageModel } from "@models/message.model";
+import User, { IUserModel } from "@models/user.model";
+import { chatLockdownService } from "@services/chat-lockdown.service";
+import { notificationService } from "@services/notification.service";
+import { AppError } from "@utils/AppError";
+import { extractEmojiMetadata } from "@utils/emoji.utils";
 import { ObjectId } from "mongodb";
 import { Server } from "socket.io";
 
-import ChatModel, { IChat } from "../models/chat.model";
-import MessageModel from "../models/message.model";
-import UserModel from "../models/user.model";
-import { AppError } from "../utils/AppError";
-import { chatLockdownService } from "./chat-lockdown.service";
-import { notificationService } from "./notification.service";
-import { extractEmojiMetadata } from "../utils/emoji.utils";
+import { ChatDto, ChatListingResponse } from "@/types/chat.types";
+import { MessageDto } from "@/types/socket.types";
 
 class ChatService {
-  public Chat: typeof ChatModel;
-  public Message: typeof MessageModel;
-  public User: typeof UserModel;
+  public Chat: IChatModel;
+  public Message: IMessageModel;
+  public User: IUserModel;
   public io: Server | null;
 
-  constructor(chatModel: typeof ChatModel, messageModel: typeof MessageModel, userModel: typeof UserModel) {
+  constructor(chatModel: IChatModel, messageModel: IMessageModel, userModel: IUserModel) {
     this.Chat = chatModel;
     this.Message = messageModel;
     this.User = userModel;
@@ -30,40 +33,133 @@ class ChatService {
   }
 
   /**
-   * Get accepted chat listing for a user.
+   * Get accepted chat listing for a user with pagination.
    */
-  async getChatListing(userId: string | import("mongodb").ObjectId): Promise<Array<object>> {
-    const chats = await this.Chat.find({
+  async getChatListing(
+    userId: string | import("mongodb").ObjectId,
+    limit = 20,
+    cursor: string | null = null,
+  ): Promise<ChatListingResponse> {
+    const query: any = {
       $or: [{ userA: userId }, { userB: userId }],
       isDeleted: false,
       status: "accepted",
-    })
-      .populate("userA", "username name email avatar_url")
-      .populate("userB", "username name email avatar_url");
+    };
 
-    return chats.map((chat) => this._transformChat(chat, userId));
+    if (cursor) {
+      const decoded = this._decodeCursor(cursor);
+      if (decoded) {
+        // Compound filter for stable pagination:
+        // (sentAt < decoded.t) OR (sentAt == decoded.t AND _id < decoded.id)
+        // Note: For chats without messages, we use createdAt if sentAt is missing.
+        // To simplify, we'll assume sentAt is always present or fallback to createdAt in query logic.
+        query.$and = [
+          {
+            $or: [
+              { "lastMessage.sentAt": { $lt: decoded.t } },
+              {
+                $and: [{ "lastMessage.sentAt": decoded.t }, { _id: { $lt: new ObjectId(decoded.id) } }],
+              },
+            ],
+          },
+        ];
+      }
+    }
+
+    const chats = await this.Chat.find(query)
+      .sort({ "lastMessage.sentAt": -1, _id: -1 })
+      .limit(limit + 1)
+      .populate("userA", "username name email avatar_url plan")
+      .populate("userB", "username name email avatar_url plan");
+
+    const hasMore = chats.length > limit;
+    const results = hasMore ? chats.slice(0, limit) : chats;
+
+    let nextCursor: string | null = null;
+    if (hasMore && results.length > 0) {
+      const last = results[results.length - 1];
+      nextCursor = this._encodeCursor(last.lastMessage?.sentAt || last.createdAt, last._id.toString());
+    }
+
+    return {
+      data: results.map((chat) => this._transformChat(chat, userId)),
+      nextCursor,
+      hasMore,
+    };
   }
 
   /**
-   * Get pending chat requests for a user.
+   * Get pending chat requests for a user with pagination.
    */
-  async getChatRequests(userId: string | import("mongodb").ObjectId): Promise<Array<object>> {
-    const chats = await this.Chat.find({
+  async getChatRequests(
+    userId: string | import("mongodb").ObjectId,
+    limit = 20,
+    cursor: string | null = null,
+  ): Promise<ChatListingResponse> {
+    const query: any = {
       $or: [{ userA: userId }, { userB: userId }],
       isDeleted: false,
       status: "pending",
-    })
-      .populate("userA", "username name email avatar_url")
-      .populate("userB", "username name email avatar_url");
+    };
 
-    return chats.map((chat) => this._transformChat(chat, userId));
+    if (cursor) {
+      const decoded = this._decodeCursor(cursor);
+      if (decoded) {
+        query.$and = [
+          {
+            $or: [
+              { createdAt: { $lt: decoded.t } },
+              {
+                $and: [{ createdAt: decoded.t }, { _id: { $lt: new ObjectId(decoded.id) } }],
+              },
+            ],
+          },
+        ];
+      }
+    }
+
+    const chats = await this.Chat.find(query)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit + 1)
+      .populate("userA", "username name email avatar_url plan")
+      .populate("userB", "username name email avatar_url plan");
+
+    const hasMore = chats.length > limit;
+    const results = hasMore ? chats.slice(0, limit) : chats;
+
+    let nextCursor: string | null = null;
+    if (hasMore && results.length > 0) {
+      const last = results[results.length - 1];
+      nextCursor = this._encodeCursor(last.createdAt, last._id.toString());
+    }
+
+    return {
+      data: results.map((chat) => this._transformChat(chat, userId)),
+      nextCursor,
+      hasMore,
+    };
+  }
+
+  private _encodeCursor(timestamp: Date, id: string | ObjectId) {
+    return Buffer.from(JSON.stringify({ t: timestamp.getTime(), id: id.toString() })).toString("base64");
+  }
+
+  private _decodeCursor(cursor: string) {
+    try {
+      const decoded = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+      if (!ObjectId.isValid(decoded.id)) return null;
+      return { t: new Date(decoded.t), id: decoded.id };
+      // oxlint-disable-next-line no-unused-vars
+    } catch (_e) {
+      return null;
+    }
   }
 
   /**
    * Internal helper to standardize chat object for client
    * @private
    */
-  _transformChat(chat: IChat, userId: string | ObjectId) {
+  _transformChat(chat: IChat, userId: string | ObjectId): ChatDto {
     const userIdStr = userId.toString();
     const otherUser = chat.userA._id.toString() === userIdStr ? chat.userB : chat.userA;
     const unread = chat.unreadCounts?.get?.(userIdStr) || 0;
@@ -71,18 +167,19 @@ class ChatService {
     return {
       id: chat._id.toString(),
       status: chat.status,
-      createdBy: chat.createdBy,
+      createdBy: chat.createdBy.toString(),
       otherUser: {
         id: (otherUser as any)._id?.toString() || otherUser.toString(),
         username: (otherUser as any).username,
         name: (otherUser as any).name || null,
         email: (otherUser as any).email,
         avatarUrl: (otherUser as any).avatar_url,
+        plan: (otherUser as any).plan,
       },
       lastMessage: chat.lastMessage?.contentBody
         ? {
             contentBody: chat.lastMessage.contentBody,
-            senderId: chat.lastMessage.senderId?.toString(),
+            senderId: chat.lastMessage.senderId?.toString() || null,
             sentAt: chat.lastMessage.sentAt,
           }
         : null,
@@ -94,16 +191,37 @@ class ChatService {
   /**
    * Search accepted chats by username, name, or email
    */
-  async searchChats(userId: string | import("mongodb").ObjectId, query: string): Promise<Array<object>> {
-    if (!query || query.trim().length === 0) return [];
+  /**
+   * Search accepted chats by username, name, or email with cursor pagination
+   */
+  async searchChats(
+    userId: string | import("mongodb").ObjectId,
+    query: string,
+    limit = 20,
+    cursor: string | null = null,
+  ): Promise<ChatListingResponse> {
+    if (!query || query.trim().length === 0) return { data: [], nextCursor: null, hasMore: false };
 
     const uid = new ObjectId(userId);
     const escapedQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const searchStr = escapedQuery.startsWith("@") ? escapedQuery.slice(1) : escapedQuery; // managed username search
+    const searchStr = escapedQuery.startsWith("@") ? escapedQuery.slice(1) : escapedQuery;
     let q = new RegExp("^" + searchStr, "i");
 
-    // Aggregation pipeline to join chats and users efficiently in a single round-trip
-    const chats = await this.Chat.aggregate([
+    let cursorObj: { t: number; id: string } | null = null;
+    if (cursor) {
+      try {
+        cursorObj = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+        if (cursorObj && !ObjectId.isValid(cursorObj.id)) {
+          cursorObj = null;
+        }
+        // oxlint-disable-next-line no-unused-vars
+      } catch (_e) {
+        cursorObj = null;
+      }
+    }
+
+    // Aggregation pipeline for paginated search
+    const pipeline: any[] = [
       {
         $match: {
           $or: [{ userA: uid }, { userB: uid }],
@@ -119,58 +237,108 @@ class ChatService {
             {
               $match: {
                 $expr: {
-                  $and: [
-                    // The user must be one of the chat participants
-                    {
-                      $or: [{ $eq: ["$_id", "$$userA"] }, { $eq: ["$_id", "$$userB"] }],
-                    },
-                    // But NOT the current user searching
-                    { $ne: ["$_id", uid] },
-                  ],
+                  $and: [{ $or: [{ $eq: ["$_id", "$$userA"] }, { $eq: ["$_id", "$$userB"] }] }, { $ne: ["$_id", uid] }],
                 },
-                // Search criteria on the user (ReDoS-safe regex)
                 $or: [{ username: q }, { name: q }, { email: q }],
               },
             },
             { $limit: 1 },
-            { $project: { username: 1, name: 1, email: 1, avatar_url: 1 } },
+            { $project: { username: 1, name: 1, email: 1, avatar_url: 1, plan: 1 } },
           ],
           as: "otherUser",
         },
       },
-      // Filter out chats where the other user didn't match the search
       { $unwind: "$otherUser" },
-      { $limit: 50 },
+      // Support for sorting by last message sent time (same as listing)
       {
-        $project: {
-          id: "$_id",
-          status: 1,
-          otherUser: {
-            id: { $toString: "$otherUser._id" },
-            username: "$otherUser.username",
-            name: "$otherUser.name",
-            email: "$otherUser.email",
-            avatarUrl: "$otherUser.avatar_url",
-          },
-          lastMessage: "$lastMessage",
-          unreadCount: {
-            $ifNull: [{ $getField: { field: userId.toString(), input: "$unreadCounts" } }, 0],
-          },
-          createdAt: 1,
+        $addFields: {
+          sortTime: { $ifNull: ["$lastMessage.sentAt", "$createdAt"] },
         },
       },
-    ]);
+    ];
 
-    return chats.map((chat) => ({
-      ...chat,
-      lastMessage: chat.lastMessage?.contentBody
-        ? {
-            contentBody: chat.lastMessage.contentBody,
-            senderId: chat.lastMessage.senderId,
-            sentAt: chat.lastMessage.sentAt,
-          }
-        : null,
-    }));
+    // Cursor filtering
+    if (cursorObj) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { sortTime: { $lt: new Date(cursorObj.t) } },
+            {
+              $and: [{ sortTime: { $eq: new Date(cursorObj.t) } }, { _id: { $lt: new ObjectId(cursorObj.id) } }],
+            },
+          ],
+        },
+      });
+    }
+
+    // Sort and limit
+    pipeline.push({ $sort: { sortTime: -1, _id: -1 } });
+    pipeline.push({ $limit: limit + 1 });
+
+    // Final projection
+    pipeline.push({
+      $project: {
+        id: { $toString: "$_id" },
+        status: 1,
+        createdBy: { $toString: "$createdBy" },
+        participants: [{ $toString: "$userA" }, { $toString: "$userB" }],
+        otherUser: {
+          id: { $toString: "$otherUser._id" },
+          username: "$otherUser.username",
+          name: "$otherUser.name",
+          email: "$otherUser.email",
+          avatarUrl: "$otherUser.avatar_url",
+          plan: "$otherUser.plan",
+        },
+        lastMessage: "$lastMessage",
+        unreadCount: {
+          $let: {
+            vars: {
+              unread: {
+                $filter: {
+                  input: { $objectToArray: "$unreadCounts" },
+                  cond: { $eq: ["$$this.k", { $toString: uid }] },
+                },
+              },
+            },
+            in: { $ifNull: [{ $arrayElemAt: ["$$unread.v", 0] }, 0] },
+          },
+        },
+        createdAt: 1,
+        sortTime: 1,
+      },
+    });
+
+    const chats = await this.Chat.aggregate(pipeline);
+
+    let hasMore = false;
+    let nextCursor: string | null = null;
+
+    if (chats.length > limit) {
+      hasMore = true;
+      const lastItem = chats[limit - 1];
+      const cursorPayload = {
+        t: new Date(lastItem.sortTime).getTime(),
+        id: lastItem.id,
+      };
+      nextCursor = Buffer.from(JSON.stringify(cursorPayload)).toString("base64");
+      chats.pop();
+    }
+
+    return {
+      data: chats.map((chat) => ({
+        ...chat,
+        lastMessage: chat.lastMessage?.contentBody
+          ? {
+              contentBody: chat.lastMessage.contentBody,
+              senderId: chat.lastMessage.senderId?.toString() || null,
+              sentAt: chat.lastMessage.sentAt,
+            }
+          : null,
+      })) as ChatDto[],
+      nextCursor,
+      hasMore,
+    };
   }
 
   /**
@@ -187,6 +355,20 @@ class ChatService {
     if (!targetUser) {
       throw AppError.notFound("User", "USER_NOT_FOUND");
     }
+
+    // --- Pro: Enforce Chat Limits ---
+    const requestingUser = await this.User.findById(senderId);
+    if (requestingUser?.plan === "free") {
+      const activeCount = await this.Chat.countDocuments({
+        $or: [{ userA: senderId }, { userB: senderId }],
+        status: "accepted",
+        isDeleted: false,
+      });
+      if (activeCount >= FREE_PLAN_CHAT_LIMIT) {
+        throw AppError.limitReached("Active chats", "CHAT_LIMIT_REACHED");
+      }
+    }
+    // -----------------------------------
 
     // 2. Prevent self-chat
     if (targetUser._id.toString() === senderId.toString()) {
@@ -221,6 +403,9 @@ class ChatService {
       userB,
       createdBy: senderId,
       status: "pending",
+      lastMessage: {
+        sentAt: new Date(), // Initialize for sorting consistency
+      },
     });
 
     // 6. Create notification for the receiver
@@ -342,7 +527,7 @@ class ChatService {
     userId: string,
     limit: number = 50,
     cursor: string | null,
-  ): Promise<Array<object>> {
+  ): Promise<MessageDto[]> {
     const chat = await this.Chat.findById(chatId);
     if (!chat) {
       throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
@@ -361,16 +546,43 @@ class ChatService {
     }
 
     const messages = await this.Message.find(query).sort({ _id: -1 }).limit(limit);
+    const user = await this.User.findById(userId).select("plan");
+    const plan = user?.plan || "free";
+    const scrubCutoff = new Date();
+    scrubCutoff.setDate(scrubCutoff.getDate() - FREE_PLAN_SCRUB_DAYS);
 
     const transformed = messages.map((m) => {
       const msg = m.toObject();
+
+      const isOlderThanLimit = m.createdAt < scrubCutoff;
+
       if (msg.isDeleted) {
         msg.contentBody = "This message was deleted";
         msg.reactions = [];
         msg.attachment = { kind: null, url: null };
+      } else if (plan === "free" && isOlderThanLimit) {
+        // --- Pro: Virtual Scrubbing ---
+        msg.contentBody = "Message unavailable on Free plan.";
+        msg.reactions = [];
+        msg.attachment = { kind: null, url: null };
+        msg.isScrubbed = true;
+        // ---------------------------------
       }
-      const emojiMetadata = msg.isDeleted ? undefined : extractEmojiMetadata(msg.contentBody);
-      return { ...msg, id: msg._id.toString(), emojiMetadata };
+
+      const addEmojiMetadata: boolean = msg.isDeleted || (plan === "free" && isOlderThanLimit);
+      const emojiMetadata = addEmojiMetadata ? undefined : extractEmojiMetadata(msg.contentBody);
+      return {
+        ...msg,
+        id: msg._id.toString(),
+        chatId: msg.chatId.toString(),
+        senderId: msg.senderId.toString(),
+        emojiMetadata,
+        reactions: msg.reactions?.map((r: any) => ({
+          emoji: r.emoji,
+          slug: r.slug,
+          users: r.users.map((u: any) => u.toString()),
+        })),
+      } as MessageDto;
     });
 
     return transformed.reverse();
@@ -398,4 +610,4 @@ class ChatService {
   }
 }
 
-export const chatService = new ChatService(ChatModel, MessageModel, UserModel);
+export const chatService = new ChatService(Chat, Message, User);

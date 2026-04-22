@@ -7,7 +7,7 @@
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
 
-  type PanelId = "conversations" | "profile" | "settings" | "requests";
+  type PanelId = "conversations" | "profile" | "settings" | "requests" | "pricing";
 
   const {
     activePanel,
@@ -53,8 +53,13 @@
     </button>
 
     <!-- Navigation Icons -->
-    <!-- Navigation Icons -->
-    {#each [{ id: "conversations", title: "Conversations", icon: "nav-chat" }, { id: "profile", title: "Profile", icon: "profile" }, { id: "settings", title: "Settings", icon: "settings" }, { id: "requests", title: "Chat Requests", icon: "add" }] as item}
+    {#each [
+      { id: "conversations", title: "Conversations", icon: "nav-chat" },
+      { id: "profile", title: "Profile", icon: "profile" },
+      { id: "settings", title: "Settings", icon: "settings" },
+      { id: "requests", title: "Chat Requests", icon: "add" },
+      ...(authStore.user?.plan === "free" ? [{ id: "pricing", title: "Upgrade to Pro", icon: "bolt" }] : [])
+    ] as item}
       <button
         class="rail-btn {activePanel === item.id
           ? 'rail-btn-active'

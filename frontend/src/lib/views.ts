@@ -23,6 +23,8 @@ export const Views = {
   Home: () => import("$components/views/Home.svelte"),
   Privacy: () => import("$components/views/Privacy.svelte"),
   Terms: () => import("$components/views/Terms.svelte"),
+  Pricing: () => import("$components/views/Pricing.svelte"),
+  FAQ: () => import("$components/views/FAQ.svelte"),
 
   // Global
   GlobalTooltip: () => import("$components/ui/GlobalTooltip.svelte"),

@@ -43,7 +43,7 @@ export const extractEmojiMetadata = (contentBody: string): Record<string, string
   if (!contentBody) return undefined;
 
   const matches = contentBody.match(EMOJI_REGEX);
-  
+
   if (!matches || matches.length === 0) return undefined;
 
   const metadata: Record<string, string> = {};

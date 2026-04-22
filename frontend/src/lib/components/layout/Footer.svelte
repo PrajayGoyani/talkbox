@@ -50,6 +50,13 @@
           </li>
           <li>
             <button
+              onclick={() => routerStore.navigate(Route.FAQ)}
+              class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              >FAQ</button
+            >
+          </li>
+          <li>
+            <button
               onclick={() => routerStore.navigate(Route.PRIVACY)}
               class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
               >Cookie Policy</button

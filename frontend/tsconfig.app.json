@@ -6,7 +6,7 @@
     "target": "ES2023",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "types": ["svelte", "vite/client"],
+    "types": ["svelte", "vite/client", "vitest"],
     "emitDeclarationOnly": true,
     /**
      * Typecheck JS in `.svelte` and `.js` files by default.
@@ -23,6 +23,7 @@
       "$state/*": ["./src/lib/state/*"],
       "$utils/*": ["./src/lib/utils/*"],
       "$types/*": ["./src/lib/types/*"],
+      "$services/*": ["./src/lib/services/*"],
       "$assets/*": ["./src/assets/*"],
       "@/*": ["./src/*"]
     }

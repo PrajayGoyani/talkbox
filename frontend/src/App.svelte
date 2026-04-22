@@ -11,8 +11,8 @@
   import { quintOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
 
-  import IconRail from "$components/layout/IconRail.svelte";
   import WelcomeDashboard from "$components/chat/WelcomeDashboard.svelte";
+  import IconRail from "$components/layout/IconRail.svelte";
   import Alert from "$components/ui/Alert.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Spinner from "$components/ui/Spinner.svelte";
@@ -41,7 +41,8 @@
   let selectedChatId = $derived(routerStore.segments[2] || null);
   let isDocPage = $derived(
     routerStore.segments[0] === "terms" ||
-      routerStore.segments[0] === "privacy",
+      routerStore.segments[0] === "privacy" ||
+      routerStore.segments[0] === "faq",
   );
 
   // Sync current chat messages when URL param changes (including on mount/refresh)
@@ -61,6 +62,7 @@
     Views.Home();
     Views.Login();
     Views.Signup();
+    Views.Pricing();
 
     // Apply theme reactively
     document.documentElement.setAttribute("data-theme", themeStore.theme);
@@ -172,7 +174,10 @@
     >
       <IconRail
         {activePanel}
-        onPanelSelect={(p: PanelId) => uiStore.navigate(`/chat/${p}`)}
+        onPanelSelect={(p: string) => {
+          if (p === "pricing") routerStore.navigate("/pricing");
+          else uiStore.navigate(`/chat/${p}`);
+        }}
         onNotificationToggle={() => uiStore.toggleNotifications()}
         notificationCount={notificationStore.unreadCount}
         requestsCount={chatStore.pendingRequestCount}
@@ -280,8 +285,15 @@
                 href="#features"
                 class="hover:text-indigo-600 transition-colors">Features</a
               >
-              <a href="#faq" class="hover:text-indigo-600 transition-colors"
-                >FAQ</a
+              <button
+                onclick={() => uiStore.navigate(Route.FAQ)}
+                class="hover:text-indigo-600 transition-colors cursor-pointer"
+                >FAQ</button
+              >
+              <button
+                onclick={() => uiStore.navigate(Route.PRICING)}
+                class="hover:text-indigo-600 transition-colors cursor-pointer"
+                >Pricing</button
               >
             </nav>
           {/if}
@@ -347,6 +359,10 @@
         <Lazy component={Views.Terms} />
       {:else if routerStore.segments[0] === "privacy"}
         <Lazy component={Views.Privacy} />
+      {:else if routerStore.segments[0] === "pricing"}
+        <Lazy component={Views.Pricing} />
+      {:else if routerStore.segments[0] === "faq"}
+        <Lazy component={Views.FAQ} />
       {:else}
         <Lazy component={Views.Home} />
       {/if}

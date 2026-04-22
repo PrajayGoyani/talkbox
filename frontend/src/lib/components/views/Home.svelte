@@ -1,6 +1,5 @@
 <script lang="ts">
   import Footer from "$components/layout/Footer.svelte";
-  import FAQ from "$components/views/home/FAQ.svelte";
   import Features from "$components/views/home/Features.svelte";
   import Hero from "$components/views/home/Hero.svelte";
 </script>
@@ -11,7 +10,6 @@
   <main>
     <Hero />
     <Features />
-    <FAQ />
   </main>
 
   <Footer />

@@ -11,11 +11,11 @@ import {
   getChatMessages,
   markChatRead,
   searchChats,
-} from "../controllers/chat.controller";
-import { authenticateToken } from "../middlewares/auth.middleware";
-import { rateLimiter } from "../middlewares/rate-limiter.middleware";
-import { validate } from "../middlewares/validate.middleware";
-import { chatRequestSchema } from "../schemas/chat.schema";
+} from "@controllers/chat.controller";
+import { authenticateToken } from "@middlewares/auth.middleware";
+import { rateLimiter } from "@middlewares/rate-limiter.middleware";
+import { validate } from "@middlewares/validate.middleware";
+import { chatRequestSchema } from "@schemas/chat.schema";
 
 router.use(authenticateToken);
 router.use(rateLimiter);

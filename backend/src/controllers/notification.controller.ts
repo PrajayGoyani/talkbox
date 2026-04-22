@@ -1,6 +1,5 @@
+import { notificationService } from "@services/notification.service";
 import { Request, Response, NextFunction } from "express";
-
-import { notificationService } from "../services/notification.service";
 
 export const getNotifications = async (req: Request, res: Response) => {
   const limit = Math.min(parseInt(req.query.limit as string) || 15, 50);

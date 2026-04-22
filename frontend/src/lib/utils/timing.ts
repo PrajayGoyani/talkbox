@@ -1,10 +1,7 @@
 /**
  * Throttles a function to only execute at most once every `limit` milliseconds.
  */
-export function throttle<T extends (...args: any[]) => any>(
-  func: T,
-  limit: number,
-): (...args: Parameters<T>) => void {
+export function throttle<T extends (...args: any[]) => any>(func: T, limit: number): (...args: Parameters<T>) => void {
   let inThrottle: boolean = false;
   let trailingCall: (() => void) | null = null;
 
@@ -32,10 +29,7 @@ export function throttle<T extends (...args: any[]) => any>(
 /**
  * Debounces a function to only execute after `delay` milliseconds have passed since the last call.
  */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  delay: number,
-): (...args: Parameters<T>) => void {
+export function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout>;
   return function (this: any, ...args: Parameters<T>) {
     clearTimeout(timeoutId);

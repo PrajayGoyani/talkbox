@@ -13,8 +13,20 @@
     "types": ["node"],
     "outDir": "dist",
     "incremental": true,
-    "tsBuildInfoFile": "dist/.tsbuildinfo"
-
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@controllers/*": ["./src/controllers/*"],
+      "@services/*": ["./src/services/*"],
+      "@models/*": ["./src/models/*"],
+      "@middlewares/*": ["./src/middlewares/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@schemas/*": ["./src/schemas/*"],
+      "@config/*": ["./src/config/*"],
+      "@bootstrap/*": ["./src/bootstrap/*"],
+      "@routes/*": ["./src/routes/*"],
+      "@jobs/*": ["./src/jobs/*"]
+    }
   },
   "include": ["src/**/*", "server.ts"],
   "exclude": ["node_modules"]

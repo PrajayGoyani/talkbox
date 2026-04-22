@@ -10,13 +10,7 @@ export class AppError extends Error {
   isOperational: boolean;
   details?: any;
 
-  constructor(
-    message: string,
-    statusCode: number,
-    code: string,
-    details?: any,
-    isOperational = true,
-  ) {
+  constructor(message: string, statusCode: number, code: string, details?: any, isOperational = true) {
     super(message);
     this.statusCode = statusCode;
     this.code = code;
@@ -54,11 +48,7 @@ export class AppError extends Error {
   }
 
   static limitReached(resource: string, code: string) {
-    return new AppError(
-      `${resource} limit reached for your current plan`,
-      StatusCodes.FORBIDDEN,
-      code,
-    );
+    return new AppError(`${resource} limit reached for your current plan`, StatusCodes.FORBIDDEN, code);
   }
 
   static tooMany(message = "Too many requests", code = "TOO_MANY_REQUESTS") {
