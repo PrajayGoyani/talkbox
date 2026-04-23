@@ -34,6 +34,7 @@
     "smile-plus",
     "trash",
     "alert-circle",
+    "home",
   ] as const;
 
   type IconName = (typeof VALID_ICONS)[number];

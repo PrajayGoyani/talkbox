@@ -42,14 +42,14 @@
   <div
     class="flex flex-row md:flex-col items-center gap-2 md:gap-1 w-full md:w-auto justify-between md:justify-start"
   >
-    <!-- App Logo (hidden on mobile) -->
+    <!-- App Logo / Home Button -->
     <button
-      class="w-10 h-10 hidden md:flex items-center justify-center text-indigo-500 mb-3 hover:bg-white/10 rounded-xl transition-all active:scale-90"
+      class="w-10 h-10 flex items-center justify-center text-indigo-500 md:mb-3 hover:bg-white/10 rounded-xl transition-all active:scale-90"
       onclick={() => routerStore.navigate("/")}
       use:tooltip={{ text: "Talkbox Home", position: tooltipPos }}
       aria-label="Back to Home"
     >
-      <Icon name="nav-chat" class="w-6 h-6" />
+      <Icon name="home" class="w-6 h-6" />
     </button>
 
     <!-- Navigation Icons -->
