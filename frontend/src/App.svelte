@@ -175,8 +175,18 @@
       <IconRail
         {activePanel}
         onPanelSelect={(p: string) => {
-          if (p === "pricing") routerStore.navigate("/pricing");
-          else uiStore.navigate(`/chat/${p}`);
+          if (p === "pricing") {
+            routerStore.navigate("/pricing");
+            return;
+          }
+
+          // On desktop, preserve the active chat when switching menus
+          const isDesktop = uiStore.windowWidth >= 768;
+          if (isDesktop && selectedChatId) {
+            uiStore.navigate(`/chat/${p}/${selectedChatId}`);
+          } else {
+            uiStore.navigate(`/chat/${p}`);
+          }
         }}
         onNotificationToggle={() => uiStore.toggleNotifications()}
         notificationCount={notificationStore.unreadCount}
