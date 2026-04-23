@@ -68,14 +68,20 @@
     });
 
     if (success) {
-      routerStore.navigate("/chat/conversations");
+      if (routerStore.params.intent === "pro") {
+        routerStore.navigate("/pricing?auto=pro");
+      } else {
+        routerStore.navigate("/chat/conversations");
+      }
     }
   };
 </script>
 
 <div class="auth-card">
   <div class="text-center">
-    <h1 class="auth-title">Create Account</h1>
+    <h1 class="auth-title">
+      {routerStore.params.intent === "pro" ? "Get Started with Pro" : "Create Account"}
+    </h1>
     <!-- <div class="flex flex-col items-center gap-3 mb-2">
       <img src="/favicon.png" alt="Talkbox Logo" class="w-16 h-16 rounded-2xl shadow-lg ring-4 ring-indigo-600/10" />
       <h1 class="auth-title mt-2">Join Talkbox</h1>

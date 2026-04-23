@@ -85,11 +85,7 @@
 
   async function handleUpgrade() {
     if (!authStore.user) {
-      uiStore.addAlert(
-        "Please create an account or log in to upgrade to Pro.",
-        "info",
-      );
-      routerStore.navigate("/signup");
+      routerStore.navigate("/signup?intent=pro");
       return;
     }
 
@@ -126,10 +122,19 @@
       handleUpgrade();
     } else if (planId === "free") {
       if (!authStore.user) {
-        routerStore.navigate("/signup");
+        routerStore.navigate("/signup?intent=free");
       }
     }
   }
+
+  // Auto-trigger upgrade if coming back from signup with intent
+  $effect(() => {
+    if (routerStore.params.auto === "pro" && authStore.user && !loading) {
+      // Clean URL first
+      routerStore.navigate("/pricing");
+      handleUpgrade();
+    }
+  });
 
   function handleBack() {
     if (authStore.user) {

@@ -35,6 +35,15 @@ class RouterStore {
     const pathSegments = this.path.split("/").filter(Boolean);
     this.segments = pathSegments;
 
+    // Parse Query Params
+    this.params = {};
+    if (parts[1]) {
+      const searchParams = new URLSearchParams(parts[1]);
+      searchParams.forEach((value, key) => {
+        this.params[key] = value;
+      });
+    }
+
     // Auth Guards
     if (authStore.isCheckingAuth) return;
 
