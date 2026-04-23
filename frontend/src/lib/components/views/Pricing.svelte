@@ -22,7 +22,7 @@
         "7 Days message retention",
         "Standard support",
       ],
-      buttonText: "Current Plan",
+      buttonText: "Start for Free",
       highlight: false,
     },
     {
@@ -121,6 +121,16 @@
     }
   }
 
+  function handlePlanClick(planId: string) {
+    if (planId === "pro") {
+      handleUpgrade();
+    } else if (planId === "free") {
+      if (!authStore.user) {
+        routerStore.navigate("/signup");
+      }
+    }
+  }
+
   function handleBack() {
     if (authStore.user) {
       routerStore.navigate("/chat");
@@ -214,13 +224,15 @@
           </ul>
 
           <button
-            onclick={plan.id === "pro" ? handleUpgrade : undefined}
+            onclick={() => handlePlanClick(plan.id)}
             disabled={loading ||
               (plan.id === "free" && authStore.user?.plan === "free") ||
               (plan.id === "pro" && authStore.user?.plan === "pro")}
             class="w-full py-4 rounded-xl font-bold transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
                    {plan.id === 'free'
-              ? 'bg-slate-200 dark:bg-white/5 text-slate-500'
+              ? authStore.user?.plan === 'free'
+                ? 'bg-slate-100 dark:bg-white/5 text-slate-400'
+                : 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-900 dark:text-white shadow-sm'
               : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-600/30'}"
           >
             {#if loading && plan.id === "pro"}
@@ -231,9 +243,13 @@
             {:else if authStore.user?.plan === plan.id}
               Current Plan
             {:else}
-              {plan.id === "free" && authStore.user?.plan === "pro"
-                ? "Included"
-                : plan.buttonText}
+              {#if plan.id === "free" && authStore.user?.plan === "pro"}
+                Included
+              {:else if plan.id === "pro" && !authStore.user}
+                Get Started with Pro
+              {:else}
+                {plan.buttonText}
+              {/if}
             {/if}
           </button>
         </section>

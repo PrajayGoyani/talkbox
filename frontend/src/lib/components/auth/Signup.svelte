@@ -1,6 +1,7 @@
 <script lang="ts">
   import FloatingInput from "$components/ui/FloatingInput.svelte";
   import Icon from "$components/ui/Icon.svelte";
+  import { Route } from "$lib/utils/routes";
   import { authStore } from "$state/auth.svelte";
   import { routerStore } from "$state/router.svelte";
 
@@ -171,6 +172,25 @@
         </button>
       {/snippet}
     </FloatingInput>
+
+    <p class="text-[13px] text-slate-500 dark:text-slate-400 text-center px-4">
+      By signing up you agree to our
+      <a
+        href={"/#/" + Route.TERMS}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-indigo-600 hover:text-indigo-500 font-semibold"
+        >terms of service</a
+      >
+      and
+      <a
+        href={"/#/" + Route.PRIVACY}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-indigo-600 hover:text-indigo-500 font-semibold"
+        >privacy policy</a
+      >.
+    </p>
 
     <button type="submit" class="btn-primary" disabled={authStore.loading}>
       {#if authStore.loading}

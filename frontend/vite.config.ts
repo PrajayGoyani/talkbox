@@ -8,7 +8,11 @@ export default defineConfig({
   lint: { options: { typeAware: true, typeCheck: true } },
   plugins: [
     tailwindcss(),
-    svelte(),
+    svelte({
+      compilerOptions: {
+        discloseVersion: false,
+      },
+    }),
     compression({ algorithm: "gzip", exclude: [/\.(br)$/, /\.(gz)$/] }),
     compression({ algorithm: "brotliCompress", exclude: [/\.(br)$/, /\.(gz)$/] }),
   ],
