@@ -1,4 +1,9 @@
-import { FREE_PLAN_SCRUB_DAYS, PRO_PLAN_SESSION_LIMIT, REACTIONS_MAX_UNIQUE } from "@config/env";
+import {
+  FREE_PLAN_SCRUB_DAYS,
+  MESSAGE_MODIFY_LIMIT_HOURS,
+  PRO_PLAN_SESSION_LIMIT,
+  REACTIONS_MAX_UNIQUE,
+} from "@config/env";
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
 import User from "@models/user.model";
@@ -13,12 +18,16 @@ class SocketService {
   public Message: typeof Message;
   public io: TypedIO | null;
   public activeConnections: Map<string, Set<TypedSocket>>;
+  // In-memory cache for chat participants to avoid DB hits on high-frequency events like typing.
+  // Format: Map<chatId, Set<userId>>
+  public participantCache: Map<string, Set<string>>;
 
   constructor(messageModel: typeof Message) {
     this.Message = messageModel;
     this.io = null;
     // Map of userId -> Set of active socket instances
     this.activeConnections = new Map();
+    this.participantCache = new Map();
   }
 
   init(io: TypedIO) {
@@ -174,20 +183,22 @@ class SocketService {
     if (!receiverId || !chatId) return;
 
     // Security: Prevent arbitrary users from flooding target room bindings unless they share an active chat
-    try {
-      const isValid = await Chat.exists({
-        _id: chatId,
-        status: "accepted",
-        $or: [
-          { userA: senderId, userB: receiverId },
-          { userA: receiverId, userB: senderId },
-        ],
-      });
+    const cached = this.participantCache.get(chatId);
+    if (cached) {
+      if (!cached.has(senderId) || !cached.has(receiverId)) return;
+    } else {
+      try {
+        const chat = await Chat.findById(chatId).select("userA userB status");
+        if (!chat || chat.status !== "accepted") return;
 
-      if (!isValid) return;
-      // oxlint-disable-next-line no-unused-vars
-    } catch (_e) {
-      return;
+        const participants = new Set([chat.userA.toString(), chat.userB.toString()]);
+        if (!participants.has(senderId) || !participants.has(receiverId)) return;
+
+        this.participantCache.set(chatId, participants);
+        // oxlint-disable-next-line no-unused-vars
+      } catch (_e) {
+        return;
+      }
     }
 
     this.io?.to(`user:${receiverId}`).emit(isTyping ? "typing_start" : "typing_stop", {
@@ -219,8 +230,17 @@ class SocketService {
       // -----------------------------------------------------
 
       // Security: Check if user is part of the chat
-      const isParticipant =
-        chat.userA.toString() === senderId.toString() || chat.userB.toString() === senderId.toString();
+      const senderIdStr = senderId.toString();
+      const cached = this.participantCache.get(message.chatId.toString());
+      let isParticipant = false;
+
+      if (cached) {
+        isParticipant = cached.has(senderIdStr);
+      } else {
+        isParticipant = chat.userA.toString() === senderIdStr || chat.userB.toString() === senderIdStr;
+        // Populate cache for future use
+        this.participantCache.set(message.chatId.toString(), new Set([chat.userA.toString(), chat.userB.toString()]));
+      }
 
       if (!isParticipant) {
         return;
@@ -308,6 +328,11 @@ class SocketService {
     const chat = await Chat.findById(chatId);
     if (!chat || chat.status !== "accepted") {
       throw AppError.forbidden("Chat must be accepted before sending messages.");
+    }
+
+    // Proactively populate participant cache for this chat
+    if (!this.participantCache.has(chatId)) {
+      this.participantCache.set(chatId, new Set([chat.userA.toString(), chat.userB.toString()]));
     }
 
     // 3. Real-time Reliability Enforcer: Deduplication
@@ -408,6 +433,14 @@ class SocketService {
         return;
       }
 
+      // --- Zenith: Modify time limit check ---
+      const limitMs = MESSAGE_MODIFY_LIMIT_HOURS * 60 * 60 * 1000;
+      const cutoff = new Date(Date.now() - limitMs);
+      if (message.createdAt < cutoff) {
+        return;
+      }
+      // ---------------------------------------
+
       message.isDeleted = true;
       message.deletedAt = new Date();
       message.contentBody = "This message was deleted";
@@ -441,6 +474,75 @@ class SocketService {
       }
     } catch (err) {
       console.error("[SocketService] Error deleting message:", err);
+    }
+  }
+
+  async handleEditMessage(sender: AuthenticatedSocketUser, payload: { messageId: string; contentBody: string }) {
+    const senderId = sender.id;
+    const { messageId, contentBody } = payload;
+    if (!messageId || !contentBody?.trim()) return;
+
+    try {
+      const message = await this.Message.findById(messageId);
+      if (!message || message.isDeleted) return;
+
+      const chat = await Chat.findById(message.chatId);
+      if (!chat || chat.isDeleted) return;
+
+      // --- Zenith: Restrict actions on scrubbed messages ---
+      const scrubCutoff = new Date();
+      scrubCutoff.setDate(scrubCutoff.getDate() - FREE_PLAN_SCRUB_DAYS);
+      if (sender.plan === "free" && message.createdAt < scrubCutoff) {
+        return;
+      }
+      // -----------------------------------------------------
+
+      // Security: Only sender can edit their message
+      if (message.senderId.toString() !== senderId.toString()) {
+        return;
+      }
+
+      // --- Zenith: 1-hour time limit check ---
+      const limitMs = MESSAGE_MODIFY_LIMIT_HOURS * 60 * 60 * 1000;
+      const cutoff = new Date(Date.now() - limitMs);
+      if (message.createdAt < cutoff) {
+        return;
+      }
+      // ---------------------------------------
+
+      message.contentBody = contentBody.trim();
+      message.isEdited = true;
+      message.editedAt = new Date();
+      await message.save();
+
+      const isLastMessage = Boolean(
+        chat.lastMessage &&
+        chat.lastMessage.sentAt &&
+        chat.lastMessage.sentAt.getTime() === message.createdAt.getTime(),
+      );
+
+      // Determine participants
+      const participants = [chat.userA.toString(), chat.userB.toString()];
+      const updatePayload = {
+        messageId: messageId.toString(),
+        chatId: message.chatId.toString(),
+        contentBody: message.contentBody,
+        isEdited: message.isEdited,
+        editedAt: message.editedAt,
+      };
+
+      // notify both
+      participants.forEach((uid) => {
+        this.io?.to(`user:${uid}`).emit("message_updated", updatePayload);
+      });
+
+      // Update chat's lastMessage if it was this one
+      if (isLastMessage) {
+        chat.lastMessage.contentBody = message.contentBody;
+        await chat.save();
+      }
+    } catch (err) {
+      console.error("[SocketService] Error editing message:", err);
     }
   }
 }

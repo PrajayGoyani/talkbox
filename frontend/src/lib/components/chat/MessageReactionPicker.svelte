@@ -10,13 +10,24 @@
   let {
     msg,
     isSent,
+    onEdit,
   }: {
     msg: Message;
     isSent: boolean;
+    onEdit?: () => void;
   } = $props();
 
   let isOpen = $state(false);
   let isCopied = $state(false);
+
+  // --- Zenith: 1-hour time limit check ---
+  const isWithinModificationWindow = $derived(() => {
+    if (msg.isDeleted || msg.isScrubbed) return false;
+    const sentAt = new Date(msg.createdAt).getTime();
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    return sentAt > oneHourAgo;
+  });
+  // ---------------------------------------
 
   const handleSelect = ({ emoji, slug }: { emoji: string; slug?: string }) => {
     chatStore.reactToMessage(msg.id, emoji, slug);
@@ -99,12 +110,36 @@
     </button>
   {/if}
 
+  {#if isSent && !msg.isDeleted && isWithinModificationWindow()}
+    <button
+      class="p-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-500/10 transition-all active:scale-90"
+      onclick={() => onEdit?.()}
+      aria-label="Edit message"
+      use:tooltip={{ text: "Edit message", position: "top" }}
+      type="button"
+    >
+      <Icon name="edit" class="w-3.5 h-3.5" />
+    </button>
+  {/if}
+
   {#if isSent && !msg.isDeleted}
     <button
-      class="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all active:scale-90"
-      onclick={handleDelete}
+      class={cn(
+        "p-1 rounded-lg transition-all active:scale-90",
+        isWithinModificationWindow()
+          ? "text-slate-400 hover:text-rose-500 hover:bg-rose-500/10"
+          : "text-slate-300 cursor-not-allowed opacity-40",
+      )}
+      onclick={() => {
+        if (isWithinModificationWindow()) handleDelete();
+      }}
       aria-label="Delete message"
-      use:tooltip={{ text: "Delete message", position: "top" }}
+      use:tooltip={{
+        text: isWithinModificationWindow()
+          ? "Delete message"
+          : "Cannot delete (1hr passed)",
+        position: "top",
+      }}
       type="button"
     >
       <Icon name="trash" class="w-3.5 h-3.5" />

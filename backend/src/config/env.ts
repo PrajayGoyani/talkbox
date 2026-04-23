@@ -28,3 +28,4 @@ export const PRO_PLAN_SESSION_LIMIT = Number(process.env.PRO_PLAN_SESSION_LIMIT)
 export const RETENTION_MESSAGE_DAYS = Number(process.env.RETENTION_MESSAGE_DAYS) || 365;
 export const RETENTION_DELETED_CHAT_DAYS = Number(process.env.RETENTION_DELETED_CHAT_DAYS) || 14;
 export const RETENTION_NOTIFICATION_DAYS = Number(process.env.RETENTION_NOTIFICATION_DAYS) || 30;
+export const MESSAGE_MODIFY_LIMIT_HOURS = Number(process.env.MESSAGE_MODIFY_LIMIT_HOURS) || 1;

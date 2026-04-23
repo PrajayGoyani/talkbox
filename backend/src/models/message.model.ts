@@ -10,6 +10,8 @@ export interface IMessage extends Document {
   };
   isDeleted: boolean;
   deletedAt: Date | null;
+  isEdited: boolean;
+  editedAt: Date | null;
   createdAt: Date;
   isScrubbed?: boolean;
   idempotencyKey: string;
@@ -32,6 +34,8 @@ const messageSchema = new Schema<IMessage>({
   },
   isDeleted: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null },
+  isEdited: { type: Boolean, default: false },
+  editedAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
   idempotencyKey: { type: String, required: true, unique: true },
   reactions: [

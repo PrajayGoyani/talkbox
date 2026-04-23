@@ -136,7 +136,7 @@ class ChatStore {
       }
 
       if (olderMessages.length > 0) {
-        this.messages = [...olderMessages, ...this.messages];
+        this.messages.unshift(...olderMessages);
       }
       this.hasMoreMessages = olderMessages.length === 50;
     } catch (e: unknown) {
@@ -287,11 +287,15 @@ class ChatStore {
     this.socketManager.deleteMessage(messageId);
   }
 
+  editMessage(messageId: string, contentBody: string) {
+    this.socketManager.editMessage(messageId, contentBody);
+  }
+
   // --- Internal Handlers for SocketManager ---
 
   handleReceiveMessage(message: Message) {
     if (message.chatId === this.activeChatId) {
-      this.messages = [...this.messages, message];
+      this.messages.push(message);
     }
 
     // Clear typing indicator instantly
@@ -372,30 +376,22 @@ class ChatStore {
     reactions: Array<{ emoji: string; slug?: string; users: string[] }>;
   }) {
     if (data.chatId === this.activeChatId) {
-      const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
-      if (msgIndex !== -1) {
-        const updatedMessages = [...this.messages];
-        updatedMessages[msgIndex] = { ...updatedMessages[msgIndex], reactions: data.reactions };
-        this.messages = updatedMessages;
+      const msg = this.messages.find((m) => m.id === data.messageId);
+      if (msg) {
+        msg.reactions = data.reactions;
       }
     }
   }
 
   handleMessageDeleted(data: { messageId: string; chatId: string; isLastMessage?: boolean }) {
     if (data.chatId === this.activeChatId) {
-      const msgIndex = this.messages.findIndex((m) => m.id === data.messageId);
-      if (msgIndex !== -1) {
-        const updatedMessages = [...this.messages];
-        updatedMessages[msgIndex] = {
-          ...updatedMessages[msgIndex],
-          contentBody: "This message was deleted",
-          isDeleted: true,
-          reactions: [],
-        };
-        this.messages = updatedMessages;
+      const msg = this.messages.find((m) => m.id === data.messageId);
+      if (msg) {
+        msg.contentBody = "This message was deleted";
+        msg.isDeleted = true;
+        msg.reactions = [];
       }
     }
-
     const chat = this.chats.find((c) => c.id === data.chatId);
     if (chat && chat.lastMessage) {
       const isLatest =
@@ -415,10 +411,44 @@ class ChatStore {
     }
   }
 
+  handleMessageUpdated(data: {
+    messageId: string;
+    chatId: string;
+    contentBody: string;
+    isEdited: boolean;
+    editedAt: string;
+  }) {
+    if (data.chatId === this.activeChatId) {
+      const msg = this.messages.find((m) => m.id === data.messageId);
+      if (msg) {
+        msg.contentBody = data.contentBody;
+        msg.isEdited = data.isEdited;
+        msg.editedAt = data.editedAt;
+      }
+    }
+
+    const chat = this.chats.find((c) => c.id === data.chatId);
+    if (chat && chat.lastMessage) {
+      const isLatest =
+        this.activeChatId === data.chatId &&
+        this.messages.length > 0 &&
+        this.messages[this.messages.length - 1].id === data.messageId;
+
+      if (isLatest) {
+        this.patchChatLocally(data.chatId, {
+          lastMessage: {
+            ...chat.lastMessage,
+            contentBody: data.contentBody,
+          },
+        });
+      }
+    }
+  }
+
   handleMessageSentAck(chatId: string, message: Message) {
     const exists = this.messages.some((m: Message) => m.idempotencyKey === message.idempotencyKey);
     if (!exists) {
-      this.messages = [...this.messages, message];
+      this.messages.push(message);
     }
     this.patchChatLocally(
       chatId,
@@ -442,17 +472,14 @@ class ChatStore {
       return;
     }
 
-    const chat = { ...this.chats[chatIndex], ...updates };
-    const newChats = [...this.chats];
+    // Direct mutation for Svelte 5 reactivity
+    const chat = this.chats[chatIndex];
+    Object.assign(chat, updates);
 
-    if (moveToTop) {
-      newChats.splice(chatIndex, 1);
-      newChats.unshift(chat);
-    } else {
-      newChats[chatIndex] = chat;
+    if (moveToTop && chatIndex > 0) {
+      this.chats.splice(chatIndex, 1);
+      this.chats.unshift(chat);
     }
-
-    this.chats = newChats;
   }
 
   private showBrowserNotification(data: MessageAlert) {

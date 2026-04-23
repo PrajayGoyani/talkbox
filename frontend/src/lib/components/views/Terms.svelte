@@ -24,7 +24,18 @@
   </section>
 
   <section class="mb-12">
-    <h2 class="text-2xl font-bold mb-4">2. User Accounts</h2>
+    <h2 class="text-2xl font-bold mb-4">2. Eligibility & Age Requirement</h2>
+    <p>
+      You must be at least <strong>13 years old</strong> to use our Services or
+      such greater age required in your country or territory. Talkbox does not
+      knowingly collect or solicit information from anyone under the required
+      age. If you are under the minimum age requirement, you are not permitted
+      to register for an account or use the service.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-2xl font-bold mb-4">3. User Accounts</h2>
     <p>
       You are responsible for maintaining the confidentiality of your account
       and password and for restricting access to your computer.
@@ -32,7 +43,17 @@
   </section>
 
   <section class="mb-12">
-    <h2 class="text-2xl font-bold mb-4">3. Use License</h2>
+    <h2 class="text-2xl font-bold mb-4">4. Message Modification & Deletion</h2>
+    <p>
+      Users may edit or delete their own messages within a <strong>one-hour
+      window</strong> following the initial transmission. After this period,
+      messages become permanent records within the conversation. This limit is
+      subject to change at the discretion of Talkbox.
+    </p>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-2xl font-bold mb-4">5. Use License</h2>
     <p>
       Permission is granted to temporarily use Talkbox for personal,
       non-commercial transitory viewing only.
@@ -40,7 +61,7 @@
   </section>
 
   <section class="mb-12">
-    <h2 class="text-2xl font-bold mb-4">5. Subscription Plans</h2>
+    <h2 class="text-2xl font-bold mb-4">6. Subscription Plans</h2>
     <p>
       Talkbox offers a Free tier and a Pro subscription. By subscribing to the
       Pro plan, you gain access to increased usage limits, including up to 10
@@ -51,7 +72,7 @@
   </section>
 
   <section class="mb-12">
-    <h2 class="text-2xl font-bold mb-4">6. Refund Policy</h2>
+    <h2 class="text-2xl font-bold mb-4">7. Refund Policy</h2>
     <p>
       All subscriptions are processed as a public preview simulation. However,
       for the purposes of these terms, all subscription purchases are final and
@@ -60,7 +81,7 @@
   </section>
 
   <section class="mb-12">
-    <h2 class="text-2xl font-bold mb-4">7. Privacy Policy</h2>
+    <h2 class="text-2xl font-bold mb-4">8. Privacy Policy</h2>
     <p>
       Your use of Talkbox is also governed by our <button
         onclick={() => routerStore.navigate(Route.PRIVACY)}
@@ -70,7 +91,7 @@
   </section>
 
   <section class="mb-12">
-    <h2 class="text-2xl font-bold mb-4">8. Data Deletion</h2>
+    <h2 class="text-2xl font-bold mb-4">9. Data Deletion</h2>
     <p>
       Please be advised that user-initiated deletion is permanent and
       irreversible. While content is masked immediately upon deletion, technical

@@ -111,6 +111,9 @@ export const configureSocketServer = (server: import("http").Server | import("ht
     socket.on("delete_message", async (data) => {
       socketService.handleDeleteMessage(socket.data.user, data);
     });
+    socket.on("edit_message", async (data) => {
+      socketService.handleEditMessage(socket.data.user, data);
+    });
 
     // E2EE Key exchange setup
     socket.on("store_public_bundle", async (_bundleData, ack) => {

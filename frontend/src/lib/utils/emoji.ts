@@ -134,10 +134,10 @@ export function parseMessageContent(
 
   // Options-based toggle for rich formatting (Developers can set this to false to disable)
   if (options.richFormatting) {
-    // 1. Pass: Code blocks (backticks)
-    segments = splitByRegex(segments, /`([^`]+)`/g, (match) => ({
+    // 1. Pass: Code blocks (backticks) - Supports escaped backticks \`
+    segments = splitByRegex(segments, /`((?:\\`|[^`])+)`/g, (match) => ({
       type: "code",
-      content: match[1].trim(), // Trim removes unintended leading/trailing whitespace/newlines
+      content: match[1].replace(/\\`/g, "`").trim(), // Trim removes unintended leading/trailing whitespace/newlines
     }));
 
     // 2. Pass: URLs (http/https)
@@ -204,7 +204,7 @@ export function getEmojiDisplayMode(text: string): EmojiDisplayMode {
     return "normal";
   }
 
-  const segments = Array.from(segmenter.segment(trimmed));
+  const segments = segmenter.segment(trimmed);
   let count = 0;
 
   for (const seg of segments) {

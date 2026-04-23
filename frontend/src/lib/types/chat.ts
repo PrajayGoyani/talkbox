@@ -21,6 +21,8 @@ export interface Message {
     users: string[];
   }>;
   isDeleted?: boolean;
+  isEdited?: boolean;
+  editedAt?: string | null;
   isScrubbed?: boolean;
   emojiMetadata?: Record<string, string>;
 }

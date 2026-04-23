@@ -140,6 +140,19 @@ export class SocketManager {
     this.socket.on("message_deleted", (data: { messageId: string; chatId: string; isLastMessage?: boolean }) => {
       this.store.handleMessageDeleted(data);
     });
+
+    this.socket.on(
+      "message_updated",
+      (data: {
+        messageId: string;
+        chatId: string;
+        contentBody: string;
+        isEdited: boolean;
+        editedAt: string;
+      }) => {
+        this.store.handleMessageUpdated(data);
+      },
+    );
   }
 
   disconnect() {
@@ -228,4 +241,13 @@ export class SocketManager {
       messageId,
     });
   }
-}
+
+  editMessage(messageId: string, contentBody: string) {
+    if (!this.socket || !this.store.isConnected || !this.store.activeChatId) return;
+
+    this.socket.emit("edit_message", {
+      messageId,
+      contentBody,
+    });
+  }
+ }

@@ -219,6 +219,80 @@
     }
     return groups;
   });
+
+  // --- Message Editing & Deletion ---
+  let messageEditingId = $state<string | null>(null);
+  let editInputValue = $state("");
+  let editTextareaElement: HTMLTextAreaElement | undefined = $state();
+  let showMessageActionsId = $state<string | null>(null);
+
+  const canModify = (msg: Message) => {
+    if (msg.isDeleted || msg.isScrubbed) return false;
+    if (msg.senderId !== authStore.user?.id) return false;
+
+    // 1-hour time limit check
+    const sentAt = new Date(msg.createdAt).getTime();
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    return sentAt > oneHourAgo;
+  };
+
+  const startEditing = (msg: Message) => {
+    messageEditingId = msg.id;
+    editInputValue = msg.contentBody;
+    tick().then(() => {
+      if (editTextareaElement) {
+        editTextareaElement.focus();
+        // Trigger initial height resize
+        handleEditInput({ target: editTextareaElement } as any);
+      }
+    });
+  };
+
+  const cancelEditing = () => {
+    messageEditingId = null;
+    editInputValue = "";
+  };
+
+  const saveEditing = (msgId: string) => {
+    const trimmed = editInputValue.trim();
+    if (!trimmed || trimmed === chatStore.messages.find(m => m.id === msgId)?.contentBody) {
+      cancelEditing();
+      return;
+    }
+
+    const found = getDisallowedEmojis(trimmed);
+    if (found.length > 0) {
+      uiStore.addAlert(
+        `Message contains disallowed emojis (${found.join(", ")}). Please remove them.`,
+        "danger",
+      );
+      return;
+    }
+
+    chatStore.editMessage(msgId, trimmed);
+    cancelEditing();
+  };
+
+  const handleEditKeydown = (e: KeyboardEvent, msgId: string) => {
+    if (e.key === "Enter" && !e.shiftKey && !isTouchDevice) {
+      e.preventDefault();
+      saveEditing(msgId);
+    } else if (e.key === "Escape") {
+      cancelEditing();
+    }
+  };
+
+  const handleEditInput = (e: Event) => {
+    const target = e.target as HTMLTextAreaElement;
+    target.style.height = "auto";
+    const newHeight = Math.min(target.scrollHeight, 128);
+    target.style.height = `${newHeight}px`;
+    target.style.overflowY = target.scrollHeight > 128 ? "auto" : "hidden";
+  };
+
+  const handleDeleteMessage = (msgId: string) => {
+    chatStore.deleteMessage(msgId);
+  };
 </script>
 
 <div class="glass-panel p-2.5 md:p-4 border-b shrink-0">
@@ -409,6 +483,20 @@
                   i > 0 && !isFirstInGroup ? "mt-1" : "mt-2",
                   (msg.isDeleted || msg.isScrubbed) && "italic opacity-60",
                 )}
+                role="button"
+                tabindex="0"
+                onclick={() => {
+                  if (isTouchDevice && !msg.isDeleted && !msg.isScrubbed) {
+                    showMessageActionsId = showMessageActionsId === msg.id ? null : msg.id;
+                  }
+                }}
+                onkeydown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    if (isTouchDevice && !msg.isDeleted && !msg.isScrubbed) {
+                      showMessageActionsId = showMessageActionsId === msg.id ? null : msg.id;
+                    }
+                  }
+                }}
               >
                 {#if msg.isDeleted || msg.isScrubbed}
                   <div
@@ -456,7 +544,7 @@
                 {/if}
                 <div
                   class={cn(
-                    "chat-bubble rounded-2xl px-2.5 py-1 mt-1 flex items-center justify-center min-w-0 relative group",
+                    "rounded-2xl px-2.5 py-1 mt-1 flex items-center justify-center min-w-0 relative group/meta",
                     isSent ? "chat-bubble-sent" : "chat-bubble-received",
                   )}
                 >
@@ -464,9 +552,18 @@
                     class="text-[9px] font-medium whitespace-nowrap opacity-70"
                   >
                     {formatSimpleTime(msg.createdAt)}
+                    {#if msg.isEdited && !msg.isDeleted}
+                      <span class="ml-1 opacity-50 italic">(edited)</span>
+                    {/if}
                   </span>
                   {#if !msg.isDeleted && !msg.isScrubbed}
-                    <MessageReactionPicker {msg} {isSent} />
+                    <div class="flex items-center gap-1">
+                      <MessageReactionPicker 
+                        {msg} 
+                        {isSent} 
+                        onEdit={() => startEditing(msg)}
+                      />
+                    </div>
                   {/if}
                 </div>
                 <!-- Reactions rendering for jumbo -->
@@ -482,49 +579,97 @@
                   i > 0 && !isFirstInGroup ? "mt-1" : "mt-2",
                   (msg.isDeleted || msg.isScrubbed) && "opacity-60",
                 )}
+                role="button"
+                tabindex="0"
+                onclick={() => {
+                  if (isTouchDevice && !msg.isDeleted && !msg.isScrubbed) {
+                    showMessageActionsId = showMessageActionsId === msg.id ? null : msg.id;
+                  }
+                }}
+                onkeydown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    if (isTouchDevice && !msg.isDeleted && !msg.isScrubbed) {
+                      showMessageActionsId = showMessageActionsId === msg.id ? null : msg.id;
+                    }
+                  }
+                }}
               >
-                <div class="relative">
-                  <p
-                    class={cn(
-                      "m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap",
-                      (msg.isDeleted || msg.isScrubbed) && "italic opacity-80",
-                    )}
-                  >
-                    {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
-                      {#if segment.type === "emoji"}
-                        <span
-                          class="cursor-default inline-block align-middle px-0.5"
-                          use:tooltip={{
-                            text: segment.content + "\n:" + segment.name + ":",
-                            variant: "jumbo",
-                            position: "top",
-                          }}>{segment.content}</span
+                <div class="relative group/content">
+                  {#if messageEditingId === msg.id}
+                    <div class="flex flex-col gap-2 min-w-[200px] py-1">
+                      <textarea
+                        bind:value={editInputValue}
+                        bind:this={editTextareaElement}
+                        class="w-full bg-transparent border-none focus:ring-0 outline-none resize-none text-sm leading-relaxed p-0 scrollbar-none shadow-none"
+                        onkeydown={(e) => handleEditKeydown(e, msg.id)}
+                        oninput={handleEditInput}
+                        rows="1"
+                      ></textarea>
+                      <div class="flex justify-end gap-3 mt-1">
+                        <button 
+                          onclick={cancelEditing}
+                          class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-white/40 dark:hover:text-white/70 dark:hover:bg-white/5 transition-colors"
                         >
-                      {:else if segment.type === "link"}
-                        <a
-                          href={segment.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="chat-link"
-                          onclick={(e) => e.stopPropagation()}
+                          Cancel
+                        </button>
+                        <button 
+                          onclick={() => saveEditing(msg.id)}
+                          class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:text-indigo-300 dark:hover:bg-indigo-500/10 transition-colors"
                         >
+                          Save Changes
+                        </button>
+                      </div>
+                    </div>
+                  {:else}
+                    <p
+                      class={cn(
+                        "m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap",
+                        (msg.isDeleted || msg.isScrubbed) && "italic opacity-80",
+                      )}
+                    >
+                      {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
+                        {#if segment.type === "emoji"}
+                          <span
+                            class="cursor-default inline-block align-middle px-0.5"
+                            use:tooltip={{
+                              text: segment.content + "\n:" + segment.name + ":",
+                              variant: "jumbo",
+                              position: "top",
+                            }}>{segment.content}</span
+                          >
+                        {:else if segment.type === "link"}
+                          <a
+                            href={segment.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="chat-link"
+                            onclick={(e) => e.stopPropagation()}
+                          >
+                            {segment.content}
+                          </a>
+                        {:else if segment.type === "code"}
+                          <code class="chat-code">{segment.content}</code>
+                        {:else}
                           {segment.content}
-                        </a>
-                      {:else if segment.type === "code"}
-                        <code class="chat-code">{segment.content}</code>
-                      {:else}
-                        {segment.content}
+                        {/if}
+                      {/each}<span class="inline-block {msg.isEdited ? 'w-[84px]' : 'w-11'} h-0"></span>
+                    </p>
+                    <span
+                      class="absolute bottom-0 right-[-4px] text-[9px] opacity-60 leading-none pb-0.5 whitespace-nowrap flex items-center"
+                    >
+                      {formatSimpleTime(msg.createdAt)}
+                      {#if msg.isEdited && !msg.isDeleted}
+                        <span class="ml-1 opacity-50 italic">(edited)</span>
                       {/if}
-                    {/each}<span class="inline-block w-11 h-0"></span>
-                  </p>
-                  <span
-                    class="absolute bottom-0 right-[-4px] text-[9px] opacity-60 leading-none pb-0.5"
-                  >
-                    {formatSimpleTime(msg.createdAt)}
-                  </span>
+                    </span>
+                  {/if}
                 </div>
                 {#if !msg.isDeleted && !msg.isScrubbed}
-                  <MessageReactionPicker {msg} {isSent} />
+                  <MessageReactionPicker 
+                    {msg} 
+                    {isSent} 
+                    onEdit={() => startEditing(msg)}
+                  />
                 {/if}
                 <!-- Reaction list for normal -->
                 <div class="flex flex-col gap-1 items-start">
@@ -660,6 +805,8 @@
     </button>
   </div>
 {/if}
+
+
 
 <style>
   :global([data-theme="dark"] emoji-picker) {

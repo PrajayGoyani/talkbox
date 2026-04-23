@@ -39,6 +39,8 @@ export interface MessageDto {
   idempotencyKey?: string;
   createdAt: Date;
   updatedAt?: Date;
+  isEdited?: boolean;
+  editedAt?: Date | null;
   isDeleted?: boolean;
 
   deletedAt?: Date | null;
@@ -91,6 +93,13 @@ export interface ServerToClientEvents {
     preview: string;
   }) => void;
   message_deleted: (payload: { messageId: string; chatId: string; isLastMessage: boolean }) => void;
+  message_updated: (payload: {
+    messageId: string;
+    chatId: string;
+    contentBody: string;
+    isEdited: boolean;
+    editedAt: Date;
+  }) => void;
   notification: (payload: NotificationDto) => void;
   chat_accepted: (payload: { chatId: string }) => void;
 }
@@ -102,6 +111,7 @@ export interface ClientToServerEvents {
   ) => void;
   react_message: (data: { messageId: string; emoji: string; slug?: string }) => void;
   delete_message: (data: { messageId: string }) => void;
+  edit_message: (data: { messageId: string; contentBody: string }) => void;
   store_public_bundle: (bundleData: any, callback?: (res: { status: "ok" | "error" }) => void) => void;
   typing_start: (data: { receiverId: string; chatId: string }) => void;
   typing_stop: (data: { receiverId: string; chatId: string }) => void;
