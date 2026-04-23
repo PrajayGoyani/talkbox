@@ -100,8 +100,6 @@
       return;
     }
 
-    return;
-
     const confirmed = await confirmStore.show({
       title: "Simulated Checkout",
       message:
