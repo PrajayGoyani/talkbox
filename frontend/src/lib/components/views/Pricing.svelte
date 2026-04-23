@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from "$components/ui/Icon.svelte";
+  import { ALLOW_UPGRADES } from "$lib/config";
   import { authStore } from "$state/auth.svelte";
   import { confirmStore } from "$state/confirm.svelte";
   import { routerStore } from "$state/router.svelte";
@@ -90,6 +91,16 @@
     }
 
     if (authStore.user?.plan === "pro") return;
+
+    if (!ALLOW_UPGRADES) {
+      uiStore.addAlert(
+        "Pro upgrades are temporarily disabled for maintenance. Please check back later!",
+        "info",
+      );
+      return;
+    }
+
+    return;
 
     const confirmed = await confirmStore.show({
       title: "Simulated Checkout",
@@ -247,14 +258,12 @@
               </span>
             {:else if authStore.user?.plan === plan.id}
               Current Plan
+            {:else if plan.id === "free" && authStore.user?.plan === "pro"}
+              Included
+            {:else if plan.id === "pro" && !authStore.user}
+              Get Started with Pro
             {:else}
-              {#if plan.id === "free" && authStore.user?.plan === "pro"}
-                Included
-              {:else if plan.id === "pro" && !authStore.user}
-                Get Started with Pro
-              {:else}
-                {plan.buttonText}
-              {/if}
+              {plan.buttonText}
             {/if}
           </button>
         </section>
