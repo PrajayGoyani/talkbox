@@ -4,6 +4,7 @@ import { connectDB } from "@config/db";
 import { startJobs } from "@jobs/jobs";
 import mongoose from "mongoose";
 import { setServers } from "node:dns/promises";
+import { redisService } from "@services/redis.service";
 
 import { configureSocket, startServer } from "@/app";
 
@@ -35,6 +36,9 @@ async function bootstrap() {
 
       await mongoose.connection.close();
       console.log("MongoDB connection closed.");
+
+      // Close Redis connections
+      await redisService.close();
     } catch (err) {
       console.error("Error during graceful shutdown:", err);
       process.exit(1);

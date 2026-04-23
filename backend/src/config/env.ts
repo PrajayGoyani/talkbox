@@ -9,6 +9,7 @@ export const JWT_EXPIRATION = process.env.JWT_EXPIRATION as string;
 export const JWT_REFRESH_SECRET_KEY = process.env.JWT_REFRESH_SECRET_KEY as string;
 export const JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION as string;
 export const MONGO_URI = process.env.MONGO_URI as string;
+export const REDIS_URL = process.env.REDIS_URL as string;
 export const NODE_ENV = process.env.NODE_ENV as string;
 export const BCRYPT_SALT = Number(process.env.BCRYPT_SALT) || 12;
 export const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;

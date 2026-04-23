@@ -1,22 +1,33 @@
 <script lang="ts">
+  import ChatContextMenu from "$components/chat/ChatContextMenu.svelte";
+  import ChatListItem from "$components/chat/ChatListItem.svelte";
   import ChatListSkeleton from "$components/chat/ChatListSkeleton.svelte";
-  import Avatar from "$components/ui/Avatar.svelte";
   import Icon from "$components/ui/Icon.svelte";
-  import { authStore } from "$state/auth.svelte";
-  import { chatStore, type ChatStatus, type User } from "$state/chat.svelte";
-  import { formatListTime } from "$utils/date";
+  import {
+    chatStore,
+    type Chat,
+    type ChatStatus,
+    type User,
+  } from "$state/chat.svelte";
   import { onMount, untrack } from "svelte";
+  import { debounce } from "$utils/timing";
+  import { CHAT_SEARCH_DEBOUNCE } from "$lib/config";
 
-  const props = $props<{
+  let {
+    activeChatId: _activeChatId = null,
+    onSelectChat,
+    activeTab: _activeTab = "all",
+    searchQuery: _searchQuery = "",
+  } = $props<{
     activeChatId?: string | null;
     onSelectChat: (chatId: string, otherUser: User, status: ChatStatus) => void;
-    activeTab?: string;
+    activeTab?: "all" | "unread";
     searchQuery?: string;
   }>();
 
-  const activeChatId = $derived(props.activeChatId ?? null);
-  const activeTab = $derived(props.activeTab ?? "active");
-  const searchQuery = $derived(props.searchQuery ?? "");
+  const activeChatId = $derived(_activeChatId);
+  const activeTab = $derived(_activeTab);
+  const searchQuery = $derived(_searchQuery);
 
   let listContainer: HTMLDivElement | null = $state(null);
   let listContainerHeight = $state(0);
@@ -33,6 +44,24 @@
     Record<string, "accepting" | "rejecting" | null>
   >({});
 
+  // Context Menu State
+  let menuPos = $state({ x: 0, y: 0 });
+  let isMenuOpen = $state(false);
+  let menuChat = $state<Chat | null>(null);
+
+  const handleContextMenu = (e: MouseEvent, chat: Chat) => {
+    e.preventDefault();
+    // Simple bounds check to prevent menu from going off-screen (menu width is 224px, height ~240px)
+    let x = e.clientX;
+    let y = e.clientY;
+
+    if (x + 230 > window.innerWidth) x -= 230;
+    if (y + 250 > window.innerHeight) y -= 250;
+
+    menuPos = { x, y };
+    menuChat = chat;
+    isMenuOpen = true;
+  };
 
   export const refreshChats = async () => {
     loading = true;
@@ -45,23 +74,18 @@
     }
   };
 
-  let searchTimeout: ReturnType<typeof setTimeout>;
+  const debouncedRefresh = debounce(() => refreshChats(), CHAT_SEARCH_DEBOUNCE);
+
   $effect(() => {
     const query = searchQuery; // track
     untrack(() => {
       // Avoid redundant refresh if query matches store state
-      // This also ensures that clearing the search triggers a reload of the full list
       if (query.trim() === (chatStore.currentSearchQuery || "")) {
         return;
       }
-
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        refreshChats();
-      }, 300);
+      debouncedRefresh();
     });
   });
-
 
   const handleAccept = async (chatId: string) => {
     if (processingStates[chatId]) return;
@@ -83,7 +107,7 @@
     } catch (e) {
       console.error(e);
     } finally {
-      delete processingStates[chatId];
+      processingStates[chatId] = null;
     }
   };
 
@@ -91,8 +115,9 @@
   const filteredChats = $derived.by(() => {
     const list = (chatStore.chats || []).filter((chat) => {
       if (!chat) return false;
-      if (activeTab === "active") return chat.status === "accepted";
-      if (activeTab === "pending") return chat.status === "pending";
+      if (activeTab === "all") return chat.status === "accepted";
+      if (activeTab === "unread")
+        return chat.status === "accepted" && (chat.unreadCount ?? 0) > 0;
       return true;
     });
     return list;
@@ -110,17 +135,11 @@
     const callback = (entries: IntersectionObserverEntry[]) => {
       if (entries[0].isIntersecting) {
         if (
-          activeTab === "active" &&
+          (activeTab === "all" || activeTab === "unread") &&
           chatStore.hasMoreChats &&
           !chatStore.isLoadingMoreChats
         ) {
           chatStore.loadMoreChats();
-        } else if (
-          activeTab === "pending" &&
-          chatStore.hasMoreRequests &&
-          !chatStore.isLoadingMoreRequests
-        ) {
-          chatStore.loadMoreRequests();
         }
       }
     };
@@ -149,7 +168,6 @@
   class="flex flex-col gap-1 h-full p-2 overflow-y-auto"
   bind:clientHeight={listContainerHeight}
 >
-
   <!-- Chat Items -->
   {#if loading}
     <div class="flex flex-col">
@@ -165,116 +183,42 @@
   {:else if error}
     <div class="text-center py-10 text-rose-500 text-sm">{error}</div>
   {:else if filteredChats.length === 0}
-    <div class="text-center py-10 text-slate-500 text-sm">
-      {activeTab === "pending" ? "No pending requests" : "No conversations yet"}
+    <div
+      class="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in-95 duration-500"
+    >
+      <div
+        class="w-20 h-20 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center mb-6"
+      >
+        <Icon
+          name={activeTab === "unread" ? "notifications" : "nav-chat"}
+          class="w-10 h-10 text-slate-300 dark:text-slate-600"
+        />
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">
+        {activeTab === "unread"
+          ? "You're All Caught Up"
+          : "No Conversations Yet"}
+      </h3>
+      <p class="text-sm text-slate-500 max-w-[200px] leading-relaxed">
+        {activeTab === "unread"
+          ? "You've read all your messages. Great job!"
+          : "Connect with others by sending a magic chat request."}
+      </p>
     </div>
   {:else}
     <div class="flex flex-col gap-1">
       {#each filteredChats as chat (chat.id)}
-        {@const displayName = chat.otherUser.name || chat.otherUser.username}
-        <div class="relative group">
-          <button
-            class="chat-item {activeChatId === chat.id
-              ? 'chat-item-active'
-              : ''}"
-            onclick={() =>
-              props.onSelectChat(chat.id, chat.otherUser, chat.status)}
-          >
-            <div class="relative shrink-0">
-              <Avatar
-                user={chat.otherUser}
-                showBadge={true}
-                class="w-11 h-11 bg-slate-200 dark:bg-slate-800 text-lg text-slate-600 dark:text-slate-300"
-              />
-              {#if chatStore.onlineStatus.get(chat.otherUser.id)?.isOnline}
-                <div
-                  class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-sm"
-                ></div>
-              {/if}
-            </div>
-            <div class="flex flex-col flex-1 overflow-hidden text-left">
-              <div class="flex justify-between items-baseline gap-2">
-                <span
-                  class="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate"
-                  >{displayName}</span
-                >
-                {#if chat.lastMessage?.sentAt}
-                  <span class="text-[10px] text-slate-500 shrink-0"
-                    >{formatListTime(chat.lastMessage.sentAt)}</span
-                  >
-                {/if}
-              </div>
-              {#if chat.status === "pending"}
-                <span class="text-xs text-amber-500 italic truncate mt-0.5">
-                  {chat.createdBy === authStore.user?.id
-                    ? "Request sent"
-                    : "Incoming request"}
-                </span>
-              {:else if (chatStore.typingStatus[chat.id]?.size ?? 0) > 0 && !chatStore.typingStatus[chat.id]?.has(authStore.user?.id || "")}
-                <span
-                  class="text-xs text-indigo-500 font-medium italic animate-pulse truncate mt-0.5"
-                >
-                  Typing...
-                </span>
-              {:else if chat.lastMessage?.contentBody}
-                <span
-                  class="text-xs text-slate-500 truncate mt-0.5 leading-tight"
-                >
-                  {(chat.lastMessage.contentBody || "").length > 35
-                    ? (chat.lastMessage.contentBody || "").substring(0, 35) +
-                      "..."
-                    : chat.lastMessage.contentBody || ""}
-                </span>
-              {:else}
-                <span class="text-xs text-slate-500 truncate mt-0.5"
-                  >No messages yet</span
-                >
-              {/if}
-            </div>
-            {#if (chat.unreadCount ?? 0) > 0}
-              <span
-                class="bg-indigo-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 animate-in scale-in-0 duration-300"
-                >{(chat.unreadCount ?? 0) > 99 ? "99+" : chat.unreadCount}</span
-              >
-            {/if}
-          </button>
-          <!-- Accept/Reject for incoming pending requests -->
-          {#if chat.status === "pending" && chat.createdBy !== authStore.user?.id}
-            <div
-              class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-100 dark:bg-slate-800 p-1 rounded-full shadow-lg"
-              class:!opacity-100={!!processingStates[chat.id]}
-            >
-              <button
-                class="w-8 h-8 rounded-full flex items-center justify-center bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-colors disabled:opacity-40 active:scale-95"
-                onclick={() => handleAccept(chat.id)}
-                aria-label="Accept request"
-                disabled={!!processingStates[chat.id]}
-              >
-                {#if processingStates[chat.id] === "accepting"}
-                  <span
-                    class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"
-                  ></span>
-                {:else}
-                  <Icon name="check" class="w-4 h-4" stroke-width="2.5" />
-                {/if}
-              </button>
-              <button
-                class="w-8 h-8 rounded-full flex items-center justify-center bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 transition-colors disabled:opacity-40 active:scale-95"
-                onclick={() => handleReject(chat.id)}
-                aria-label="Reject request"
-                disabled={!!processingStates[chat.id]}
-              >
-                {#if processingStates[chat.id] === "rejecting"}
-                  <span
-                    class="w-3.5 h-3.5 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin"
-                  ></span>
-                {:else}
-                  <Icon name="close" class="w-4 h-4" stroke-width="2.5" />
-                {/if}
-              </button>
-            </div>
-          {/if}
-        </div>
+        <ChatListItem
+          {chat}
+          {activeChatId}
+          isMenuOpen={isMenuOpen && menuChat?.id === chat.id}
+          isMenuTarget={menuChat?.id === chat.id}
+          processingState={processingStates[chat.id] ?? null}
+          onSelect={onSelectChat}
+          onContextMenu={handleContextMenu}
+          onAccept={handleAccept}
+          onReject={handleReject}
+        />
       {/each}
 
       <!-- Pagination Sentinel -->
@@ -282,7 +226,7 @@
         bind:this={sentinel}
         class="h-10 w-full flex items-center justify-center py-4"
       >
-        {#if (activeTab === "active" && chatStore.isLoadingMoreChats) || (activeTab === "pending" && chatStore.isLoadingMoreRequests)}
+        {#if (activeTab === "all" || activeTab === "unread") && chatStore.isLoadingMoreChats}
           <div class="flex items-center gap-2 text-slate-400 text-xs">
             <span
               class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
@@ -294,3 +238,11 @@
     </div>
   {/if}
 </div>
+
+<ChatContextMenu
+  bind:isOpen={isMenuOpen}
+  x={menuPos.x}
+  y={menuPos.y}
+  chat={menuChat}
+  onClose={() => (menuChat = null)}
+/>

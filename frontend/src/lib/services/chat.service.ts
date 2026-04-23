@@ -144,7 +144,10 @@ export class ChatService {
       body: JSON.stringify({ username: username.trim() }),
     });
     const result = await resp.json();
-    if (!resp.ok) throw new Error(result.error?.message || "Failed to send request");
+    if (!resp.ok) {
+      const errorMessage = result.error?.message || result.message || "Failed to send request";
+      throw new Error(errorMessage);
+    }
     return result;
   }
 }

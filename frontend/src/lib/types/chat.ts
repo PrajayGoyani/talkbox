@@ -40,6 +40,9 @@ export interface Chat {
     sentAt: string;
   };
   createdAt: string;
+  isPinned?: boolean;
+  /** Internal field for efficient sorting — not from API */
+  _lastUpdateTs?: number;
 }
 
 export interface MessageAlert {

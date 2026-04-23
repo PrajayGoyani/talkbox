@@ -3,6 +3,7 @@
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
   import { chatStore, type Message } from "$state/chat.svelte";
+  import { MESSAGE_MODIFICATION_WINDOW } from "$lib/config";
   import { confirmStore } from "$state/confirm.svelte";
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
@@ -21,11 +22,10 @@
   let isCopied = $state(false);
 
   // --- Zenith: 1-hour time limit check ---
-  const isWithinModificationWindow = $derived(() => {
+  const isWithinModificationWindow = $derived.by(() => {
     if (msg.isDeleted || msg.isScrubbed) return false;
     const sentAt = new Date(msg.createdAt).getTime();
-    const oneHourAgo = Date.now() - 60 * 60 * 1000;
-    return sentAt > oneHourAgo;
+    return sentAt > Date.now() - MESSAGE_MODIFICATION_WINDOW;
   });
   // ---------------------------------------
 
@@ -110,7 +110,7 @@
     </button>
   {/if}
 
-  {#if isSent && !msg.isDeleted && isWithinModificationWindow()}
+  {#if isSent && !msg.isDeleted && isWithinModificationWindow}
     <button
       class="p-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-500/10 transition-all active:scale-90"
       onclick={() => onEdit?.()}
@@ -122,7 +122,7 @@
     </button>
   {/if}
 
-  {#if isSent && !msg.isDeleted && isWithinModificationWindow()}
+  {#if isSent && !msg.isDeleted && isWithinModificationWindow}
     <button
       class="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all active:scale-90"
       onclick={handleDelete}

@@ -62,3 +62,16 @@ export const ASSETS = {
   NOTIFICATION_ICON: "/vite.svg",
   LOGO: "/favicon.png",
 };
+// --- UI Constants ---
+
+/** Maximum time allowed to edit or delete a message (ms) */
+export const MESSAGE_MODIFICATION_WINDOW = 60 * 60 * 1000; // 1 hour
+
+/** Approximate height of a message skeleton for layout calculation (px) */
+export const MESSAGE_SKELETON_HEIGHT = 90;
+
+/** Debounce duration for chat list search (ms) */
+export const CHAT_SEARCH_DEBOUNCE = 300;
+
+/** Throttle duration for scroll events (ms) */
+export const SCROLL_THROTTLE_DURATION = 100;

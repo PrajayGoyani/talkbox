@@ -1,6 +1,7 @@
 <script lang="ts">
   import ChatList from "$components/chat/ChatList.svelte";
   import Icon from "$components/ui/Icon.svelte";
+  import SegmentedControl from "$components/ui/SegmentedControl.svelte";
   import { chatStore, type ChatStatus, type User } from "$state/chat.svelte";
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
@@ -20,6 +21,9 @@
 
   let chatListRef: ReturnType<typeof ChatList> | undefined = $state();
   let searchQuery = $state("");
+  let activeTab: "all" | "unread" = $state("all");
+
+  const unreadCountForTab = $derived(chatStore.unreadChatsCount);
 
   // New chat request state
   let showRequestInput = $state(false);
@@ -121,6 +125,18 @@
         />
       </div>
 
+      <SegmentedControl
+        bind:value={activeTab}
+        options={[
+          { label: "All", value: "all" },
+          {
+            label: "Unread",
+            value: "unread",
+            badge: unreadCountForTab > 0 ? unreadCountForTab : undefined,
+          },
+        ]}
+      />
+
       <!-- Collapsible Request Form -->
       {#if showRequestInput}
         <div
@@ -133,6 +149,7 @@
               placeholder="Enter username..."
               class="flex-1 px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-500/30 bg-white dark:bg-slate-900 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
               bind:value={requestUsername}
+              oninput={() => (requestError = null)}
               onkeydown={(e) => e.key === "Enter" && handleSendRequest()}
               disabled={requestLoading}
             />
@@ -173,7 +190,7 @@
       {activeChatId}
       {onSelectChat}
       {searchQuery}
-      activeTab="active"
+      {activeTab}
     />
   </div>
 
@@ -190,9 +207,6 @@
     <Icon
       name={showRequestInput ? "close" : "add"}
       class="w-6 h-6 transition-transform"
-      style={showRequestInput
-        ? "transform: rotate(0deg)"
-        : "transform: rotate(0deg)"}
     />
   </button>
 </div>

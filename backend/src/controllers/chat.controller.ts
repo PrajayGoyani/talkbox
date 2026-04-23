@@ -48,7 +48,13 @@ export const deleteChat = async (req: Request, res: Response) => {
 export const getChatMessages = async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const cursor = (req.query.cursor as string) || undefined;
-  const messages = await chatService.getChatMessages(req.params.chatId as string, req.user!.id, limit, cursor as any);
+  const messages = await chatService.getChatMessages(
+    req.params.chatId as string,
+    req.user!.id,
+    limit,
+    cursor as any,
+    req.user!.plan,
+  );
   res.success(messages);
 };
 

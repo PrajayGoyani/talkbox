@@ -1,4 +1,4 @@
-import { COOKIE_SAMESITE, COOKIE_SECURE, NODE_ENV } from "@config/env";
+import { COOKIE_SAMESITE, COOKIE_SECURE } from "@config/env";
 import { authService } from "@services/auth.service";
 import { CookieOptions, Request, Response } from "express";
 

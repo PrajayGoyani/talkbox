@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Disallow crawling of any potential sensitive paths if they were to exist
+# Disallow: /api/
+# Disallow: /admin/

@@ -1,16 +1,30 @@
-import { FREE_PLAN_CHAT_LIMIT, FREE_PLAN_SCRUB_DAYS } from "@config/env";
+import { FREE_PLAN_CHAT_LIMIT } from "@config/env";
 import Chat, { IChat, IChatModel } from "@models/chat.model";
 import Message, { IMessageModel } from "@models/message.model";
-import User, { IUserModel } from "@models/user.model";
+import User, { IUser, IUserModel } from "@models/user.model";
 import { chatLockdownService } from "@services/chat-lockdown.service";
 import { notificationService } from "@services/notification.service";
+import { socketService } from "@services/socket.service";
 import { AppError } from "@utils/AppError";
+import { getScrubCutoff } from "@utils/date.utils";
 import { extractEmojiMetadata } from "@utils/emoji.utils";
 import { ObjectId } from "mongodb";
 import { Server } from "socket.io";
 
 import { ChatDto, ChatListingResponse } from "@/types/chat.types";
 import { MessageDto } from "@/types/socket.types";
+
+/**
+ * Populated user fields returned from .populate() calls.
+ */
+interface PopulatedUser {
+  _id: ObjectId;
+  username: string;
+  name: string | null;
+  email: string;
+  avatar_url: string | null;
+  plan: "free" | "pro";
+}
 
 class ChatService {
   public Chat: IChatModel;
@@ -32,6 +46,68 @@ class ChatService {
     this.io = io;
   }
 
+  // ─── Private Helpers ────────────────────────────────────────────────
+
+  /**
+   * Assert the given userId is a participant of the chat.
+   * Throws 403 Forbidden if not.
+   */
+  private _assertParticipant(chat: IChat, userId: string | ObjectId): void {
+    const uid = userId.toString();
+    if (chat.userA.toString() !== uid && chat.userB.toString() !== uid) {
+      throw AppError.forbidden("You are not part of this chat");
+    }
+  }
+
+  private _encodeCursor(timestamp: Date, id: string | ObjectId) {
+    return Buffer.from(JSON.stringify({ t: timestamp.getTime(), id: id.toString() })).toString("base64");
+  }
+
+  private _decodeCursor(cursor: string) {
+    try {
+      const decoded = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+      if (!ObjectId.isValid(decoded.id)) return null;
+      return { t: new Date(decoded.t), id: decoded.id };
+      // oxlint-disable-next-line no-unused-vars
+    } catch (_e) {
+      return null;
+    }
+  }
+
+  /**
+   * Internal helper to standardize chat object for client.
+   */
+  private _transformChat(chat: IChat, userId: string | ObjectId): ChatDto {
+    const userIdStr = userId.toString();
+    const otherUser = (chat.userA._id.toString() === userIdStr ? chat.userB : chat.userA) as unknown as PopulatedUser;
+    const unread = chat.unreadCounts?.get?.(userIdStr) || 0;
+
+    return {
+      id: chat._id.toString(),
+      status: chat.status,
+      createdBy: chat.createdBy.toString(),
+      otherUser: {
+        id: otherUser._id?.toString() || (otherUser as unknown as ObjectId).toString(),
+        username: otherUser.username,
+        name: otherUser.name || null,
+        email: otherUser.email,
+        avatarUrl: otherUser.avatar_url || `https://ui-avatars.com/api/?name=${otherUser.username}`,
+        plan: otherUser.plan,
+      },
+      lastMessage: chat.lastMessage?.contentBody
+        ? {
+            contentBody: chat.lastMessage.contentBody,
+            senderId: chat.lastMessage.senderId?.toString() || null,
+            sentAt: chat.lastMessage.sentAt,
+          }
+        : null,
+      unreadCount: unread,
+      createdAt: chat.createdAt,
+    };
+  }
+
+  // ─── Chat Listing ───────────────────────────────────────────────────
+
   /**
    * Get accepted chat listing for a user with pagination.
    */
@@ -51,8 +127,6 @@ class ChatService {
       if (decoded) {
         // Compound filter for stable pagination:
         // (sentAt < decoded.t) OR (sentAt == decoded.t AND _id < decoded.id)
-        // Note: For chats without messages, we use createdAt if sentAt is missing.
-        // To simplify, we'll assume sentAt is always present or fallback to createdAt in query logic.
         query.$and = [
           {
             $or: [
@@ -140,59 +214,8 @@ class ChatService {
     };
   }
 
-  private _encodeCursor(timestamp: Date, id: string | ObjectId) {
-    return Buffer.from(JSON.stringify({ t: timestamp.getTime(), id: id.toString() })).toString("base64");
-  }
-
-  private _decodeCursor(cursor: string) {
-    try {
-      const decoded = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
-      if (!ObjectId.isValid(decoded.id)) return null;
-      return { t: new Date(decoded.t), id: decoded.id };
-      // oxlint-disable-next-line no-unused-vars
-    } catch (_e) {
-      return null;
-    }
-  }
-
   /**
-   * Internal helper to standardize chat object for client
-   * @private
-   */
-  _transformChat(chat: IChat, userId: string | ObjectId): ChatDto {
-    const userIdStr = userId.toString();
-    const otherUser = chat.userA._id.toString() === userIdStr ? chat.userB : chat.userA;
-    const unread = chat.unreadCounts?.get?.(userIdStr) || 0;
-
-    return {
-      id: chat._id.toString(),
-      status: chat.status,
-      createdBy: chat.createdBy.toString(),
-      otherUser: {
-        id: (otherUser as any)._id?.toString() || otherUser.toString(),
-        username: (otherUser as any).username,
-        name: (otherUser as any).name || null,
-        email: (otherUser as any).email,
-        avatarUrl: (otherUser as any).avatar_url,
-        plan: (otherUser as any).plan,
-      },
-      lastMessage: chat.lastMessage?.contentBody
-        ? {
-            contentBody: chat.lastMessage.contentBody,
-            senderId: chat.lastMessage.senderId?.toString() || null,
-            sentAt: chat.lastMessage.sentAt,
-          }
-        : null,
-      unreadCount: unread,
-      createdAt: chat.createdAt,
-    };
-  }
-
-  /**
-   * Search accepted chats by username, name, or email
-   */
-  /**
-   * Search accepted chats by username, name, or email with cursor pagination
+   * Search accepted chats by username, name, or email with cursor pagination.
    */
   async searchChats(
     userId: string | import("mongodb").ObjectId,
@@ -207,18 +230,8 @@ class ChatService {
     const searchStr = escapedQuery.startsWith("@") ? escapedQuery.slice(1) : escapedQuery;
     let q = new RegExp("^" + searchStr, "i");
 
-    let cursorObj: { t: number; id: string } | null = null;
-    if (cursor) {
-      try {
-        cursorObj = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
-        if (cursorObj && !ObjectId.isValid(cursorObj.id)) {
-          cursorObj = null;
-        }
-        // oxlint-disable-next-line no-unused-vars
-      } catch (_e) {
-        cursorObj = null;
-      }
-    }
+    // Reuse shared cursor decoding
+    const cursorObj = cursor ? this._decodeCursor(cursor) : null;
 
     // Aggregation pipeline for paginated search
     const pipeline: any[] = [
@@ -262,9 +275,9 @@ class ChatService {
       pipeline.push({
         $match: {
           $or: [
-            { sortTime: { $lt: new Date(cursorObj.t) } },
+            { sortTime: { $lt: cursorObj.t } },
             {
-              $and: [{ sortTime: { $eq: new Date(cursorObj.t) } }, { _id: { $lt: new ObjectId(cursorObj.id) } }],
+              $and: [{ sortTime: { $eq: cursorObj.t } }, { _id: { $lt: new ObjectId(cursorObj.id) } }],
             },
           ],
         },
@@ -341,6 +354,8 @@ class ChatService {
     };
   }
 
+  // ─── Chat Actions ───────────────────────────────────────────────────
+
   /**
    * Create a chat request by username lookup.
    * - Sender provides a username
@@ -348,7 +363,7 @@ class ChatService {
    * - We create a pending chat (or return existing)
    * - We send a notification to the receiver
    */
-  async requestChat(senderId: string | import("mongodb").ObjectId, targetUsername: string): Promise<object> {
+  async requestChat(senderId: string | import("mongodb").ObjectId, targetUsername: string): Promise<IChat> {
     // 1. Sanitize and find the target user by exact username match
     const sanitizedUsername = targetUsername.startsWith("@") ? targetUsername.slice(1) : targetUsername;
     const targetUser = await this.User.findOne({ username: sanitizedUsername });
@@ -356,8 +371,10 @@ class ChatService {
       throw AppError.notFound("User", "USER_NOT_FOUND");
     }
 
-    // --- Pro: Enforce Chat Limits ---
+    // 2. Look up requesting user (reused for limit check AND notification below)
     const requestingUser = await this.User.findById(senderId);
+
+    // --- Pro: Enforce Chat Limits ---
     if (requestingUser?.plan === "free") {
       const activeCount = await this.Chat.countDocuments({
         $or: [{ userA: senderId }, { userB: senderId }],
@@ -370,17 +387,17 @@ class ChatService {
     }
     // -----------------------------------
 
-    // 2. Prevent self-chat
+    // 3. Prevent self-chat
     if (targetUser._id.toString() === senderId.toString()) {
       throw AppError.badRequest("You cannot start a chat with yourself", "SELF_CHAT");
     }
 
-    // 3. Consistent ordering for unique constraint
+    // 4. Consistent ordering for unique constraint
     const aId = new ObjectId(targetUser._id);
     const bId = new ObjectId(senderId);
     const [userA, userB] = aId.getTimestamp() < bId.getTimestamp() ? [aId, bId] : [bId, aId];
 
-    // 4. Check for existing chat
+    // 5. Check for existing chat
     const existingChat = await this.Chat.findOne({ userA, userB, isDeleted: false });
     if (existingChat) {
       if (existingChat.status === "rejected") {
@@ -397,7 +414,7 @@ class ChatService {
       throw AppError.badRequest("You already have an active chat with this user", "CHAT_EXISTS");
     }
 
-    // 5. Create new pending chat
+    // 6. Create new pending chat
     const chat = await this.Chat.create({
       userA,
       userB,
@@ -408,17 +425,16 @@ class ChatService {
       },
     });
 
-    // 6. Create notification for the receiver
-    const sender = await this.User.findById(senderId);
+    // 7. Create notification for the receiver (reuse requestingUser — no duplicate query)
     const notification = await notificationService.create({
       recipientId: targetUser._id,
       senderId: senderId,
       type: "chat_request",
       referenceId: chat._id,
-      message: `${sender?.username} sent you a chat request`,
+      message: `${requestingUser?.username} sent you a chat request`,
     });
 
-    // 7. Push real-time notification
+    // 8. Push real-time notification
     if (this.io) {
       this.io.to(`user:${targetUser._id}`).emit("notification", notification);
     }
@@ -430,7 +446,7 @@ class ChatService {
    * Accept a pending chat request.
    * Only the receiver (non-creator) can accept.
    */
-  async acceptChat(chatId: string, userId: string): Promise<object> {
+  async acceptChat(chatId: string, userId: string): Promise<IChat> {
     const chat = await this.Chat.findById(chatId);
     if (!chat) throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
     if (chat.status !== "pending") throw AppError.badRequest("Chat is not pending", "CHAT_NOT_PENDING");
@@ -438,12 +454,14 @@ class ChatService {
       throw AppError.forbidden("Only the receiver can accept a chat request");
     }
 
-    // Verify user is part of this chat
-    const isParticipant = chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
-    if (!isParticipant) throw AppError.forbidden("You are not part of this chat");
+    this._assertParticipant(chat, userId);
 
     chat.status = "accepted";
     await chat.save();
+
+    // Invalidate presence cache for both users
+    await socketService.invalidatePartnerCache(chat.userA.toString());
+    await socketService.invalidatePartnerCache(chat.userB.toString());
 
     // Notify the sender that their request was accepted
     const acceptor = await this.User.findById(userId);
@@ -470,7 +488,7 @@ class ChatService {
   async rejectChat(
     chatId: string | import("mongodb").ObjectId,
     userId: string | import("mongodb").ObjectId,
-  ): Promise<object> {
+  ): Promise<IChat> {
     const chat = await this.Chat.findById(chatId);
     if (!chat) throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
     if (chat.status !== "pending") throw AppError.badRequest("Chat is not pending", "CHAT_NOT_PENDING");
@@ -478,8 +496,7 @@ class ChatService {
       throw AppError.forbidden("Only the receiver can reject a chat request");
     }
 
-    const isParticipant = chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
-    if (!isParticipant) throw AppError.forbidden("You are not part of this chat");
+    this._assertParticipant(chat, userId);
 
     chat.status = "rejected";
     await chat.save();
@@ -504,29 +521,40 @@ class ChatService {
   async deleteChat(
     chatId: string | import("mongodb").ObjectId,
     userId: string | import("mongodb").ObjectId,
-  ): Promise<object> {
+  ): Promise<{ message: string }> {
     const chat = await this.Chat.findById(chatId);
     if (!chat) {
       throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
     }
 
-    // Verify user is a participant
-    const isParticipant = chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
-    if (!isParticipant) throw AppError.forbidden("You are not part of this chat");
+    this._assertParticipant(chat, userId);
 
     chat.isDeleted = true;
     chat.deletedAt = new Date();
     await chat.save();
-    chatLockdownService.lockdownChat(chatId);
+
+    // Invalidate presence cache for both users
+    await socketService.invalidatePartnerCache(chat.userA.toString());
+    await socketService.invalidatePartnerCache(chat.userB.toString());
+
+    await chatLockdownService.lockdownChat(chatId);
 
     return { message: "Chat successfully deleted" };
   }
 
+  // ─── Messages ───────────────────────────────────────────────────────
+
+  /**
+   * Get chat messages with cursor pagination and plan-aware scrubbing.
+   * The `plan` parameter should be passed from the authenticated user context
+   * to avoid an unnecessary DB lookup.
+   */
   async getChatMessages(
     chatId: string | import("mongodb").ObjectId,
     userId: string,
     limit: number = 50,
     cursor: string | null,
+    plan: "free" | "pro" = "free",
   ): Promise<MessageDto[]> {
     const chat = await this.Chat.findById(chatId);
     if (!chat) {
@@ -536,9 +564,7 @@ class ChatService {
       throw AppError.forbidden("Chat must be accepted before viewing messages");
     }
 
-    // Verify user is a participant
-    const isParticipant = chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
-    if (!isParticipant) throw AppError.forbidden("You are not part of this chat");
+    this._assertParticipant(chat, userId);
 
     const query = { chatId: chat._id };
     if (cursor) {
@@ -546,10 +572,7 @@ class ChatService {
     }
 
     const messages = await this.Message.find(query).sort({ _id: -1 }).limit(limit);
-    const user = await this.User.findById(userId).select("plan");
-    const plan = user?.plan || "free";
-    const scrubCutoff = new Date();
-    scrubCutoff.setDate(scrubCutoff.getDate() - FREE_PLAN_SCRUB_DAYS);
+    const scrubCutoff = getScrubCutoff();
 
     const transformed = messages.map((m) => {
       const msg = m.toObject();
@@ -569,8 +592,8 @@ class ChatService {
         // ---------------------------------
       }
 
-      const addEmojiMetadata: boolean = msg.isDeleted || (plan === "free" && isOlderThanLimit);
-      const emojiMetadata = addEmojiMetadata ? undefined : extractEmojiMetadata(msg.contentBody);
+      const skipEmojiMetadata: boolean = msg.isDeleted || (plan === "free" && isOlderThanLimit);
+      const emojiMetadata = skipEmojiMetadata ? undefined : extractEmojiMetadata(msg.contentBody);
       return {
         ...msg,
         id: msg._id.toString(),
@@ -590,22 +613,24 @@ class ChatService {
 
   /**
    * Mark a chat as read for a specific user.
-   * Resets unreadCounts[userId] to 0.
+   * Uses atomic findOneAndUpdate to avoid the findById + save double roundtrip.
    */
   async markChatRead(
     chatId: string | import("mongodb").ObjectId,
     userId: string | import("mongodb").ObjectId,
-  ): Promise<object> {
-    const chat = await this.Chat.findById(chatId);
-    if (!chat) {
-      throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
+  ): Promise<{ message: string }> {
+    const result = await this.Chat.findOneAndUpdate(
+      {
+        _id: chatId,
+        $or: [{ userA: userId }, { userB: userId }],
+      },
+      { $set: { [`unreadCounts.${userId}`]: 0 } },
+    );
+
+    if (!result) {
+      throw AppError.notFound("Chat not found or you are not a participant", "CHAT_NOT_FOUND");
     }
-    const isParticipant = chat.userA.toString() === userId.toString() || chat.userB.toString() === userId.toString();
-    if (!isParticipant) {
-      throw AppError.forbidden("You are not part of this chat");
-    }
-    chat.unreadCounts.set(userId.toString(), 0);
-    await chat.save();
+
     return { message: "Chat marked as read" };
   }
 }

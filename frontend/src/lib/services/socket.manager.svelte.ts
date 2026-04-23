@@ -9,7 +9,7 @@ import { notificationStore } from "$state/notification.svelte";
 import { routerStore } from "$state/router.svelte";
 import { uiStore } from "$state/ui.svelte";
 import { getDisallowedEmojis } from "$utils/emoji";
-import { SvelteSet } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import {
   API_ROOT,
@@ -18,13 +18,40 @@ import {
   TYPING_INDICATOR_DURATION,
 } from "../config";
 
+/** Contract for the ChatStore properties/methods that SocketManager needs. */
+export interface ChatStoreSocket {
+  isConnected: boolean;
+  isSendingMessage: boolean;
+  activeChatId: string | null;
+  typingStatus: SvelteMap<string, SvelteSet<string>>;
+  onlineStatus: SvelteMap<string, { isOnline: boolean; lastSeen: Date | null }>;
+  handleReceiveMessage(msg: Message): void;
+  handleMessageAlert(data: MessageAlert): void;
+  handleNotification(notification: Notification): void;
+  handleChatAccepted(data: { chatId: string }): void;
+  handleReactionUpdate(data: {
+    messageId: string;
+    chatId: string;
+    reactions: Array<{ emoji: string; slug?: string; users: string[] }>;
+  }): void;
+  handleMessageDeleted(data: { messageId: string; chatId: string; isLastMessage?: boolean }): void;
+  handleMessageSentAck(chatId: string, msg: Message): void;
+  handleMessageUpdated(data: {
+    messageId: string;
+    chatId: string;
+    contentBody: string;
+    isEdited: boolean;
+    editedAt: string;
+  }): void;
+}
+
 export class SocketManager {
   socket: Socket | null = $state(null);
-  private store: any;
+  private store: ChatStoreSocket;
   private typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   private myTypingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
-  constructor(store: any) {
+  constructor(store: ChatStoreSocket) {
     this.store = store;
   }
 
@@ -48,6 +75,14 @@ export class SocketManager {
 
     this.socket.on("connect_error", (err) => {
       console.error("Socket connection error:", err.message);
+    });
+
+    // General error handler (e.g. session limits for Pro users)
+    this.socket.on("error", (data: { message: string }) => {
+      console.error("Socket error event:", data.message);
+      if (data.message.toLowerCase().includes("limit reached")) {
+        uiStore.addAlert(data.message, "danger");
+      }
     });
 
     // Session Limit / Takeover handler
@@ -87,10 +122,10 @@ export class SocketManager {
 
     // Listen for Typing Indicators
     this.socket.on("typing_start", (data: TypingIndicatorDto) => {
-      if (!this.store.typingStatus[data.chatId]) {
-        this.store.typingStatus[data.chatId] = new SvelteSet();
+      if (!this.store.typingStatus.has(data.chatId)) {
+        this.store.typingStatus.set(data.chatId, new SvelteSet());
       }
-      this.store.typingStatus[data.chatId].add(data.userId);
+      this.store.typingStatus.get(data.chatId)?.add(data.userId);
 
       const key = `${data.chatId}-${data.userId}`;
       if (this.typingTimeouts.has(key)) clearTimeout(this.typingTimeouts.get(key));
@@ -98,17 +133,13 @@ export class SocketManager {
       this.typingTimeouts.set(
         key,
         setTimeout(() => {
-          if (this.store.typingStatus[data.chatId]) {
-            this.store.typingStatus[data.chatId].delete(data.userId);
-          }
+          this.store.typingStatus.get(data.chatId)?.delete(data.userId);
         }, TYPING_INDICATOR_DURATION),
       );
     });
 
     this.socket.on("typing_stop", (data: TypingIndicatorDto) => {
-      if (this.store.typingStatus[data.chatId]) {
-        this.store.typingStatus[data.chatId].delete(data.userId);
-      }
+      this.store.typingStatus.get(data.chatId)?.delete(data.userId);
     });
 
     // Listen for message alerts (toast / browser notification)
@@ -143,13 +174,7 @@ export class SocketManager {
 
     this.socket.on(
       "message_updated",
-      (data: {
-        messageId: string;
-        chatId: string;
-        contentBody: string;
-        isEdited: boolean;
-        editedAt: string;
-      }) => {
+      (data: { messageId: string; chatId: string; contentBody: string; isEdited: boolean; editedAt: string }) => {
         this.store.handleMessageUpdated(data);
       },
     );
@@ -160,6 +185,12 @@ export class SocketManager {
       this.socket.disconnect();
       this.socket = null;
       this.store.isConnected = false;
+
+      // Cleanup local timeouts
+      this.typingTimeouts.forEach(clearTimeout);
+      this.typingTimeouts.clear();
+      this.myTypingTimeouts.forEach(clearTimeout);
+      this.myTypingTimeouts.clear();
     }
   }
 
@@ -250,4 +281,4 @@ export class SocketManager {
       contentBody,
     });
   }
- }
+}
