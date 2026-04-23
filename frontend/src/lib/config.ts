@@ -16,10 +16,15 @@ const isLocalhost = (hostname: string) => {
 
 const getBaseUrl = (): string => {
   if (typeof window === "undefined") return "http://localhost:3000";
-  const { hostname, protocol } = window.location;
+  const { hostname } = window.location;
   const isLocal = isLocalhost(hostname);
-  const port = isLocal ? ":3000" : "";
-  return `${protocol}//${hostname}${port}`;
+
+  // If we are local, we use relative paths to let the Vite proxy handle it.
+  // This avoids CORS and SameSite cookie issues.
+  if (isLocal) return "";
+
+  // Production fallback: assume API is on the same host but under /api
+  return "";
 };
 
 const getEnv = (key: string, fallback: string = ""): string => {
@@ -36,7 +41,7 @@ const getBoolEnv = (key: string, fallback: boolean = true): boolean => {
 export const API_ROOT = getEnv("VITE_API_URL") || getBaseUrl();
 
 /** REST API base – use for fetch calls */
-export const API_BASE = `${API_ROOT}/api`;
+export const API_BASE = API_ROOT ? `${API_ROOT}/api` : "/api";
 
 /** Set to false in .env to disable the Pro upgrade process across the platform */
 export const ALLOW_UPGRADES = getBoolEnv("VITE_ALLOW_UPGRADES", false);

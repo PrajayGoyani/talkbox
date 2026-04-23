@@ -29,3 +29,7 @@ export const RETENTION_MESSAGE_DAYS = Number(process.env.RETENTION_MESSAGE_DAYS)
 export const RETENTION_DELETED_CHAT_DAYS = Number(process.env.RETENTION_DELETED_CHAT_DAYS) || 14;
 export const RETENTION_NOTIFICATION_DAYS = Number(process.env.RETENTION_NOTIFICATION_DAYS) || 30;
 export const MESSAGE_MODIFY_LIMIT_HOURS = Number(process.env.MESSAGE_MODIFY_LIMIT_HOURS) || 1;
+
+// Cookie Configuration Overrides
+export const COOKIE_SAMESITE = process.env.COOKIE_SAMESITE || (NODE_ENV === "production" ? "none" : "lax");
+export const COOKIE_SECURE = process.env.COOKIE_SECURE === "true" || NODE_ENV === "production";

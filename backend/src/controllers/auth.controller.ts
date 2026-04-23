@@ -1,4 +1,4 @@
-import { NODE_ENV } from "@config/env";
+import { COOKIE_SAMESITE, COOKIE_SECURE, NODE_ENV } from "@config/env";
 import { authService } from "@services/auth.service";
 import { CookieOptions, Request, Response } from "express";
 
@@ -6,19 +6,12 @@ import { LoginRequest, RefreshRequest, SignupRequest } from "./types";
 
 const COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,
-  secure: true,
-  sameSite: "none",
+  secure: COOKIE_SECURE,
+  sameSite: COOKIE_SAMESITE as any,
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: "/",
-  partitioned: true, // CHIPS: Required for cross-site cookies in modern browsers
+  partitioned: COOKIE_SECURE, // Partitioned requires Secure
 };
-
-// Use Lax for local development if not on HTTPS
-if (NODE_ENV === "development") {
-  COOKIE_OPTIONS.secure = false;
-  COOKIE_OPTIONS.sameSite = "lax";
-  COOKIE_OPTIONS.partitioned = false;
-}
 
 export const signup = async (req: SignupRequest, res: Response) => {
   const result = (await authService.signup(req.body)) as { refreshToken?: string };

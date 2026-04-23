@@ -39,7 +39,10 @@ export class ChatService {
 
   /** Load chats list via REST */
   async fetchChats(query = "", limit = 20, cursor: string | null = null, signal?: AbortSignal) {
-    const url = new URL(query.trim().length > 0 ? `${API_BASE}/chat/search` : `${API_BASE}/chat`);
+    const url = new URL(
+      query.trim().length > 0 ? `${API_BASE}/chat/search` : `${API_BASE}/chat`,
+      window.location.origin,
+    );
 
     if (query.trim().length > 0) {
       url.searchParams.set("q", query.trim());
@@ -70,7 +73,7 @@ export class ChatService {
 
   /** Load pending chat requests via REST */
   async fetchRequests(limit = 20, cursor: string | null = null) {
-    const url = new URL(`${API_BASE}/chat/requests`);
+    const url = new URL(`${API_BASE}/chat/requests`, window.location.origin);
     url.searchParams.set("limit", limit.toString());
     if (cursor) url.searchParams.set("cursor", cursor);
 
