@@ -1,6 +1,8 @@
 <script lang="ts">
   import Icon from "$components/ui/Icon.svelte";
   import { API_ROOT } from "$lib/config";
+  import { routerStore } from "$lib/state/router.svelte";
+  import { Route } from "$lib/utils/routes";
   import { authStore } from "$state/auth.svelte";
   import { tooltip, tooltipStore } from "$state/tooltip.svelte";
 
@@ -348,12 +350,13 @@
             {/if}
           </div>
           {#if authStore.user?.plan === "free"}
-            <a
-              href="/pricing"
+            <button
+              type="button"
+              onclick={() => routerStore.navigate(Route.PRICING)}
               class="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-600/10 hover:bg-indigo-600/20 px-3 py-1.5 rounded-full transition-all active:scale-95 no-underline"
             >
               Upgrade to Pro
-            </a>
+            </button>
           {/if}
         </div>
       </div>
