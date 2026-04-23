@@ -122,22 +122,13 @@
     </button>
   {/if}
 
-  {#if isSent && !msg.isDeleted}
+  {#if isSent && !msg.isDeleted && isWithinModificationWindow()}
     <button
-      class={cn(
-        "p-1 rounded-lg transition-all active:scale-90",
-        isWithinModificationWindow()
-          ? "text-slate-400 hover:text-rose-500 hover:bg-rose-500/10"
-          : "text-slate-300 cursor-not-allowed opacity-40",
-      )}
-      onclick={() => {
-        if (isWithinModificationWindow()) handleDelete();
-      }}
+      class="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all active:scale-90"
+      onclick={handleDelete}
       aria-label="Delete message"
       use:tooltip={{
-        text: isWithinModificationWindow()
-          ? "Delete message"
-          : "Cannot delete (1hr passed)",
+        text: "Delete message",
         position: "top",
       }}
       type="button"
