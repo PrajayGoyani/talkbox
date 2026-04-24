@@ -48,13 +48,10 @@ class ChatService {
 
   // ─── Private Helpers ────────────────────────────────────────────────
 
-  /**
-   * Assert the given userId is a participant of the chat.
-   * Throws 403 Forbidden if not.
-   */
   private _assertParticipant(chat: IChat, userId: string | ObjectId): void {
     const uid = userId.toString();
-    if (chat.userA.toString() !== uid && chat.userB.toString() !== uid) {
+    const isParticipant = chat.participants.some((p) => p.toString() === uid);
+    if (!isParticipant) {
       throw AppError.forbidden("You are not part of this chat");
     }
   }
@@ -74,26 +71,32 @@ class ChatService {
     }
   }
 
-  /**
-   * Internal helper to standardize chat object for client.
-   */
   private _transformChat(chat: IChat, userId: string | ObjectId): ChatDto {
     const userIdStr = userId.toString();
-    const otherUser = (chat.userA._id.toString() === userIdStr ? chat.userB : chat.userA) as unknown as PopulatedUser;
     const unread = chat.unreadCounts?.get?.(userIdStr) || 0;
+
+    // For 1-to-1 chats (non-group), we identify the other user for the UI.
+    // In a group chat, the frontend would use the participants array.
+    let otherUser: PopulatedUser | null = null;
+    if (!chat.isGroup) {
+      otherUser = chat.participants.find((p) => p._id.toString() !== userIdStr) as unknown as PopulatedUser;
+    }
 
     return {
       id: chat._id.toString(),
       status: chat.status,
+      isGroup: chat.isGroup,
       createdBy: chat.createdBy.toString(),
-      otherUser: {
-        id: otherUser._id?.toString() || (otherUser as unknown as ObjectId).toString(),
-        username: otherUser.username,
-        name: otherUser.name || null,
-        email: otherUser.email,
-        avatarUrl: otherUser.avatar_url || `https://ui-avatars.com/api/?name=${otherUser.username}`,
-        plan: otherUser.plan,
-      },
+      otherUser: otherUser
+        ? {
+            id: otherUser._id?.toString() || (otherUser as unknown as ObjectId).toString(),
+            username: otherUser.username,
+            name: otherUser.name || null,
+            email: otherUser.email,
+            avatarUrl: otherUser.avatar_url || `https://ui-avatars.com/api/?name=${otherUser.username}`,
+            plan: otherUser.plan,
+          }
+        : null,
       lastMessage: chat.lastMessage?.contentBody
         ? {
             contentBody: chat.lastMessage.contentBody,
@@ -103,6 +106,7 @@ class ChatService {
         : null,
       unreadCount: unread,
       createdAt: chat.createdAt,
+      participants: chat.participants.map((p) => p.toString()),
     };
   }
 
@@ -117,7 +121,7 @@ class ChatService {
     cursor: string | null = null,
   ): Promise<ChatListingResponse> {
     const query: any = {
-      $or: [{ userA: userId }, { userB: userId }],
+      participants: userId,
       isDeleted: false,
       status: "accepted",
     };
@@ -143,8 +147,7 @@ class ChatService {
     const chats = await this.Chat.find(query)
       .sort({ "lastMessage.sentAt": -1, _id: -1 })
       .limit(limit + 1)
-      .populate("userA", "username name email avatar_url plan")
-      .populate("userB", "username name email avatar_url plan");
+      .populate("participants", "username name email avatar_url plan");
 
     const hasMore = chats.length > limit;
     const results = hasMore ? chats.slice(0, limit) : chats;
@@ -171,7 +174,7 @@ class ChatService {
     cursor: string | null = null,
   ): Promise<ChatListingResponse> {
     const query: any = {
-      $or: [{ userA: userId }, { userB: userId }],
+      participants: userId,
       isDeleted: false,
       status: "pending",
     };
@@ -195,8 +198,7 @@ class ChatService {
     const chats = await this.Chat.find(query)
       .sort({ createdAt: -1, _id: -1 })
       .limit(limit + 1)
-      .populate("userA", "username name email avatar_url plan")
-      .populate("userB", "username name email avatar_url plan");
+      .populate("participants", "username name email avatar_url plan");
 
     const hasMore = chats.length > limit;
     const results = hasMore ? chats.slice(0, limit) : chats;
@@ -246,7 +248,7 @@ class ChatService {
     const pipeline: any[] = [
       {
         $match: {
-          $or: [{ userA: uid }, { userB: uid }],
+          participants: uid,
           isDeleted: false,
           status: "accepted",
         },
@@ -254,12 +256,12 @@ class ChatService {
       {
         $lookup: {
           from: "users",
-          let: { userA: "$userA", userB: "$userB" },
+          let: { participants: "$participants" },
           pipeline: [
             {
               $match: {
                 $expr: {
-                  $and: [{ $or: [{ $eq: ["$_id", "$$userA"] }, { $eq: ["$_id", "$$userB"] }] }, { $ne: ["$_id", uid] }],
+                  $and: [{ $in: ["$_id", "$$participants"] }, { $ne: ["$_id", uid] }],
                 },
                 $or: [{ username: q }, { name: q }, { email: q }],
               },
@@ -302,8 +304,9 @@ class ChatService {
       $project: {
         id: { $toString: "$_id" },
         status: 1,
+        isGroup: 1,
         createdBy: { $toString: "$createdBy" },
-        participants: [{ $toString: "$userA" }, { $toString: "$userB" }],
+        participants: 1,
         otherUser: {
           id: { $toString: "$otherUser._id" },
           username: "$otherUser.username",
@@ -386,7 +389,7 @@ class ChatService {
     // --- Pro: Enforce Chat Limits ---
     if (requestingUser?.plan === "free") {
       const activeCount = await this.Chat.countDocuments({
-        $or: [{ userA: senderId }, { userB: senderId }],
+        participants: senderId,
         status: "accepted",
         isDeleted: false,
       });
@@ -402,12 +405,13 @@ class ChatService {
     }
 
     // 4. Consistent ordering for unique constraint
-    const aId = new ObjectId(targetUser._id);
-    const bId = new ObjectId(senderId);
-    const [userA, userB] = aId.getTimestamp() < bId.getTimestamp() ? [aId, bId] : [bId, aId];
+    const sortedParticipants = [new ObjectId(targetUser._id), new ObjectId(senderId)].sort((a, b) =>
+      a.toString().localeCompare(b.toString())
+    );
+    const [userA, userB] = sortedParticipants;
 
     // 5. Check for existing chat
-    const existingChat = await this.Chat.findOne({ userA, userB, isDeleted: false });
+    const existingChat = await this.Chat.findOne({ userA, userB, isGroup: false, isDeleted: false });
     if (existingChat) {
       if (existingChat.status === "rejected") {
         // Allow re-requesting a rejected chat
@@ -427,6 +431,8 @@ class ChatService {
     const chat = await this.Chat.create({
       userA,
       userB,
+      participants: sortedParticipants,
+      isGroup: false,
       createdBy: senderId,
       status: "pending",
       lastMessage: {
@@ -468,9 +474,10 @@ class ChatService {
     chat.status = "accepted";
     await chat.save();
 
-    // Invalidate presence cache for both users
-    await socketService.invalidatePartnerCache(chat.userA.toString());
-    await socketService.invalidatePartnerCache(chat.userB.toString());
+    // Invalidate presence cache for all users
+    for (const p of chat.participants) {
+      await socketService.invalidatePartnerCache(p.toString());
+    }
 
     // Notify the sender that their request was accepted
     const acceptor = await this.User.findById(userId);
@@ -542,9 +549,10 @@ class ChatService {
     chat.deletedAt = new Date();
     await chat.save();
 
-    // Invalidate presence cache for both users
-    await socketService.invalidatePartnerCache(chat.userA.toString());
-    await socketService.invalidatePartnerCache(chat.userB.toString());
+    // Invalidate presence cache for all users
+    for (const p of chat.participants) {
+      await socketService.invalidatePartnerCache(p.toString());
+    }
 
     await chatLockdownService.lockdownChat(chatId);
 
@@ -631,7 +639,7 @@ class ChatService {
     const result = await this.Chat.findOneAndUpdate(
       {
         _id: chatId,
-        $or: [{ userA: userId }, { userB: userId }],
+        participants: userId,
       },
       { $set: { [`unreadCounts.${userId}`]: 0 } },
     );

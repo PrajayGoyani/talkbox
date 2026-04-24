@@ -19,7 +19,7 @@ export class MessageHandler {
     const message = await Message.findById(messageId).select("chatId senderId createdAt isDeleted contentBody").lean();
     if (!message || message.isDeleted) return null;
 
-    const chat = await Chat.findById(message.chatId).select("userA userB status lastMessage").lean();
+    const chat = await Chat.findById(message.chatId).select("participants status lastMessage").lean();
     if (!chat || chat.status !== "accepted") return null;
 
     if (isScrubbed(sender.plan, message.createdAt)) return null;
@@ -105,7 +105,7 @@ export class MessageHandler {
         _id: chatId,
         status: "accepted",
         isDeleted: false,
-        $or: [{ userA: senderId }, { userB: senderId }],
+        participants: senderId,
       },
       {
         lastMessage: { contentBody, senderId, sentAt: message.createdAt },
@@ -120,27 +120,32 @@ export class MessageHandler {
     }
 
     if (!cached) {
-      updateCache(chatId, new Set([chat.userA.toString(), chat.userB.toString()]));
+      updateCache(chatId, new Set(chat.participants.map((p: any) => p.toString())));
     }
 
     const dto = this.toDto(message.toObject(), contentBody);
 
-    io?.to(`user:${receiverId}`).emit("receive_message", dto);
-    io?.to(`user:${senderId}`).emit("receive_message", dto);
-
-    // 7. Alert
-    try {
-      const preview = contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
-      io?.to(`user:${receiverId}`).emit("message_alert", {
-        chatId,
-        senderId,
-        senderName: sender.name || null,
-        senderUsername: sender.username,
-        senderAvatar: sender.avatarUrl,
-        preview,
-      });
-    } catch (err) {
-      console.error("[MessageHandler] Alert failed:", err);
+    // 7. Deliver to all participants
+    for (const p of chat.participants) {
+      const pId = p.toString();
+      io?.to(`user:${pId}`).emit("receive_message", dto);
+      
+      // If it's the receiver, also send an alert
+      if (pId === receiverId) {
+        try {
+          const preview = contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
+          io?.to(`user:${pId}`).emit("message_alert", {
+            chatId,
+            senderId,
+            senderName: sender.name || null,
+            senderUsername: sender.username,
+            senderAvatar: sender.avatarUrl,
+            preview,
+          });
+        } catch (err) {
+          console.error("[MessageHandler] Alert failed:", err);
+        }
+      }
     }
 
     return dto;
@@ -169,8 +174,8 @@ export class MessageHandler {
     const isLast = this.isLastMessage(chat, message);
     const updatePayload = { messageId: messageId.toString(), chatId: message.chatId.toString(), isLastMessage: isLast };
 
-    [chat.userA.toString(), chat.userB.toString()].forEach((uid) => {
-      io?.to(`user:${uid}`).emit("message_deleted", updatePayload);
+    chat.participants.forEach((p: any) => {
+      io?.to(`user:${p.toString()}`).emit("message_deleted", updatePayload);
     });
 
     if (isLast) {
@@ -210,8 +215,8 @@ export class MessageHandler {
       editedAt: message.editedAt,
     };
 
-    [chat.userA.toString(), chat.userB.toString()].forEach((uid) => {
-      io?.to(`user:${uid}`).emit("message_updated", updatePayload);
+    chat.participants.forEach((p: any) => {
+      io?.to(`user:${p.toString()}`).emit("message_updated", updatePayload);
     });
 
     if (isLast) {

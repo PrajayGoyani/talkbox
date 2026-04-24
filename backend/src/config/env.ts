@@ -1,6 +1,5 @@
 if (!process.env.ALLOWED_ORIGINS) {
-  console.error("Fatal: ALLOWED_ORIGINS environment variable is required.");
-  process.exit(1);
+  console.warn("Warning: ALLOWED_ORIGINS environment variable is missing. Using default local origins.");
 }
 
 export const PORT = process.env.PORT || 5000;
@@ -15,7 +14,9 @@ export const SENTRY_DSN = process.env.SENTRY_DSN as string;
 export const BCRYPT_SALT = Number(process.env.BCRYPT_SALT) || 12;
 export const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 export const UPLOAD_STRATEGY = process.env.UPLOAD_STRATEGY as string;
-export const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
+export const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:4173")
+  .split(",")
+  .map((o) => o.trim());
 export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME as string;
 export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY as string;
 export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET as string;

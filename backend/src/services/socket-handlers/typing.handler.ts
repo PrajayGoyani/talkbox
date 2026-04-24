@@ -43,20 +43,23 @@ export class TypingHandler {
 
     // 1. Participant Security
     const cached = checkCache(chatId);
-    if (cached !== undefined) {
-      if (cached === null || !cached.has(senderId) || !cached.has(receiverId)) return;
+    let participantSet: Set<string>;
+
+    if (cached) {
+      if (!cached.has(senderId)) return;
+      participantSet = cached;
     } else {
       try {
-        const chat = await Chat.findById(chatId).select("userA userB status").lean();
+        const chat = await Chat.findById(chatId).select("participants status").lean();
         if (!chat || chat.status !== "accepted") {
           updateCache(chatId, null);
           return;
         }
 
-        const participants = new Set([chat.userA.toString(), chat.userB.toString()]);
-        if (!participants.has(senderId) || !participants.has(receiverId)) return;
+        participantSet = new Set(chat.participants.map((p: any) => p.toString()));
+        if (!participantSet.has(senderId)) return;
 
-        updateCache(chatId, participants);
+        updateCache(chatId, participantSet);
       } catch (_e) {
         updateCache(chatId, null);
         return;
@@ -64,9 +67,13 @@ export class TypingHandler {
     }
 
     const io = this.ioProvider();
-    io?.to(`user:${receiverId}`).emit(isTyping ? "typing_start" : "typing_stop", {
-      chatId,
-      userId: senderId,
-    });
+    for (const pId of participantSet) {
+      if (pId !== senderId) {
+        io?.to(`user:${pId}`).emit(isTyping ? "typing_start" : "typing_stop", {
+          chatId,
+          userId: senderId,
+        });
+      }
+    }
   }
 }

@@ -105,8 +105,7 @@ describe("ChatService", () => {
       vi.mocked(Chat.findById).mockResolvedValue({
         _id: chatId,
         status: "accepted",
-        userA: userId,
-        userB: "other",
+        participants: [userId, "other"],
       } as any);
       vi.mocked(Message.find).mockReturnValue({
         sort: vi.fn().mockReturnThis(),
@@ -147,8 +146,7 @@ describe("ChatService", () => {
       vi.mocked(Chat.findById).mockResolvedValue({
         _id: chatId,
         status: "accepted",
-        userA: userId,
-        userB: "other",
+        participants: [userId, "other"],
       } as any);
       vi.mocked(Message.find).mockReturnValue({
         sort: vi.fn().mockReturnThis(),

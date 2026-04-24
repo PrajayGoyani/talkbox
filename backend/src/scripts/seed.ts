@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { connectDB } from "../config/db";
+import { Types } from "mongoose";
 import Chat from "../models/chat.model";
 import Message from "../models/message.model";
 import User from "../models/user.model";
@@ -71,14 +72,20 @@ async function seed() {
       const bId = userB._id;
 
       // Consistent ordering for unique constraint
-      const [first, second] = aId.getTimestamp() < bId.getTimestamp() ? [aId, bId] : [bId, aId];
+      const participants = [new Types.ObjectId(aId), new Types.ObjectId(bId)].sort((a, b) =>
+        a.toString().localeCompare(b.toString())
+      );
 
-      let chat = await Chat.findOne({ userA: first, userB: second });
+      const [uidA, uidB] = participants;
+
+      let chat = await Chat.findOne({ userA: uidA, userB: uidB, isGroup: false });
       if (!chat) {
         chat = await Chat.create({
-          userA: first,
-          userB: second,
-          createdBy: first, // Arbitrary
+          userA: uidA,
+          userB: uidB,
+          participants,
+          isGroup: false,
+          createdBy: uidA, // Arbitrary
           status: "accepted",
         });
         console.log(`Chat created between ${userA.username} and ${userB.username}`);

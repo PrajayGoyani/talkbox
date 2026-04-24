@@ -184,15 +184,18 @@ export class SocketService {
           return l2Cached;
         }
 
-        const filter: any = { $or: [{ userA: userId }, { userB: userId }], status: "accepted" };
+        const filter: any = { participants: userId, status: "accepted" };
         if (excludeDeleted) filter.isDeleted = false;
 
-        const chats = await Chat.find(filter).select("userA userB").lean();
+        const chats = await Chat.find(filter).select("participants").lean();
         const partners = new Set<string>();
-        for (const chat of chats) {
-          const a = chat.userA.toString();
-          const b = chat.userB.toString();
-          partners.add(a === userId ? b : a);
+        for (const chat of (chats as any)) {
+          for (const p of chat.participants) {
+            const pId = p.toString();
+            if (pId !== userId) {
+              partners.add(pId);
+            }
+          }
         }
 
         this.partnerCache.set(cacheKey, partners);

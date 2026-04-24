@@ -52,8 +52,8 @@ export class ReactionHandler {
       if (cached) {
         isParticipant = cached.has(senderIdStr);
       } else {
-        isParticipant = chat.userA.toString() === senderIdStr || chat.userB.toString() === senderIdStr;
-        updateCache(chatIdStr, new Set([chat.userA.toString(), chat.userB.toString()]));
+        isParticipant = chat.participants.some((p: any) => p.toString() === senderIdStr);
+        updateCache(chatIdStr, new Set(chat.participants.map((p: any) => p.toString())));
       }
 
       if (!isParticipant) return;
@@ -91,7 +91,6 @@ export class ReactionHandler {
       message.markModified("reactions");
       await message.save();
 
-      const receiverId = chat.userA.toString() === senderIdStr ? chat.userB.toString() : chat.userA.toString();
       const savedMessage = message.toObject();
       const updatePayload = {
         messageId: messageId.toString(),
@@ -103,8 +102,9 @@ export class ReactionHandler {
         })),
       };
 
-      io?.to(`user:${senderIdStr}`).emit("message_reaction_update", updatePayload);
-      io?.to(`user:${receiverId}`).emit("message_reaction_update", updatePayload);
+      chat.participants.forEach((p: any) => {
+        io?.to(`user:${p.toString()}`).emit("message_reaction_update", updatePayload);
+      });
     } catch (err) {
       console.error("[ReactionHandler] Error:", err);
     }

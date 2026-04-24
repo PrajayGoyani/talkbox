@@ -74,22 +74,24 @@ async function seed() {
       });
 
       // Create accepted chat
-      const aId = user._id;
-      const bId = dummyUser._id;
-      const [userA, userB] = (aId as any).getTimestamp() < (bId as any).getTimestamp() ? [aId, bId] : [bId, aId];
+      const aId = new ObjectId(user._id as string);
+      const bId = new ObjectId(dummyUser._id as string);
+      const participants = [aId, bId].sort((a, b) => a.toString().localeCompare(b.toString()));
+      const [uA, uB] = participants;
 
       // Stagger sentAt by 1 hour increments to test sorting
       // dummy 1 will be most recent, dummy 30 oldest
       const sentAt = new Date(startTimestamp - i * 3600000);
 
       await Chat.create({
-        userA,
-        userB,
-        createdBy: userB, // Created by dummy
+        userA: uA,
+        userB: uB,
+        participants,
+        createdBy: bId, // Created by dummy
         status: "accepted",
         lastMessage: {
           contentBody: `Hello from Dummy ${i}! This is a test message.`,
-          senderId: userB,
+          senderId: bId,
           sentAt: sentAt,
         },
         createdAt: sentAt,
