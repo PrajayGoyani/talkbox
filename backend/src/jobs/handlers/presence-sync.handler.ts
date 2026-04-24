@@ -17,7 +17,7 @@ export const presenceSyncHandler = async () => {
 
     try {
       userIds = await redisService.popSyncQueue(BATCH_SIZE);
-      
+
       if (!userIds || userIds.length === 0) {
         break;
       }
@@ -44,7 +44,7 @@ export const presenceSyncHandler = async () => {
       }
     } catch (err) {
       console.error(`[PresenceSync] Batch sync failed:`, err);
-      
+
       // Re-queue user IDs that failed to sync to ensure eventual consistency
       if (userIds && userIds.length > 0) {
         try {
@@ -54,7 +54,7 @@ export const presenceSyncHandler = async () => {
           Sentry.captureException(inner, { extra: { userIds, originalError: err } });
         }
       }
-      
+
       // Stop iteration on error to prevent cascading failures
       break;
     }
@@ -68,9 +68,9 @@ export const presenceSyncHandler = async () => {
   try {
     const remaining = await redisService.getSyncQueueCount();
     if (remaining > 50000) {
-      Sentry.captureMessage("[PresenceSync] queue growing too fast", { 
+      Sentry.captureMessage("[PresenceSync] queue growing too fast", {
         level: "warning",
-        extra: { remaining } 
+        extra: { remaining },
       });
     }
   } catch (err) {

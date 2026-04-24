@@ -31,9 +31,7 @@ describe("PresenceSyncHandler", () => {
     const userIds = ["u1", "u2"];
     const lastSeenMap = new Map([["u1", new Date()]]);
 
-    vi.mocked(redisService.popSyncQueue)
-      .mockResolvedValueOnce(userIds)
-      .mockResolvedValueOnce([]);
+    vi.mocked(redisService.popSyncQueue).mockResolvedValueOnce(userIds).mockResolvedValueOnce([]);
     vi.mocked(redisService.getLastSeenBatched).mockResolvedValue(lastSeenMap);
     vi.mocked(User.bulkWrite).mockResolvedValue({} as any);
 
@@ -46,7 +44,7 @@ describe("PresenceSyncHandler", () => {
   it("should re-queue users if bulkWrite fails", async () => {
     const userIds = ["u1", "u2"];
     const lastSeenMap = new Map([["u1", new Date()]]);
-    
+
     vi.mocked(redisService.popSyncQueue).mockResolvedValueOnce(userIds);
     vi.mocked(redisService.getLastSeenBatched).mockResolvedValueOnce(lastSeenMap);
     vi.mocked(User.bulkWrite).mockRejectedValueOnce(new Error("DB Error"));
@@ -62,13 +60,13 @@ describe("PresenceSyncHandler", () => {
   it("should stop processing after MAX_BATCHES_PER_RUN", async () => {
     const batchSize = 1000;
     const fullBatch = Array.from({ length: batchSize }, (_, i) => `u${i}`);
-    
+
     // Explicitly mock ALL 50 calls plus one more just in case
     for (let i = 0; i < 50; i++) {
       vi.mocked(redisService.popSyncQueue).mockResolvedValueOnce(fullBatch);
     }
     vi.mocked(redisService.popSyncQueue).mockResolvedValue([]); // Fallback
-    
+
     vi.mocked(redisService.getLastSeenBatched).mockResolvedValue(new Map([["u0", new Date()]]));
     vi.mocked(User.bulkWrite).mockResolvedValue({} as any);
 
