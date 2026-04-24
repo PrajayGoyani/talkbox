@@ -201,6 +201,36 @@ class RedisService {
     }
   }
 
+  // ─── Chat Lockdown (Global) ────────────────────────────────────────
+
+  async lockChat(chatId: string): Promise<void> {
+    if (!this.client || !this.isConnected) return;
+    try {
+      await this.client.sadd("lockdown:chats", chatId);
+    } catch (err) {
+      console.error("[RedisService] Error locking chat:", err);
+    }
+  }
+
+  async unlockChat(chatId: string): Promise<void> {
+    if (!this.client || !this.isConnected) return;
+    try {
+      await this.client.srem("lockdown:chats", chatId);
+    } catch (err) {
+      console.error("[RedisService] Error unlocking chat:", err);
+    }
+  }
+
+  async isChatLocked(chatId: string): Promise<boolean> {
+    if (!this.client || !this.isConnected) return false;
+    try {
+      return (await this.client.sismember("lockdown:chats", chatId)) === 1;
+    } catch (err) {
+      console.error("[RedisService] Error checking chat lockdown:", err);
+      return false;
+    }
+  }
+
   // ─── Cleanup ───────────────────────────────────────────────────────
 
   async close(): Promise<void> {

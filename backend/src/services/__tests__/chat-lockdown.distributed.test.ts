@@ -6,90 +6,48 @@ import { redisService } from "@services/redis.service";
 vi.mock("@models/chat.model");
 vi.mock("@services/redis.service", () => ({
   redisService: {
-    client: {
-      publish: vi.fn().mockResolvedValue(null),
-    },
-    subClient: {
-      subscribe: vi.fn().mockResolvedValue(null),
-      on: vi.fn(),
-    },
+    lockChat: vi.fn().mockResolvedValue(null),
+    unlockChat: vi.fn().mockResolvedValue(null),
+    isChatLocked: vi.fn().mockResolvedValue(false),
     isConnected: true,
   },
 }));
 
-describe("ChatLockdownService Distributed", () => {
+describe("ChatLockdownService Redis-First", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    chatLockdownService.deletedChats.clear();
   });
 
-  it("should initialize Redis subscription and register listener", async () => {
-    await chatLockdownService.init();
-
-    expect(redisService.subClient?.subscribe).toHaveBeenCalledWith("chat:lockdown");
-    expect(redisService.subClient?.on).toHaveBeenCalledWith("message", expect.any(Function));
-  });
-
-  it("should publish a lock event to Redis when a chat is locked locally", async () => {
+  it("should delegating locking to redisService", async () => {
     const chatId = "chat123";
     await chatLockdownService.lockdownChat(chatId);
 
-    expect(chatLockdownService.isChatDeleted(chatId)).toBe(true);
-    expect(redisService.client?.publish).toHaveBeenCalledWith(
-      "chat:lockdown",
-      JSON.stringify({ action: "lock", chatId: "chat123" })
-    );
+    expect(redisService.lockChat).toHaveBeenCalledWith(chatId);
   });
 
-  it("should NOT publish to Redis if isLocalOnly is true", async () => {
-    const chatId = "chatLocal";
-    await chatLockdownService.lockdownChat(chatId, true);
-
-    expect(chatLockdownService.isChatDeleted(chatId)).toBe(true);
-    expect(redisService.client?.publish).not.toHaveBeenCalled();
-  });
-
-  it("should publish an unlock event to Redis when a chat is unlocked locally", async () => {
+  it("should delegating unlocking to redisService", async () => {
     const chatId = "chat123";
-    chatLockdownService.deletedChats.add(chatId);
-
     await chatLockdownService.unlockChat(chatId);
 
-    expect(chatLockdownService.isChatDeleted(chatId)).toBe(false);
-    expect(redisService.client?.publish).toHaveBeenCalledWith(
-      "chat:lockdown",
-      JSON.stringify({ action: "unlock", chatId: "chat123" })
-    );
+    expect(redisService.unlockChat).toHaveBeenCalledWith(chatId);
   });
 
-  it("should update local Set when receiving a lock message from Redis", async () => {
-    let messageHandler: Function = () => {};
-    vi.mocked(redisService.subClient?.on).mockImplementation((event: string, handler: Function) => {
-      if (event === "message") messageHandler = handler;
-      return null as any;
-    });
+  it("should delegating existence check to redisService and be async", async () => {
+    const chatId = "chat123";
+    vi.mocked(redisService.isChatLocked).mockResolvedValue(true);
 
-    await chatLockdownService.init();
+    const result = await chatLockdownService.isChatDeleted(chatId);
 
-    // Simulate incoming Redis message
-    messageHandler("chat:lockdown", JSON.stringify({ action: "lock", chatId: "chatRemote" }));
-
-    expect(chatLockdownService.isChatDeleted("chatRemote")).toBe(true);
+    expect(result).toBe(true);
+    expect(redisService.isChatLocked).toHaveBeenCalledWith(chatId);
   });
 
-  it("should remove from local Set when receiving an unlock message from Redis", async () => {
-    let messageHandler: Function = () => {};
-    vi.mocked(redisService.subClient?.on).mockImplementation((event: string, handler: Function) => {
-      if (event === "message") messageHandler = handler;
-      return null as any;
-    });
+  it("should return false if redisService returns false", async () => {
+    const chatId = "chat456";
+    vi.mocked(redisService.isChatLocked).mockResolvedValue(false);
 
-    await chatLockdownService.init();
-    chatLockdownService.deletedChats.add("chatRemote");
+    const result = await chatLockdownService.isChatDeleted(chatId);
 
-    // Simulate incoming Redis message
-    messageHandler("chat:lockdown", JSON.stringify({ action: "unlock", chatId: "chatRemote" }));
-
-    expect(chatLockdownService.isChatDeleted("chatRemote")).toBe(false);
+    expect(result).toBe(false);
   });
 });

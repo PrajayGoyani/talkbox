@@ -566,7 +566,7 @@ class SocketService {
     const { chatId, receiverId, contentBody, idempotencyKey } = payload;
 
     // 1. Deleted Chat Lockdown Check
-    if (chatLockdownService.isChatDeleted(chatId)) {
+    if (await chatLockdownService.isChatDeleted(chatId)) {
       throw AppError.forbidden("Cannot send messages to a deleted chat.");
     }
 

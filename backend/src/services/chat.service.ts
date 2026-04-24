@@ -216,6 +216,15 @@ class ChatService {
 
   /**
    * Search accepted chats by username, name, or email with cursor pagination.
+   * @scalability-risk This uses a case-insensitive prefix regex inside an aggregation lookup.
+   * Currently, we are using standard MongoDB aggregation ($lookup + $match) rather than
+   * Atlas Search ($search), which scales linearly with the number of chats a user has ($O(N)$).
+   *
+   * @future-recommendation If typical user chat count exceeds 5k, transition to an
+   * inverted-index search solution to achieve O(1) search performance:
+   * 1. MongoDB Atlas Search: Ideal for zero-infrastructure overhead.
+   * 2. Meilisearch: Recommended for premium search UX, typo tolerance, and speed.
+   *    Reference: https://www.meilisearch.com/
    */
   async searchChats(
     userId: string | import("mongodb").ObjectId,
