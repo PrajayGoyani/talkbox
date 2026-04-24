@@ -1,5 +1,4 @@
 import Chat from "@models/chat.model";
-import { redisService } from "@services/redis.service";
 import { bench, describe, vi } from "vitest";
 
 import { socketService } from "../socket.service";

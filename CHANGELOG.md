@@ -1,5 +1,26 @@
 # Changelog
  
+## [1.6.0] - 2026-04-24
+
+### Added
+- **Advanced Auth Flows**: Support for password resets and email verification.
+- **System Monitoring**: Integrated Sentry for backend error tracking and alerting.
+- **Background Tasks**: Implemented Agenda worker for automated state synchronization.
+- **Distributed Caching**: High-performance user lookups and cache invalidation using Redis.
+- **Server Protection**: Added rate limiting and event throttling (e.g., typing indicators) to ensure stability under load.
+- **Delivery Reliability**: Implemented message idempotency to prevent duplicate deliveries during retries.
+- **Performance Testing**: Added a suite of scalability benchmarks and unit tests.
+
+### Changed
+- **Reactivity Upgrade**: Migrated frontend state management to Svelte 5 runes for improved client-side performance.
+- **Modular Architecture**: Decoupled socket events into dedicated handlers for messages, typing, and reactions.
+- **UI Refinements**: Enhanced chat context menus, headers, and input interactions.
+- **Usage Policies**: Refined active chat limits and message history visibility for Free accounts.
+
+### Fixed
+- **Multi-device Sync**: Standardized login takeover behavior when a user connects from a second device.
+- **Cache Consistency**: Fixed race conditions in participant list updates during high-traffic events.
+
 ## [1.5.0] - 2026-04-22
 
 ### Added
