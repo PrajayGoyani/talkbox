@@ -6,6 +6,7 @@ import { chatService } from "$services/chat.service";
 import { SocketManager } from "$services/socket.manager.svelte";
 import { authStore } from "$state/auth.svelte";
 import { routerStore } from "$state/router.svelte";
+import { ApiError } from "$utils/errors";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import { ASSETS } from "../config";
@@ -194,7 +195,12 @@ class ChatStore {
     } catch (e: any) {
       if (e instanceof Error && e.name === "AbortError") return;
       console.error("Failed to fetch chats:", e);
-      this.lastError = e.message || "Failed to fetch chats";
+
+      if (ApiError.handleRateLimit(e, "Easy there! You're searching too fast. Please wait a minute.")) {
+        this.lastError = "rate-limited";
+      } else {
+        this.lastError = e.message || "Failed to fetch chats";
+      }
     }
   }
 
@@ -226,7 +232,12 @@ class ChatStore {
     } catch (e: any) {
       if (e instanceof Error && e.name === "AbortError") return;
       console.error("Failed to load more chats:", e);
-      this.lastError = e.message || "Failed to load more chats";
+
+      if (ApiError.handleRateLimit(e, "Slow down! You've hit a rate limit. Please wait a moment.")) {
+        this.lastError = "rate-limited";
+      } else {
+        this.lastError = e.message || "Failed to load more chats";
+      }
     } finally {
       this.isLoadingMoreChats = false;
     }

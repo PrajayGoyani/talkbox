@@ -1,4 +1,5 @@
 import { REDIS_URL } from "@config/env";
+import * as Sentry from "@sentry/node";
 import { Redis } from "ioredis";
 
 /**
@@ -11,6 +12,10 @@ class RedisService {
   public client: Redis | null = null;
   public subClient: Redis | null = null;
   public isConnected = false;
+  private lastFailOpenLogAt = 0;
+  private failOpenCount = 0;
+  private readonly FAIL_OPEN_LOG_INTERVAL = 60 * 1000; // Log at most once per minute after threshold
+  private readonly FAIL_OPEN_ALERT_THRESHOLD = 5; // Alert on first 5 failures instantly
 
   constructor() {
     if (!REDIS_URL) {
@@ -30,6 +35,7 @@ class RedisService {
 
       this.client.on("connect", () => {
         this.isConnected = true;
+        this.failOpenCount = 0;
         console.log("[RedisService] Connected to Redis.");
       });
 
@@ -97,14 +103,39 @@ class RedisService {
     }
   }
 
-  async setUserOffline(userId: string): Promise<void> {
+  async setUserOffline(userId: string, lastSeen: Date = new Date()): Promise<void> {
     if (!this.client || !this.isConnected) return;
     try {
-      await this.client.srem("online_users", userId);
+      await this.client
+        .multi()
+        .srem("online_users", userId)
+        .set(`user:ls:${userId}`, lastSeen.toISOString(), "EX", 604800) // 7-day TTL auto-pruning
+        .exec();
+
       // Notify all server instances via Pub/Sub
       await this.client.publish("presence:updates", JSON.stringify({ userId, isOnline: false }));
     } catch (err) {
       console.error("[RedisService] Error setting user offline:", err);
+    }
+  }
+
+  async getLastSeenBatched(userIds: string[]): Promise<Map<string, Date>> {
+    if (!this.client || !this.isConnected || userIds.length === 0) return new Map();
+    try {
+      const keys = userIds.map((id) => `user:ls:${id}`);
+      const results = await this.client.mget(...keys);
+      const lastSeenMap = new Map<string, Date>();
+
+      results.forEach((val, index) => {
+        if (val) {
+          lastSeenMap.set(userIds[index], new Date(val));
+        }
+      });
+
+      return lastSeenMap;
+    } catch (err) {
+      console.error("[RedisService] Error getting batched last seen:", err);
+      return new Map();
     }
   }
 
@@ -150,7 +181,7 @@ class RedisService {
           .multi()
           .sadd(key, socketId)
           .scard(key)
-          .expire(key, 86400) // 1 day safety TTL
+          .expire(key, 3600) // 1 hour safety TTL (refreshed on interaction)
           .exec()) || [];
 
       // Results are [ [err, res], [err, res], ... ]
@@ -192,7 +223,7 @@ class RedisService {
 
   // ─── Cache Invalidation ────────────────────────────────────────────
 
-  async publishCacheInvalidation(type: "user" | "partner", id: string): Promise<void> {
+  async publishCacheInvalidation(type: "user" | "partner" | "chat", id: string): Promise<void> {
     if (!this.client || !this.isConnected) return;
     try {
       await this.client.publish("cache:invalidate", JSON.stringify({ type, id }));
@@ -231,6 +262,88 @@ class RedisService {
     }
   }
 
+  // ─── Rate Limiting (Global) ────────────────────────────────────────
+
+  /**
+   * Atomic increment and check for a rate limit key.
+   * Returns true if the limit has NOT been exceeded.
+   */
+  async incrementAndCheckLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
+    if (!this.client || !this.isConnected) {
+      this._logFailOpen("incrementAndCheckLimit");
+      return true; // Fail open if Redis is down
+    }
+    try {
+      const results =
+        (await this.client
+          .multi()
+          .incr(key)
+          .expire(key, Math.ceil(windowMs / 1000), "NX")
+          .exec()) || [];
+
+      const incrRes = results[0];
+      const count = incrRes ? (incrRes[1] as number) : 0;
+      return count <= limit;
+    } catch (err) {
+      console.error("[RedisService] Error incrementing rate limit counter:", err);
+      return true; // Fail open
+    }
+  }
+
+  /**
+   * Atomic check-and-set for idempotency keys.
+   * Returns true if the key did NOT exist (request is new).
+   * Returns false if the key already existed (duplicate request).
+   */
+  async checkAndSetIdempotency(key: string, ttlSeconds = 900): Promise<boolean> {
+    if (!this.client || !this.isConnected) {
+      this._logFailOpen("checkAndSetIdempotency");
+      return true; // Fail open (allow DB fallback)
+    }
+    try {
+      // "NX" = Only set if it doesn't exist. "EX" = Set expiration.
+      const res = await this.client.set(`idempotency:${key}`, "1", "EX", ttlSeconds, "NX");
+      return res === "OK";
+    } catch (err) {
+      console.error("[RedisService] Error checking idempotency key:", err);
+      return true; // Fail open (allow DB fallback)
+    }
+  }
+
+  // ─── Presence Sync Queue ──────────────────────────────────────────
+
+  async queuePresenceSync(userId: string): Promise<void> {
+    return this.queuePresenceSyncBatched([userId]);
+  }
+
+  async queuePresenceSyncBatched(userIds: string[]): Promise<void> {
+    if (!this.client || !this.isConnected || userIds.length === 0) return;
+    try {
+      await this.client.sadd("presence_sync_queue", ...userIds);
+    } catch (err) {
+      console.error("[RedisService] Error queuing presence sync batch:", err);
+    }
+  }
+
+  async getSyncQueueCount(): Promise<number> {
+    if (!this.client || !this.isConnected) return 0;
+    try {
+      return await this.client.scard("presence_sync_queue");
+    } catch (err) {
+      return 0;
+    }
+  }
+
+  async popSyncQueue(limit: number): Promise<string[]> {
+    if (!this.client || !this.isConnected) return [];
+    try {
+      return await this.client.spop("presence_sync_queue", limit);
+    } catch (err) {
+      console.error("[RedisService] Error popping sync queue:", err);
+      return [];
+    }
+  }
+
   // ─── Cleanup ───────────────────────────────────────────────────────
 
   async close(): Promise<void> {
@@ -247,6 +360,32 @@ class RedisService {
       console.log("[RedisService] Redis connections closed.");
     } catch (err) {
       console.error("[RedisService] Error during Redis cleanup:", err);
+    }
+  }
+
+  private _logFailOpen(operation: string) {
+    this.failOpenCount++;
+    const now = Date.now();
+
+    // Strategy: Alert on every failure for the first few (to catch intermittent issues)
+    // then throttle to once per minute to avoid spamming Sentry during total outages.
+    const shouldAlert =
+      this.failOpenCount <= this.FAIL_OPEN_ALERT_THRESHOLD ||
+      now - this.lastFailOpenLogAt > this.FAIL_OPEN_LOG_INTERVAL;
+
+    if (shouldAlert) {
+      if (this.failOpenCount > this.FAIL_OPEN_ALERT_THRESHOLD) {
+        this.lastFailOpenLogAt = now;
+      }
+
+      Sentry.captureMessage(
+        `[RedisService] Fail-open: Redis is disconnected during ${operation} (Total failures: ${this.failOpenCount})`,
+        {
+          level: "warning",
+          tags: { service: "redis", operation: "fail-open", source: operation },
+          extra: { totalFailures: this.failOpenCount },
+        },
+      );
     }
   }
 }

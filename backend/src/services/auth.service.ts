@@ -110,7 +110,7 @@ class AuthService {
     user.subscriptionExpiresAt = expiry;
 
     await user.save();
-    
+
     // Invalidate caches across all server instances
     await redisService.publishCacheInvalidation("user", userId.toString());
 

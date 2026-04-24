@@ -6,6 +6,7 @@ import {
   type SignupRequestDto,
   type UserDto,
 } from "$types/auth.dto";
+import { ApiError } from "$utils/errors";
 import { storage } from "$utils/storage";
 
 // Access tokens expire in 15min typically; refresh 1 min before
@@ -146,6 +147,10 @@ class AuthStore {
         body: JSON.stringify(credentials),
       });
 
+      if (!response.ok) {
+        throw await ApiError.fromResponse(response);
+      }
+
       const res: ApiResponse<AuthResponseDto> = await response.json();
 
       if (res.success) {
@@ -154,8 +159,12 @@ class AuthStore {
       } else {
         this.error = res.error?.message || "Login failed";
       }
-    } catch {
-      this.error = "Network error occurred";
+    } catch (e) {
+      if (!ApiError.handleRateLimit(e)) {
+        this.error = e instanceof ApiError ? e.message : "Network error occurred";
+      } else {
+        this.error = "Too many attempts. Please wait.";
+      }
     } finally {
       this.loading = false;
     }
@@ -174,6 +183,10 @@ class AuthStore {
         body: JSON.stringify(data),
       });
 
+      if (!response.ok) {
+        throw await ApiError.fromResponse(response);
+      }
+
       const res: ApiResponse<AuthResponseDto> = await response.json();
 
       if (res.success) {
@@ -182,8 +195,12 @@ class AuthStore {
       } else {
         this.error = res.error?.message || "Signup failed";
       }
-    } catch {
-      this.error = "Network error occurred";
+    } catch (e) {
+      if (!ApiError.handleRateLimit(e)) {
+        this.error = e instanceof ApiError ? e.message : "Network error occurred";
+      } else {
+        this.error = "Too many attempts. Please wait.";
+      }
     } finally {
       this.loading = false;
     }
@@ -227,14 +244,19 @@ class AuthStore {
         credentials: "include",
         body: JSON.stringify(data),
       });
+
+      if (!resp.ok) {
+        throw await ApiError.fromResponse(resp);
+      }
+
       const res = await resp.json();
-      if (!resp.ok) throw new Error(res.error?.message || "Failed to update profile");
       if (res.success && res.data) {
         this.user = { ...this.user, ...res.data } as UserDto;
         storage.setUser(this.user);
       }
       return res;
     } catch (e: unknown) {
+      ApiError.handleRateLimit(e);
       console.error("Profile update error", e);
       throw e;
     }
@@ -281,14 +303,19 @@ class AuthStore {
         headers: { Authorization: `Bearer ${this.accessToken}` },
         credentials: "include",
       });
+
+      if (!resp.ok) {
+        throw await ApiError.fromResponse(resp);
+      }
+
       const res = await resp.json();
-      if (!resp.ok) throw new Error(res.error?.message || "Upgrade failed");
       if (res.success && res.data) {
         this.user = { ...this.user, ...res.data } as UserDto;
         storage.setUser(this.user);
       }
       return res;
     } catch (e: unknown) {
+      ApiError.handleRateLimit(e);
       console.error("Upgrade error", e);
       throw e;
     } finally {

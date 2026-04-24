@@ -77,10 +77,14 @@ export class SocketManager {
       console.error("Socket connection error:", err.message);
     });
 
-    // General error handler (e.g. session limits for Pro users)
-    this.socket.on("error", (data: { message: string }) => {
+    // General error handler (e.g. rate limits, session limits)
+    this.socket.on("error", (data: { message: string; code?: string }) => {
       console.error("Socket error event:", data.message);
-      if (data.message.toLowerCase().includes("limit reached")) {
+      if (
+        data.code === "RATE_LIMIT_EXCEEDED" ||
+        data.message.toLowerCase().includes("too fast") ||
+        data.message.toLowerCase().includes("limit reached")
+      ) {
         uiStore.addAlert(data.message, "danger");
       }
     });
@@ -117,6 +121,15 @@ export class SocketManager {
       this.store.onlineStatus.set(data.userId, {
         isOnline: data.isOnline,
         lastSeen: data.lastSeen ? new Date(data.lastSeen) : null,
+      });
+    });
+
+    this.socket.on("user_status_batch", (batch: UserStatusDto[]) => {
+      batch.forEach((data) => {
+        this.store.onlineStatus.set(data.userId, {
+          isOnline: data.isOnline,
+          lastSeen: data.lastSeen ? new Date(data.lastSeen) : null,
+        });
       });
     });
 

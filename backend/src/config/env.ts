@@ -11,6 +11,7 @@ export const JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION as stri
 export const MONGO_URI = process.env.MONGO_URI as string;
 export const REDIS_URL = process.env.REDIS_URL as string;
 export const NODE_ENV = process.env.NODE_ENV as string;
+export const SENTRY_DSN = process.env.SENTRY_DSN as string;
 export const BCRYPT_SALT = Number(process.env.BCRYPT_SALT) || 12;
 export const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 export const UPLOAD_STRATEGY = process.env.UPLOAD_STRATEGY as string;
@@ -30,6 +31,12 @@ export const RETENTION_MESSAGE_DAYS = Number(process.env.RETENTION_MESSAGE_DAYS)
 export const RETENTION_DELETED_CHAT_DAYS = Number(process.env.RETENTION_DELETED_CHAT_DAYS) || 14;
 export const RETENTION_NOTIFICATION_DAYS = Number(process.env.RETENTION_NOTIFICATION_DAYS) || 30;
 export const MESSAGE_MODIFY_LIMIT_HOURS = Number(process.env.MESSAGE_MODIFY_LIMIT_HOURS) || 1;
+
+// Rate Limits
+export const RATE_LIMIT_DEFAULT_WINDOW_MS = Number(process.env.RATE_LIMIT_DEFAULT_WINDOW_MS) || 60 * 1000;
+export const RATE_LIMIT_DEFAULT_MAX = Number(process.env.RATE_LIMIT_DEFAULT_MAX) || 100;
+export const RATE_LIMIT_AUTH_MAX = Number(process.env.RATE_LIMIT_AUTH_MAX) || 10;
+export const RATE_LIMIT_SOCKET_MESSAGE_MAX = Number(process.env.RATE_LIMIT_SOCKET_MESSAGE_MAX) || 20;
 
 // Cookie Configuration Overrides
 export const COOKIE_SAMESITE = process.env.COOKIE_SAMESITE || (NODE_ENV === "production" ? "none" : "lax");

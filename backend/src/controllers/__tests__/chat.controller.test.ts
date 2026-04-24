@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getChatMessages, markChatRead } from "../chat.controller";
 import { chatService } from "@services/chat.service";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { getChatMessages, markChatRead } from "../chat.controller";
 
 vi.mock("@services/chat.service", () => ({
   chatService: {
@@ -34,25 +35,13 @@ describe("ChatController", () => {
 
       await getChatMessages(req, res);
 
-      expect(chatService.getChatMessages).toHaveBeenCalledWith(
-        "chat123",
-        "user123",
-        30,
-        "msg-456",
-        "free"
-      );
+      expect(chatService.getChatMessages).toHaveBeenCalledWith("chat123", "user123", 30, "msg-456", "free");
       expect(res.success).toHaveBeenCalledWith(mockMessages);
     });
 
     it("should use defaults if limit/cursor are missing", async () => {
       await getChatMessages(req, res);
-      expect(chatService.getChatMessages).toHaveBeenCalledWith(
-        "chat123",
-        "user123",
-        50,
-        undefined,
-        "free"
-      );
+      expect(chatService.getChatMessages).toHaveBeenCalledWith("chat123", "user123", 50, undefined, "free");
     });
   });
 

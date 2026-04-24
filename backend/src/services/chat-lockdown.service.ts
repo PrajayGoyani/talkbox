@@ -14,7 +14,7 @@ class ChatLockdownService {
   }
 
   /**
-   * No-op retained for boot compatibility. 
+   * No-op retained for boot compatibility.
    * Distributed sync is now handled directly via Redis SISMEMBER.
    */
   async init() {
@@ -31,6 +31,7 @@ class ChatLockdownService {
   async lockdownChat(chatId: string | import("mongodb").ObjectId) {
     const id = chatId.toString();
     await redisService.lockChat(id);
+    await redisService.publishCacheInvalidation("chat", id);
   }
 
   async isChatDeleted(chatId: string | import("mongodb").ObjectId): Promise<boolean> {
@@ -40,6 +41,7 @@ class ChatLockdownService {
   async unlockChat(chatId: string | import("mongodb").ObjectId) {
     const id = chatId.toString();
     await redisService.unlockChat(id);
+    await redisService.publishCacheInvalidation("chat", id);
   }
 }
 

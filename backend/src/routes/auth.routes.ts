@@ -1,14 +1,18 @@
+import { RATE_LIMIT_AUTH_MAX } from "@config/env";
 import { signup, login, refresh, getMe, logout, upgradeToPro } from "@controllers/auth.controller";
 import { authenticateToken } from "@middlewares/auth.middleware";
+import { createRateLimiter } from "@middlewares/rate-limiter.middleware";
 import { validate } from "@middlewares/validate.middleware";
 import { signupSchema, loginSchema } from "@schemas/user.schema";
 import express from "express";
 
 const router = express.Router();
 
-router.post("/signup", validate(signupSchema), signup);
+const authRateLimiter = createRateLimiter(RATE_LIMIT_AUTH_MAX, 60000, "auth");
 
-router.post("/login", validate(loginSchema), login);
+router.post("/signup", authRateLimiter, validate(signupSchema), signup);
+
+router.post("/login", authRateLimiter, validate(loginSchema), login);
 
 router.post("/refresh", refresh);
 

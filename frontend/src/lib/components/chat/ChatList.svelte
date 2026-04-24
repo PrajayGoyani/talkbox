@@ -68,7 +68,7 @@
     try {
       await chatStore.fetchChats(searchQuery);
     } catch (e) {
-      error = (e as Error).message;
+      error = chatStore.lastError;
     } finally {
       loading = false;
     }
@@ -180,8 +180,29 @@
         </div>
       {/each}
     </div>
-  {:else if error}
-    <div class="text-center py-10 text-rose-500 text-sm">{error}</div>
+  {:else if error || chatStore.lastError}
+    {#if error === "rate-limited" || chatStore.lastError === "rate-limited"}
+      <div
+        class="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in-95"
+      >
+        <div
+          class="w-16 h-16 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center mb-4"
+        >
+          <Icon name="status-offline" class="w-8 h-8 text-rose-500" />
+        </div>
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
+          Slow Down a Bit
+        </h3>
+        <p class="text-xs text-slate-500 max-w-[200px] leading-relaxed">
+          You've sent too many requests. Please wait a minute before trying
+          again.
+        </p>
+      </div>
+    {:else}
+      <div class="text-center py-10 text-rose-500 text-sm">
+        {error || chatStore.lastError}
+      </div>
+    {/if}
   {:else if filteredChats.length === 0}
     <div
       class="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in-95 duration-500"

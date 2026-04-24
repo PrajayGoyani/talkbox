@@ -1,10 +1,11 @@
 import "dotenv/config";
 import { stopAgenda } from "@config/agenda";
 import { connectDB } from "@config/db";
+import { initSentry } from "@config/sentry";
 import { startJobs } from "@jobs/jobs";
+import { redisService } from "@services/redis.service";
 import mongoose from "mongoose";
 import { setServers } from "node:dns/promises";
-import { redisService } from "@services/redis.service";
 
 import { configureSocket, startServer } from "@/app";
 
@@ -14,6 +15,7 @@ if (process.platform === "win32") {
 }
 
 async function bootstrap() {
+  initSentry();
   await connectDB();
   await configureSocket();
   await startJobs();

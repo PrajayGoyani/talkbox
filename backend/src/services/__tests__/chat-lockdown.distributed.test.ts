@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import Chat from "@models/chat.model";
-import { chatLockdownService } from "../chat-lockdown.service";
 import { redisService } from "@services/redis.service";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { chatLockdownService } from "../chat-lockdown.service";
 
 vi.mock("@models/chat.model");
 vi.mock("@services/redis.service", () => ({
@@ -9,6 +10,7 @@ vi.mock("@services/redis.service", () => ({
     lockChat: vi.fn().mockResolvedValue(null),
     unlockChat: vi.fn().mockResolvedValue(null),
     isChatLocked: vi.fn().mockResolvedValue(false),
+    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
     isConnected: true,
   },
 }));

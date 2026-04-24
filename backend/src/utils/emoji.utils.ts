@@ -40,7 +40,7 @@ const EMOJI_REGEX = /\p{Extended_Pictographic}/gu;
  * a large emoji name library.
  */
 export const extractEmojiMetadata = (contentBody: string): Record<string, string> | undefined => {
-  if (!contentBody) return undefined;
+  if (!contentBody || contentBody.length > 5000) return undefined;
 
   const matches = contentBody.match(EMOJI_REGEX);
 

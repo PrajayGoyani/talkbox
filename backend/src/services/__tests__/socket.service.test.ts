@@ -8,23 +8,35 @@ vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
 vi.mock("@models/user.model");
 vi.mock("@services/redis.service", () => ({
-    redisService: {
-      incrementGlobalSession: vi.fn(),
-      decrementGlobalSession: vi.fn(),
-      getGlobalSessionCount: vi.fn(),
-      publishSessionTakeover: vi.fn(),
-      setUserOnline: vi.fn().mockResolvedValue(null),
-      setUserOffline: vi.fn().mockResolvedValue(null),
-      getOnlineUsers: vi.fn().mockResolvedValue(new Set()),
-      getCachedPartners: vi.fn().mockResolvedValue(null),
-      setCachedPartners: vi.fn().mockResolvedValue(null),
-      invalidatePartnerCache: vi.fn().mockResolvedValue(null),
-      subClient: {
-        subscribe: vi.fn().mockResolvedValue(null),
-        on: vi.fn(),
-      },
-      isConnected: true,
+  redisService: {
+    incrementGlobalSession: vi.fn(),
+    decrementGlobalSession: vi.fn(),
+    getGlobalSessionCount: vi.fn(),
+    publishSessionTakeover: vi.fn(),
+    setUserOnline: vi.fn().mockResolvedValue(null),
+    setUserOffline: vi.fn().mockResolvedValue(null),
+    getOnlineUsers: vi.fn().mockResolvedValue(new Set()),
+    getCachedPartners: vi.fn().mockResolvedValue(null),
+    setCachedPartners: vi.fn().mockResolvedValue(null),
+    invalidatePartnerCache: vi.fn().mockResolvedValue(null),
+    subClient: {
+      subscribe: vi.fn().mockResolvedValue(null),
+      on: vi.fn(),
     },
+    isConnected: true,
+    incrementAndCheckLimit: vi.fn().mockResolvedValue(true),
+    checkAndSetIdempotency: vi.fn().mockResolvedValue(true),
+    getLastSeenBatched: vi.fn().mockResolvedValue(new Map()),
+    lockChat: vi.fn().mockResolvedValue(null),
+    unlockChat: vi.fn().mockResolvedValue(null),
+    isChatLocked: vi.fn().mockResolvedValue(false),
+    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
+    queuePresenceSync: vi.fn().mockResolvedValue(null),
+    queuePresenceSyncBatched: vi.fn().mockResolvedValue(null),
+    getSyncQueueCount: vi.fn().mockResolvedValue(0),
+    popSyncQueue: vi.fn().mockResolvedValue([]),
+    isUserOnline: vi.fn().mockResolvedValue(false),
+  },
 }));
 
 import Chat from "@models/chat.model";
@@ -75,14 +87,20 @@ describe("SocketService", () => {
     vi.mocked(Chat.findOneAndUpdate).mockReturnValue(createQueryMock(null) as any);
     vi.mocked(User.find).mockReturnValue(createQueryMock([]) as any);
     vi.mocked(User.findById).mockReturnValue(createQueryMock(null) as any);
-    
-    // Explicitly mock methods on the service's model reference
-    (socketService as any).Message.find = vi.fn().mockReturnValue(createQueryMock([]));
-    (socketService as any).Message.findOne = vi.fn().mockReturnValue(createQueryMock(null));
-    (socketService as any).Message.create = vi.fn();
-    (socketService as any).Message.findById = vi.fn();
-    (socketService as any).Message.findByIdAndDelete = vi.fn();
-    
+
+    vi.mocked(Message.find).mockReturnValue(createQueryMock([]) as any);
+    vi.mocked(Message.findOne).mockReturnValue(createQueryMock(null) as any);
+    vi.mocked(Message.create).mockImplementation((data: any) =>
+      Promise.resolve({
+        ...data,
+        _id: "new-msg-id",
+        createdAt: new Date(),
+        toObject: () => ({ ...data, _id: "new-msg-id", createdAt: new Date(), reactions: [] }),
+      }),
+    );
+    vi.mocked(Message.findById).mockResolvedValue(null as any);
+    vi.mocked(Message.findByIdAndDelete).mockResolvedValue(null as any);
+
     vi.mocked(User.findByIdAndUpdate).mockResolvedValue({} as any);
 
     // Default redis mocks
@@ -163,7 +181,7 @@ describe("SocketService", () => {
       const extraSocket = createMockSocket(userId, "pro");
       // Simulate Redis count being over the limit
       vi.mocked(redisService.incrementGlobalSession).mockResolvedValue(PRO_PLAN_SESSION_LIMIT + 1);
-      
+
       await socketService.handleConnection(extraSocket);
 
       expect(extraSocket.emit).toHaveBeenCalledWith(
@@ -214,7 +232,13 @@ describe("SocketService", () => {
         senderId: MOCK_USER_ID,
         contentBody: "Hello",
         createdAt: new Date(),
-        toObject: () => ({ _id: "msg123", chatId: "chat123", senderId: MOCK_USER_ID, contentBody: "Hello", reactions: [] }),
+        toObject: () => ({
+          _id: "msg123",
+          chatId: "chat123",
+          senderId: MOCK_USER_ID,
+          contentBody: "Hello",
+          reactions: [],
+        }),
       };
 
       const mockChat = {
@@ -225,9 +249,9 @@ describe("SocketService", () => {
       };
 
       vi.mocked(Chat.findOneAndUpdate).mockResolvedValue(mockChat as any);
-      (socketService as any).Message.create.mockResolvedValue(mockMessage as any);
-      (socketService as any).Message.findOne.mockReturnValue({
-        lean: vi.fn().mockResolvedValue(null)
+      vi.mocked(Message.create).mockResolvedValue(mockMessage as any);
+      vi.mocked(Message.findOne).mockReturnValue({
+        lean: vi.fn().mockResolvedValue(null),
       } as any);
 
       socketService.io = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as any;
@@ -245,36 +269,127 @@ describe("SocketService", () => {
       const payload = { chatId: "c1", idempotencyKey: "existing-key" } as any;
       const existing = { _id: "old-msg", chatId: "c1", senderId: "s1", toObject: () => ({}) } as any;
 
-      vi.mocked(socketService.Message.findOne).mockReturnValue({
-        lean: vi.fn().mockResolvedValue(existing)
+      vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(false);
+      vi.mocked(Message.findOne).mockReturnValue({
+        lean: vi.fn().mockResolvedValue(existing),
       } as any);
 
       const result = await socketService.saveAndDeliverMessage(sender, payload);
 
       expect(result.id).toBe("old-msg");
-      expect(socketService.Message.create).not.toHaveBeenCalled();
+      expect(Message.create).not.toHaveBeenCalled();
     });
   });
 
-  describe("Presence & Status", () => {
-    it("should route global status update only to interested local watchers", () => {
-      const partnerId = "partnerA";
-      const watcher1 = "watcher1";
-      const watcher2 = "watcher2";
+  describe("Presence & Status (Room-based)", () => {
+    it("should join rooms for all partners on connection", async () => {
+      const userId = "user1";
+      const partnerIds = new Set(["p1", "p2"]);
+      const socket = createMockSocket(userId, "pro");
 
-      // Setup watchers
-      (socketService as any).statusWatchers.set(partnerId, new Set([watcher1, watcher2]));
+      // Mock partner fetching
+      vi.spyOn(socketService as any, "_getPartnerIds").mockResolvedValue(partnerIds);
+
+      await socketService.handleConnection(socket);
+
+      expect(socket.join).toHaveBeenCalledWith("watching:p1");
+      expect(socket.join).toHaveBeenCalledWith("watching:p2");
+    });
+
+    it("should broadcast global status update to the partner's watching room", () => {
+      const partnerId = "partnerA";
       socketService.io = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as any;
 
-      (socketService as any)._handleGlobalStatusUpdate(partnerId, true);
+      (socketService as any).presenceService.handleGlobalStatusUpdate(partnerId, true);
 
-      expect(socketService.io?.to).toHaveBeenCalledWith("user:watcher1");
-      expect(socketService.io?.to).toHaveBeenCalledWith("user:watcher2");
-      expect(socketService.io?.emit).toHaveBeenCalledTimes(2);
-      expect(socketService.io?.emit).toHaveBeenCalledWith("user_status", expect.objectContaining({
-        userId: partnerId,
-        isOnline: true
-      }));
+      expect(socketService.io?.to).toHaveBeenCalledWith(`watching:${partnerId}`);
+      expect(socketService.io?.emit).toHaveBeenCalledWith(
+        "user_status",
+        expect.objectContaining({
+          userId: partnerId,
+          isOnline: true,
+        }),
+      );
+    });
+  });
+
+  describe("Distributed Cache Invalidation", () => {
+    it("should clear participant cache when receiving global chat invalidation signal", () => {
+      const chatId = "hot-chat-123";
+      const participants = new Set(["u1", "u2"]);
+
+      // Seed the cache
+      (socketService as any).participantCache.set(chatId, participants);
+      expect((socketService as any).participantCache.get(chatId)).toBe(participants);
+
+      // Trigger global invalidation
+      (socketService as any)._handleGlobalCacheInvalidation("chat", chatId);
+
+      // Verify it's cleared
+      expect((socketService as any).participantCache.get(chatId)).toBeUndefined();
+    });
+
+    it("should ignore unknown invalidation types", () => {
+      const chatId = "chat-123";
+      const participants = new Set(["u1", "u2"]);
+      (socketService as any).participantCache.set(chatId, participants);
+
+      (socketService as any)._handleGlobalCacheInvalidation("unknown-type", chatId);
+
+      expect((socketService as any).participantCache.get(chatId)).toBe(participants);
+    });
+  });
+
+  describe("Throttling & Rate Limiting", () => {
+    it("should block message delivery if rate limit is exceeded", async () => {
+      const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
+      const payload = { chatId: "c1", receiverId: "r1", contentBody: "Hello", idempotencyKey: "k1" };
+
+      // Simulate rate limit hit
+      vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue(false);
+
+      socketService.io = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as any;
+
+      await expect(socketService.saveAndDeliverMessage(sender, payload)).rejects.toThrow(
+        "Message sending limit reached.",
+      );
+
+      expect(socketService.io?.emit).toHaveBeenCalledWith(
+        "error",
+        expect.objectContaining({
+          code: "RATE_LIMIT_EXCEEDED",
+        }),
+      );
+      expect(Message.create).not.toHaveBeenCalled();
+    });
+
+    it("should throttle typing indicators", async () => {
+      const sender = { id: MOCK_USER_ID } as any;
+      const payload = { chatId: "chat123", receiverId: "receiver456" };
+
+      // Seed participant cache to avoid DB hit
+      (socketService as any).participantCache.set("chat123", new Set([MOCK_USER_ID, "receiver456"]));
+
+      socketService.io = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as any;
+
+      // Reset local guard to ensure Redis hit
+      (socketService as any).typingHandler.localGuard.clear();
+
+      // 1. Allowed call
+      vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue(true);
+      await socketService.handleTyping(sender, payload, true);
+      expect(socketService.io?.emit).toHaveBeenCalledWith("typing_start", expect.any(Object));
+
+      // 2. Throttled call - MUST bypass local guard to hit Redis and fail
+      vi.useFakeTimers();
+      vi.setSystemTime(Date.now() + 3000);
+
+      vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue(false);
+      vi.mocked(socketService.io!.emit).mockClear();
+      await socketService.handleTyping(sender, payload, true);
+      expect(socketService.io?.emit).not.toHaveBeenCalled();
+
+      vi.useRealTimers();
     });
   });
 });

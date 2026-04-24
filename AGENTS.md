@@ -36,3 +36,13 @@ Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
 2. Use `detect_changes` for code review.
 3. Use `get_affected_flows` to understand impact.
 4. Use `query_graph` pattern="tests_for" to check coverage.
+
+## Toolchain: Vite Plus (vp)
+
+**IMPORTANT: This project uses the Vite Plus (`vp`) unified toolchain.**
+Future agents MUST use these commands for local development and validation:
+- **Testing**: `vp test` (e.g., `vp test path/to/file.test.ts`)
+- **Formatting**: `vp fmt`
+- **Linting**: `vp fmt --check`
+- **Dev Server**: `vp dev`
+
