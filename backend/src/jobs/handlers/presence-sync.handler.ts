@@ -41,7 +41,7 @@ export const presenceSyncHandler = async () => {
       } catch (inner) {
         console.error("[PresenceSync] Crit: Re-queue failed", inner);
       }
-      break; 
+      break;
     }
   }
 

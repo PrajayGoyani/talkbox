@@ -41,3 +41,14 @@ export const RATE_LIMIT_SOCKET_MESSAGE_MAX = Number(process.env.RATE_LIMIT_SOCKE
 // Cookie Configuration Overrides
 export const COOKIE_SAMESITE = process.env.COOKIE_SAMESITE || (NODE_ENV === "production" ? "none" : "lax");
 export const COOKIE_SECURE = process.env.COOKIE_SECURE === "true" || NODE_ENV === "production";
+
+// Email / SMTP (optional — graceful no-op if not configured)
+export const SMTP_HOST = process.env.SMTP_HOST as string;
+export const SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
+export const SMTP_USER = process.env.SMTP_USER as string;
+export const SMTP_PASS = process.env.SMTP_PASS as string;
+export const EMAIL_FROM = process.env.EMAIL_FROM || "noreply@talkbox.app";
+export const APP_NAME = process.env.APP_NAME || "Talkbox";
+export const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+export const RESET_TOKEN_TTL = Number(process.env.RESET_TOKEN_TTL) || 3600; // 1 hour
+export const VERIFY_TOKEN_TTL = Number(process.env.VERIFY_TOKEN_TTL) || 86400; // 24 hours

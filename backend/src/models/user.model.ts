@@ -12,6 +12,7 @@ export interface IUser extends Document {
   lastSeen: Date;
   plan: "free" | "pro";
   subscriptionExpiresAt: Date | null;
+  isEmailVerified: boolean;
 
   // Virtuals
   avatarUrl: string;
@@ -44,6 +45,7 @@ const userSchema = new Schema<IUser, IUserModel>({
   lastSeen: { type: Date, default: Date.now },
   plan: { type: String, enum: ["free", "pro"], default: "free" },
   subscriptionExpiresAt: { type: Date, default: null },
+  isEmailVerified: { type: Boolean, default: false },
 });
 
 // Compound index helps efficient background jobs for downgrading expired 'pro' accounts

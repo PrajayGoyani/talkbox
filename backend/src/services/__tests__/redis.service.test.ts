@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/node";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Advanced mock for ioredis

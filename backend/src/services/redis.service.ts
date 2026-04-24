@@ -344,6 +344,47 @@ class RedisService {
     }
   }
 
+  // ─── Ephemeral Token Management ────────────────────────────────────
+
+  /**
+   * Store a token mapping to a userId with auto-expiry.
+   * Used for password reset and email verification flows.
+   */
+  async storeToken(prefix: string, token: string, userId: string, ttlSeconds: number): Promise<void> {
+    if (!this.client || !this.isConnected) return;
+    try {
+      await this.client.set(`${prefix}:${token}`, userId, "EX", ttlSeconds);
+    } catch (err) {
+      console.error(`[RedisService] Error storing ${prefix} token:`, err);
+    }
+  }
+
+  /**
+   * Retrieve the userId associated with a token.
+   * Returns null if expired or not found.
+   */
+  async getToken(prefix: string, token: string): Promise<string | null> {
+    if (!this.client || !this.isConnected) return null;
+    try {
+      return await this.client.get(`${prefix}:${token}`);
+    } catch (err) {
+      console.error(`[RedisService] Error getting ${prefix} token:`, err);
+      return null;
+    }
+  }
+
+  /**
+   * Delete a token (e.g. after successful password reset or verification).
+   */
+  async deleteToken(prefix: string, token: string): Promise<void> {
+    if (!this.client || !this.isConnected) return;
+    try {
+      await this.client.del(`${prefix}:${token}`);
+    } catch (err) {
+      console.error(`[RedisService] Error deleting ${prefix} token:`, err);
+    }
+  }
+
   // ─── Cleanup ───────────────────────────────────────────────────────
 
   async close(): Promise<void> {

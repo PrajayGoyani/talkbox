@@ -1,7 +1,10 @@
+import { RESET_TOKEN_TTL, VERIFY_TOKEN_TTL } from "@config/env";
 import User, { IUser, IUserModel } from "@models/user.model";
+import { emailService } from "@services/email.service";
 import { redisService } from "@services/redis.service";
 import { AppError } from "@utils/AppError";
 import { generateAccessToken, generateTokens, verifyRefreshToken } from "@utils/jwt";
+import crypto from "crypto";
 import { ObjectId } from "mongodb";
 
 import { LoginPayload, SignupPayload } from "@/controllers/types";
@@ -14,6 +17,7 @@ export interface SanitizedUser {
   avatarUrl: string;
   plan: "free" | "pro";
   subscriptionExpiresAt: Date | null;
+  isEmailVerified: boolean;
 }
 
 export interface AuthResponse {
@@ -22,7 +26,7 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
-class AuthService {
+export class AuthService {
   public User: IUserModel;
 
   constructor(userModel: IUserModel) {
@@ -38,6 +42,10 @@ class AuthService {
     const user = await this.User.create({ username, email, password, name: name || null });
     const userObject = user.toObject();
     const tokens = generateTokens({ id: userObject._id.toString() });
+
+    // Fire-and-forget verification email — don't block signup
+    this._sendVerificationEmail(userObject._id.toString(), email);
+
     return {
       user: this.sanitize(user) as SanitizedUser,
       ...tokens,
@@ -96,8 +104,79 @@ class AuthService {
       avatarUrl: user.avatarUrl, // Use virtual
       plan: obj.plan,
       subscriptionExpiresAt: obj.subscriptionExpiresAt,
+      isEmailVerified: obj.isEmailVerified ?? false,
     };
   }
+
+  // ─── Password Reset ────────────────────────────────────────────────
+
+  /**
+   * Initiate a password reset flow.
+   * Always returns void — never reveals whether the email exists (prevents enumeration).
+   */
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.User.findOne({ email });
+    if (!user) return; // Silently ignore — prevent email enumeration
+
+    const token = crypto.randomBytes(32).toString("hex");
+    await redisService.storeToken("reset", token, user._id.toString(), RESET_TOKEN_TTL);
+    await emailService.sendResetEmail(email, token);
+  }
+
+  /**
+   * Complete password reset: verify token, update password, delete token.
+   */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const userId = await redisService.getToken("reset", token);
+    if (!userId) throw AppError.badRequest("Invalid or expired reset token", "INVALID_RESET_TOKEN");
+
+    const user = await this.User.findById(userId);
+    if (!user) throw AppError.notFound("User");
+
+    user.password = newPassword; // pre-save hook hashes it
+    await user.save();
+    await redisService.deleteToken("reset", token);
+  }
+
+  // ─── Email Verification ────────────────────────────────────────────
+
+  /**
+   * Verify a user's email using the token from the verification link.
+   */
+  async verifyEmail(token: string): Promise<void> {
+    const userId = await redisService.getToken("verify", token);
+    if (!userId) throw AppError.badRequest("Invalid or expired verification token", "INVALID_VERIFY_TOKEN");
+
+    await this.User.findByIdAndUpdate(userId, { isEmailVerified: true });
+    await redisService.deleteToken("verify", token);
+  }
+
+  /**
+   * Resend email verification for an authenticated user.
+   */
+  async resendVerificationEmail(userId: string): Promise<void> {
+    const user = await this.User.findById(userId);
+    if (!user) throw AppError.notFound("User");
+    if (user.isEmailVerified) throw AppError.badRequest("Email already verified", "ALREADY_VERIFIED");
+
+    await this._sendVerificationEmail(userId, user.email);
+  }
+
+  /**
+   * Internal helper: generate token and send verification email.
+   * Errors are caught and logged — never blocks the caller.
+   */
+  private async _sendVerificationEmail(userId: string, email: string): Promise<void> {
+    try {
+      const token = crypto.randomBytes(32).toString("hex");
+      await redisService.storeToken("verify", token, userId, VERIFY_TOKEN_TTL);
+      await emailService.sendVerificationEmail(email, token);
+    } catch (err) {
+      console.error("[AuthService] Failed to send verification email:", err);
+    }
+  }
+
+  // ─── Subscription ──────────────────────────────────────────────────
 
   async upgradeToPro(userId: string | ObjectId): Promise<SanitizedUser> {
     const user = await this.User.findById(userId);

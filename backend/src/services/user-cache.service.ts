@@ -57,6 +57,7 @@ class UserCacheService {
       avatarUrl: user.avatarUrl,
       plan: user.plan,
       subscriptionExpiresAt: user.subscriptionExpiresAt,
+      isEmailVerified: user.isEmailVerified ?? false,
     };
 
     this.cache.set(userId, sanitized);

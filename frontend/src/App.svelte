@@ -169,6 +169,21 @@
       onNavigate={handleNotificationNavigate}
     />
 
+    {#if authStore.user && !authStore.user.isEmailVerified}
+      <div
+        class="shrink-0 bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-center gap-3 text-sm text-amber-700 dark:text-amber-400"
+      >
+        <Icon name="mail" class="w-4 h-4 shrink-0" />
+        <span>Please verify your email. Check your inbox.</span>
+        <button
+          class="text-xs font-bold underline hover:no-underline ml-1"
+          onclick={() => authStore.resendVerification()}
+        >
+          Resend
+        </button>
+      </div>
+    {/if}
+
     <div
       class="flex flex-col md:flex-row flex-1 min-h-0 relative w-full overflow-hidden"
     >
@@ -364,6 +379,18 @@
               >
             {/snippet}
           </Lazy>
+        </div>
+      {:else if routerStore.segments[0] === "forgot-password"}
+        <div class="w-full flex justify-center py-8 my-auto">
+          <Lazy component={Views.ForgotPassword} />
+        </div>
+      {:else if routerStore.segments[0] === "reset-password"}
+        <div class="w-full flex justify-center py-8 my-auto">
+          <Lazy component={Views.ResetPassword} />
+        </div>
+      {:else if routerStore.segments[0] === "verify-email"}
+        <div class="w-full flex justify-center py-8 my-auto">
+          <Lazy component={Views.VerifyEmail} />
         </div>
       {:else if routerStore.segments[0] === "terms"}
         <Lazy component={Views.Terms} />

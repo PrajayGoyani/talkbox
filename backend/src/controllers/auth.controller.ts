@@ -1,8 +1,9 @@
 import { COOKIE_SAMESITE, COOKIE_SECURE } from "@config/env";
 import { authService } from "@services/auth.service";
+import { AppError } from "@utils/AppError";
 import { CookieOptions, Request, Response } from "express";
 
-import { LoginRequest, RefreshRequest, SignupRequest } from "./types";
+import { ForgotPasswordRequest, LoginRequest, RefreshRequest, ResetPasswordRequest, SignupRequest } from "./types";
 
 const COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,
@@ -50,4 +51,27 @@ export const getMe = async (req: Request, res: Response) => {
 export const upgradeToPro = async (req: Request, res: Response) => {
   const user = await authService.upgradeToPro(req.user!.id);
   res.success(user);
+};
+
+export const forgotPassword = async (req: ForgotPasswordRequest, res: Response) => {
+  await authService.forgotPassword(req.body.email);
+  // Deliberately vague response — prevents email enumeration
+  res.success({ message: "If an account with that email exists, a reset link has been sent." });
+};
+
+export const resetPassword = async (req: ResetPasswordRequest, res: Response) => {
+  await authService.resetPassword(req.body.token, req.body.password);
+  res.success({ message: "Password has been reset successfully." });
+};
+
+export const verifyEmail = async (req: Request, res: Response) => {
+  const token = req.query.token as string;
+  if (!token) throw AppError.badRequest("Token is required", "TOKEN_REQUIRED");
+  await authService.verifyEmail(token);
+  res.success({ message: "Email verified successfully." });
+};
+
+export const resendVerification = async (req: Request, res: Response) => {
+  await authService.resendVerificationEmail(req.user!.id);
+  res.success({ message: "Verification email sent." });
 };

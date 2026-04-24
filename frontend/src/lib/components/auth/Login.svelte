@@ -3,6 +3,7 @@
   import Icon from "$components/ui/Icon.svelte";
   import { authStore } from "$state/auth.svelte";
   import { routerStore } from "$state/router.svelte";
+  import { Route } from "$utils/routes";
 
   const { toggleSignup } = $props<{ toggleSignup: any }>();
 
@@ -81,6 +82,16 @@
         </button>
       {/snippet}
     </FloatingInput>
+
+    <div class="text-right -mt-1">
+      <button
+        type="button"
+        class="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline"
+        onclick={() => routerStore.navigate(Route.FORGOT_PASSWORD)}
+      >
+        Forgot password?
+      </button>
+    </div>
 
     <button type="submit" class="btn-primary mt-2" disabled={authStore.loading}>
       {#if authStore.loading}

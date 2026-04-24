@@ -8,6 +8,9 @@ export const Views = {
   // Auth
   Login: () => import("$components/auth/Login.svelte"),
   Signup: () => import("$components/auth/Signup.svelte"),
+  ForgotPassword: () => import("$components/auth/ForgotPassword.svelte"),
+  ResetPassword: () => import("$components/auth/ResetPassword.svelte"),
+  VerifyEmail: () => import("$components/auth/VerifyEmail.svelte"),
 
   // Chat
   ChatWindow: () => import("$components/chat/ChatWindow.svelte"),

@@ -1,9 +1,20 @@
 import { RATE_LIMIT_AUTH_MAX } from "@config/env";
-import { signup, login, refresh, getMe, logout, upgradeToPro } from "@controllers/auth.controller";
+import {
+  forgotPassword,
+  getMe,
+  login,
+  logout,
+  refresh,
+  resendVerification,
+  resetPassword,
+  signup,
+  upgradeToPro,
+  verifyEmail,
+} from "@controllers/auth.controller";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import { createRateLimiter } from "@middlewares/rate-limiter.middleware";
 import { validate } from "@middlewares/validate.middleware";
-import { signupSchema, loginSchema } from "@schemas/user.schema";
+import { forgotPasswordSchema, loginSchema, resetPasswordSchema, signupSchema } from "@schemas/user.schema";
 import express from "express";
 
 const router = express.Router();
@@ -21,5 +32,13 @@ router.post("/logout", logout);
 router.get("/me", authenticateToken, getMe);
 
 router.post("/upgrade-pro", authenticateToken, upgradeToPro);
+
+// Password Reset (public, rate-limited)
+router.post("/forgot-password", authRateLimiter, validate(forgotPasswordSchema), forgotPassword);
+router.post("/reset-password", authRateLimiter, validate(resetPasswordSchema), resetPassword);
+
+// Email Verification
+router.get("/verify-email", verifyEmail);
+router.post("/resend-verification", authenticateToken, resendVerification);
 
 export default router;

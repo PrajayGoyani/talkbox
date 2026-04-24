@@ -36,3 +36,12 @@ export const loginSchema = z.object({
 export const updateProfileSchema = z.object({
   name: nameField.optional(),
 });
+
+export const forgotPasswordSchema = z.object({
+  email: z.email(),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+  password: z.string().min(8),
+});
