@@ -40,7 +40,7 @@ class EmailService {
     const resetUrl = `${FRONTEND_URL}/#/reset-password?token=${token}`;
 
     try {
-      const ack = await this.transporter.sendMail({
+      await this.transporter.sendMail({
         from: `"${APP_NAME}" <${EMAIL_FROM}>`,
         to,
         subject: `Reset your ${APP_NAME} password`,
@@ -59,7 +59,6 @@ class EmailService {
           </div>
         `,
       });
-      console.log({ ack });
     } catch (err) {
       console.error("[EmailService] Failed to send reset email:", err);
     }
