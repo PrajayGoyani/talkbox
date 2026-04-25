@@ -76,9 +76,12 @@
       <div class="flex items-center gap-2">
         <!-- New Chat Button (Desktop) -->
         <button
-          class="hidden md:flex w-8 h-8 items-center justify-center rounded-lg {showRequestInput
-            ? 'bg-indigo-600 text-white'
-            : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10'} transition-all active:scale-95"
+          class={[
+            "hidden md:flex w-8 h-8 items-center justify-center rounded-lg transition-all active:scale-95",
+            showRequestInput
+              ? "bg-indigo-600 text-white"
+              : "text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10",
+          ]}
           onclick={() => (showRequestInput = !showRequestInput)}
           use:tooltip={{
             text: showRequestInput ? "Close New Chat" : "New Chat",

@@ -339,9 +339,12 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span
-              class="text-sm font-medium {authStore.user?.plan === 'pro'
-                ? 'text-indigo-600 dark:text-indigo-400'
-                : 'text-slate-600 dark:text-slate-400'}"
+              class={[
+                "text-sm font-medium",
+                authStore.user?.plan === "pro"
+                  ? "text-indigo-600 dark:text-indigo-400"
+                  : "text-slate-600 dark:text-slate-400",
+              ]}
             >
               {authStore.user?.plan === "pro" ? "Pro" : "Free"}
             </span>

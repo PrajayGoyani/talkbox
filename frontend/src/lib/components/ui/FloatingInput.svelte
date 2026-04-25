@@ -33,7 +33,11 @@
       {autocomplete}
       bind:value
       placeholder=" "
-      class="input-field peer {error ? 'border-rose-500! ring-rose-500/10!' : ''} {renderRight ? 'pr-12' : ''}"
+      class={[
+        "input-field peer",
+        { "border-rose-500! ring-rose-500/10!": error },
+        { "pr-12": renderRight },
+      ]}
       {...rest}
     />
     <label

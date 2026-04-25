@@ -1,7 +1,7 @@
 <script lang="ts">
   import Icon from "$components/ui/Icon.svelte";
   import Spinner from "$components/ui/Spinner.svelte";
-  import { onMount, type Component } from "svelte";
+  import { type Component } from "svelte";
 
   /**
    * Reusable Lazy loader for Svelte 5 components.
@@ -47,7 +47,8 @@
     }
   }
 
-  onMount(() => {
+  $effect(() => {
+    // Track component prop and reload whenever it changes
     loadComponent();
   });
 </script>

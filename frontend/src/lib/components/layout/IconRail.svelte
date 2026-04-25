@@ -7,7 +7,22 @@
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
 
-  type PanelId = "conversations" | "profile" | "settings" | "requests" | "pricing";
+  type PanelId =
+    | "conversations"
+    | "profile"
+    | "settings"
+    | "requests"
+    | "pricing";
+
+  type Props = {
+    activePanel: PanelId;
+    onPanelSelect: (panel: PanelId) => void;
+    onNotificationToggle: () => void;
+    notificationCount?: number;
+    requestsCount?: number;
+    onLogout: () => void;
+    hideOnMobile?: boolean;
+  };
 
   const {
     activePanel,
@@ -17,21 +32,23 @@
     requestsCount = 0,
     onLogout,
     hideOnMobile = false,
-  } = $props<{
-    activePanel: PanelId;
-    onPanelSelect: (panel: PanelId) => void;
-    onNotificationToggle: () => void;
-    notificationCount?: number;
-    requestsCount?: number;
-    onLogout: () => void;
-    hideOnMobile?: boolean;
-  }>();
+  }: Props = $props();
 
   const displayName = $derived(
     authStore.user?.name || authStore.user?.username || "?",
   );
 
   const tooltipPos = $derived(uiStore.windowWidth < 768 ? "top" : "right");
+
+  const navigationItems = $derived([
+    { id: "conversations", title: "Conversations", icon: "nav-chat" },
+    { id: "profile", title: "Profile", icon: "profile" },
+    { id: "settings", title: "Settings", icon: "settings" },
+    { id: "requests", title: "Chat Requests", icon: "add" },
+    ...(authStore.user?.plan === "free"
+      ? [{ id: "pricing", title: "Upgrade to Pro", icon: "bolt" }]
+      : []),
+  ]);
 </script>
 
 <nav
@@ -53,17 +70,12 @@
     </button>
 
     <!-- Navigation Icons -->
-    {#each [
-      { id: "conversations", title: "Conversations", icon: "nav-chat" },
-      { id: "profile", title: "Profile", icon: "profile" },
-      { id: "settings", title: "Settings", icon: "settings" },
-      { id: "requests", title: "Chat Requests", icon: "add" },
-      ...(authStore.user?.plan === "free" ? [{ id: "pricing", title: "Upgrade to Pro", icon: "bolt" }] : [])
-    ] as item}
+    {#each navigationItems as item (item.id)}
       <button
-        class="rail-btn {activePanel === item.id
-          ? 'rail-btn-active'
-          : ''} relative"
+        class={[
+          "rail-btn relative",
+          { "rail-btn-active": activePanel === item.id },
+        ]}
         onclick={() => onPanelSelect(item.id as PanelId)}
         use:tooltip={{ text: item.title, position: tooltipPos }}
         aria-label={item.title}

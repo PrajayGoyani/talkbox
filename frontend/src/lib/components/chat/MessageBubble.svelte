@@ -1,12 +1,11 @@
 <script lang="ts">
   import MessageReactionPicker from "$components/chat/MessageReactionPicker.svelte";
-  import Icon from "$components/ui/Icon.svelte";
-  import { chatStore, type Message, type User } from "$state/chat.svelte";
   import { authStore } from "$state/auth.svelte";
+  import { chatStore, type Message, type User } from "$state/chat.svelte";
   import { tooltip } from "$state/tooltip.svelte";
-  import { formatSimpleTime } from "$utils/date";
-  import { parseMessageContent, getEmojiDisplayMode } from "$utils/emoji";
   import { cn } from "$utils/cn";
+  import { formatSimpleTime } from "$utils/date";
+  import { getEmojiDisplayMode, parseMessageContent } from "$utils/emoji";
 
   let {
     msg,
@@ -23,7 +22,7 @@
     saveEditing,
     handleEditKeydown,
     handleEditInput,
-    showMessageActionsId = $bindable()
+    showMessageActionsId = $bindable(),
   }: {
     msg: Message;
     isSent: boolean;
@@ -69,9 +68,14 @@
     <div
       class={cn(
         "flex flex-wrap gap-1 items-center px-1 rounded-2xl transition-all relative",
-        emojiDisplayMode === "jumbo-1" ? "text-5xl md:text-6xl" : 
-        emojiDisplayMode === "jumbo-2" ? "text-4xl md:text-5xl" : "text-3xl md:text-4xl",
-        isTouchDevice && showMessageActionsId === msg.id && "bg-slate-100 dark:bg-white/5 ring-4 ring-slate-100 dark:ring-white/5",
+        emojiDisplayMode === "jumbo-1"
+          ? "text-5xl md:text-6xl"
+          : emojiDisplayMode === "jumbo-2"
+            ? "text-4xl md:text-5xl"
+            : "text-3xl md:text-4xl",
+        isTouchDevice &&
+          showMessageActionsId === msg.id &&
+          "bg-slate-100 dark:bg-white/5 ring-4 ring-slate-100 dark:ring-white/5",
       )}
     >
       {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
@@ -88,7 +92,7 @@
           </span>
         {/if}
       {/each}
-      
+
       <div
         class={cn(
           "absolute flex items-center gap-2",
@@ -103,11 +107,15 @@
         </span>
         {#if !msg.isDeleted && !msg.isScrubbed}
           <div class="flex items-center gap-1">
-            <MessageReactionPicker {msg} {isSent} onEdit={() => startEditing(msg)} />
+            <MessageReactionPicker
+              {msg}
+              {isSent}
+              onEdit={() => startEditing(msg)}
+            />
           </div>
         {/if}
       </div>
-      
+
       <!-- Reactions rendering for jumbo -->
       {@render reactionList(msg, isSent, otherUser, chatStore, authStore)}
     </div>
@@ -130,7 +138,12 @@
       }
     }}
     onkeydown={(e) => {
-      if ((e.key === "Enter" || e.key === " ") && isTouchDevice && !msg.isDeleted && !msg.isScrubbed) {
+      if (
+        (e.key === "Enter" || e.key === " ") &&
+        isTouchDevice &&
+        !msg.isDeleted &&
+        !msg.isScrubbed
+      ) {
         showMessageActionsId = showMessageActionsId === msg.id ? null : msg.id;
       }
     }}
@@ -147,13 +160,13 @@
             rows="1"
           ></textarea>
           <div class="flex justify-end gap-3 mt-1">
-            <button 
+            <button
               onclick={cancelEditing}
               class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-white/40 dark:hover:text-white/70 dark:hover:bg-white/5 transition-colors"
             >
               Cancel
             </button>
-            <button 
+            <button
               onclick={() => saveEditing(msg.id)}
               class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:text-indigo-300 dark:hover:bg-indigo-500/10 transition-colors"
             >
@@ -162,7 +175,12 @@
           </div>
         </div>
       {:else}
-        <p class={cn("m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap", (msg.isDeleted || msg.isScrubbed) && "italic opacity-80")}>
+        <p
+          class={cn(
+            "m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap",
+            (msg.isDeleted || msg.isScrubbed) && "italic opacity-80",
+          )}
+        >
           {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
             {#if segment.type === "emoji"}
               <span
@@ -188,9 +206,13 @@
             {:else}
               {segment.content}
             {/if}
-          {/each}<span class="inline-block {msg.isEdited ? 'w-[84px]' : 'w-11'} h-0"></span>
+          {/each}<span
+            class={["inline-block h-0", msg.isEdited ? "w-[84px]" : "w-11"]}
+          ></span>
         </p>
-        <span class="absolute bottom-0 right-[-4px] text-[9px] opacity-60 leading-none pb-0.5 whitespace-nowrap flex items-center">
+        <span
+          class="absolute bottom-0 right-[-4px] text-[9px] opacity-60 leading-none pb-0.5 whitespace-nowrap flex items-center"
+        >
           {formatSimpleTime(msg.createdAt)}
           {#if msg.isEdited && !msg.isDeleted}
             <span class="ml-1 opacity-50 italic">(edited)</span>
@@ -208,9 +230,20 @@
   </div>
 {/if}
 
-{#snippet reactionList(msg: Message, isSent: boolean, otherUser: User | null, chatStore: any, authStore: any)}
+{#snippet reactionList(
+  msg: Message,
+  isSent: boolean,
+  otherUser: User | null,
+  chatStore: any,
+  authStore: any,
+)}
   {#if msg.reactions && msg.reactions.length > 0}
-    <div class={cn("flex flex-wrap gap-1 mt-1", isSent ? "justify-end" : "justify-start")}>
+    <div
+      class={cn(
+        "flex flex-wrap gap-1 mt-1",
+        isSent ? "justify-end" : "justify-start",
+      )}
+    >
       {#each msg.reactions as reaction}
         {@const hasReacted = reaction.users.includes(authStore.user?.id || "")}
         {@const reactionStyles = hasReacted
@@ -234,11 +267,16 @@
             position: "top",
             variant: "jumbo",
           }}
-          class={cn("flex items-center gap-1 px-1.5 py-1 md:py-0.5 rounded-full text-xs transition-all active:scale-90 border shadow-xs", reactionStyles)}
+          class={cn(
+            "flex items-center gap-1 px-1.5 py-1 md:py-0.5 rounded-full text-xs transition-all active:scale-90 border shadow-xs",
+            reactionStyles,
+          )}
         >
           <span class="text-sm">{reaction.emoji}</span>
           {#if reaction.users.length > 1}
-            <span class="text-[10px] font-bold opacity-70 leading-none">{reaction.users.length}</span>
+            <span class="text-[10px] font-bold opacity-70 leading-none"
+              >{reaction.users.length}</span
+            >
           {/if}
         </button>
       {/each}

@@ -4,7 +4,7 @@
   let { sent = false } = $props();
 </script>
 
-<div class="flex flex-col gap-1 mb-4 {sent ? 'items-end' : 'items-start'} opacity-60">
+<div class={["flex flex-col gap-1 mb-4 opacity-60", sent ? "items-end" : "items-start"]}>
   <Skeleton
     width={sent ? "60%" : "65%"}
     height="3rem"

@@ -39,11 +39,22 @@
     (routerStore.segments[1] as PanelId) || "conversations",
   );
   let selectedChatId = $derived(routerStore.segments[2] || null);
-  let isDocPage = $derived(
-    routerStore.segments[0] === "terms" ||
-      routerStore.segments[0] === "privacy" ||
-      routerStore.segments[0] === "faq",
-  );
+  const validSegments = new Set(["terms", "privacy", "faq"]);
+  let isDocPage = $derived(validSegments.has(routerStore.segments[0]));
+  const GUEST_VIEW_CONFIG: Record<
+    string,
+    { component: any; centered?: boolean }
+  > = {
+    login: { component: Views.Login, centered: true },
+    signup: { component: Views.Signup, centered: true },
+    "forgot-password": { component: Views.ForgotPassword, centered: true },
+    "reset-password": { component: Views.ResetPassword, centered: true },
+    "verify-email": { component: Views.VerifyEmail, centered: true },
+    terms: { component: Views.Terms },
+    privacy: { component: Views.Privacy },
+    pricing: { component: Views.Pricing },
+    faq: { component: Views.FAQ },
+  };
 
   // Sync current chat messages when URL param changes (including on mount/refresh)
   $effect(() => {
@@ -211,11 +222,13 @@
       />
 
       <aside
-        class="glass-panel flex-col z-10 min-h-0 shrink-0 transition-all duration-300 {uiStore.isSidebarCollapsed
-          ? 'w-0 opacity-0 border-none overflow-hidden hidden md:flex'
-          : 'w-full md:w-[280px] lg:w-[350px] border-r'} {selectedChatId
-          ? 'hidden md:flex'
-          : 'flex flex-1 md:flex-initial'}"
+        class={[
+          "glass-panel flex-col z-10 min-h-0 shrink-0 transition-all duration-300",
+          uiStore.isSidebarCollapsed
+            ? "w-0 opacity-0 border-none overflow-hidden hidden md:flex"
+            : "w-full md:w-[280px] lg:w-[350px] border-r",
+          selectedChatId ? "hidden md:flex" : "flex flex-1 md:flex-initial",
+        ]}
       >
         {#key activePanel}
           <div
@@ -250,9 +263,12 @@
       </aside>
 
       <section
-        class="flex-1 min-h-0 flex flex-col relative bg-slate-100/50 dark:bg-slate-950/30 {selectedChatId
-          ? 'flex'
-          : 'hidden md:flex flex-col justify-center items-center'}"
+        class={[
+          "flex-1 min-h-0 flex flex-col relative bg-slate-100/50 dark:bg-slate-950/30",
+          selectedChatId
+            ? "flex"
+            : "hidden md:flex flex-col justify-center items-center",
+        ]}
       >
         {#if selectedChatId}
           <Lazy
@@ -276,6 +292,10 @@
 {/snippet}
 
 {#snippet GuestApp()}
+  {@const config = GUEST_VIEW_CONFIG[routerStore.segments[0]] || {
+    component: Views.Home,
+    centered: false,
+  }}
   <div
     class="flex flex-col w-screen h-dvh bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden"
   >
@@ -358,50 +378,28 @@
         ? 'block'
         : 'items-center p-4 sm:p-8'}"
     >
-      {#if routerStore.segments[0] === "login"}
+      {#if config.centered}
         <div class="w-full flex justify-center py-8 my-auto">
-          <Lazy component={Views.Login}>
-            {#snippet toggleSignup()}
-              <button
-                class="text-indigo-600 font-medium"
-                onclick={() => toggleView("SIGNUP")}>Sign up</button
-              >
-            {/snippet}
+          <Lazy component={config.component}>
+            {#if routerStore.segments[0] === "login"}
+              {#snippet toggleSignup()}
+                <button
+                  class="text-indigo-600 font-medium"
+                  onclick={() => toggleView("SIGNUP")}>Sign up</button
+                >
+              {/snippet}
+            {:else if routerStore.segments[0] === "signup"}
+              {#snippet toggleLogin()}
+                <button
+                  class="text-indigo-600 font-medium"
+                  onclick={() => toggleView("LOGIN")}>Log in</button
+                >
+              {/snippet}
+            {/if}
           </Lazy>
         </div>
-      {:else if routerStore.segments[0] === "signup"}
-        <div class="w-full flex justify-center py-8 my-auto">
-          <Lazy component={Views.Signup}>
-            {#snippet toggleLogin()}
-              <button
-                class="text-indigo-600 font-medium"
-                onclick={() => toggleView("LOGIN")}>Log in</button
-              >
-            {/snippet}
-          </Lazy>
-        </div>
-      {:else if routerStore.segments[0] === "forgot-password"}
-        <div class="w-full flex justify-center py-8 my-auto">
-          <Lazy component={Views.ForgotPassword} />
-        </div>
-      {:else if routerStore.segments[0] === "reset-password"}
-        <div class="w-full flex justify-center py-8 my-auto">
-          <Lazy component={Views.ResetPassword} />
-        </div>
-      {:else if routerStore.segments[0] === "verify-email"}
-        <div class="w-full flex justify-center py-8 my-auto">
-          <Lazy component={Views.VerifyEmail} />
-        </div>
-      {:else if routerStore.segments[0] === "terms"}
-        <Lazy component={Views.Terms} />
-      {:else if routerStore.segments[0] === "privacy"}
-        <Lazy component={Views.Privacy} />
-      {:else if routerStore.segments[0] === "pricing"}
-        <Lazy component={Views.Pricing} />
-      {:else if routerStore.segments[0] === "faq"}
-        <Lazy component={Views.FAQ} />
       {:else}
-        <Lazy component={Views.Home} />
+        <Lazy component={config.component} />
       {/if}
     </div>
   </div>
