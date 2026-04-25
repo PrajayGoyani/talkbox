@@ -110,6 +110,21 @@
         </div>
       {/if}
     </div>
+
+    <!-- Info Panel Toggle -->
+    <button
+      onclick={() => uiStore.toggleChatInfo()}
+      class={[
+        "p-2 rounded-lg transition-all active:scale-90 ml-auto shrink-0",
+        uiStore.chatInfoOpen
+          ? "text-indigo-600 bg-indigo-600/10"
+          : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10",
+      ]}
+      aria-label="User profile info"
+      use:tooltip={{ text: "User Info", position: "left" }}
+    >
+      <Icon name="info" class="w-5 h-5" />
+    </button>
   </div>
 </div>
 

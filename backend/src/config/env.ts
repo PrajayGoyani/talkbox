@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 if (!process.env.ALLOWED_ORIGINS) {
   console.warn("Warning: ALLOWED_ORIGINS environment variable is missing. Using default local origins.");
 }

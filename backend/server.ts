@@ -1,18 +1,11 @@
-import "dotenv/config";
 import { stopAgenda } from "@config/agenda";
 import { connectDB } from "@config/db";
 import { initSentry } from "@config/sentry";
 import { startJobs } from "@jobs/jobs";
 import { redisService } from "@services/redis.service";
 import mongoose from "mongoose";
-import { setServers } from "node:dns/promises";
 
 import { configureSocket, startServer } from "@/app";
-
-// windows specific hack
-if (process.platform === "win32") {
-  setServers(["1.1.1.1", "8.8.8.8"]); // for mongodb connection issues
-}
 
 async function bootstrap() {
   initSentry();

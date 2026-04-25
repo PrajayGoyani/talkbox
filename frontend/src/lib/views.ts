@@ -15,6 +15,7 @@ export const Views = {
   // Chat
   ChatWindow: () => import("$components/chat/ChatWindow.svelte"),
   ConversationsPanel: () => import("$components/chat/ConversationsPanel.svelte"),
+  ChatPartnerProfile: () => import("$components/chat/ChatPartnerProfile.svelte"),
   ReactionTooltip: () => import("$components/chat/ReactionTooltip.svelte"),
 
   // Panels

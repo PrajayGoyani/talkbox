@@ -1,14 +1,21 @@
 <script lang="ts">
-  import { tick, onMount } from "svelte";
-  import Icon from "$components/ui/Icon.svelte";
   import MessageBubble from "$components/chat/MessageBubble.svelte";
   import MessageSkeleton from "$components/chat/MessageSkeleton.svelte";
-  import { chatStore, type Message, type User, type ChatStatus } from "$state/chat.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import {
+    MESSAGE_SKELETON_HEIGHT,
+    SCROLL_THROTTLE_DURATION,
+  } from "$lib/config";
   import { authStore } from "$state/auth.svelte";
+  import {
+    chatStore,
+    type ChatStatus,
+    type Message,
+    type User,
+  } from "$state/chat.svelte";
   import { getDateLabel } from "$utils/date";
-  import { cn } from "$utils/cn";
   import { throttle } from "$utils/timing";
-  import { MESSAGE_SKELETON_HEIGHT, SCROLL_THROTTLE_DURATION } from "$lib/config";
+  import { onMount, tick } from "svelte";
 
   let {
     chatId,
@@ -23,7 +30,7 @@
     saveEditing,
     handleEditKeydown,
     handleEditInput,
-    showMessageActionsId = $bindable()
+    showMessageActionsId = $bindable(),
   }: {
     chatId: string;
     otherUser: User | null;
@@ -84,8 +91,10 @@
 
   const handleMessagesScroll = throttle((e: Event) => {
     const target = e.target as HTMLDivElement;
-    const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 150;
-    const scrolledUpSignificant = target.scrollHeight - target.scrollTop - target.clientHeight > 300;
+    const isNearBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight < 150;
+    const scrolledUpSignificant =
+      target.scrollHeight - target.scrollTop - target.clientHeight > 300;
 
     showJumpButton = scrolledUpSignificant;
     userHasScrolledUp = !isNearBottom;
@@ -99,21 +108,30 @@
     if (!topSentinel || !messagesContainer || !chatId) return;
     if (loadingOlderObserver) loadingOlderObserver.disconnect();
 
-    loadingOlderObserver = new IntersectionObserver((entries) => {
-      const entry = entries[0];
-      if (entry.isIntersecting && chatStore.hasMoreMessages && !chatStore.isLoadingMessages) {
-        const scrollBottom = messagesContainer!.scrollHeight - messagesContainer!.scrollTop;
-        chatStore.loadOlderMessages().then(async () => {
-          await tick();
-          if (messagesContainer) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight - scrollBottom;
-          }
-        });
-      }
-    }, {
-      root: messagesContainer,
-      rootMargin: "400px 0px 0px 0px",
-    });
+    loadingOlderObserver = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (
+          entry.isIntersecting &&
+          chatStore.hasMoreMessages &&
+          !chatStore.isLoadingMessages
+        ) {
+          const scrollBottom =
+            messagesContainer!.scrollHeight - messagesContainer!.scrollTop;
+          chatStore.loadOlderMessages().then(async () => {
+            await tick();
+            if (messagesContainer) {
+              messagesContainer.scrollTop =
+                messagesContainer.scrollHeight - scrollBottom;
+            }
+          });
+        }
+      },
+      {
+        root: messagesContainer,
+        rootMargin: "400px 0px 0px 0px",
+      },
+    );
 
     loadingOlderObserver.observe(topSentinel);
     return () => loadingOlderObserver?.disconnect();
@@ -149,18 +167,22 @@
       {/each}
     </div>
   {:else if chatStore.messages.length === 0}
-    <div class="flex flex-col items-center justify-center gap-4 h-full text-slate-500 opacity-60 text-center py-20">
+    <div
+      class="flex flex-col items-center justify-center gap-4 h-full text-slate-500 opacity-60 text-center py-20"
+    >
       <div class="bg-slate-100 dark:bg-white/5 p-4 rounded-full">
         <Icon name="chat" class="w-10 h-10" />
       </div>
       <div>
         <p class="font-bold">No messages yet</p>
-        <p class="text-sm">Start the conversation with {otherUser?.name || otherUser?.username}</p>
+        <p class="text-sm">
+          Start the conversation with {otherUser?.name || otherUser?.username}
+        </p>
       </div>
     </div>
   {:else}
     <div bind:this={topSentinel} class="h-1 -mt-4"></div>
-    
+
     {#if chatStore.isLoadingMessages && chatStore.hasMoreMessages}
       <div class="flex flex-col gap-4 mb-6">
         <MessageSkeleton sent={false} />
@@ -170,16 +192,23 @@
 
     {#each groupedMessages as group}
       <div class="flex flex-col gap-1 mb-8 relative">
-        <div class="sticky top-0 z-10 flex justify-center my-4 pointer-events-none">
-          <span class="px-3 py-1 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-200 dark:border-white/10 text-[10px] font-bold text-slate-500 dark:text-slate-400 shadow-sm lowercase tracking-tighter">
-            {group.label}
-          </span>
+        <div
+          class="sticky -top-4 z-20 flex justify-center pointer-events-none py-2 -mb-2"
+        >
+          <span
+            class="pointer-events-auto px-4 py-1 text-[10px] tracking-widest font-bold text-slate-500 bg-slate-50/90 dark:bg-slate-900/95 border border-slate-200 dark:border-white/10 rounded-full shadow-md backdrop-blur-md transition-all duration-300"
+            >{group.label}</span
+          >
         </div>
+        <div
+          class="before:content-[''] before:absolute before:top-5 before:left-0 before:right-0 before:h-px before:bg-slate-200 dark:before:bg-white/10 before:z-0"
+        ></div>
 
         {#each group.messages as msg, i}
           {@const isSent = msg.senderId === authStore.user?.id}
-          {@const isFirstInGroup = i === 0 || group.messages[i - 1].senderId !== msg.senderId}
-          
+          {@const isFirstInGroup =
+            i === 0 || group.messages[i - 1].senderId !== msg.senderId}
+
           <MessageBubble
             {msg}
             {isSent}

@@ -107,6 +107,7 @@
       Views.RequestsPanel();
       Views.SettingsPanel();
       Views.ChatWindow();
+      Views.ChatPartnerProfile();
     } else if (!authStore.user && !authStore.isCheckingAuth) {
       chatStore.disconnect();
     }
@@ -282,6 +283,22 @@
           <WelcomeDashboard />
         {/if}
       </section>
+
+      <!-- Chat Partner Profile Panel -->
+      <aside
+        class={[
+          "glass-panel flex-col z-10 transition-all duration-300 border-l shrink-0",
+          uiStore.chatInfoOpen && selectedChatId
+            ? "w-full md:w-[300px] lg:w-[350px] opacity-100"
+            : "w-0 opacity-0 border-none overflow-hidden hidden md:flex",
+        ]}
+      >
+        <Lazy
+          component={Views.ChatPartnerProfile}
+          user={selectedOtherUser}
+          onClose={() => (uiStore.chatInfoOpen = false)}
+        />
+      </aside>
     </div>
     <ToastContainer
       bind:this={toastContainer}
