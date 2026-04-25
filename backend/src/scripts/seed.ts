@@ -1,9 +1,9 @@
+import { connectDB } from "@config/db";
+import Chat from "@models/chat.model";
+import Message from "@models/message.model";
+import User from "@models/user.model";
 import "dotenv/config";
-import { connectDB } from "../config/db";
 import { Types } from "mongoose";
-import Chat from "../models/chat.model";
-import Message from "../models/message.model";
-import User from "../models/user.model";
 
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "password123";
 
@@ -73,7 +73,7 @@ async function seed() {
 
       // Consistent ordering for unique constraint
       const participants = [new Types.ObjectId(aId), new Types.ObjectId(bId)].sort((a, b) =>
-        a.toString().localeCompare(b.toString())
+        a.toString().localeCompare(b.toString()),
       );
 
       const [uidA, uidB] = participants;

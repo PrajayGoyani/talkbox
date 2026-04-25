@@ -1,7 +1,6 @@
 import { getAgenda, startAgenda } from "@config/agenda";
 import { ENABLE_JOBS, NODE_ENV } from "@config/env";
-
-import { defineJobs, JOBS } from "./agenda-jobs";
+import { defineJobs, JOBS } from "@jobs/agenda-jobs";
 
 export async function startJobs() {
   if (NODE_ENV !== "production" && !ENABLE_JOBS) {

@@ -2,8 +2,8 @@ import { RATE_LIMIT_DEFAULT_MAX, RATE_LIMIT_DEFAULT_WINDOW_MS } from "@config/en
 import { NextFunction, Request, Response } from "express";
 import { LRUCache } from "lru-cache";
 
-import { redisService } from "../services/redis.service";
-import { AppError } from "../utils/AppError";
+import { redisService } from "@services/redis.service";
+import { AppError } from "@utils/AppError";
 
 /**
  * Hybrid Rate Limiter:

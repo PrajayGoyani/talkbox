@@ -73,7 +73,7 @@ const mockUserModel: any = {
 };
 
 // Create AuthService with mock model
-import { AuthService } from "../auth.service";
+import { AuthService } from "@services/auth.service";
 
 const authService = new AuthService(mockUserModel);
 

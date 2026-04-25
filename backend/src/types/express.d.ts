@@ -1,4 +1,4 @@
-import { SanitizedUser } from "../services/auth.service";
+import { SanitizedUser } from "@services/auth.service";
 
 declare global {
   namespace Express {

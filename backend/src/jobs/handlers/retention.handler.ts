@@ -1,10 +1,10 @@
 import { Types } from "mongoose";
 
-import { RETENTION_DELETED_CHAT_DAYS, RETENTION_MESSAGE_DAYS, RETENTION_NOTIFICATION_DAYS } from "../../config/env";
-import ChatModel from "../../models/chat.model";
-import MessageModel from "../../models/message.model";
-import NotificationModel from "../../models/notification.model";
-import UserModel from "../../models/user.model";
+import { RETENTION_DELETED_CHAT_DAYS, RETENTION_MESSAGE_DAYS, RETENTION_NOTIFICATION_DAYS } from "@config/env";
+import ChatModel from "@models/chat.model";
+import MessageModel from "@models/message.model";
+import NotificationModel from "@models/notification.model";
+import UserModel from "@models/user.model";
 
 /**
  * @risk Medium - Background Jobs

@@ -3,7 +3,7 @@ import Message from "@models/message.model";
 import { redisService } from "@services/redis.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { socketService } from "../socket.service";
+import { socketService } from "@services/socket.service";
 
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");

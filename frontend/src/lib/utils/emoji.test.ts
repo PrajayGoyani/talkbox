@@ -1,6 +1,5 @@
-import { describe, it, expect } from "vitest";
-
-import { parseMessageContent, getEmojiDisplayMode } from "./emoji";
+import { getEmojiDisplayMode, parseMessageContent } from "$utils/emoji";
+import { describe, expect, it } from "vitest";
 
 describe("emoji utility", () => {
   describe("parseMessageContent", () => {

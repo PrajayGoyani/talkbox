@@ -1,7 +1,6 @@
+import { AcceptChatRequest, RejectChatRequest } from "@controllers/types";
 import { chatService } from "@services/chat.service";
 import { Request, Response } from "express";
-
-import { AcceptChatRequest, RejectChatRequest } from "./types";
 
 export const getChatListing = async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 20;

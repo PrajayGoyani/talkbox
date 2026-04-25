@@ -1,14 +1,13 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
 import Chat from "@models/chat.model";
+import { PresenceService } from "@services/presence.service";
 import { redisService } from "@services/redis.service";
+import { MessageHandler } from "@services/socket-handlers/message.handler";
+import { ReactionHandler } from "@services/socket-handlers/reaction.handler";
+import { TypingHandler } from "@services/socket-handlers/typing.handler";
 import { LRUCache } from "lru-cache";
 
 import { AuthenticatedSocketUser, MessageDto, TypedIO, TypedSocket } from "@/types/socket.types";
-
-import { PresenceService } from "./presence.service";
-import { MessageHandler } from "./socket-handlers/message.handler";
-import { ReactionHandler } from "./socket-handlers/reaction.handler";
-import { TypingHandler } from "./socket-handlers/typing.handler";
 
 const PARTICIPANT_CACHE_TTL_MS = 10 * 60 * 1000;
 const PARTICIPANT_CACHE_MAX = 10000;
@@ -189,7 +188,7 @@ export class SocketService {
 
         const chats = await Chat.find(filter).select("participants").lean();
         const partners = new Set<string>();
-        for (const chat of (chats as any)) {
+        for (const chat of chats as any) {
           for (const p of chat.participants) {
             const pId = p.toString();
             if (pId !== userId) {

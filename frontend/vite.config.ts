@@ -68,17 +68,17 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://192.168.1.26:3000",
+        target: "http://localhost:3000",
         changeOrigin: true,
         secure: false,
       },
       "/socket.io": {
-        target: "http://192.168.1.26:3000",
+        target: "http://localhost:3000",
         ws: true,
         changeOrigin: true,
       },
       "/uploads": {
-        target: "http://192.168.1.26:3000",
+        target: "http://localhost:3000",
         changeOrigin: true,
       },
     },

@@ -1,7 +1,6 @@
+import { NODE_ENV, SENTRY_DSN } from "@config/env";
 import * as Sentry from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
-
-import { NODE_ENV, SENTRY_DSN } from "./env";
 
 export const initSentry = () => {
   if (!SENTRY_DSN) {

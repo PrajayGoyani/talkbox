@@ -2,7 +2,7 @@ import User from "@models/user.model";
 import { redisService } from "@services/redis.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { presenceSyncHandler } from "../presence-sync.handler";
+import { presenceSyncHandler } from "@jobs/handlers/presence-sync.handler";
 
 vi.mock("@models/user.model", () => ({
   default: {

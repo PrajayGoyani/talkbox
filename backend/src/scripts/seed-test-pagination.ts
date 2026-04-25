@@ -1,12 +1,10 @@
-import "dotenv/config";
+import { connectDB } from "@config/db";
+import { BCRYPT_SALT } from "@config/env";
+import Chat from "@models/chat.model";
+import User from "@models/user.model";
 import bcrypt from "bcrypt";
+import "dotenv/config";
 import { ObjectId } from "mongodb";
-
-import { connectDB } from "../config/db";
-import { BCRYPT_SALT } from "../config/env";
-import Chat from "../models/chat.model";
-import Message from "../models/message.model";
-import User from "../models/user.model";
 
 const TEST_USERNAME = "user1";
 const DUMMY_PREFIX = "test_dummy_";
@@ -74,8 +72,8 @@ async function seed() {
       });
 
       // Create accepted chat
-      const aId = new ObjectId(user._id as string);
-      const bId = new ObjectId(dummyUser._id as string);
+      const aId = new ObjectId(user._id as any);
+      const bId = new ObjectId(dummyUser._id as any);
       const participants = [aId, bId].sort((a, b) => a.toString().localeCompare(b.toString()));
       const [uA, uB] = participants;
 

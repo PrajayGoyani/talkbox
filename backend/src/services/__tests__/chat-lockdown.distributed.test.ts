@@ -1,8 +1,6 @@
-import Chat from "@models/chat.model";
+import { chatLockdownService } from "@services/chat-lockdown.service";
 import { redisService } from "@services/redis.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-import { chatLockdownService } from "../chat-lockdown.service";
 
 vi.mock("@models/chat.model");
 vi.mock("@services/redis.service", () => ({

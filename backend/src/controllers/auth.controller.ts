@@ -1,9 +1,14 @@
 import { COOKIE_SAMESITE, COOKIE_SECURE } from "@config/env";
+import {
+  ForgotPasswordRequest,
+  LoginRequest,
+  RefreshRequest,
+  ResetPasswordRequest,
+  SignupRequest,
+} from "@controllers/types";
 import { authService } from "@services/auth.service";
 import { AppError } from "@utils/AppError";
 import { CookieOptions, Request, Response } from "express";
-
-import { ForgotPasswordRequest, LoginRequest, RefreshRequest, ResetPasswordRequest, SignupRequest } from "./types";
 
 const COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,

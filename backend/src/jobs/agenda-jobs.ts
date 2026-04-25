@@ -1,8 +1,7 @@
 import { getAgenda } from "@config/agenda";
-
-import { presenceSyncHandler } from "./handlers/presence-sync.handler";
-import { retentionHandler } from "./handlers/retention.handler";
-import { subscriptionHandler } from "./handlers/subscription.handler";
+import { presenceSyncHandler } from "@jobs/handlers/presence-sync.handler";
+import { retentionHandler } from "@jobs/handlers/retention.handler";
+import { subscriptionHandler } from "@jobs/handlers/subscription.handler";
 
 export const JOBS = {
   DATA_RETENTION_CLEANUP: "data-retention-cleanup",

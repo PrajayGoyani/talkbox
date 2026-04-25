@@ -1,6 +1,5 @@
+import { MONGO_URI } from "@config/env";
 import mongoose from "mongoose";
-
-import { MONGO_URI } from "./env";
 
 export async function connectDB() {
   try {

@@ -6,7 +6,7 @@ import User from "@models/user.model";
 import { AppError } from "@utils/AppError";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import { chatService } from "../chat.service";
+import { chatService } from "@services/chat.service";
 
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");

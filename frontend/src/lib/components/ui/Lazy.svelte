@@ -1,7 +1,7 @@
 <script lang="ts">
+  import Icon from "$components/ui/Icon.svelte";
+  import Spinner from "$components/ui/Spinner.svelte";
   import { onMount, type Component } from "svelte";
-  import Icon from "./Icon.svelte";
-  import Spinner from "./Spinner.svelte";
 
   /**
    * Reusable Lazy loader for Svelte 5 components.

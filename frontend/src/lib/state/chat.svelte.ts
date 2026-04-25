@@ -2,14 +2,13 @@ import type { Chat, Message, MessageAlert } from "$types/chat";
 import type { Notification } from "$types/notification";
 import type { Socket } from "socket.io-client";
 
+import { ASSETS } from "$lib/config";
 import { chatService } from "$services/chat.service";
 import { SocketManager } from "$services/socket.manager.svelte";
 import { authStore } from "$state/auth.svelte";
 import { routerStore } from "$state/router.svelte";
 import { ApiError } from "$utils/errors";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
-
-import { ASSETS } from "../config";
 
 export * from "$types/chat";
 
