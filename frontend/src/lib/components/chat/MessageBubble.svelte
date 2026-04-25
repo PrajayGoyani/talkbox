@@ -7,6 +7,24 @@
   import { formatSimpleTime } from "$utils/date";
   import { getEmojiDisplayMode, parseMessageContent } from "$utils/emoji";
 
+  type Props = {
+    msg: Message;
+    isSent: boolean;
+    otherUser: User | null;
+    isFirstInGroup: boolean;
+    i: number;
+    isTouchDevice: boolean;
+    messageEditingId: string | null;
+    editInputValue: string;
+    editTextareaElement: HTMLTextAreaElement | undefined;
+    startEditing: (msg: Message) => void;
+    cancelEditing: () => void;
+    saveEditing: (msgId: string) => void;
+    handleEditKeydown: (e: KeyboardEvent, msgId: string) => void;
+    handleEditInput: (e: Event) => void;
+    showMessageActionsId: string | null;
+  };
+
   let {
     msg,
     isSent,
@@ -23,23 +41,7 @@
     handleEditKeydown,
     handleEditInput,
     showMessageActionsId = $bindable(),
-  }: {
-    msg: Message;
-    isSent: boolean;
-    otherUser: User | null;
-    isFirstInGroup: boolean;
-    i: number;
-    isTouchDevice: boolean;
-    messageEditingId: string | null;
-    editInputValue: string;
-    editTextareaElement: HTMLTextAreaElement | undefined;
-    startEditing: (msg: Message) => void;
-    cancelEditing: () => void;
-    saveEditing: (msgId: string) => void;
-    handleEditKeydown: (e: KeyboardEvent, msgId: string) => void;
-    handleEditInput: (e: Event) => void;
-    showMessageActionsId: string | null;
-  } = $props();
+  }: Props = $props();
 
   const emojiDisplayMode = $derived(getEmojiDisplayMode(msg.contentBody));
 </script>
@@ -68,13 +70,12 @@
     <div
       class={cn(
         "flex flex-wrap gap-1 items-center px-1 rounded-2xl transition-all relative",
-        emojiDisplayMode === "jumbo-1"
-          ? "text-5xl md:text-6xl"
-          : emojiDisplayMode === "jumbo-2"
-            ? "text-4xl md:text-5xl"
-            : "text-3xl md:text-4xl",
-        isTouchDevice &&
-          showMessageActionsId === msg.id &&
+        {
+          "text-5xl md:text-6xl": emojiDisplayMode === "jumbo-1",
+          "text-4xl md:text-5xl": emojiDisplayMode === "jumbo-2",
+          "text-3xl md:text-4xl": emojiDisplayMode !== "jumbo-2",
+        },
+        showMessageActionsId === msg.id &&
           "bg-slate-100 dark:bg-white/5 ring-4 ring-slate-100 dark:ring-white/5",
       )}
     >
