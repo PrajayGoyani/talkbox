@@ -232,8 +232,8 @@ class AuthStore {
     this.scheduleRefresh();
   }
 
-  /** Update user profile (name) */
-  async updateProfile(data: { name?: string | null }) {
+  /** Update user profile (name, bio) */
+  async updateProfile(data: { name?: string | null; bio?: string | null }) {
     try {
       const resp = await fetch(`${API_BASE}/user/profile`, {
         method: "PATCH",

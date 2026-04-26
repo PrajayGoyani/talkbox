@@ -1,11 +1,11 @@
 import { stopAgenda } from "@config/agenda";
 import { connectDB } from "@config/db";
-import { initSentry } from "@config/sentry";
 import { startJobs } from "@jobs/jobs";
 import { redisService } from "@services/redis.service";
 import mongoose from "mongoose";
 
 import { configureSocket, startServer } from "@/app";
+import { initSentry } from "@/config/sentry";
 
 async function bootstrap() {
   initSentry();

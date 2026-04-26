@@ -18,6 +18,9 @@ export const getChatRequests = async (req: Request, res: Response) => {
 
 export const searchChats = async (req: Request, res: Response) => {
   const query = (req.query.q || "") as string;
+  if (!query) {
+    return res.success({ data: [], nextCursor: null, hasMore: false });
+  }
   const limit = parseInt(req.query.limit as string) || 20;
   const cursor = (req.query.cursor as string) || null;
   const result = await chatService.searchChats(req.user!.id, query, limit, cursor);

@@ -1,5 +1,5 @@
 import { ALLOWED_ORIGINS, NODE_ENV } from "@config/env";
-import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/bun";
 import { AppError } from "@utils/AppError";
 import { error as errorResponse, success } from "@utils/response";
 import cookieParser from "cookie-parser";

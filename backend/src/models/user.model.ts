@@ -1,7 +1,7 @@
-import { BCRYPT_SALT, BASE_URL } from "@config/env";
+import { BASE_URL, BCRYPT_SALT } from "@config/env";
 import { AppError } from "@utils/AppError";
 import bcrypt from "bcrypt";
-import mongoose, { Schema, Document, Model } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IUser extends Document {
   username: string;
@@ -13,6 +13,7 @@ export interface IUser extends Document {
   plan: "free" | "pro";
   subscriptionExpiresAt: Date | null;
   isEmailVerified: boolean;
+  bio: string | null;
 
   // Virtuals
   avatarUrl: string;
@@ -46,6 +47,7 @@ const userSchema = new Schema<IUser, IUserModel>({
   plan: { type: String, enum: ["free", "pro"], default: "free" },
   subscriptionExpiresAt: { type: Date, default: null },
   isEmailVerified: { type: Boolean, default: false },
+  bio: { type: String, default: null, maxlength: 200, trim: true },
 });
 
 // Compound index helps efficient background jobs for downgrading expired 'pro' accounts

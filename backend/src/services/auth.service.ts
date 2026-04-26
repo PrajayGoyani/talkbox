@@ -18,6 +18,7 @@ export interface SanitizedUser {
   plan: "free" | "pro";
   subscriptionExpiresAt: Date | null;
   isEmailVerified: boolean;
+  bio: string | null;
 }
 
 export interface AuthResponse {
@@ -105,6 +106,7 @@ export class AuthService {
       plan: obj.plan,
       subscriptionExpiresAt: obj.subscriptionExpiresAt,
       isEmailVerified: obj.isEmailVerified ?? false,
+      bio: obj.bio || null,
     };
   }
 

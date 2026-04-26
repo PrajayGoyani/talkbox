@@ -1,5 +1,5 @@
 import { REDIS_URL } from "@config/env";
-import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/bun";
 import { Redis } from "ioredis";
 
 /**
@@ -329,7 +329,7 @@ class RedisService {
     if (!this.client || !this.isConnected) return 0;
     try {
       return await this.client.scard("presence_sync_queue");
-    } catch (err) {
+    } catch {
       return 0;
     }
   }

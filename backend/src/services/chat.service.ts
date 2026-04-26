@@ -234,12 +234,8 @@ class ChatService {
     limit = 20,
     cursor: string | null = null,
   ): Promise<ChatListingResponse> {
-    if (!query || query.trim().length === 0) return { data: [], nextCursor: null, hasMore: false };
-
     const uid = new ObjectId(userId);
-    const escapedQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const searchStr = escapedQuery.startsWith("@") ? escapedQuery.slice(1) : escapedQuery;
-    let q = new RegExp("^" + searchStr, "i");
+    let q = new RegExp("^" + query, "i");
 
     // Reuse shared cursor decoding
     const cursorObj = cursor ? this._decodeCursor(cursor) : null;
@@ -376,9 +372,8 @@ class ChatService {
    * - We send a notification to the receiver
    */
   async requestChat(senderId: string | import("mongodb").ObjectId, targetUsername: string): Promise<IChat> {
-    // 1. Sanitize and find the target user by exact username match
-    const sanitizedUsername = targetUsername.startsWith("@") ? targetUsername.slice(1) : targetUsername;
-    const targetUser = await this.User.findOne({ username: sanitizedUsername });
+    // 1. Find the target user by exact username match (normalization handled by schema)
+    const targetUser = await this.User.findOne({ username: targetUsername });
     if (!targetUser) {
       throw AppError.notFound("User", "USER_NOT_FOUND");
     }

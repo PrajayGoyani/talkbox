@@ -36,6 +36,11 @@
     "alert-circle",
     "home",
     "more-vert",
+    "mail",
+    "arrow-left",
+    "star",
+    "chat",
+    "chevron-right",
   ] as const;
 
   type IconName = (typeof VALID_ICONS)[number];

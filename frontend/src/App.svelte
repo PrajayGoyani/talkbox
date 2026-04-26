@@ -17,6 +17,7 @@
   import Icon from "$components/ui/Icon.svelte";
   import Spinner from "$components/ui/Spinner.svelte";
   import ThemeToggle from "$components/ui/ThemeToggle.svelte";
+  import { cn } from "$lib/utils/cn";
   import { routerStore } from "$state/router.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { Route } from "$utils/routes";
@@ -390,29 +391,26 @@
 
     <!-- Content -->
     <div
-      class="flex-1 overflow-y-auto w-full flex flex-col {isDocPage ||
-      isHomePage
-        ? 'block'
-        : 'items-center p-4 sm:p-8'}"
+      class={cn(
+        "flex-1 overflow-y-auto w-full flex flex-col",
+        isDocPage || isHomePage ? "block" : "items-center p-4 sm:p-8",
+      )}
     >
       {#if config.centered}
         <div class="w-full flex justify-center py-8 my-auto">
           <Lazy component={config.component}>
-            {#if routerStore.segments[0] === "login"}
-              {#snippet toggleSignup()}
-                <button
-                  class="text-indigo-600 font-medium"
-                  onclick={() => toggleView("SIGNUP")}>Sign up</button
-                >
-              {/snippet}
-            {:else if routerStore.segments[0] === "signup"}
-              {#snippet toggleLogin()}
-                <button
-                  class="text-indigo-600 font-medium"
-                  onclick={() => toggleView("LOGIN")}>Log in</button
-                >
-              {/snippet}
-            {/if}
+            {#snippet toggleSignup()}
+              <button
+                class="text-indigo-600 font-medium"
+                onclick={() => toggleView("SIGNUP")}>Sign up</button
+              >
+            {/snippet}
+            {#snippet toggleLogin()}
+              <button
+                class="text-indigo-600 font-medium"
+                onclick={() => toggleView("LOGIN")}>Log in</button
+              >
+            {/snippet}
           </Lazy>
         </div>
       {:else}

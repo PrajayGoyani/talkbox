@@ -10,7 +10,7 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
-    "types": ["node"],
+    "types": ["bun"],
     "outDir": "dist",
     "incremental": true,
     "tsBuildInfoFile": "dist/.tsbuildinfo",

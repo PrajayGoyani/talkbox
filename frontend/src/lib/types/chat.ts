@@ -6,6 +6,7 @@ export interface User {
   name?: string | null;
   avatar?: string | null;
   plan?: string;
+  bio?: string | null;
 }
 
 export interface Message {

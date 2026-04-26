@@ -1,5 +1,5 @@
 import User from "@models/user.model";
-import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/bun";
 import { redisService } from "@services/redis.service";
 
 /**
@@ -73,7 +73,7 @@ export const presenceSyncHandler = async () => {
         extra: { remaining },
       });
     }
-  } catch (err) {
+  } catch {
     // Fail-open for health check
   }
 };

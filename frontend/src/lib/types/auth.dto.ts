@@ -10,6 +10,7 @@ export interface UserDto {
   plan: "free" | "pro";
   subscriptionExpiresAt?: string | null;
   isEmailVerified?: boolean;
+  bio?: string | null;
 }
 
 /**

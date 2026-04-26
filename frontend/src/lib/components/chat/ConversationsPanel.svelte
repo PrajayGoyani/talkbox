@@ -6,6 +6,7 @@
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { slide } from "svelte/transition";
+  import { isValidUsername, USERNAME_ERROR } from "$utils/validation";
 
   const {
     activeChatId,
@@ -36,6 +37,11 @@
 
   const handleSendRequest = async () => {
     if (!requestUsername.trim()) return;
+
+    if (!isValidUsername(requestUsername)) {
+      requestError = USERNAME_ERROR;
+      return;
+    }
     requestLoading = true;
     requestError = null;
     requestSuccess = null;

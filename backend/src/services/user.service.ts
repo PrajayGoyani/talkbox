@@ -27,14 +27,15 @@ class UserService {
     return user;
   }
 
-  async updateProfile(userId: string, data: { name?: string; avatar_url?: string }) {
+  async updateProfile(userId: string, data: { name?: string; bio?: string | null; avatar_url?: string }) {
     const user = await this.User.findById(userId);
     if (!user) {
       throw AppError.notFound("User not found", "USER_NOT_FOUND");
     }
 
-    if (data.name) user.name = data.name;
-    if (data.avatar_url) user.avatar_url = data.avatar_url;
+    if (data.name !== undefined) user.name = data.name;
+    if (data.bio !== undefined) user.bio = data.bio;
+    if (data.avatar_url !== undefined) user.avatar_url = data.avatar_url;
 
     await user.save();
     return user;

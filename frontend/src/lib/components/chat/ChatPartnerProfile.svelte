@@ -88,13 +88,13 @@
         </div>
       </div>
 
-      <!-- About (Placeholder or if available) -->
+      <!-- Bio -->
       <div class="flex flex-col gap-1.5">
         <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-          About
+          Bio
         </span>
-        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-          This user is a member of Talkbox. Connect with them and start chatting!
+        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">
+          {user?.bio || "This user hasn't added a bio yet."}
         </p>
       </div>
     </div>

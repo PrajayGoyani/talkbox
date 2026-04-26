@@ -24,7 +24,7 @@ const mockRedisInstance = {
   mget: vi.fn().mockResolvedValue([]),
 };
 
-vi.mock("@sentry/node", () => ({
+vi.mock("@sentry/bun", () => ({
   captureMessage: vi.fn(),
   captureException: vi.fn(),
   init: vi.fn(),

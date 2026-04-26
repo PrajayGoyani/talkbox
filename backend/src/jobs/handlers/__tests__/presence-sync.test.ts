@@ -1,8 +1,7 @@
+import { presenceSyncHandler } from "@jobs/handlers/presence-sync.handler";
 import User from "@models/user.model";
 import { redisService } from "@services/redis.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-import { presenceSyncHandler } from "@jobs/handlers/presence-sync.handler";
 
 vi.mock("@models/user.model", () => ({
   default: {
@@ -10,7 +9,7 @@ vi.mock("@models/user.model", () => ({
   },
 }));
 
-vi.mock("@sentry/node");
+vi.mock("@sentry/bun");
 
 vi.mock("@services/redis.service", () => ({
   redisService: {

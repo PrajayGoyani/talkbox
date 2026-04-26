@@ -1,0 +1,50 @@
+{
+  "format_on_save": "on",
+  "languages": {
+    "Svelte": {
+      "format_on_save": "on",
+      "code_actions_on_format": {
+        "source.organizeImports": true,
+        "source.fixAll.oxc": true
+      }
+    },
+    "TypeScript": {
+      "format_on_save": "on",
+      "code_actions_on_format": {
+        "source.organizeImports": true,
+        "source.fixAll.oxc": true
+      }
+    },
+    "JavaScript": {
+      "format_on_save": "on",
+      "code_actions_on_format": {
+        "source.organizeImports": true,
+        "source.fixAll.oxc": true
+      }
+    }
+  },
+  "lsp": {
+    "oxfmt": {
+      "settings": {
+        "configPath": "./frontend/vite.config.ts",
+        "fmt": {
+          "configPath": "./frontend/vite.config.ts"
+        }
+      }
+    },
+    "tailwindcss-language-server": {
+      "settings": {
+        "tailwindCSS": {
+          "classFunctions": ["cn", "cva"],
+          "experimental": {
+            "classRegex": [
+              ["class:\\s*?[\"'`]([^\"'`]*).*?,"],
+              ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+              ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+            ]
+          }
+        }
+      }
+    }
+  }
+}

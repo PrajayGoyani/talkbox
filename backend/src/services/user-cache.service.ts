@@ -58,6 +58,7 @@ class UserCacheService {
       plan: user.plan,
       subscriptionExpiresAt: user.subscriptionExpiresAt,
       isEmailVerified: user.isEmailVerified ?? false,
+      bio: user.bio || null,
     };
 
     this.cache.set(userId, sanitized);
