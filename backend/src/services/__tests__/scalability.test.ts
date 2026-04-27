@@ -39,14 +39,14 @@ describe("Scalability Optimizations", () => {
       } as any),
     );
     vi.mocked(Message.findOne).mockReturnValue({ lean: vi.fn().mockResolvedValue(null) } as any);
-    vi.mocked(Chat.findOneAndUpdate).mockResolvedValue({ userA: MOCK_USER_ID, userB: "r1" } as any);
+    vi.mocked(Chat.findOneAndUpdate).mockResolvedValue({ participants: [MOCK_USER_ID, "r1"], userA: MOCK_USER_ID, userB: "r1" } as any);
   });
 
   describe("Thundering Herd Protection (_getPartnerIds)", () => {
     it("should only trigger one database query for concurrent partner requests", async () => {
       const mockChats = [
-        { userA: MOCK_USER_ID, userB: "partner1" },
-        { userA: "partner2", userB: MOCK_USER_ID },
+        { participants: [MOCK_USER_ID, "partner1"], userA: MOCK_USER_ID, userB: "partner1" },
+        { participants: ["partner2", MOCK_USER_ID], userA: "partner2", userB: MOCK_USER_ID },
       ];
 
       // Delay the DB response to simulate concurrency
@@ -88,7 +88,7 @@ describe("Scalability Optimizations", () => {
       const payload = { chatId: "c1", receiverId: "r1", contentBody: "Hi", idempotencyKey: "unique-key" };
 
       vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(true);
-      vi.mocked(Chat.findOneAndUpdate).mockResolvedValue({ userA: MOCK_USER_ID, userB: "r1" } as any);
+      vi.mocked(Chat.findOneAndUpdate).mockResolvedValue({ participants: [MOCK_USER_ID, "r1"], userA: MOCK_USER_ID, userB: "r1" } as any);
 
       await socketService.saveAndDeliverMessage(sender, payload);
 

@@ -242,6 +242,7 @@ describe("SocketService", () => {
 
       const mockChat = {
         _id: "chat123",
+        participants: [MOCK_USER_ID, "receiver456"],
         userA: MOCK_USER_ID,
         userB: "receiver456",
         status: "accepted",

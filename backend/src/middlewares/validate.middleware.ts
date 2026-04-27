@@ -6,7 +6,12 @@ const validateRequest =
   (source: "body" | "query" | "params") => (schema: ZodType) => (req: Request, res: Response, next: NextFunction) => {
     try {
       const parsed = schema.parse(req[source]);
-      req[source] = parsed;
+      Object.defineProperty(req, source, {
+        value: parsed,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
       next();
     } catch (error) {
       if (error instanceof ZodError) {
