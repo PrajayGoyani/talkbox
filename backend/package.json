@@ -8,7 +8,7 @@
   "main": "app.js",
   "scripts": {
     "build": "tsgo",
-    "dev": "bun --watch --inspect=9229 run server.ts",
+    "dev": "bun --watch --inspect=localhost:9229/talkbox run server.ts",
     "fmt": "vp fmt",
     "fmt:check": "vp fmt --check",
     "start": "bun dist/server.js",
