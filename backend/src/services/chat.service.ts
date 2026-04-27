@@ -401,7 +401,7 @@ class ChatService {
 
     // 4. Consistent ordering for unique constraint
     const sortedParticipants = [new ObjectId(targetUser._id), new ObjectId(senderId)].sort((a, b) =>
-      a.toString().localeCompare(b.toString())
+      a.toString().localeCompare(b.toString()),
     );
     const [userA, userB] = sortedParticipants;
 
@@ -430,6 +430,7 @@ class ChatService {
       isGroup: false,
       createdBy: senderId,
       status: "pending",
+      isFreeTierOnly: requestingUser?.plan === "free" && targetUser?.plan === "free",
       lastMessage: {
         sentAt: new Date(), // Initialize for sorting consistency
       },

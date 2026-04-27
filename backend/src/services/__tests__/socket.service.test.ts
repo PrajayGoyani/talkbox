@@ -1,7 +1,6 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
 import { socketService } from "@services/socket.service";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies
 vi.mock("@models/chat.model");

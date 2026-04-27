@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { USERNAME_ERROR, USERNAME_REGEX } from "@utils/validation";
+import { z } from "zod";
 
 export const chatRequestSchema = z.object({
   username: z

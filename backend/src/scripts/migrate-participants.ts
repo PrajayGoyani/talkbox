@@ -1,6 +1,6 @@
+import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import dotenv from "dotenv";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,11 +21,7 @@ async function migrate() {
     console.log("Migration started: Populating participants array and userA/B indices...");
 
     const chats = await Chat.find({
-      $or: [
-        { participants: { $exists: false } },
-        { participants: { $size: 0 } },
-        { userA: { $exists: false } }
-      ]
+      $or: [{ participants: { $exists: false } }, { participants: { $size: 0 } }, { userA: { $exists: false } }],
     });
 
     console.log(`Found ${chats.length} chats to migrate.`);
@@ -39,15 +35,13 @@ async function migrate() {
 
       if (uidA && uidB) {
         // Ensure deterministic ordering (alphabetical by ID string)
-        const participants = [uidA, uidB].sort((a, b) => 
-          a.toString().localeCompare(b.toString())
-        );
+        const participants = [uidA, uidB].sort((a, b) => a.toString().localeCompare(b.toString()));
 
         chat.userA = participants[0];
         chat.userB = participants[1];
         chat.participants = participants;
         chat.isGroup = false; // Legacy chats are all 1-to-1
-        
+
         await chat.save();
         updatedCount++;
       }

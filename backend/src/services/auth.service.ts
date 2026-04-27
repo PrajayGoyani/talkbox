@@ -1,4 +1,6 @@
+import { getAgenda } from "@config/agenda";
 import { RESET_TOKEN_TTL, VERIFY_TOKEN_TTL } from "@config/env";
+import { JOBS } from "@jobs/agenda-jobs";
 import User, { IUser, IUserModel } from "@models/user.model";
 import { emailService } from "@services/email.service";
 import { redisService } from "@services/redis.service";
@@ -184,6 +186,7 @@ export class AuthService {
     const user = await this.User.findById(userId);
     if (!user) throw AppError.notFound("User");
 
+    const oldPlan = user.plan;
     user.plan = "pro";
     // Set expiry to 30 days from now
     const expiry = new Date();
@@ -191,6 +194,16 @@ export class AuthService {
     user.subscriptionExpiresAt = expiry;
 
     await user.save();
+
+    // Defer chat-flag re-evaluation to background job (Performance Optimization)
+    // Only trigger if actually moving from Free to Pro to avoid duplicate work.
+    if (oldPlan === "free") {
+      const agenda = getAgenda();
+      await agenda.now(JOBS.USER_UPGRADE_CHAT_SYNC, {
+        userId: userId.toString(),
+        timestamp: Date.now(), // Helpful for audit trail
+      });
+    }
 
     // Invalidate caches across all server instances
     await redisService.publishCacheInvalidation("user", userId.toString());

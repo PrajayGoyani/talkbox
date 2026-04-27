@@ -1,7 +1,6 @@
 import Chat from "@models/chat.model";
-import { bench, describe, vi } from "vitest";
-
 import { socketService } from "@services/socket.service";
+import { bench, describe, vi } from "vitest";
 
 vi.mock("@models/chat.model");
 vi.mock("@services/redis.service", () => ({

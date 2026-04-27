@@ -129,7 +129,7 @@ export class MessageHandler {
     for (const p of chat.participants) {
       const pId = p.toString();
       io?.to(`user:${pId}`).emit("receive_message", dto);
-      
+
       // If it's the receiver, also send an alert
       if (pId === receiverId) {
         try {

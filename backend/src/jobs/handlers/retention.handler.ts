@@ -1,10 +1,14 @@
-import { Types } from "mongoose";
-
-import { RETENTION_DELETED_CHAT_DAYS, RETENTION_MESSAGE_DAYS, RETENTION_NOTIFICATION_DAYS } from "@config/env";
+import {
+  RETENTION_BATCH_SIZE,
+  RETENTION_CONCURRENCY,
+  RETENTION_DELETED_CHAT_DAYS,
+  RETENTION_MESSAGE_DAYS,
+  RETENTION_NOTIFICATION_DAYS,
+} from "@config/env";
 import ChatModel from "@models/chat.model";
 import MessageModel from "@models/message.model";
 import NotificationModel from "@models/notification.model";
-import UserModel from "@models/user.model";
+import { Types } from "mongoose";
 
 /**
  * @risk Medium - Background Jobs
@@ -34,29 +38,59 @@ export const retentionHandler = async () => {
     const thirtyDaysAgoId = Types.ObjectId.createFromTime(Math.floor(thirtyDaysAgo.getTime() / 1000));
 
     // 1. Purge messages older than 365 days (Plan-Aware)
-    // Rule: Only purge messages if BOTH participants are currently on the Free plan.
+    // Rule: Only purge messages if ALL participants are currently on the Free plan.
     // Pro users get "Unlimited History".
-    const freeUsers = await UserModel.find({ plan: "free" }).select("_id");
-    const freeUserIds = freeUsers.map((u) => u._id);
 
-    // Find chats where BOTH userA and userB are Free users
-    const freeChats = await ChatModel.find({
-      userA: { $in: freeUserIds },
-      userB: { $in: freeUserIds },
-    }).select("_id");
+    // Use denormalized flag with index for O(1) evaluation (Efficiency fix)
+    const freeChatCursor = ChatModel.find({
+      isFreeTierOnly: true,
+      isDeleted: false,
+    })
+      .select("_id")
+      .lean()
+      .cursor();
 
-    const freeChatIds = freeChats.map((c) => c._id);
+    const CHUNK_SIZE = RETENTION_BATCH_SIZE;
+    const CONCURRENCY = RETENTION_CONCURRENCY;
+    let deletedCountTotal = 0;
+    let chatChunk: Types.ObjectId[] = [];
+    let deletionPromises: Promise<any>[] = [];
 
-    if (freeChatIds.length > 0) {
-      const { deletedCount } = await MessageModel.deleteMany({
-        chatId: { $in: freeChatIds },
+    for await (const doc of freeChatCursor) {
+      chatChunk.push(doc._id);
+
+      if (chatChunk.length >= CHUNK_SIZE) {
+        const currentBatch = [...chatChunk];
+        deletionPromises.push(
+          MessageModel.deleteMany({
+            chatId: { $in: currentBatch },
+            _id: { $lt: retentionThresholdId },
+          }).then((res) => {
+            deletedCountTotal += res.deletedCount;
+          }),
+        );
+        chatChunk = [];
+
+        if (deletionPromises.length >= CONCURRENCY) {
+          await Promise.all(deletionPromises);
+          deletionPromises = [];
+        }
+      }
+    }
+
+    if (chatChunk.length > 0) {
+      const res = await MessageModel.deleteMany({
+        chatId: { $in: chatChunk },
         _id: { $lt: retentionThresholdId },
       });
-      if (deletedCount > 0) {
-        console.log(
-          `[Retention] Purged ${deletedCount} messages older than ${RETENTION_MESSAGE_DAYS} days from Free-to-Free chats.`,
-        );
-      }
+      deletedCountTotal += res.deletedCount;
+    }
+    await Promise.all(deletionPromises);
+
+    if (deletedCountTotal > 0) {
+      console.log(
+        `[Retention] Purged ${deletedCountTotal} messages older than ${RETENTION_MESSAGE_DAYS} days from Free-to-Free chats.`,
+      );
     }
 
     // 2. Purge notifications
@@ -69,17 +103,42 @@ export const retentionHandler = async () => {
     await NotificationModel.deleteMany({ _id: { $lt: thirtyDaysAgoId } });
 
     // 3. Purge deleted chats
-    const chatsToDelete = await ChatModel.find({
+    const deletedChatsCursor = ChatModel.find({
       isDeleted: true,
       deletedAt: { $lt: fourteenDaysAgo },
-    }).select("_id");
+    })
+      .select("_id")
+      .lean()
+      .cursor();
 
-    const chatIds = chatsToDelete.map((c) => c._id);
+    let deletedChatsChunk: Types.ObjectId[] = [];
+    let cleanupPromises: Promise<any>[] = [];
 
-    if (chatIds.length > 0) {
-      await MessageModel.deleteMany({ chatId: { $in: chatIds } });
-      await ChatModel.deleteMany({ _id: { $in: chatIds } });
+    for await (const doc of deletedChatsCursor) {
+      deletedChatsChunk.push(doc._id);
+
+      if (deletedChatsChunk.length >= CHUNK_SIZE) {
+        const currentBatch = [...deletedChatsChunk];
+        cleanupPromises.push(
+          Promise.all([
+            MessageModel.deleteMany({ chatId: { $in: currentBatch } }),
+            ChatModel.deleteMany({ _id: { $in: currentBatch } }),
+          ]),
+        );
+        deletedChatsChunk = [];
+
+        if (cleanupPromises.length >= CONCURRENCY) {
+          await Promise.all(cleanupPromises);
+          cleanupPromises = [];
+        }
+      }
     }
+
+    if (deletedChatsChunk.length > 0) {
+      await MessageModel.deleteMany({ chatId: { $in: deletedChatsChunk } });
+      await ChatModel.deleteMany({ _id: { $in: deletedChatsChunk } });
+    }
+    await Promise.all(cleanupPromises);
 
     console.log(
       `Background retention jobs complete. (Policy: Free messages ${RETENTION_MESSAGE_DAYS}d, Notifications 30d, Deleted chats 14d)`,

@@ -67,7 +67,7 @@
       Pro plan, you gain access to increased usage limits, including up to 10
       concurrent sessions and <strong>unlimited message history</strong>. Free
       tier users are limited to 1 concurrent session, 5 active chat threads, and
-      <strong>365 days of message retention</strong>.
+      <strong>7 days of message history</strong>.
     </p>
   </section>
 

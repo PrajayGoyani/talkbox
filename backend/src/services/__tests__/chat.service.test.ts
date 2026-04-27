@@ -3,10 +3,8 @@ import Chat from "@models/chat.model";
 import Message from "@models/message.model";
 import Notification from "@models/notification.model";
 import User from "@models/user.model";
-import { AppError } from "@utils/AppError";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-
 import { chatService } from "@services/chat.service";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");

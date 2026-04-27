@@ -33,6 +33,11 @@ export const PRO_PLAN_SESSION_LIMIT = Number(process.env.PRO_PLAN_SESSION_LIMIT)
 export const RETENTION_MESSAGE_DAYS = Number(process.env.RETENTION_MESSAGE_DAYS) || 365;
 export const RETENTION_DELETED_CHAT_DAYS = Number(process.env.RETENTION_DELETED_CHAT_DAYS) || 14;
 export const RETENTION_NOTIFICATION_DAYS = Number(process.env.RETENTION_NOTIFICATION_DAYS) || 30;
+export const RETENTION_CONCURRENCY = Number(process.env.RETENTION_CONCURRENCY) || 2;
+export const RETENTION_BATCH_SIZE = Number(process.env.RETENTION_BATCH_SIZE) || 500;
+export const USER_UPGRADE_CONCURRENCY = Number(process.env.USER_UPGRADE_CONCURRENCY) || 2;
+export const USER_UPGRADE_BATCH_SIZE = Number(process.env.USER_UPGRADE_BATCH_SIZE) || 500;
+export const SUBSCRIPTION_BATCH_SIZE = Number(process.env.SUBSCRIPTION_BATCH_SIZE) || 1000;
 export const MESSAGE_MODIFY_LIMIT_HOURS = Number(process.env.MESSAGE_MODIFY_LIMIT_HOURS) || 1;
 
 // Rate Limits
