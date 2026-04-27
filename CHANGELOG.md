@@ -1,5 +1,11 @@
 # Changelog
- 
+
+## [Unreleased]
+
+### Added
+- **Agent-Driven Development**: Implemented a hierarchical workflow for AI agents, establishing a top-down delegation protocol consisting of Executive (CEO/CTO), Operations (PM/Marketing/Legal), and Engineering (Frontend/Backend/Test/Data/QA/Docs) roles.
+- **Workflow Automation**: Created `.agent/workflows/delegate.md` for structured reasoning frameworks, ensuring multi-agent perspectives and technical compliance inside `.antigravityrules.md` and `ROLES.md`.
+
 ## [1.6.0] - 2026-04-24
 
 ### Added

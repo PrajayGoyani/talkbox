@@ -5,7 +5,7 @@
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
   import { formatSimpleTime } from "$utils/date";
-  import { getEmojiDisplayMode, parseMessageContent } from "$utils/emoji";
+  import { getEmojiDisplayMode, parseMessageContent, type MessageSegment } from "$utils/emoji";
 
   type Props = {
     msg: Message;
@@ -81,16 +81,7 @@
     >
       {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
         {#if segment.type === "emoji"}
-          <span
-            use:tooltip={{
-              text: segment.content + "\n:" + segment.name + ":",
-              variant: "jumbo",
-              position: "top",
-            }}
-            class="hover:scale-110 transition-transform cursor-default"
-          >
-            {segment.content}
-          </span>
+          {@render renderSegment(segment, true)}
         {/if}
       {/each}
 
@@ -183,30 +174,7 @@
           )}
         >
           {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
-            {#if segment.type === "emoji"}
-              <span
-                class="cursor-default inline-block align-middle px-0.5"
-                use:tooltip={{
-                  text: segment.content + "\n:" + segment.name + ":",
-                  variant: "jumbo",
-                  position: "top",
-                }}>{segment.content}</span
-              >
-            {:else if segment.type === "link"}
-              <a
-                href={segment.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="chat-link"
-                onclick={(e) => e.stopPropagation()}
-              >
-                {segment.content}
-              </a>
-            {:else if segment.type === "code"}
-              <code class="chat-code">{segment.content}</code>
-            {:else}
-              {segment.content}
-            {/if}
+            {@render renderSegment(segment)}
           {/each}<span
             class={["inline-block h-0", msg.isEdited ? "w-[84px]" : "w-11"]}
           ></span>
@@ -283,4 +251,50 @@
       {/each}
     </div>
   {/if}
+{/snippet}
+
+{#snippet renderEmoji(segment: MessageSegment, isJumbo = false)}
+  <span
+    class={cn(
+      isJumbo
+        ? "hover:scale-110 transition-transform cursor-default"
+        : "cursor-default inline-block align-middle px-0.5",
+    )}
+    use:tooltip={{
+      text: segment.content + "\n:" + segment.name + ":",
+      variant: "jumbo",
+      position: "top",
+    }}>{segment.content}</span
+  >
+{/snippet}
+
+{#snippet renderLink(segment: MessageSegment)}
+  <a
+    href={segment.url}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="chat-link"
+    onclick={(e) => e.stopPropagation()}
+  >
+    {segment.content}
+  </a>
+{/snippet}
+
+{#snippet renderCode(segment: MessageSegment)}
+  <code class="chat-code">{segment.content}</code>
+{/snippet}
+
+{#snippet renderText(segment: MessageSegment)}
+  {segment.content}
+{/snippet}
+
+{#snippet renderSegment(segment: MessageSegment, isJumbo = false)}
+  {@const renderers = {
+    emoji: renderEmoji,
+    link: renderLink,
+    code: renderCode,
+    text: renderText,
+  }}
+  {@const Renderer = renderers[segment.type] || renderText}
+  {@render Renderer(segment, isJumbo)}
 {/snippet}
