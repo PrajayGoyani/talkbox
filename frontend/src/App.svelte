@@ -182,7 +182,8 @@
       onNavigate={handleNotificationNavigate}
     />
 
-    {#if authStore.user && !authStore.user.isEmailVerified}
+    {#if authStore.user && !authStore.user.isEmailVerified && false}
+      <!-- TODO: should we verify the this at login time? -->
       <div
         class="shrink-0 bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-center gap-3 text-sm text-amber-700 dark:text-amber-400"
       >
