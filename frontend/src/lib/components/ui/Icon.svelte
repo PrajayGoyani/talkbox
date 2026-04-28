@@ -16,6 +16,7 @@
     "info",
     "clock",
     "chevron-down",
+    "chevrons-down",
     "nav-chat",
     "logout",
     "add",

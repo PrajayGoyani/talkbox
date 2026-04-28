@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { uiStore } from "$state/ui.svelte";
-  import type { ChatStatus, User } from "$state/chat.svelte";
   import Avatar from "$components/ui/Avatar.svelte";
   import Icon from "$components/ui/Icon.svelte";
+  import type { ChatStatus, User } from "$state/chat.svelte";
   import { tooltip } from "$state/tooltip.svelte";
+  import { uiStore } from "$state/ui.svelte";
   import { formatTimeAgo } from "$utils/date";
 
   let { 

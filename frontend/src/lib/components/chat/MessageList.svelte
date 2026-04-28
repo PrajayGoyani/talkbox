@@ -89,12 +89,15 @@
     }
   };
 
+  const JUMP_BUTTON_SHOW_THRESHOLD = 300;
+
   const handleMessagesScroll = throttle((e: Event) => {
     const target = e.target as HTMLDivElement;
-    const isNearBottom =
-      target.scrollHeight - target.scrollTop - target.clientHeight < 150;
+    const distanceFromBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+    const isNearBottom = distanceFromBottom < 150;
     const scrolledUpSignificant =
-      target.scrollHeight - target.scrollTop - target.clientHeight > 300;
+      distanceFromBottom > JUMP_BUTTON_SHOW_THRESHOLD;
 
     showJumpButton = scrolledUpSignificant;
     userHasScrolledUp = !isNearBottom;
@@ -155,81 +158,83 @@
   });
 </script>
 
-<div
-  bind:this={messagesContainer}
-  class="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-slim relative"
-  onscroll={handleMessagesScroll}
->
-  {#if chatStore.isLoadingMessages && chatStore.messages.length === 0}
-    <div class="flex flex-col gap-4">
-      {#each Array(messageSkeletonCount) as _, i}
-        <MessageSkeleton sent={i % 2 === 0} />
-      {/each}
-    </div>
-  {:else if chatStore.messages.length === 0}
-    <div
-      class="flex flex-col items-center justify-center gap-4 h-full text-slate-500 opacity-60 text-center py-20"
-    >
-      <div class="bg-slate-100 dark:bg-white/5 p-4 rounded-full">
-        <Icon name="chat" class="w-10 h-10" />
-      </div>
-      <div>
-        <p class="font-bold">No messages yet</p>
-        <p class="text-sm">
-          Start the conversation with {otherUser?.name || otherUser?.username}
-        </p>
-      </div>
-    </div>
-  {:else}
-    <div bind:this={topSentinel} class="h-1 -mt-4"></div>
-
-    {#if chatStore.isLoadingMessages && chatStore.hasMoreMessages}
-      <div class="flex flex-col gap-4 mb-6">
-        <MessageSkeleton sent={false} />
-        <MessageSkeleton sent={true} />
-      </div>
-    {/if}
-
-    {#each groupedMessages as group}
-      <div class="flex flex-col gap-1 mb-8 relative">
-        <div
-          class="sticky -top-4 z-20 flex justify-center pointer-events-none py-2 -mb-2"
-        >
-          <span
-            class="pointer-events-auto px-4 py-1 text-[10px] tracking-widest font-bold text-slate-500 bg-slate-50/90 dark:bg-slate-900/95 border border-slate-200 dark:border-white/10 rounded-full shadow-md backdrop-blur-md transition-all duration-300"
-            >{group.label}</span
-          >
-        </div>
-        <div
-          class="before:content-[''] before:absolute before:top-5 before:left-0 before:right-0 before:h-px before:bg-slate-200 dark:before:bg-white/10 before:z-0"
-        ></div>
-
-        {#each group.messages as msg, i}
-          {@const isSent = msg.senderId === authStore.user?.id}
-          {@const isFirstInGroup =
-            i === 0 || group.messages[i - 1].senderId !== msg.senderId}
-
-          <MessageBubble
-            {msg}
-            {isSent}
-            {otherUser}
-            {isFirstInGroup}
-            {i}
-            {isTouchDevice}
-            bind:messageEditingId
-            bind:editInputValue
-            bind:editTextareaElement
-            {startEditing}
-            {cancelEditing}
-            {saveEditing}
-            {handleEditKeydown}
-            {handleEditInput}
-            bind:showMessageActionsId
-          />
+<div class="flex-1 relative min-h-0">
+  <div
+    bind:this={messagesContainer}
+    class="h-full overflow-y-auto p-4 md:p-6 scrollbar-slim"
+    onscroll={handleMessagesScroll}
+  >
+    {#if chatStore.isLoadingMessages && chatStore.messages.length === 0}
+      <div class="flex flex-col gap-4">
+        {#each Array(messageSkeletonCount) as _, i}
+          <MessageSkeleton sent={i % 2 === 0} />
         {/each}
       </div>
-    {/each}
-  {/if}
+    {:else if chatStore.messages.length === 0}
+      <div
+        class="flex flex-col items-center justify-center gap-4 h-full text-slate-500 opacity-60 text-center py-20"
+      >
+        <div class="bg-slate-100 dark:bg-white/5 p-4 rounded-full">
+          <Icon name="chat" class="w-10 h-10" />
+        </div>
+        <div>
+          <p class="font-bold">No messages yet</p>
+          <p class="text-sm">
+            Start the conversation with {otherUser?.name || otherUser?.username}
+          </p>
+        </div>
+      </div>
+    {:else}
+      <div bind:this={topSentinel} class="h-1 -mt-4"></div>
+
+      {#if chatStore.isLoadingMessages && chatStore.hasMoreMessages}
+        <div class="flex flex-col gap-4 mb-6">
+          <MessageSkeleton sent={false} />
+          <MessageSkeleton sent={true} />
+        </div>
+      {/if}
+
+      {#each groupedMessages as group}
+        <div class="flex flex-col gap-1 mb-8 relative">
+          <div
+            class="sticky -top-4 z-20 flex justify-center pointer-events-none py-2 -mb-2"
+          >
+            <span
+              class="pointer-events-auto px-4 py-1 text-[10px] tracking-widest font-bold text-slate-500 bg-slate-50/90 dark:bg-slate-900/95 border border-slate-200 dark:border-white/10 rounded-full shadow-md backdrop-blur-md transition-all duration-300"
+              >{group.label}</span
+            >
+          </div>
+          <div
+            class="before:content-[''] before:absolute before:top-5 before:left-0 before:right-0 before:h-px before:bg-slate-200 dark:before:bg-white/10 before:z-0"
+          ></div>
+
+          {#each group.messages as msg, i}
+            {@const isSent = msg.senderId === authStore.user?.id}
+            {@const isFirstInGroup =
+              i === 0 || group.messages[i - 1].senderId !== msg.senderId}
+
+            <MessageBubble
+              {msg}
+              {isSent}
+              {otherUser}
+              {isFirstInGroup}
+              {i}
+              {isTouchDevice}
+              bind:messageEditingId
+              bind:editInputValue
+              bind:editTextareaElement
+              {startEditing}
+              {cancelEditing}
+              {saveEditing}
+              {handleEditKeydown}
+              {handleEditInput}
+              bind:showMessageActionsId
+            />
+          {/each}
+        </div>
+      {/each}
+    {/if}
+  </div>
 
   <!-- Jump to Latest Button -->
   {#if showJumpButton}
@@ -240,7 +245,7 @@
       aria-label="Scroll to bottom"
     >
       <div class="relative">
-        <Icon name="chevron-down" class="w-5 h-5" stroke-width="2.5" />
+        <Icon name="chevrons-down" class="w-5 h-5" stroke-width="2.5" />
       </div>
     </button>
   {/if}

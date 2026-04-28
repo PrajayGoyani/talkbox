@@ -1,11 +1,16 @@
 <script lang="ts">
-  import { tick } from "svelte";
   import ChatHeader from "$components/chat/ChatHeader.svelte";
   import ChatInput from "$components/chat/ChatInput.svelte";
   import MessageList from "$components/chat/MessageList.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import { authStore } from "$state/auth.svelte";
-  import { chatStore, type Message, type User, type ChatStatus } from "$state/chat.svelte";
+  import {
+    chatStore,
+    type ChatStatus,
+    type Message,
+    type User,
+  } from "$state/chat.svelte";
+  import { tick } from "svelte";
 
   let {
     chatId,
@@ -26,7 +31,9 @@
   let showMessageActionsId = $state<string | null>(null);
   let messageList: any = $state();
 
-  const partnerStatus = $derived(chatStore.onlineStatus.get(otherUser?.id || ""));
+  const partnerStatus = $derived(
+    chatStore.onlineStatus.get(otherUser?.id || ""),
+  );
   const chatTypingUsers = $derived(chatStore.typingStatus.get(chatId));
 
   const handleEditInput = (e: Event) => {
@@ -99,7 +106,8 @@
     </div>
     <h2 class="text-xl font-bold mb-2">Request Pending</h2>
     <p class="text-slate-500 max-w-xs">
-      You need to wait for {otherUser?.name || otherUser?.username} to accept your chat request.
+      You need to wait for {otherUser?.name || otherUser?.username} to accept your
+      chat request.
     </p>
   </div>
 {:else}
@@ -130,11 +138,11 @@
     {/if}
   {/if}
 
-  <ChatInput 
-    {chatId} 
-    {otherUser} 
-    {isTouchDevice} 
-    onSend={() => messageList?.scrollToBottom()} 
+  <ChatInput
+    {chatId}
+    {otherUser}
+    {isTouchDevice}
+    onSend={() => messageList?.scrollToBottom()}
   />
 {/if}
 
