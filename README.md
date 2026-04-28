@@ -1,29 +1,32 @@
 # Talkbox | Connect. Chat. Collaborate.
 
-Talkbox is a real-time messaging platform designed for speed, security, scalability and a unified user experience. Built with a modern tech stack and focusing on performance and reliability, it offers instant synchronization across all your devices.
+Talkbox is a real-time messaging platform providing message synchronization across devices. It uses a TypeScript-based stack with a focus on low-latency communication.
 
 ## 🚀 Features
 
-- **Real-time Messaging**: Instant message delivery using Socket.io (under 200ms latency).
-- **Secure & Private**: Robust authentication and data privacy by design.
-- **Unified Dashboard**: Manage settings, profiles, and conversations from one sleek interface.
-- **Cross-platform Sync**: Seamless experience across mobile and desktop browsers.
-- **Modern Aesthetics**: Premium UI with glassmorphism, dynamic transitions, and light/dark modes.
+- **Real-time Messaging**: Message delivery via Socket.io with latency under 200ms.
+- **Security**: Authentication and data privacy controls.
+- **Unified Dashboard**: Interface for managing settings, profiles, and conversations.
+- **Cross-platform**: Support for mobile and desktop browsers.
+- **Interface**: UI featuring glassmorphism effects, transitions, and light/dark modes.
 
 ## 🛠 Tech Stack
 
 ### Frontend
 
-- **Svelte 5**: Utilizing the latest runes for reactive state management.
-- **TailwindCSS 4**: Modern styling with a utility-first approach.
-- **Vite & Bun**: Lightning-fast build and development environment.
+- **Svelte 5**: Framework for reactive state and UI management using Runes.
+- **TailwindCSS 4**: Utility-first styling library.
+- **Vite Plus (vp)**: Unified toolchain for development, testing, and formatting.
+- **TypeScript**: Static typing for client-side logic.
 
 ### Backend
 
-- **Node.js (Express)**: Robust server-side framework.
-- **TypeScript**: Strict type safety across the entire API.
-- **MongoDB & Mongoose**: Scalable NoSQL database with flexible modeling.
-- **Socket.io**: Powering real-time communication.
+- **Bun**: JavaScript and TypeScript runtime environment.
+- **Express 5**: Web server framework for the API.
+- **MongoDB & Mongoose 9**: Document database and object modeling.
+- **Socket.io & Redis**: Real-time messaging with distributed state management.
+- **Sentry**: Error monitoring and performance tracking.
+- **TypeScript**: Static typing for server-side logic.
 
 ## 🏁 Getting Started
 
