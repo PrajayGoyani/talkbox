@@ -4,12 +4,12 @@ import { startJobs } from "@jobs/jobs";
 import { redisService } from "@services/redis.service";
 import mongoose from "mongoose";
 
+import "./src/instrument";
 import { configureSocket, startServer } from "@/app";
-import { initSentry } from "@/config/sentry";
 
 export async function bootstrap() {
-  initSentry();
   await connectDB();
+
   await configureSocket();
   await startJobs();
   const server = startServer();
