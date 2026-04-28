@@ -39,7 +39,11 @@ describe("Scalability Optimizations", () => {
       } as any),
     );
     vi.mocked(Message.findOne).mockReturnValue({ lean: vi.fn().mockResolvedValue(null) } as any);
-    vi.mocked(Chat.findOneAndUpdate).mockResolvedValue({ participants: [MOCK_USER_ID, "r1"], userA: MOCK_USER_ID, userB: "r1" } as any);
+    vi.mocked(Chat.findOneAndUpdate).mockResolvedValue({
+      participants: [MOCK_USER_ID, "r1"],
+      userA: MOCK_USER_ID,
+      userB: "r1",
+    } as any);
   });
 
   describe("Thundering Herd Protection (_getPartnerIds)", () => {
@@ -88,7 +92,11 @@ describe("Scalability Optimizations", () => {
       const payload = { chatId: "c1", receiverId: "r1", contentBody: "Hi", idempotencyKey: "unique-key" };
 
       vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(true);
-      vi.mocked(Chat.findOneAndUpdate).mockResolvedValue({ participants: [MOCK_USER_ID, "r1"], userA: MOCK_USER_ID, userB: "r1" } as any);
+      vi.mocked(Chat.findOneAndUpdate).mockResolvedValue({
+        participants: [MOCK_USER_ID, "r1"],
+        userA: MOCK_USER_ID,
+        userB: "r1",
+      } as any);
 
       await socketService.saveAndDeliverMessage(sender, payload);
 
