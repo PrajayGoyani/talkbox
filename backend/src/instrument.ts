@@ -9,6 +9,7 @@ if (SENTRY_DSN) {
     dsn: SENTRY_DSN,
     environment: NODE_ENV,
     tracesSampleRate: 1.0,
+    integrations: [Sentry.expressIntegration()],
   });
   console.log(`[Sentry] Initialized with environment: ${NODE_ENV}`);
 } else if (NODE_ENV === "production") {

@@ -4,7 +4,6 @@ import { startJobs } from "@jobs/jobs";
 import { redisService } from "@services/redis.service";
 import mongoose from "mongoose";
 
-import "./src/instrument";
 import { configureSocket, startServer } from "@/app";
 
 export async function bootstrap() {

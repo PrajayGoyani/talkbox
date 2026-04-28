@@ -223,7 +223,7 @@ class ChatStore {
         this.chatsMap.set(chat.id, normalized);
         return normalized;
       });
-      this.chats = [...this.chats, ...newChats];
+      this.chats.push(...newChats);
       this.unreadChatsCount = this.chats.filter((c) => (c.unreadCount ?? 0) > 0).length;
       this.sortChats();
       this.hasMoreChats = result.hasMore;
@@ -265,7 +265,7 @@ class ChatStore {
     this.isLoadingMoreRequests = true;
     try {
       const result = await chatService.fetchRequests(20, this.requestCursor);
-      this.requests = [...this.requests, ...result.data];
+      this.requests.push(...result.data);
       this.hasMoreRequests = result.hasMore;
       this.requestCursor = result.nextCursor;
     } catch (e: any) {
@@ -603,6 +603,10 @@ class ChatStore {
       const bTs = b._lastUpdateTs || 0;
       return bTs - aTs;
     });
+
+    // Re-assign to self to ensure Svelte 5 tracks the order change for any
+    // consumers that might not be deeply tracking the mutation.
+    this.chats = this.chats;
   }
 
   private showBrowserNotification(data: MessageAlert) {
