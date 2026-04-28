@@ -3,15 +3,15 @@
 # Install dependencies for frontend and backend
 install:
 	@echo "Installing dependencies..."
-	cd backend && pnpm install
-	cd frontend && pnpm install
+	cd backend && bun install
+	cd frontend && bun install
 	@echo "Installation complete!"
 
 # Unified build command (incremental)
 build:
 	@echo "Building applications..."
-	cd backend && pnpm build
-	cd frontend && pnpm build
+	cd backend && bun run build
+	cd frontend && bun run build
 	@echo "Build complete!"
 
 # Production Mode (Backend: start, Frontend: build + preview)
