@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { connectDB } from "@config/db";
 import { startJobs } from "@jobs/jobs";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import { configureSocket, startServer } from "@/app";
+
 import { bootstrap } from "../../server";
 
 vi.mock("@config/db", () => ({

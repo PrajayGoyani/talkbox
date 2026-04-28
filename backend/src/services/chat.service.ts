@@ -24,6 +24,7 @@ interface PopulatedUser {
   email: string;
   avatar_url: string | null;
   plan: "free" | "pro";
+  bio: string | null;
 }
 
 class ChatService {
@@ -95,6 +96,7 @@ class ChatService {
             email: otherUser.email,
             avatarUrl: otherUser.avatar_url || `https://ui-avatars.com/api/?name=${otherUser.username}`,
             plan: otherUser.plan,
+            bio: otherUser.bio,
           }
         : null,
       lastMessage: chat.lastMessage?.contentBody
@@ -147,7 +149,7 @@ class ChatService {
     const chats = await this.Chat.find(query)
       .sort({ "lastMessage.sentAt": -1, _id: -1 })
       .limit(limit + 1)
-      .populate("participants", "username name email avatar_url plan");
+      .populate("participants", "username name email avatar_url plan bio");
 
     const hasMore = chats.length > limit;
     const results = hasMore ? chats.slice(0, limit) : chats;
@@ -198,7 +200,7 @@ class ChatService {
     const chats = await this.Chat.find(query)
       .sort({ createdAt: -1, _id: -1 })
       .limit(limit + 1)
-      .populate("participants", "username name email avatar_url plan");
+      .populate("participants", "username name email avatar_url plan bio");
 
     const hasMore = chats.length > limit;
     const results = hasMore ? chats.slice(0, limit) : chats;
@@ -263,7 +265,7 @@ class ChatService {
               },
             },
             { $limit: 1 },
-            { $project: { username: 1, name: 1, email: 1, avatar_url: 1, plan: 1 } },
+            { $project: { username: 1, name: 1, email: 1, avatar_url: 1, plan: 1, bio: 1 } },
           ],
           as: "otherUser",
         },
@@ -310,6 +312,7 @@ class ChatService {
           email: "$otherUser.email",
           avatarUrl: "$otherUser.avatar_url",
           plan: "$otherUser.plan",
+          bio: "$otherUser.bio",
         },
         lastMessage: "$lastMessage",
         unreadCount: {

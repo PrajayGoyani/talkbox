@@ -14,6 +14,7 @@ export interface ChatDto {
     email: string;
     avatarUrl: string;
     plan: "free" | "pro";
+    bio?: string | null;
   } | null;
   lastMessage: {
     contentBody: string;

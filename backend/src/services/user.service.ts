@@ -1,4 +1,6 @@
 import User, { IUserModel } from "@models/user.model";
+import { redisService } from "@services/redis.service";
+import { socketService } from "@services/socket.service";
 import { AppError } from "@utils/AppError";
 
 class UserService {
@@ -24,6 +26,13 @@ class UserService {
 
     user.avatar_url = fileOrUrl;
     await user.save();
+
+    // Invalidate cache across all server instances
+    await redisService.publishCacheInvalidation("user", userId.toString());
+
+    // Broadcast update to all partners in real-time
+    void socketService.notifyProfileUpdate(userId.toString(), { avatarUrl: fileOrUrl });
+
     return user;
   }
 
@@ -38,6 +47,17 @@ class UserService {
     if (data.avatar_url !== undefined) user.avatar_url = data.avatar_url;
 
     await user.save();
+
+    // Invalidate cache across all server instances
+    await redisService.publishCacheInvalidation("user", userId.toString());
+
+    // Broadcast update to all partners in real-time
+    void socketService.notifyProfileUpdate(userId.toString(), {
+      name: user.name,
+      bio: user.bio,
+      avatarUrl: user.avatarUrl,
+    });
+
     return user;
   }
 }

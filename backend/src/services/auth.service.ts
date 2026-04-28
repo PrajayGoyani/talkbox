@@ -4,6 +4,7 @@ import { JOBS } from "@jobs/agenda-jobs";
 import User, { IUser, IUserModel } from "@models/user.model";
 import { emailService } from "@services/email.service";
 import { redisService } from "@services/redis.service";
+import { socketService } from "@services/socket.service";
 import { AppError } from "@utils/AppError";
 import { generateAccessToken, generateTokens, verifyRefreshToken } from "@utils/jwt";
 import crypto from "crypto";
@@ -207,6 +208,9 @@ export class AuthService {
 
     // Invalidate caches across all server instances
     await redisService.publishCacheInvalidation("user", userId.toString());
+
+    // Broadcast plan update to partners
+    void socketService.notifyProfileUpdate(userId.toString(), { plan: "pro" });
 
     return this.sanitize(user);
   }

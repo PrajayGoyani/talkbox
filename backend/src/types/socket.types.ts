@@ -19,6 +19,7 @@ export interface AuthenticatedSocketUser {
   name: string | null;
   avatarUrl: string;
   plan: "free" | "pro";
+  bio?: string | null;
 }
 
 /**
@@ -103,6 +104,7 @@ export interface ServerToClientEvents {
   }) => void;
   notification: (payload: NotificationDto) => void;
   chat_accepted: (payload: { chatId: string }) => void;
+  profile_updated: (payload: { userId: string } & Partial<AuthenticatedSocketUser>) => void;
 }
 
 export interface ClientToServerEvents {

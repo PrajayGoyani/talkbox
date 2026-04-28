@@ -43,6 +43,7 @@ export interface ChatStoreSocket {
     isEdited: boolean;
     editedAt: string;
   }): void;
+  handleProfileUpdate(data: { userId: string } & Partial<import("$types/chat").User>): void;
 }
 
 export class SocketManager {
@@ -191,6 +192,9 @@ export class SocketManager {
         this.store.handleMessageUpdated(data);
       },
     );
+    this.socket.on("profile_updated", (data: { userId: string } & Partial<import("$types/chat").User>) => {
+      this.store.handleProfileUpdate(data);
+    });
   }
 
   disconnect() {

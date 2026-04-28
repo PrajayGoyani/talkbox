@@ -512,6 +512,30 @@ class ChatStore {
     );
   }
 
+  handleProfileUpdate(data: { userId: string } & Partial<import("$types/chat").User>) {
+    const { userId, ...updates } = data;
+
+    // Update the local cache of chats
+    this.chats.forEach((chat) => {
+      if (chat.otherUser?.id === userId) {
+        // Apply updates to the otherUser object
+        Object.assign(chat.otherUser, updates);
+      }
+    });
+
+    // Update internal map as well
+    this.chatsMap.forEach((chat) => {
+      if (chat.otherUser?.id === userId) {
+        Object.assign(chat.otherUser, updates);
+      }
+    });
+
+    // Trigger re-sort/re-render if name changed
+    if (updates.name || updates.username) {
+      this.sortChats(false);
+    }
+  }
+
   // --- UI Helpers ---
 
   private patchChatLocally(chatId: string, updates: Partial<Chat>, moveToTop = false) {

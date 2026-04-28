@@ -164,6 +164,16 @@ export class SocketService {
     return this.messageHandler.handleEdit(sender, payload.messageId, payload.contentBody);
   }
 
+  /**
+   * Broadcast profile updates (name, avatar, bio, plan) to all partners
+   * who are currently watching this user (i.e., have an active chat).
+   */
+  public async notifyProfileUpdate(userId: string, updates: Partial<AuthenticatedSocketUser>) {
+    if (this.io) {
+      this.io.to(`watching:${userId}`).emit("profile_updated", { userId, ...updates });
+    }
+  }
+
   // ─── Helpers ────────────────────────────────────────────────────────
 
   private async _getPartnerIds(userId: string, excludeDeleted = false): Promise<Set<string>> {
