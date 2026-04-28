@@ -2,6 +2,7 @@
   import Avatar from "$components/ui/Avatar.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import { themeStore } from "$state/theme.svelte";
+  import { settingsStore } from "$state/settings.svelte";
   import type { UserDto } from "$types/auth.dto";
 
   const { onLogout, user } = $props<{
@@ -10,9 +11,14 @@
   }>();
 
   let currentTheme = $derived(themeStore.theme);
+  let soundEnabled = $derived(settingsStore.soundEnabled);
 
   function toggleTheme() {
     themeStore.toggleTheme();
+  }
+
+  function toggleSound() {
+    settingsStore.toggleSound();
   }
 </script>
 
@@ -62,9 +68,9 @@
 
     <hr class="border-t border-slate-200 dark:border-white/10 my-1" />
 
-    <!-- Placeholder sections -->
-    <!-- <div
-      class="flex items-center justify-between p-3 rounded-xl opacity-50 cursor-not-allowed"
+    <!-- Notification Sound Toggle -->
+    <div
+      class="flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
     >
       <div class="flex flex-col gap-0.5">
         <span class="text-sm font-semibold text-slate-900 dark:text-slate-100"
@@ -74,11 +80,31 @@
           >Play a sound for incoming messages</span
         >
       </div>
-      <span
-        class="text-[10px] text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded uppercase font-bold tracking-wider"
-        >Coming Soon</span
+      <button
+        type="button"
+        class={[
+          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2",
+          soundEnabled ? "bg-indigo-600" : "bg-slate-400",
+        ]}
+        onclick={toggleSound}
+        aria-label="Toggle notification sound"
       >
-    </div> -->
+        <span
+          class={[
+            "pointer-events-none relative flex h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out items-center justify-center text-slate-400",
+            soundEnabled ? "translate-x-5" : "translate-x-0",
+          ]}
+        >
+          {#if soundEnabled}
+            <Icon name="notifications" class="w-3 h-3 text-indigo-600" />
+          {:else}
+            <Icon name="notifications" class="w-3 h-3 text-slate-400" />
+          {/if}
+        </span>
+      </button>
+    </div>
+
+    <hr class="border-t border-slate-200 dark:border-white/10 my-1" />
 
     <!-- <div
       class="flex items-center justify-between p-3 rounded-xl opacity-50 cursor-not-allowed"

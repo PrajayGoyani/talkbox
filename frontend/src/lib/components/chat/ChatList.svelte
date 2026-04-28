@@ -188,7 +188,7 @@
         <div
           class="w-16 h-16 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center mb-4"
         >
-          <Icon name="status-offline" class="w-8 h-8 text-rose-500" />
+          <Icon name="alert-circle" class="w-8 h-8 text-rose-500" />
         </div>
         <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
           Slow Down a Bit

@@ -7,6 +7,7 @@ import { chatService } from "$services/chat.service";
 import { SocketManager } from "$services/socket.manager.svelte";
 import { authStore } from "$state/auth.svelte";
 import { routerStore } from "$state/router.svelte";
+import { playNotificationSound } from "$utils/audio";
 import { ApiError } from "$utils/errors";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
@@ -113,7 +114,10 @@ class ChatStore {
     this.isLoadingMessages = true;
     const startTime = Date.now();
     try {
-      const loadedMessages = await chatService.loadMessages(chatId, this.messagesAbortController.signal);
+      const loadedMessages = await chatService.loadMessages(
+        chatId,
+        this.messagesAbortController.signal,
+      );
 
       // Guard against race conditions
       if (this.activeChatId !== chatId) return;
@@ -135,7 +139,13 @@ class ChatStore {
   }
 
   async loadOlderMessages() {
-    if (!this.activeChatId || !this.hasMoreMessages || this.isLoadingMessages || this.messages.length === 0) return;
+    if (
+      !this.activeChatId ||
+      !this.hasMoreMessages ||
+      this.isLoadingMessages ||
+      this.messages.length === 0
+    )
+      return;
 
     this.isLoadingMessages = true;
     const oldestMessageId = this.messages[0].id;
@@ -170,7 +180,12 @@ class ChatStore {
     this.chatsAbortController = new AbortController();
     this.lastError = null;
     try {
-      const result = await chatService.fetchChats(query, 20, null, this.chatsAbortController.signal);
+      const result = await chatService.fetchChats(
+        query,
+        20,
+        null,
+        this.chatsAbortController.signal,
+      );
 
       this.currentSearchQuery = query;
       this.chatsMap.clear();
@@ -195,7 +210,9 @@ class ChatStore {
       if (e instanceof Error && e.name === "AbortError") return;
       console.error("Failed to fetch chats:", e);
 
-      if (ApiError.handleRateLimit(e, "Easy there! You're searching too fast. Please wait a minute.")) {
+      if (
+        ApiError.handleRateLimit(e, "Easy there! You're searching too fast. Please wait a minute.")
+      ) {
         this.lastError = "rate-limited";
       } else {
         this.lastError = e.message || "Failed to fetch chats";
@@ -204,7 +221,8 @@ class ChatStore {
   }
 
   async loadMoreChats() {
-    if (!this.hasMoreChats || this.isLoadingMoreChats || this.chatsAbortController?.signal.aborted) return;
+    if (!this.hasMoreChats || this.isLoadingMoreChats || this.chatsAbortController?.signal.aborted)
+      return;
 
     this.isLoadingMoreChats = true;
     try {
@@ -232,7 +250,9 @@ class ChatStore {
       if (e instanceof Error && e.name === "AbortError") return;
       console.error("Failed to load more chats:", e);
 
-      if (ApiError.handleRateLimit(e, "Slow down! You've hit a rate limit. Please wait a moment.")) {
+      if (
+        ApiError.handleRateLimit(e, "Slow down! You've hit a rate limit. Please wait a moment.")
+      ) {
         this.lastError = "rate-limited";
       } else {
         this.lastError = e.message || "Failed to load more chats";
@@ -355,7 +375,12 @@ class ChatStore {
     }
 
     const isViewing = message.chatId === this.activeChatId;
-    const shouldInc = !isViewing && message.senderId !== authStore.user?.id;
+    const isOtherUser = message.senderId !== authStore.user?.id;
+    const shouldInc = !isViewing && isOtherUser;
+
+    if (isOtherUser) {
+      playNotificationSound();
+    }
 
     const chat = this.chatsMap.get(message.chatId);
     const currentUnread = chat?.unreadCount || 0;
@@ -402,6 +427,7 @@ class ChatStore {
       if (routerStore.segments[1] === "requests") {
         void this.fetchRequests();
       }
+      playNotificationSound();
     }
 
     if (this.onChatListRefresh) {
@@ -588,7 +614,10 @@ class ChatStore {
   private savePinnedChats() {
     if (!authStore.user?.id) return;
     try {
-      localStorage.setItem(`pinned_chats_${authStore.user.id}`, JSON.stringify(Array.from(this.pinnedChatIds)));
+      localStorage.setItem(
+        `pinned_chats_${authStore.user.id}`,
+        JSON.stringify(Array.from(this.pinnedChatIds)),
+      );
     } catch (e) {
       console.warn("Failed to save pinned chats", e);
     }
