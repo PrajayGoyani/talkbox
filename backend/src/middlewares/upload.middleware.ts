@@ -1,10 +1,9 @@
+import { CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, CLOUDINARY_CLOUD_NAME, UPLOAD_STRATEGY } from "@config/env";
 import { v2 as cloudinary } from "cloudinary";
 import crypto from "crypto";
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import path from "path";
-
-import { CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, CLOUDINARY_CLOUD_NAME, UPLOAD_STRATEGY } from "../config/env";
 
 // Cloudinary configuration (can use CLOUDINARY_URL or individual keys)
 cloudinary.config({

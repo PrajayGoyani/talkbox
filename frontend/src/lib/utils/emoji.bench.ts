@@ -1,6 +1,5 @@
+import { parseMessageContent } from "$utils/emoji";
 import { bench, describe } from "vitest";
-
-import { parseMessageContent } from "./emoji";
 
 describe("parsing logic stress test", () => {
   const shortMessage = "Hello world! Check out https://google.com 🚀";

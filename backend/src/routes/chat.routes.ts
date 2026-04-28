@@ -14,8 +14,8 @@ import {
 } from "@controllers/chat.controller";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import { rateLimiter } from "@middlewares/rate-limiter.middleware";
-import { validate } from "@middlewares/validate.middleware";
-import { chatRequestSchema } from "@schemas/chat.schema";
+import { validate, validateQuery } from "@middlewares/validate.middleware";
+import { chatRequestSchema, chatSearchSchema } from "@schemas/chat.schema";
 
 router.use(authenticateToken);
 router.use(rateLimiter);
@@ -27,7 +27,7 @@ router.get("/", getChatListing);
 router.get("/requests", getChatRequests);
 
 // Search active chats
-router.get("/search", searchChats);
+router.get("/search", validateQuery(chatSearchSchema), searchChats);
 
 // Send a chat request by username
 router.post("/request", validate(chatRequestSchema), requestChat);

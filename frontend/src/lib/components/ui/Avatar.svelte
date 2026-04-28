@@ -1,7 +1,7 @@
 <script lang="ts">
+  import Icon from "$components/ui/Icon.svelte";
   import { API_ROOT } from "$lib/config";
   import { cn } from "$utils/cn";
-  import Icon from "./Icon.svelte";
 
   let {
     user,

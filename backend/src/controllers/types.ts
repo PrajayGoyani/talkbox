@@ -32,3 +32,15 @@ export interface RefreshRequest extends Request {
 
 export type SignupRequest = Request<{}, {}, SignupPayload>;
 export type LoginRequest = Request<{}, {}, LoginPayload>;
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
+}
+
+export type ForgotPasswordRequest = Request<{}, {}, ForgotPasswordPayload>;
+export type ResetPasswordRequest = Request<{}, {}, ResetPasswordPayload>;

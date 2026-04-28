@@ -4,6 +4,7 @@
   import { Route } from "$lib/utils/routes";
   import { authStore } from "$state/auth.svelte";
   import { routerStore } from "$state/router.svelte";
+  import { USERNAME_ERROR, USERNAME_REGEX } from "$utils/validation";
 
   const { toggleLogin } = $props<{ toggleLogin: any }>();
 
@@ -35,8 +36,8 @@
     errors = {};
 
     if (!username.trim()) errors.username = "Username is required";
-    else if (!/^[a-zA-Z0-9]{3,30}$/.test(username)) {
-      errors.username = "Username must be 3-30 alphanumeric characters";
+    else if (!USERNAME_REGEX.test(username)) {
+      errors.username = USERNAME_ERROR;
     }
 
     if (!email.trim()) errors.email = "Email is required";

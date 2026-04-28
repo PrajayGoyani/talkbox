@@ -12,6 +12,9 @@
   let saveError = $state<string | null>(null);
   let saveSuccess = $state(false);
 
+  let editingBio = $state(false);
+  let bioInput = $state(authStore.user?.bio || "");
+
   // Avatar upload
   let avatarInput: HTMLInputElement | undefined = $state();
   let avatarPreview = $state<string | null>(null);
@@ -69,6 +72,41 @@
     } finally {
       saving = false;
     }
+  };
+
+  const handleSaveBio = async () => {
+    saveError = null;
+    saveSuccess = false;
+    const sanitized = bioInput.trim() || null;
+
+    if (sanitized && sanitized.length > 200) {
+      saveError = "Bio must be at most 200 characters";
+      return;
+    }
+
+    saving = true;
+    try {
+      await authStore.updateProfile({ bio: sanitized });
+      saveSuccess = true;
+      editingBio = false;
+      setTimeout(() => (saveSuccess = false), 3000);
+    } catch (e: unknown) {
+      saveError = (e as Error).message;
+    } finally {
+      saving = false;
+    }
+  };
+
+  const startEditBio = () => {
+    bioInput = authStore.user?.bio || "";
+    editingBio = true;
+    saveError = null;
+  };
+
+  const cancelEditBio = () => {
+    editingBio = false;
+    bioInput = authStore.user?.bio || "";
+    saveError = null;
   };
 
   const handleAvatarSelect = () => {
@@ -266,6 +304,74 @@
         {/if}
       </div>
 
+      <!-- Bio -->
+      <div class="flex flex-col gap-1.5">
+        <span
+          class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
+        >
+          Bio
+        </span>
+        {#if editingBio}
+          <div class="flex flex-col gap-2">
+            <textarea
+              id="bio-input"
+              bind:value={bioInput}
+              placeholder="Tell us something about yourself..."
+              maxlength="200"
+              rows="3"
+              class="input-field py-2! px-3! text-sm! resize-none"
+            ></textarea>
+            <div class="flex justify-between items-center">
+              <span class="text-[10px] text-slate-400">
+                {bioInput.length}/200
+              </span>
+              <div class="flex gap-2">
+                <button
+                  class="h-8 px-3 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 flex items-center justify-center text-xs font-bold transition-all disabled:opacity-40 active:scale-90"
+                  onclick={handleSaveBio}
+                  disabled={saving}
+                >
+                  {#if saving}
+                    <span
+                      class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
+                    ></span>
+                  {:else}
+                    Save
+                  {/if}
+                </button>
+                <button
+                  class="h-8 px-3 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 flex items-center justify-center text-xs font-bold transition-all active:scale-90"
+                  onclick={cancelEditBio}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        {:else}
+          <div class="flex items-start justify-between gap-2">
+            <p
+              id="bio-value"
+              class={[
+                "text-sm leading-relaxed wrap-break-word flex-1",
+                authStore.user?.bio
+                  ? "text-slate-600 dark:text-slate-400"
+                  : "text-slate-400 italic",
+              ]}
+            >
+              {authStore.user?.bio || "No bio yet"}
+            </p>
+            <button
+              class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all active:scale-90 shrink-0"
+              onclick={startEditBio}
+              aria-label="Edit bio"
+            >
+              <Icon name="edit" class="w-3.5 h-3.5" />
+            </button>
+          </div>
+        {/if}
+      </div>
+
       <!-- Username (read-only) -->
       <div class="flex flex-col gap-1.5">
         <span
@@ -339,9 +445,12 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span
-              class="text-sm font-medium {authStore.user?.plan === 'pro'
-                ? 'text-indigo-600 dark:text-indigo-400'
-                : 'text-slate-600 dark:text-slate-400'}"
+              class={[
+                "text-sm font-medium",
+                authStore.user?.plan === "pro"
+                  ? "text-indigo-600 dark:text-indigo-400"
+                  : "text-slate-600 dark:text-slate-400",
+              ]}
             >
               {authStore.user?.plan === "pro" ? "Pro" : "Free"}
             </span>

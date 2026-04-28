@@ -1,8 +1,8 @@
 import type { Chat, Message } from "$types/chat";
 
+import { API_BASE } from "$lib/config";
 import { authStore } from "$state/auth.svelte";
-
-import { API_BASE } from "../config";
+import { ApiError } from "$utils/errors";
 
 export class ChatService {
   /** Load messages for a chat via REST */
@@ -13,8 +13,7 @@ export class ChatService {
       signal,
     });
     if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.error?.message || "Failed to load messages");
+      throw await ApiError.fromResponse(resp);
     }
     const result = await resp.json();
     const rawLoaded: any[] = result.data || result || [];
@@ -29,8 +28,7 @@ export class ChatService {
       signal,
     });
     if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.error?.message || "Failed to load older messages");
+      throw await ApiError.fromResponse(resp);
     }
     const result = await resp.json();
     const rawOlder: any[] = result.data || result || [];
@@ -63,8 +61,7 @@ export class ChatService {
       signal,
     });
     if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.error?.message || "Failed to fetch chats");
+      throw await ApiError.fromResponse(resp);
     }
     const result = await resp.json();
 
@@ -84,8 +81,7 @@ export class ChatService {
       credentials: "include",
     });
     if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.error?.message || "Failed to fetch requests");
+      throw await ApiError.fromResponse(resp);
     }
     const result = await resp.json();
     return result.data as { data: Chat[]; nextCursor: string | null; hasMore: boolean };
@@ -99,8 +95,7 @@ export class ChatService {
       credentials: "include",
     });
     if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.error?.message || "Failed to mark chat as read");
+      throw await ApiError.fromResponse(resp);
     }
   }
 
@@ -112,8 +107,7 @@ export class ChatService {
       credentials: "include",
     });
     if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.error?.message || "Failed to accept chat");
+      throw await ApiError.fromResponse(resp);
     }
     return await resp.json();
   }
@@ -126,8 +120,7 @@ export class ChatService {
       credentials: "include",
     });
     if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.error?.message || "Failed to reject chat");
+      throw await ApiError.fromResponse(resp);
     }
     return await resp.json();
   }
@@ -143,9 +136,10 @@ export class ChatService {
       credentials: "include",
       body: JSON.stringify({ username: username.trim() }),
     });
-    const result = await resp.json();
-    if (!resp.ok) throw new Error(result.error?.message || "Failed to send request");
-    return result;
+    if (!resp.ok) {
+      throw await ApiError.fromResponse(resp);
+    }
+    return await resp.json();
   }
 }
 

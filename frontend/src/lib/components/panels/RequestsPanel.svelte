@@ -6,6 +6,7 @@
   import { onMount } from "svelte";
   import { quintOut } from "svelte/easing";
   import { slide } from "svelte/transition";
+  import { isValidUsername, USERNAME_ERROR } from "$utils/validation";
 
   let loading = $state(false);
   let error = $state<string | null>(null);
@@ -32,6 +33,11 @@
 
   const handleSendRequest = async () => {
     if (!requestUsername.trim()) return;
+
+    if (!isValidUsername(requestUsername)) {
+      requestError = USERNAME_ERROR;
+      return;
+    }
     requestLoading = true;
     requestError = null;
     requestSuccess = null;

@@ -1,37 +1,47 @@
-import { NODE_ENV } from "@config/env";
-import Chat from "@models/chat.model";
+import Chat, { IChatModel } from "@models/chat.model";
+import { redisService } from "@services/redis.service";
 
-// O(1) hash store for deleted chats lockdown logic
+/**
+ * Distributed lockdown logic for deleted chats.
+ * Prevents messages from being sent to deleted chats by checking a Redis Set.
+ * This avoids the memory bottleneck of a local in-memory Set.
+ */
 class ChatLockdownService {
-  public deletedChats: any;
-  public Chat: any;
+  public Chat: IChatModel;
 
-  constructor(chatModel) {
-    // Store deleted chat IDs as Strings for O(1) lookup
-    this.deletedChats = new Set();
+  constructor(chatModel: IChatModel) {
     this.Chat = chatModel;
   }
 
+  /**
+   * No-op retained for boot compatibility.
+   * Distributed sync is now handled directly via Redis SISMEMBER.
+   */
+  async init() {
+    return Promise.resolve();
+  }
+
+  /**
+   * No longer needed as Redis is the source of truth and state is persistent.
+   */
   async hydrate() {
-    // persist deleted chats in memory on startup
-    if (NODE_ENV !== "production") {
-      return;
-    }
-    const chats = await this.Chat.find({ isDeleted: true }).select("_id");
-    chats.forEach((chat) => this.lockdownChat(chat._id));
-    console.log(`Lockdown Hydration complete: ${chats.length} chats locked.`);
+    return Promise.resolve();
   }
 
-  lockdownChat(chatId) {
-    this.deletedChats.add(chatId.toString());
+  async lockdownChat(chatId: string | import("mongodb").ObjectId) {
+    const id = chatId.toString();
+    await redisService.lockChat(id);
+    await redisService.publishCacheInvalidation("chat", id);
   }
 
-  isChatDeleted(chatId) {
-    return this.deletedChats.has(chatId.toString());
+  async isChatDeleted(chatId: string | import("mongodb").ObjectId): Promise<boolean> {
+    return await redisService.isChatLocked(chatId.toString());
   }
 
-  unlockChat(chatId) {
-    this.deletedChats.delete(chatId.toString());
+  async unlockChat(chatId: string | import("mongodb").ObjectId) {
+    const id = chatId.toString();
+    await redisService.unlockChat(id);
+    await redisService.publishCacheInvalidation("chat", id);
   }
 }
 

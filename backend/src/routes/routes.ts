@@ -1,9 +1,9 @@
-import { app } from "@/app";
+import authRoutes from "@routes/auth.routes";
+import chatRoutes from "@routes/chat.routes";
+import notificationRoutes from "@routes/notification.routes";
+import userRoutes from "@routes/user.routes";
 
-import authRoutes from "./auth.routes";
-import chatRoutes from "./chat.routes";
-import notificationRoutes from "./notification.routes";
-import userRoutes from "./user.routes";
+import { app } from "@/app";
 
 // define route endpoints
 export function registerRoutes() {

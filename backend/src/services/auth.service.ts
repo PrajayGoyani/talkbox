@@ -1,21 +1,42 @@
+import { getAgenda } from "@config/agenda";
+import { RESET_TOKEN_TTL, VERIFY_TOKEN_TTL } from "@config/env";
+import { JOBS } from "@jobs/agenda-jobs";
 import User, { IUser, IUserModel } from "@models/user.model";
+import { emailService } from "@services/email.service";
+import { redisService } from "@services/redis.service";
 import { AppError } from "@utils/AppError";
 import { generateAccessToken, generateTokens, verifyRefreshToken } from "@utils/jwt";
+import crypto from "crypto";
+import { ObjectId } from "mongodb";
 
 import { LoginPayload, SignupPayload } from "@/controllers/types";
 
-/**
- * @typedef {import('mongoose').Model} Model
- */
+export interface SanitizedUser {
+  id: string;
+  username: string;
+  name: string | null;
+  email: string;
+  avatarUrl: string;
+  plan: "free" | "pro";
+  subscriptionExpiresAt: Date | null;
+  isEmailVerified: boolean;
+  bio: string | null;
+}
 
-class AuthService {
+export interface AuthResponse {
+  user: SanitizedUser;
+  accessToken: string;
+  refreshToken: string;
+}
+
+export class AuthService {
   public User: IUserModel;
 
   constructor(userModel: IUserModel) {
     this.User = userModel;
   }
 
-  async signup({ username, email, password, name }: SignupPayload): Promise<object> {
+  async signup({ username, email, password, name }: SignupPayload): Promise<AuthResponse> {
     const existingUser = await this.User.exists({ email });
     if (existingUser) {
       throw AppError.conflict("User already exists", "USER_EXISTS");
@@ -24,13 +45,17 @@ class AuthService {
     const user = await this.User.create({ username, email, password, name: name || null });
     const userObject = user.toObject();
     const tokens = generateTokens({ id: userObject._id.toString() });
+
+    // Fire-and-forget verification email — don't block signup
+    this._sendVerificationEmail(userObject._id.toString(), email);
+
     return {
-      user: this.sanitize(user),
+      user: this.sanitize(user) as SanitizedUser,
       ...tokens,
     };
   }
 
-  async login({ username, password }: LoginPayload): Promise<object> {
+  async login({ username, password }: LoginPayload): Promise<AuthResponse> {
     const user = await this.User.findByEmailOrUsername(username);
     if (!user) {
       throw AppError.unauthorized("Invalid credentials", "INVALID_CREDENTIALS");
@@ -41,18 +66,19 @@ class AuthService {
       throw AppError.unauthorized("Invalid credentials", "INVALID_CREDENTIALS");
     }
 
-    user.lastSeen = new Date();
-    await user.save();
+    // Performance: Use findByIdAndUpdate for lastSeen to avoid full .save() overhead
+    // which triggers expensive Mongoose lifecycle hooks.
+    await this.User.findByIdAndUpdate(user._id, { $set: { lastSeen: new Date() } });
 
     const userObject = user.toObject();
     const tokens = generateTokens({ id: userObject._id.toString() });
     return {
-      user: this.sanitize(user),
+      user: this.sanitize(user) as SanitizedUser,
       ...tokens,
     };
   }
 
-  async refresh(refreshToken: string): Promise<object> {
+  async refresh(refreshToken: string): Promise<{ accessToken: string }> {
     if (!refreshToken) {
       throw AppError.unauthorized("Refresh token required", "TOKEN_REQUIRED");
     }
@@ -65,29 +91,102 @@ class AuthService {
     return { accessToken };
   }
 
-  async getMe(userId: string | import("mongodb").ObjectId): Promise<object> {
-    const user = await this.User.findById(userId).select("-password -__v").lean();
+  async getMe(userId: string | ObjectId): Promise<IUser> {
+    const user = await this.User.findById(userId).select("-password -__v");
     if (!user) throw AppError.notFound("User");
     return user;
   }
 
-  sanitize(user: IUser): object {
-    const obj = user.toObject ? user.toObject() : user;
+  sanitize(user: IUser): SanitizedUser {
+    const obj = user.toObject ? user.toObject() : (user as any);
     return {
       id: obj._id,
       username: obj.username,
       name: obj.name || null,
       email: obj.email,
-      avatarUrl: obj.avatarUrl,
+      avatarUrl: user.avatarUrl, // Use virtual
       plan: obj.plan,
       subscriptionExpiresAt: obj.subscriptionExpiresAt,
+      isEmailVerified: obj.isEmailVerified ?? false,
+      bio: obj.bio || null,
     };
   }
 
-  async upgradeToPro(userId: string | import("mongodb").ObjectId): Promise<object> {
+  // ─── Password Reset ────────────────────────────────────────────────
+
+  /**
+   * Initiate a password reset flow.
+   * Always returns void — never reveals whether the email exists (prevents enumeration).
+   */
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.User.findOne({ email });
+    if (!user) return; // Silently ignore — prevent email enumeration
+
+    const token = crypto.randomBytes(32).toString("hex");
+    await redisService.storeToken("reset", token, user._id.toString(), RESET_TOKEN_TTL);
+    await emailService.sendResetEmail(email, token);
+  }
+
+  /**
+   * Complete password reset: verify token, update password, delete token.
+   */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const userId = await redisService.getToken("reset", token);
+    if (!userId) throw AppError.badRequest("Invalid or expired reset token", "INVALID_RESET_TOKEN");
+
     const user = await this.User.findById(userId);
     if (!user) throw AppError.notFound("User");
 
+    user.password = newPassword; // pre-save hook hashes it
+    await user.save();
+    await redisService.deleteToken("reset", token);
+  }
+
+  // ─── Email Verification ────────────────────────────────────────────
+
+  /**
+   * Verify a user's email using the token from the verification link.
+   */
+  async verifyEmail(token: string): Promise<void> {
+    const userId = await redisService.getToken("verify", token);
+    if (!userId) throw AppError.badRequest("Invalid or expired verification token", "INVALID_VERIFY_TOKEN");
+
+    await this.User.findByIdAndUpdate(userId, { isEmailVerified: true });
+    await redisService.deleteToken("verify", token);
+  }
+
+  /**
+   * Resend email verification for an authenticated user.
+   */
+  async resendVerificationEmail(userId: string): Promise<void> {
+    const user = await this.User.findById(userId);
+    if (!user) throw AppError.notFound("User");
+    if (user.isEmailVerified) throw AppError.badRequest("Email already verified", "ALREADY_VERIFIED");
+
+    await this._sendVerificationEmail(userId, user.email);
+  }
+
+  /**
+   * Internal helper: generate token and send verification email.
+   * Errors are caught and logged — never blocks the caller.
+   */
+  private async _sendVerificationEmail(userId: string, email: string): Promise<void> {
+    try {
+      const token = crypto.randomBytes(32).toString("hex");
+      await redisService.storeToken("verify", token, userId, VERIFY_TOKEN_TTL);
+      await emailService.sendVerificationEmail(email, token);
+    } catch (err) {
+      console.error("[AuthService] Failed to send verification email:", err);
+    }
+  }
+
+  // ─── Subscription ──────────────────────────────────────────────────
+
+  async upgradeToPro(userId: string | ObjectId): Promise<SanitizedUser> {
+    const user = await this.User.findById(userId);
+    if (!user) throw AppError.notFound("User");
+
+    const oldPlan = user.plan;
     user.plan = "pro";
     // Set expiry to 30 days from now
     const expiry = new Date();
@@ -95,6 +194,20 @@ class AuthService {
     user.subscriptionExpiresAt = expiry;
 
     await user.save();
+
+    // Defer chat-flag re-evaluation to background job (Performance Optimization)
+    // Only trigger if actually moving from Free to Pro to avoid duplicate work.
+    if (oldPlan === "free") {
+      const agenda = getAgenda();
+      await agenda.now(JOBS.USER_UPGRADE_CHAT_SYNC, {
+        userId: userId.toString(),
+        timestamp: Date.now(), // Helpful for audit trail
+      });
+    }
+
+    // Invalidate caches across all server instances
+    await redisService.publishCacheInvalidation("user", userId.toString());
+
     return this.sanitize(user);
   }
 }

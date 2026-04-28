@@ -17,6 +17,7 @@
   import Icon from "$components/ui/Icon.svelte";
   import Spinner from "$components/ui/Spinner.svelte";
   import ThemeToggle from "$components/ui/ThemeToggle.svelte";
+  import { cn } from "$lib/utils/cn";
   import { routerStore } from "$state/router.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { Route } from "$utils/routes";
@@ -39,11 +40,22 @@
     (routerStore.segments[1] as PanelId) || "conversations",
   );
   let selectedChatId = $derived(routerStore.segments[2] || null);
-  let isDocPage = $derived(
-    routerStore.segments[0] === "terms" ||
-      routerStore.segments[0] === "privacy" ||
-      routerStore.segments[0] === "faq",
-  );
+  const validSegments = new Set(["terms", "privacy", "faq"]);
+  let isDocPage = $derived(validSegments.has(routerStore.segments[0]));
+  const GUEST_VIEW_CONFIG: Record<
+    string,
+    { component: any; centered?: boolean }
+  > = {
+    login: { component: Views.Login, centered: true },
+    signup: { component: Views.Signup, centered: true },
+    "forgot-password": { component: Views.ForgotPassword, centered: true },
+    "reset-password": { component: Views.ResetPassword, centered: true },
+    "verify-email": { component: Views.VerifyEmail, centered: true },
+    terms: { component: Views.Terms },
+    privacy: { component: Views.Privacy },
+    pricing: { component: Views.Pricing },
+    faq: { component: Views.FAQ },
+  };
 
   // Sync current chat messages when URL param changes (including on mount/refresh)
   $effect(() => {
@@ -96,6 +108,7 @@
       Views.RequestsPanel();
       Views.SettingsPanel();
       Views.ChatWindow();
+      Views.ChatPartnerProfile();
     } else if (!authStore.user && !authStore.isCheckingAuth) {
       chatStore.disconnect();
     }
@@ -169,6 +182,21 @@
       onNavigate={handleNotificationNavigate}
     />
 
+    {#if authStore.user && !authStore.user.isEmailVerified}
+      <div
+        class="shrink-0 bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-center gap-3 text-sm text-amber-700 dark:text-amber-400"
+      >
+        <Icon name="mail" class="w-4 h-4 shrink-0" />
+        <span>Please verify your email. Check your inbox.</span>
+        <button
+          class="text-xs font-bold underline hover:no-underline ml-1"
+          onclick={() => authStore.resendVerification()}
+        >
+          Resend
+        </button>
+      </div>
+    {/if}
+
     <div
       class="flex flex-col md:flex-row flex-1 min-h-0 relative w-full overflow-hidden"
     >
@@ -196,11 +224,13 @@
       />
 
       <aside
-        class="glass-panel flex-col z-10 min-h-0 shrink-0 transition-all duration-300 {uiStore.isSidebarCollapsed
-          ? 'w-0 opacity-0 border-none overflow-hidden hidden md:flex'
-          : 'w-full md:w-[280px] lg:w-[350px] border-r'} {selectedChatId
-          ? 'hidden md:flex'
-          : 'flex flex-1 md:flex-initial'}"
+        class={[
+          "glass-panel flex-col z-10 min-h-0 md:flex-none transition-all duration-300",
+          uiStore.isSidebarCollapsed
+            ? "w-0 opacity-0 border-none overflow-hidden hidden md:flex"
+            : "w-full md:w-[280px] lg:w-[350px] md:min-w-[280px] lg:min-w-[350px] border-r",
+          selectedChatId ? "hidden md:flex" : "flex flex-1 md:flex-initial",
+        ]}
       >
         {#key activePanel}
           <div
@@ -235,9 +265,12 @@
       </aside>
 
       <section
-        class="flex-1 min-h-0 flex flex-col relative bg-slate-100/50 dark:bg-slate-950/30 {selectedChatId
-          ? 'flex'
-          : 'hidden md:flex flex-col justify-center items-center'}"
+        class={[
+          "flex-1 min-h-0 min-w-0 flex flex-col relative bg-slate-100/50 dark:bg-slate-950/30",
+          selectedChatId
+            ? "flex"
+            : "hidden md:flex flex-col justify-center items-center",
+        ]}
       >
         {#if selectedChatId}
           <Lazy
@@ -251,6 +284,23 @@
           <WelcomeDashboard />
         {/if}
       </section>
+
+      <!-- Chat Partner Profile Panel -->
+      <aside
+        class={[
+          "glass-panel flex-col z-50 transition-all duration-300 border-l shrink-0",
+          "fixed inset-y-0 right-0 md:relative",
+          uiStore.chatInfoOpen && selectedChatId
+            ? "w-full md:w-[300px] lg:w-[350px] opacity-100 translate-y-0 md:translate-x-0"
+            : "w-full md:w-0 opacity-0 border-none overflow-hidden translate-y-full md:translate-y-0 md:translate-x-0 hidden md:flex",
+        ]}
+      >
+        <Lazy
+          component={Views.ChatPartnerProfile}
+          user={selectedOtherUser}
+          onClose={() => (uiStore.chatInfoOpen = false)}
+        />
+      </aside>
     </div>
     <ToastContainer
       bind:this={toastContainer}
@@ -261,6 +311,10 @@
 {/snippet}
 
 {#snippet GuestApp()}
+  {@const config = GUEST_VIEW_CONFIG[routerStore.segments[0]] || {
+    component: Views.Home,
+    centered: false,
+  }}
   <div
     class="flex flex-col w-screen h-dvh bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden"
   >
@@ -338,25 +392,20 @@
 
     <!-- Content -->
     <div
-      class="flex-1 overflow-y-auto w-full flex flex-col {isDocPage ||
-      isHomePage
-        ? 'block'
-        : 'items-center p-4 sm:p-8'}"
+      class={cn(
+        "flex-1 overflow-y-auto w-full flex flex-col",
+        isDocPage || isHomePage ? "block" : "items-center p-4 sm:p-8",
+      )}
     >
-      {#if routerStore.segments[0] === "login"}
+      {#if config.centered}
         <div class="w-full flex justify-center py-8 my-auto">
-          <Lazy component={Views.Login}>
+          <Lazy component={config.component}>
             {#snippet toggleSignup()}
               <button
                 class="text-indigo-600 font-medium"
                 onclick={() => toggleView("SIGNUP")}>Sign up</button
               >
             {/snippet}
-          </Lazy>
-        </div>
-      {:else if routerStore.segments[0] === "signup"}
-        <div class="w-full flex justify-center py-8 my-auto">
-          <Lazy component={Views.Signup}>
             {#snippet toggleLogin()}
               <button
                 class="text-indigo-600 font-medium"
@@ -365,16 +414,8 @@
             {/snippet}
           </Lazy>
         </div>
-      {:else if routerStore.segments[0] === "terms"}
-        <Lazy component={Views.Terms} />
-      {:else if routerStore.segments[0] === "privacy"}
-        <Lazy component={Views.Privacy} />
-      {:else if routerStore.segments[0] === "pricing"}
-        <Lazy component={Views.Pricing} />
-      {:else if routerStore.segments[0] === "faq"}
-        <Lazy component={Views.FAQ} />
       {:else}
-        <Lazy component={Views.Home} />
+        <Lazy component={config.component} />
       {/if}
     </div>
   </div>

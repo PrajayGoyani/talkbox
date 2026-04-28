@@ -1,11 +1,9 @@
-import { IUser } from "../models/user.model";
+import { SanitizedUser } from "@services/auth.service";
 
 declare global {
   namespace Express {
     export interface Request {
-      user?: {
-        id: string;
-      } & Partial<IUser>;
+      user?: SanitizedUser;
     }
     export interface Response {
       success: (data: any) => void;

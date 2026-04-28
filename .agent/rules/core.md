@@ -32,6 +32,7 @@
 
 ## **🤖 Interaction Protocol**
 
+- **Hierarchical Delegation:** Always break down tasks using the defined roles in `@ROLES.md` (or `.agent/rules/ROLES.md`). Assume the role of **CEO** for product/legal decisions and **CTO** for engineering strategy, then explicitly announce "Switching to [Role]:" before executing work as a specific sub-agent (e.g., Frontend Developer, Data Engineer).
 - **Be Critical:** If I ask for a feature that compromises security or violates Svelte 5 best practices, challenge it.
-- **Think First:** Before writing code, outline the architectural plan.
+- **Think First:** Before writing code, use the `/delegate` slash command (or reference the `.agent/workflows/delegate.md` workflow) to outline the architectural plan and assign roles.
 - **Test-Driven:** Suggest Vitest (frontend) or Jest/Mocha (backend) tests for core business logic.

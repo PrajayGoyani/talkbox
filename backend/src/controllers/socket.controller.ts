@@ -1,33 +1,14 @@
 import { ALLOWED_ORIGINS, JWT_SECRET_KEY, NODE_ENV } from "@config/env";
-import User from "@models/user.model";
 import { chatService } from "@services/chat.service";
+import { redisService } from "@services/redis.service";
 import { socketService } from "@services/socket.service";
+import { userCacheService } from "@services/user-cache.service";
+import { createAdapter } from "@socket.io/redis-adapter";
 import { AppError } from "@utils/AppError";
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 
-import { AuthenticatedSocketUser, JWTPayload, TypedIO, TypedSocket } from "@/types/socket.types";
-
-interface CacheEntry {
-  user: AuthenticatedSocketUser;
-  expiresAt: number;
-}
-
-// TODO(Performance): For future horizontal scalability across multiple WebSocket
-// nodes, consider replacing this local in-memory Map with a Redis-backed cache.
-// This will allow shared authentication state and prevent redundant DB lookups.
-const userCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
-
-// Run cleanup periodically to prevent memory leaks
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of userCache.entries()) {
-    if (value.expiresAt < now) {
-      userCache.delete(key);
-    }
-  }
-}, CACHE_TTL_MS).unref();
+import { JWTPayload, TypedIO, TypedSocket } from "@/types/socket.types";
 
 export const configureSocketServer = (server: import("http").Server | import("https").Server): TypedIO => {
   const io: TypedIO = new Server(server, {
@@ -37,6 +18,14 @@ export const configureSocketServer = (server: import("http").Server | import("ht
       credentials: true,
     },
   });
+
+  // Enable multi-instance support via Redis Adapter
+  if (redisService.client && redisService.subClient) {
+    const pubClient = redisService.client;
+    const subClient = redisService.subClient;
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log("[SocketController] Redis adapter configured for distributed events.");
+  }
 
   socketService.init(io);
   chatService.setIO(io);
@@ -51,35 +40,16 @@ export const configureSocketServer = (server: import("http").Server | import("ht
     try {
       const decoded = jwt.verify(token, JWT_SECRET_KEY) as unknown as JWTPayload;
 
-      // Check cache first to avoid DB hit on reconnects/high churn
-      const cached = userCache.get(decoded.id);
-      if (cached && cached.expiresAt > Date.now()) {
-        socket.data.user = cached.user;
-        return next();
-      }
-
-      const user = await User.findById(decoded.id);
+      // Use shared user cache service
+      const user = await userCacheService.getUser(decoded.id);
 
       if (!user) {
         return next(AppError.unauthorized("User not found"));
       }
 
-      const userData: AuthenticatedSocketUser = {
-        id: user._id.toString(),
-        username: user.username,
-        name: user.name,
-        avatarUrl: user.avatarUrl,
-        plan: user.plan,
-      };
-
-      // Set cache for short-lived duration
-      userCache.set(decoded.id, {
-        user: userData,
-        expiresAt: Date.now() + CACHE_TTL_MS,
-      });
-
-      // Attach verified user ID to the socket
-      socket.data.user = userData;
+      // Attach verified user profile to the socket
+      // TypedSocket expectation is slightly different from SanitizedUser but compatible in key fields
+      socket.data.user = user as any;
       next();
     } catch (error) {
       if (NODE_ENV === "development") {
@@ -89,15 +59,16 @@ export const configureSocketServer = (server: import("http").Server | import("ht
     }
   });
 
-  io.on("connection", (socket: TypedSocket) => {
-    socketService.handleConnection(socket);
+  io.on("connection", async (socket: TypedSocket) => {
+    await socketService.handleConnection(socket);
 
     socket.on("send_message", async (data, ack) => {
-      console.log(`[SocketController] send_message received from user ${socket.data.user.id}:`, data);
+      if (NODE_ENV === "development") {
+        console.log(`[SocketController] send_message received from user ${socket.data.user.id}:`, data);
+      }
       try {
         // Ensure userId is never trusted from the client payload without server-side validation.
-        // we use socket.data.user obj
-        const message = await socketService.saveAndDeliverMessage(socket.data.user, data);
+        const message = await socketService.saveAndDeliverMessage(socket.data.user as any, data);
         if (ack) ack({ status: "ok", message });
       } catch (err) {
         if (ack) ack({ status: "error", error: (err as Error).message });
@@ -105,14 +76,14 @@ export const configureSocketServer = (server: import("http").Server | import("ht
     });
 
     socket.on("react_message", async (data) => {
-      socketService.handleReaction(socket.data.user, data);
+      socketService.handleReaction(socket.data.user as any, data);
     });
 
     socket.on("delete_message", async (data) => {
-      socketService.handleDeleteMessage(socket.data.user, data);
+      socketService.handleDeleteMessage(socket.data.user as any, data);
     });
     socket.on("edit_message", async (data) => {
-      socketService.handleEditMessage(socket.data.user, data);
+      socketService.handleEditMessage(socket.data.user as any, data);
     });
 
     // E2EE Key exchange setup
@@ -123,11 +94,11 @@ export const configureSocketServer = (server: import("http").Server | import("ht
 
     // Typing Indicators
     socket.on("typing_start", (data) => {
-      socketService.handleTyping(socket.data.user, data, true);
+      socketService.handleTyping(socket.data.user as any, data, true);
     });
 
     socket.on("typing_stop", (data) => {
-      socketService.handleTyping(socket.data.user, data, false);
+      socketService.handleTyping(socket.data.user as any, data, false);
     });
   });
 

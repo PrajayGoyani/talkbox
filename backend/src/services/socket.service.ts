@@ -1,550 +1,245 @@
-import {
-  FREE_PLAN_SCRUB_DAYS,
-  MESSAGE_MODIFY_LIMIT_HOURS,
-  PRO_PLAN_SESSION_LIMIT,
-  REACTIONS_MAX_UNIQUE,
-} from "@config/env";
+import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
 import Chat from "@models/chat.model";
-import Message from "@models/message.model";
-import User from "@models/user.model";
-import { chatLockdownService } from "@services/chat-lockdown.service";
-import { AppError } from "@utils/AppError";
-import { extractEmojiMetadata, getCanonicalSlug } from "@utils/emoji.utils";
-import { Types } from "mongoose";
+import { PresenceService } from "@services/presence.service";
+import { redisService } from "@services/redis.service";
+import { MessageHandler } from "@services/socket-handlers/message.handler";
+import { ReactionHandler } from "@services/socket-handlers/reaction.handler";
+import { TypingHandler } from "@services/socket-handlers/typing.handler";
+import { LRUCache } from "lru-cache";
 
 import { AuthenticatedSocketUser, MessageDto, TypedIO, TypedSocket } from "@/types/socket.types";
 
-class SocketService {
-  public Message: typeof Message;
-  public io: TypedIO | null;
-  public activeConnections: Map<string, Set<TypedSocket>>;
-  // In-memory cache for chat participants to avoid DB hits on high-frequency events like typing.
-  // Format: Map<chatId, Set<userId>>
-  public participantCache: Map<string, Set<string>>;
+const PARTICIPANT_CACHE_TTL_MS = 10 * 60 * 1000;
+const PARTICIPANT_CACHE_MAX = 10000;
 
-  constructor(messageModel: typeof Message) {
-    this.Message = messageModel;
-    this.io = null;
-    // Map of userId -> Set of active socket instances
-    this.activeConnections = new Map();
-    this.participantCache = new Map();
+const PARTNER_CACHE_TTL_MS = 15 * 60 * 1000;
+const PARTNER_CACHE_MAX = 10000;
+
+export class SocketService {
+  public io: TypedIO | null = null;
+  public activeConnections: Map<string, Set<TypedSocket>> = new Map();
+
+  private participantCache: LRUCache<string, any>;
+  private partnerCache: LRUCache<string, Set<string>>;
+  private partnerRequests: Map<string, Promise<Set<string>>> = new Map();
+
+  private presenceService: PresenceService;
+  private messageHandler: MessageHandler;
+  private reactionHandler: ReactionHandler;
+  private typingHandler: TypingHandler;
+
+  constructor() {
+    const ioProvider = () => this.io;
+
+    this.presenceService = new PresenceService(ioProvider);
+    this.messageHandler = new MessageHandler(ioProvider);
+    this.reactionHandler = new ReactionHandler(ioProvider);
+    this.typingHandler = new TypingHandler(ioProvider);
+
+    this.participantCache = new LRUCache({
+      max: PARTICIPANT_CACHE_MAX,
+      ttl: PARTICIPANT_CACHE_TTL_MS,
+    });
+    this.partnerCache = new LRUCache({
+      max: PARTNER_CACHE_MAX,
+      ttl: PARTNER_CACHE_TTL_MS,
+    });
   }
 
   init(io: TypedIO) {
     this.io = io;
+
+    if (redisService.subClient) {
+      redisService.subClient.subscribe("presence:updates", "cache:invalidate", "session:takeover");
+      redisService.subClient.on("message", (channel, message) => {
+        try {
+          const data = JSON.parse(message);
+          switch (channel) {
+            case "presence:updates":
+              this.presenceService.handleGlobalStatusUpdate(data.userId, data.isOnline);
+              break;
+            case "cache:invalidate":
+              this._handleGlobalCacheInvalidation(data.type, data.id);
+              break;
+            case "session:takeover":
+              this._handleGlobalTakeover(data.userId, data.triggerSocketId);
+              break;
+          }
+        } catch (err) {
+          console.error(`[SocketService] Error processing Redis message on ${channel}:`, err);
+        }
+      });
+    }
   }
 
-  handleConnection(socket: TypedSocket) {
+  // ─── Connection Management ──────────────────────────────────────────
+
+  async handleConnection(socket: TypedSocket) {
     const userId = socket.data.user.id;
     const plan = socket.data.user.plan;
 
-    // Session Limit Enforcement
+    const globalCount = await redisService.incrementGlobalSession(userId, socket.id);
+
     let userSockets = this.activeConnections.get(userId);
     if (!userSockets) {
       userSockets = new Set();
       this.activeConnections.set(userId, userSockets);
     }
-
-    if (plan === "free") {
-      // Free users: 1 connection limit (Strict Takeover)
-      if (userSockets.size > 0) {
-        userSockets.forEach((s) => {
-          s.emit("session_error", {
-            reason: "takeover",
-            message: "Session opened in another window.",
-          });
-          s.disconnect();
-        });
-        userSockets.clear();
-      }
-    } else if (plan === "pro") {
-      // Pro users: configured session limit
-      if (userSockets.size >= PRO_PLAN_SESSION_LIMIT) {
-        socket.emit("error", {
-          message: `Pro session limit reached (max ${PRO_PLAN_SESSION_LIMIT} tabs).`,
-        });
-        socket.disconnect();
-        return;
-      }
-    }
-
     userSockets.add(socket);
     socket.join(`user:${userId}`);
 
-    // Broadcast online presence if this is the FIRST connection
-    if (userSockets.size === 1) {
-      this.notifyStatusChange(userId, true);
-    }
-
-    // Fetch and send partners' status to the newly connected user
-    this.emitPartnersStatus(userId, socket);
-
-    socket.on("disconnect", () => {
-      userSockets?.delete(socket);
-      if (userSockets?.size === 0) {
-        this.activeConnections.delete(userId);
-        this.notifyStatusChange(userId, false);
-      }
-    });
-  }
-
-  async emitPartnersStatus(userId: string, socket: TypedSocket) {
-    try {
-      const uidStr = userId.toString();
-      const chats = await Chat.find({
-        $or: [{ userA: uidStr }, { userB: uidStr }],
-        status: "accepted",
-      }).select("userA userB");
-
-      const partnerIds = new Set<string>();
-      chats.forEach((chat) => {
-        const aStr = chat.userA.toString();
-        const bStr = chat.userB.toString();
-        if (aStr !== uidStr) partnerIds.add(aStr);
-        if (bStr !== uidStr) partnerIds.add(bStr);
+    if (plan === "free" && globalCount > 1) {
+      await redisService.publishSessionTakeover(userId, socket.id);
+      this._handleGlobalTakeover(userId, socket.id);
+    } else if (plan === "pro" && globalCount > PRO_PLAN_SESSION_LIMIT) {
+      userSockets.delete(socket);
+      await redisService.decrementGlobalSession(userId, socket.id);
+      socket.emit("error", {
+        message: `Pro session limit reached (max ${PRO_PLAN_SESSION_LIMIT} active tabs).`,
       });
-
-      const partnerIdsArr = Array.from(partnerIds);
-      const offlinePartnerIds = partnerIdsArr.filter((id) => !this.activeConnections.has(id));
-
-      let offlineUserMap = new Map();
-      if (offlinePartnerIds.length > 0) {
-        const offlineUsers = await User.find({ _id: { $in: offlinePartnerIds } })
-          .select("lastSeen")
-          .lean();
-        offlineUserMap = new Map(offlineUsers.map((u) => [u._id.toString(), u.lastSeen]));
-      }
-
-      for (const partnerId of partnerIdsArr) {
-        const isOnline = this.activeConnections.has(partnerId);
-        let lastSeen: Date | null = null;
-
-        if (!isOnline) {
-          lastSeen = offlineUserMap.get(partnerId) || null;
-        }
-
-        socket.emit("user_status", {
-          userId: partnerId,
-          isOnline,
-          lastSeen,
-        });
-      }
-    } catch (err) {
-      console.error("Error emitting partners status:", err);
-    }
-  }
-
-  async notifyStatusChange(userId: string, isOnline: boolean) {
-    try {
-      const uidStr = userId.toString();
-
-      if (!isOnline) {
-        await User.findByIdAndUpdate(userId, { lastSeen: new Date() });
-      }
-
-      // Find all accepted chats for this user
-      const chats = await Chat.find({
-        $or: [{ userA: uidStr }, { userB: uidStr }],
-        status: "accepted",
-        isDeleted: false,
-      }).select("userA userB");
-
-      // Extract unique partner IDs
-      const partnerIds = new Set<string>();
-      chats.forEach((chat) => {
-        const aStr = chat.userA.toString();
-        const bStr = chat.userB.toString();
-        if (aStr !== uidStr) partnerIds.add(aStr);
-        if (bStr !== uidStr) partnerIds.add(bStr);
-      });
-
-      // Emit to each connected partner
-      const statusPayload = {
-        userId: uidStr,
-        isOnline,
-        lastSeen: isOnline ? null : new Date(),
-      };
-
-      for (const partnerId of partnerIds) {
-        this.io?.to(`user:${partnerId}`).emit("user_status", statusPayload);
-      }
-    } catch (err) {
-      console.error("Error notifying status change:", err);
-    }
-  }
-
-  async handleTyping(
-    sender: AuthenticatedSocketUser,
-    payload: { receiverId: string; chatId: string },
-    isTyping: boolean,
-  ) {
-    const senderId = sender.id;
-    const { receiverId, chatId } = payload;
-    if (!receiverId || !chatId) return;
-
-    // Security: Prevent arbitrary users from flooding target room bindings unless they share an active chat
-    const cached = this.participantCache.get(chatId);
-    if (cached) {
-      if (!cached.has(senderId) || !cached.has(receiverId)) return;
-    } else {
-      try {
-        const chat = await Chat.findById(chatId).select("userA userB status");
-        if (!chat || chat.status !== "accepted") return;
-
-        const participants = new Set([chat.userA.toString(), chat.userB.toString()]);
-        if (!participants.has(senderId) || !participants.has(receiverId)) return;
-
-        this.participantCache.set(chatId, participants);
-        // oxlint-disable-next-line no-unused-vars
-      } catch (_e) {
-        return;
-      }
-    }
-
-    this.io?.to(`user:${receiverId}`).emit(isTyping ? "typing_start" : "typing_stop", {
-      chatId,
-      userId: senderId,
-    });
-  }
-
-  async handleReaction(sender: AuthenticatedSocketUser, payload: { messageId: string; emoji: string; slug?: string }) {
-    const senderId = new Types.ObjectId(sender.id);
-    const { messageId, emoji, slug } = payload;
-    if (!messageId || !emoji) {
+      socket.disconnect();
       return;
     }
 
-    try {
-      const message = await this.Message.findById(messageId);
-      if (!message) return;
+    if (globalCount === 1) {
+      await this.presenceService.notifyStatusChange(userId, true);
+    }
 
-      const chat = await Chat.findById(message.chatId);
-      if (!chat) return;
+    // Watchers & Status: Join rooms for all partners and request initial status
+    const partnerIds = await this._getPartnerIds(userId, true);
+    partnerIds.forEach((pid) => socket.join(`watching:${pid}`));
 
-      // --- Zenith: Restrict actions on scrubbed messages ---
-      const scrubCutoff = new Date();
-      scrubCutoff.setDate(scrubCutoff.getDate() - FREE_PLAN_SCRUB_DAYS);
-      if (sender.plan === "free" && message.createdAt < scrubCutoff) {
-        return;
-      }
-      // -----------------------------------------------------
+    await this.presenceService.emitPartnersStatus(userId, socket, await this._getPartnerIds(userId));
 
-      // Security: Check if user is part of the chat
-      const senderIdStr = senderId.toString();
-      const cached = this.participantCache.get(message.chatId.toString());
-      let isParticipant = false;
+    socket.on("disconnect", async () => {
+      userSockets?.delete(socket);
+      await redisService.decrementGlobalSession(userId, socket.id);
 
-      if (cached) {
-        isParticipant = cached.has(senderIdStr);
-      } else {
-        isParticipant = chat.userA.toString() === senderIdStr || chat.userB.toString() === senderIdStr;
-        // Populate cache for future use
-        this.participantCache.set(message.chatId.toString(), new Set([chat.userA.toString(), chat.userB.toString()]));
+      const remainingGlobal = await redisService.getGlobalSessionCount(userId);
+      if (userSockets?.size === 0) {
+        this.activeConnections.delete(userId);
       }
 
-      if (!isParticipant) {
-        return;
+      if (remainingGlobal === 0) {
+        await this.presenceService.notifyStatusChange(userId, false);
       }
+    });
+  }
 
-      const reactionIndex = message.reactions.findIndex((r) => r.emoji === emoji);
+  // ─── Delegates ─────────────────────────────────────────────────────
 
-      if (reactionIndex > -1) {
-        const reactionGroup = message.reactions[reactionIndex];
-        const userIndex = reactionGroup.users.findIndex((u) => u.toString() === senderId.toString());
+  async handleTyping(sender: AuthenticatedSocketUser, payload: any, isTyping: boolean) {
+    return this.typingHandler.handleTyping(
+      sender,
+      payload,
+      isTyping,
+      (id) => this.participantCache.get(id),
+      (id, p) => this.participantCache.set(id, p),
+    );
+  }
 
-        if (userIndex > -1) {
-          // Toggle off: Remove user's reaction
-          reactionGroup.users.splice(userIndex, 1);
-          // If no more users, remove the emoji reaction entry entirely
-          if (reactionGroup.users.length === 0) {
-            message.reactions.splice(reactionIndex, 1);
-          }
-        } else {
-          // Toggle on: Add user to existing emoji reaction group
-          reactionGroup.users.push(senderId);
+  async handleReaction(sender: AuthenticatedSocketUser, payload: any) {
+    return this.reactionHandler.handleReaction(
+      sender,
+      payload,
+      (id) => this.participantCache.get(id),
+      (id, p) => this.participantCache.set(id, p),
+    );
+  }
 
-          // Canonical Normalization: Ensure the reaction group always uses
-          // a standardized slug derived from the backend registry.
-          const canonicalSlug = getCanonicalSlug(emoji, slug);
-          if (
-            canonicalSlug &&
-            (!reactionGroup.slug || reactionGroup.slug === "emoji" || reactionGroup.slug !== canonicalSlug)
-          ) {
-            reactionGroup.slug = canonicalSlug;
+  async saveAndDeliverMessage(sender: AuthenticatedSocketUser, payload: any): Promise<MessageDto> {
+    return this.messageHandler.saveAndDeliver(
+      sender,
+      payload,
+      (id) => this.participantCache.get(id),
+      (id, p) => this.participantCache.set(id, p),
+    );
+  }
+
+  async handleDeleteMessage(sender: AuthenticatedSocketUser, payload: any) {
+    return this.messageHandler.handleDelete(sender, payload.messageId);
+  }
+
+  async handleEditMessage(sender: AuthenticatedSocketUser, payload: any) {
+    return this.messageHandler.handleEdit(sender, payload.messageId, payload.contentBody);
+  }
+
+  // ─── Helpers ────────────────────────────────────────────────────────
+
+  private async _getPartnerIds(userId: string, excludeDeleted = false): Promise<Set<string>> {
+    const cacheKey = excludeDeleted ? `${userId}:active` : userId;
+    const l1Cached = this.partnerCache.get(cacheKey);
+    if (l1Cached) return l1Cached;
+
+    // Thundering Herd Protection: check if a request for this key is already in flight
+    const inFlight = this.partnerRequests.get(cacheKey);
+    if (inFlight) return inFlight;
+
+    const fetchPromise = (async () => {
+      try {
+        const l2Cached = await redisService.getCachedPartners(userId, excludeDeleted);
+        if (l2Cached) {
+          this.partnerCache.set(cacheKey, l2Cached);
+          return l2Cached;
+        }
+
+        const filter: any = { participants: userId, status: "accepted" };
+        if (excludeDeleted) filter.isDeleted = false;
+
+        const chats = await Chat.find(filter).select("participants").lean();
+        const partners = new Set<string>();
+        for (const chat of chats as any) {
+          for (const p of chat.participants) {
+            const pId = p.toString();
+            if (pId !== userId) {
+              partners.add(pId);
+            }
           }
         }
-      } else {
-        // Create new emoji reaction entry if limit not reached
-        if (message.reactions.length < REACTIONS_MAX_UNIQUE) {
-          message.reactions.push({
-            emoji,
-            slug: getCanonicalSlug(emoji, slug),
-            users: [senderId],
-          });
-        }
+
+        this.partnerCache.set(cacheKey, partners);
+        await redisService.setCachedPartners(userId, Array.from(partners), excludeDeleted);
+        return partners;
+      } finally {
+        // Always clear the in-flight promise when done
+        this.partnerRequests.delete(cacheKey);
       }
+    })();
 
-      message.markModified("reactions");
-      await message.save();
+    this.partnerRequests.set(cacheKey, fetchPromise);
+    return fetchPromise;
+  }
 
-      // Determine receiver
-      const receiverId = chat.userA.toString() === senderId.toString() ? chat.userB.toString() : chat.userA.toString();
-
-      const savedMessage = message.toObject();
-      const updatePayload = {
-        messageId: messageId.toString(),
-        chatId: message.chatId.toString(),
-        // Serialize ObjectIds to plain strings so the frontend string-comparison works
-        reactions: savedMessage.reactions.map(
-          (r: { emoji: string; slug: string; users: string[] | Types.ObjectId[] }) => ({
-            emoji: r.emoji,
-            slug: r.slug,
-            users: r.users.map((u) => u.toString()),
-          }),
-        ),
-      };
-
-      // Emit to both users
-      this.io?.to(`user:${senderId}`).emit("message_reaction_update", updatePayload);
-      this.io?.to(`user:${receiverId}`).emit("message_reaction_update", updatePayload);
-    } catch (err) {
-      console.error("[SocketService] Error handling reaction:", err);
+  public async invalidatePartnerCache(userId: string): Promise<void> {
+    this.partnerCache.delete(userId);
+    this.partnerCache.delete(`${userId}:active`);
+    await redisService.invalidatePartnerCache(userId);
+    if (redisService.client && redisService.isConnected) {
+      await redisService.client.publish("cache:invalidate", JSON.stringify({ type: "partner", id: userId }));
     }
   }
 
-  async saveAndDeliverMessage(
-    sender: AuthenticatedSocketUser,
-    payload: { chatId: string; receiverId: string; contentBody: string; idempotencyKey: string },
-  ): Promise<MessageDto> {
-    const senderId = sender.id;
-    const { chatId, receiverId, contentBody, idempotencyKey } = payload;
-
-    // 1. Deleted Chat Lockdown Check
-    if (chatLockdownService.isChatDeleted(chatId)) {
-      throw AppError.forbidden("Cannot send messages to a deleted chat.");
-    }
-
-    // 2. Verify chat is accepted
-    const chat = await Chat.findById(chatId);
-    if (!chat || chat.status !== "accepted") {
-      throw AppError.forbidden("Chat must be accepted before sending messages.");
-    }
-
-    // Proactively populate participant cache for this chat
-    if (!this.participantCache.has(chatId)) {
-      this.participantCache.set(chatId, new Set([chat.userA.toString(), chat.userB.toString()]));
-    }
-
-    // 3. Real-time Reliability Enforcer: Deduplication
-    const existingMessage = await this.Message.findOne({ idempotencyKey });
-    if (existingMessage) {
-      const msgObj = existingMessage.toObject();
-      return {
-        ...msgObj,
-        id: existingMessage._id.toString(),
-        chatId: existingMessage.chatId.toString(),
-        senderId: existingMessage.senderId.toString(),
-        reactions: msgObj.reactions?.map((r: any) => ({
-          emoji: r.emoji,
-          slug: r.slug,
-          users: r.users.map((u: any) => u.toString()),
-        })),
-      } as MessageDto;
-    }
-
-    // 4. Save Message
-    const message = await this.Message.create({
-      chatId,
-      senderId,
-      contentBody,
-      idempotencyKey,
+  private _handleGlobalTakeover(userId: string, triggerSocketId?: string) {
+    const userSockets = this.activeConnections.get(userId);
+    if (!userSockets) return;
+    userSockets.forEach((s) => {
+      if (s.id !== triggerSocketId) {
+        s.emit("session_error", { reason: "takeover", message: "Session opened in another window." });
+        s.disconnect();
+        userSockets.delete(s);
+      }
     });
-
-    // 5. Update chat's lastMessage + increment receiver's unreadCounts
-    await Chat.findByIdAndUpdate(chatId, {
-      lastMessage: {
-        contentBody,
-        senderId,
-        sentAt: message.createdAt,
-      },
-      $inc: { [`unreadCounts.${receiverId}`]: 1 },
-    });
-
-    // 6. Deliver Message to receiver if connected
-    // Create DTO with emojiMetadata for the frontend tooltips
-    const messageObj = message.toObject();
-    const messageDto: MessageDto = {
-      ...messageObj,
-      id: message._id.toString(),
-      chatId: message.chatId.toString(),
-      senderId: message.senderId.toString(),
-      emojiMetadata: extractEmojiMetadata(contentBody),
-      reactions: messageObj.reactions?.map((r: any) => ({
-        emoji: r.emoji,
-        slug: r.slug,
-        users: r.users.map((u: any) => u.toString()),
-      })),
-    };
-
-    this.io?.to(`user:${receiverId}`).emit("receive_message", messageDto);
-    // Also echo back to sender for full metadata if they have multiple devices or need it
-    this.io?.to(`user:${senderId}`).emit("receive_message", messageDto);
-
-    // 7. Emit lightweight message_alert for toast/browser notification
-    try {
-      const preview = contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
-      this.io?.to(`user:${receiverId}`).emit("message_alert", {
-        chatId,
-        senderId,
-        senderName: sender.name || null,
-        senderUsername: sender.username,
-        senderAvatar: sender.avatarUrl,
-        preview,
-      });
-    } catch (err) {
-      console.error("Failed to emit message_alert:", err);
-    }
-
-    return messageDto;
+    if (userSockets.size === 0) this.activeConnections.delete(userId);
   }
 
-  async handleDeleteMessage(sender: AuthenticatedSocketUser, payload: { messageId: string }) {
-    const senderId = sender.id;
-    const { messageId } = payload;
-    if (!messageId) return;
-
-    try {
-      const message = await this.Message.findById(messageId);
-      if (!message || message.isDeleted) return;
-
-      const chat = await Chat.findById(message.chatId);
-      if (!chat || chat.isDeleted) return;
-
-      // --- Zenith: Restrict actions on scrubbed messages ---
-      const scrubCutoff = new Date();
-      scrubCutoff.setDate(scrubCutoff.getDate() - FREE_PLAN_SCRUB_DAYS);
-      if (sender.plan === "free" && message.createdAt < scrubCutoff) {
-        return;
-      }
-      // -----------------------------------------------------
-
-      // Security: Only sender can delete their message
-      if (message.senderId.toString() !== senderId.toString()) {
-        return;
-      }
-
-      // --- Zenith: Modify time limit check ---
-      const limitMs = MESSAGE_MODIFY_LIMIT_HOURS * 60 * 60 * 1000;
-      const cutoff = new Date(Date.now() - limitMs);
-      if (message.createdAt < cutoff) {
-        return;
-      }
-      // ---------------------------------------
-
-      message.isDeleted = true;
-      message.deletedAt = new Date();
-      message.contentBody = "This message was deleted";
-      message.attachment = { kind: null, url: null };
-      message.reactions = [];
-      await message.save();
-
-      const isLastMessage = Boolean(
-        chat.lastMessage &&
-        chat.lastMessage.sentAt &&
-        chat.lastMessage.sentAt.getTime() === message.createdAt.getTime(),
-      );
-
-      // Determine participants
-      const participants = [chat.userA.toString(), chat.userB.toString()];
-      const updatePayload = {
-        messageId: messageId.toString(),
-        chatId: message.chatId.toString(),
-        isLastMessage,
-      };
-
-      // notify both
-      participants.forEach((uid) => {
-        this.io?.to(`user:${uid}`).emit("message_deleted", updatePayload);
-      });
-
-      // Update chat's lastMessage if it was this one
-      if (isLastMessage) {
-        chat.lastMessage.contentBody = "Message deleted";
-        await chat.save();
-      }
-    } catch (err) {
-      console.error("[SocketService] Error deleting message:", err);
-    }
-  }
-
-  async handleEditMessage(sender: AuthenticatedSocketUser, payload: { messageId: string; contentBody: string }) {
-    const senderId = sender.id;
-    const { messageId, contentBody } = payload;
-    if (!messageId || !contentBody?.trim()) return;
-
-    try {
-      const message = await this.Message.findById(messageId);
-      if (!message || message.isDeleted) return;
-
-      const chat = await Chat.findById(message.chatId);
-      if (!chat || chat.isDeleted) return;
-
-      // --- Zenith: Restrict actions on scrubbed messages ---
-      const scrubCutoff = new Date();
-      scrubCutoff.setDate(scrubCutoff.getDate() - FREE_PLAN_SCRUB_DAYS);
-      if (sender.plan === "free" && message.createdAt < scrubCutoff) {
-        return;
-      }
-      // -----------------------------------------------------
-
-      // Security: Only sender can edit their message
-      if (message.senderId.toString() !== senderId.toString()) {
-        return;
-      }
-
-      // --- Zenith: 1-hour time limit check ---
-      const limitMs = MESSAGE_MODIFY_LIMIT_HOURS * 60 * 60 * 1000;
-      const cutoff = new Date(Date.now() - limitMs);
-      if (message.createdAt < cutoff) {
-        return;
-      }
-      // ---------------------------------------
-
-      message.contentBody = contentBody.trim();
-      message.isEdited = true;
-      message.editedAt = new Date();
-      await message.save();
-
-      const isLastMessage = Boolean(
-        chat.lastMessage &&
-        chat.lastMessage.sentAt &&
-        chat.lastMessage.sentAt.getTime() === message.createdAt.getTime(),
-      );
-
-      // Determine participants
-      const participants = [chat.userA.toString(), chat.userB.toString()];
-      const updatePayload = {
-        messageId: messageId.toString(),
-        chatId: message.chatId.toString(),
-        contentBody: message.contentBody,
-        isEdited: message.isEdited,
-        editedAt: message.editedAt,
-      };
-
-      // notify both
-      participants.forEach((uid) => {
-        this.io?.to(`user:${uid}`).emit("message_updated", updatePayload);
-      });
-
-      // Update chat's lastMessage if it was this one
-      if (isLastMessage) {
-        chat.lastMessage.contentBody = message.contentBody;
-        await chat.save();
-      }
-    } catch (err) {
-      console.error("[SocketService] Error editing message:", err);
+  private _handleGlobalCacheInvalidation(type: string, id: string) {
+    if (type === "partner") {
+      this.partnerCache.delete(id);
+      this.partnerCache.delete(`${id}:active`);
+    } else if (type === "chat") {
+      this.participantCache.delete(id);
     }
   }
 }
 
-export const socketService = new SocketService(Message);
+export const socketService = new SocketService();

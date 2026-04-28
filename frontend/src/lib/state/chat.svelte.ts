@@ -2,13 +2,13 @@ import type { Chat, Message, MessageAlert } from "$types/chat";
 import type { Notification } from "$types/notification";
 import type { Socket } from "socket.io-client";
 
+import { ASSETS } from "$lib/config";
 import { chatService } from "$services/chat.service";
 import { SocketManager } from "$services/socket.manager.svelte";
 import { authStore } from "$state/auth.svelte";
 import { routerStore } from "$state/router.svelte";
-import { SvelteMap } from "svelte/reactivity";
-
-import { ASSETS } from "../config";
+import { ApiError } from "$utils/errors";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 export * from "$types/chat";
 
@@ -24,7 +24,7 @@ class ChatStore {
   activeChatId: string | null = $state(null);
 
   onlineStatus = new SvelteMap<string, { isOnline: boolean; lastSeen: Date | null }>();
-  typingStatus: Record<string, any> = $state({}); // SvelteSet managed by SocketManager
+  typingStatus = new SvelteMap<string, SvelteSet<string>>();
   chats: Array<Chat> = $state([]);
   hasMoreChats = $state(true);
   chatCursor: string | null = $state(null);
@@ -38,6 +38,10 @@ class ChatStore {
   pendingRequestCount = $state(0);
   lastError: string | null = $state(null);
   currentSearchQuery = $state("");
+  unreadChatsCount = $state(0);
+  private pinnedChatIds: Set<string> = new Set();
+  /** Map for O(1) chat lookups by ID */
+  private chatsMap: Map<string, Chat> = new Map();
 
   private messagesAbortController: AbortController | null = null;
   private chatsAbortController: AbortController | null = null;
@@ -52,6 +56,17 @@ class ChatStore {
 
   constructor() {
     this.socketManager = new SocketManager(this);
+    if (typeof window !== "undefined") {
+      // Effect to load pins when user changes
+      $effect.root(() => {
+        $effect(() => {
+          if (authStore.user?.id) {
+            this.loadPinnedChats();
+            this.sortChats();
+          }
+        });
+      });
+    }
   }
 
   get socket(): Socket | null {
@@ -82,6 +97,8 @@ class ChatStore {
     this.chatsAbortController = null;
     this.messages = [];
     this.activeChatId = null;
+    this.onlineStatus.clear();
+    this.typingStatus.clear();
   }
 
   // --- REST API Operations (Delegated to ChatService) ---
@@ -107,7 +124,7 @@ class ChatStore {
       }
 
       this.messages = loadedMessages;
-      this.hasMoreMessages = loadedMessages.length === 50;
+      this.hasMoreMessages = loadedMessages.length >= 50; // Dynamic check
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return;
       console.error("Failed to load messages:", e);
@@ -138,7 +155,7 @@ class ChatStore {
       if (olderMessages.length > 0) {
         this.messages.unshift(...olderMessages);
       }
-      this.hasMoreMessages = olderMessages.length === 50;
+      this.hasMoreMessages = olderMessages.length >= 50;
     } catch (e: unknown) {
       if (e instanceof Error && e.name === "AbortError") return;
       console.error("Failed to load older messages:", e);
@@ -156,7 +173,20 @@ class ChatStore {
       const result = await chatService.fetchChats(query, 20, null, this.chatsAbortController.signal);
 
       this.currentSearchQuery = query;
-      this.chats = result.data || [];
+      this.chatsMap.clear();
+      this.chats = (result.data || []).map((chat) => {
+        const isPinned = this.pinnedChatIds.has(chat.id);
+        const lastUpdate = chat.lastMessage?.sentAt || chat.createdAt;
+        const normalized = {
+          ...chat,
+          isPinned,
+          _lastUpdateTs: new Date(lastUpdate).getTime(),
+        };
+        this.chatsMap.set(chat.id, normalized);
+        return normalized;
+      });
+      this.unreadChatsCount = this.chats.filter((c) => (c.unreadCount ?? 0) > 0).length;
+      this.sortChats();
       this.hasMoreChats = result.hasMore ?? false;
       this.chatCursor = result.nextCursor ?? null;
 
@@ -164,7 +194,12 @@ class ChatStore {
     } catch (e: any) {
       if (e instanceof Error && e.name === "AbortError") return;
       console.error("Failed to fetch chats:", e);
-      this.lastError = e.message || "Failed to fetch chats";
+
+      if (ApiError.handleRateLimit(e, "Easy there! You're searching too fast. Please wait a minute.")) {
+        this.lastError = "rate-limited";
+      } else {
+        this.lastError = e.message || "Failed to fetch chats";
+      }
     }
   }
 
@@ -179,13 +214,29 @@ class ChatStore {
         this.chatCursor,
         this.chatsAbortController?.signal,
       );
-      this.chats = [...this.chats, ...result.data];
+      const newChats = result.data.map((chat) => {
+        const normalized = {
+          ...chat,
+          isPinned: this.pinnedChatIds.has(chat.id),
+          _lastUpdateTs: new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime(),
+        };
+        this.chatsMap.set(chat.id, normalized);
+        return normalized;
+      });
+      this.chats = [...this.chats, ...newChats];
+      this.unreadChatsCount = this.chats.filter((c) => (c.unreadCount ?? 0) > 0).length;
+      this.sortChats();
       this.hasMoreChats = result.hasMore;
       this.chatCursor = result.nextCursor;
     } catch (e: any) {
       if (e instanceof Error && e.name === "AbortError") return;
       console.error("Failed to load more chats:", e);
-      this.lastError = e.message || "Failed to load more chats";
+
+      if (ApiError.handleRateLimit(e, "Slow down! You've hit a rate limit. Please wait a moment.")) {
+        this.lastError = "rate-limited";
+      } else {
+        this.lastError = e.message || "Failed to load more chats";
+      }
     } finally {
       this.isLoadingMoreChats = false;
     }
@@ -299,28 +350,26 @@ class ChatStore {
     }
 
     // Clear typing indicator instantly
-    if (this.typingStatus[message.chatId]) {
-      this.typingStatus[message.chatId].delete(message.senderId);
+    if (this.typingStatus.has(message.chatId)) {
+      this.typingStatus.get(message.chatId)?.delete(message.senderId);
     }
 
     const isViewing = message.chatId === this.activeChatId;
     const shouldInc = !isViewing && message.senderId !== authStore.user?.id;
 
-    const chat = this.chats.find((c) => c.id === message.chatId);
+    const chat = this.chatsMap.get(message.chatId);
     const currentUnread = chat?.unreadCount || 0;
 
-    this.patchChatLocally(
-      message.chatId,
-      {
-        lastMessage: {
-          contentBody: message.contentBody,
-          senderId: message.senderId,
-          sentAt: message.createdAt,
-        },
-        unreadCount: shouldInc ? currentUnread + 1 : currentUnread,
+    const updates: Partial<Chat> & { lastUpdate?: string } = {
+      lastMessage: {
+        contentBody: message.contentBody,
+        senderId: message.senderId,
+        sentAt: message.createdAt,
       },
-      true,
-    );
+      unreadCount: shouldInc ? currentUnread + 1 : currentUnread,
+    };
+
+    this.patchChatLocally(message.chatId, updates, true);
   }
 
   handleMessageAlert(data: MessageAlert) {
@@ -392,7 +441,7 @@ class ChatStore {
         msg.reactions = [];
       }
     }
-    const chat = this.chats.find((c) => c.id === data.chatId);
+    const chat = this.chatsMap.get(data.chatId);
     if (chat && chat.lastMessage) {
       const isLatest =
         data.isLastMessage ??
@@ -427,7 +476,7 @@ class ChatStore {
       }
     }
 
-    const chat = this.chats.find((c) => c.id === data.chatId);
+    const chat = this.chatsMap.get(data.chatId);
     if (chat && chat.lastMessage) {
       const isLatest =
         this.activeChatId === data.chatId &&
@@ -466,20 +515,94 @@ class ChatStore {
   // --- UI Helpers ---
 
   private patchChatLocally(chatId: string, updates: Partial<Chat>, moveToTop = false) {
-    const chatIndex = this.chats.findIndex((c: Chat) => c.id === chatId);
-    if (chatIndex === -1) {
+    const chat = this.chatsMap.get(chatId);
+    if (!chat) {
       if (this.onChatListRefresh) this.onChatListRefresh();
       return;
     }
 
-    // Direct mutation for Svelte 5 reactivity
-    const chat = this.chats[chatIndex];
+    const chatIndex = this.chats.findIndex((c) => c.id === chatId);
+
+    // Check if unread status is changing to update counter
+    const wasUnread = (chat.unreadCount ?? 0) > 0;
     Object.assign(chat, updates);
+    const isUnread = (chat.unreadCount ?? 0) > 0;
+
+    if (wasUnread !== isUnread) {
+      this.unreadChatsCount += isUnread ? 1 : -1;
+    }
+
+    // Update internal timestamp for sorting
+    const lastUpdate = chat.lastMessage?.sentAt || chat.createdAt;
+    chat._lastUpdateTs = new Date(lastUpdate).getTime();
 
     if (moveToTop && chatIndex > 0) {
       this.chats.splice(chatIndex, 1);
       this.chats.unshift(chat);
+      this.sortChats(false); // Pins are already normalized
+    } else if (moveToTop || updates.lastMessage) {
+      this.sortChats(false);
     }
+  }
+
+  // --- Pinning Logic ---
+
+  private loadPinnedChats() {
+    if (!authStore.user?.id) return;
+    try {
+      const saved = localStorage.getItem(`pinned_chats_${authStore.user.id}`);
+      if (saved) {
+        this.pinnedChatIds = new Set(JSON.parse(saved));
+      } else {
+        this.pinnedChatIds = new Set();
+      }
+    } catch (e) {
+      console.warn("Failed to load pinned chats", e);
+    }
+  }
+
+  private savePinnedChats() {
+    if (!authStore.user?.id) return;
+    try {
+      localStorage.setItem(`pinned_chats_${authStore.user.id}`, JSON.stringify(Array.from(this.pinnedChatIds)));
+    } catch (e) {
+      console.warn("Failed to save pinned chats", e);
+    }
+  }
+
+  toggleChatPin(chatId: string) {
+    const chat = this.chatsMap.get(chatId);
+    if (this.pinnedChatIds.has(chatId)) {
+      this.pinnedChatIds.delete(chatId);
+      if (chat) chat.isPinned = false;
+    } else {
+      this.pinnedChatIds.add(chatId);
+      if (chat) chat.isPinned = true;
+    }
+    this.savePinnedChats();
+    this.sortChats(false); // Pins are already updated
+  }
+
+  private sortChats(verifyPins = true) {
+    if (verifyPins) {
+      this.chats.forEach((chat: Chat) => {
+        chat.isPinned = this.pinnedChatIds.has(chat.id);
+        if (!chat._lastUpdateTs) {
+          chat._lastUpdateTs = new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime();
+        }
+      });
+    }
+
+    // Sort: Pinned first, then by internal timestamp (descending)
+    this.chats.sort((a: Chat, b: Chat) => {
+      const aPinned = a.isPinned ? 1 : 0;
+      const bPinned = b.isPinned ? 1 : 0;
+
+      if (aPinned !== bPinned) return bPinned - aPinned;
+      const aTs = a._lastUpdateTs || 0;
+      const bTs = b._lastUpdateTs || 0;
+      return bTs - aTs;
+    });
   }
 
   private showBrowserNotification(data: MessageAlert) {

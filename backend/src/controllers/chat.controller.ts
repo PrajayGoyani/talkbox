@@ -1,7 +1,6 @@
+import { AcceptChatRequest, RejectChatRequest } from "@controllers/types";
 import { chatService } from "@services/chat.service";
 import { Request, Response } from "express";
-
-import { AcceptChatRequest, RejectChatRequest } from "./types";
 
 export const getChatListing = async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 20;
@@ -19,6 +18,9 @@ export const getChatRequests = async (req: Request, res: Response) => {
 
 export const searchChats = async (req: Request, res: Response) => {
   const query = (req.query.q || "") as string;
+  if (!query) {
+    return res.success({ data: [], nextCursor: null, hasMore: false });
+  }
   const limit = parseInt(req.query.limit as string) || 20;
   const cursor = (req.query.cursor as string) || null;
   const result = await chatService.searchChats(req.user!.id, query, limit, cursor);
@@ -48,7 +50,13 @@ export const deleteChat = async (req: Request, res: Response) => {
 export const getChatMessages = async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const cursor = (req.query.cursor as string) || undefined;
-  const messages = await chatService.getChatMessages(req.params.chatId as string, req.user!.id, limit, cursor as any);
+  const messages = await chatService.getChatMessages(
+    req.params.chatId as string,
+    req.user!.id,
+    limit,
+    cursor as any,
+    req.user!.plan,
+  );
   res.success(messages);
 };
 

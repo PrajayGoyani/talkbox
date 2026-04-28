@@ -9,6 +9,8 @@ export interface UserDto {
   avatarUrl?: string;
   plan: "free" | "pro";
   subscriptionExpiresAt?: string | null;
+  isEmailVerified?: boolean;
+  bio?: string | null;
 }
 
 /**

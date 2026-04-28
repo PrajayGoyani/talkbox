@@ -1,7 +1,6 @@
 import { getAgenda, startAgenda } from "@config/agenda";
 import { ENABLE_JOBS, NODE_ENV } from "@config/env";
-
-import { defineJobs, JOBS } from "./agenda-jobs";
+import { defineJobs, JOBS } from "@jobs/agenda-jobs";
 
 export async function startJobs() {
   if (NODE_ENV !== "production" && !ENABLE_JOBS) {
@@ -20,6 +19,7 @@ export async function startJobs() {
     const agenda = getAgenda();
     await agenda.every("24 hours", JOBS.DATA_RETENTION_CLEANUP);
     await agenda.every("1 hour", JOBS.SUBSCRIPTION_EXPIRY);
+    await agenda.every("5 minutes", JOBS.PRESENCE_SYNC);
 
     console.log("Background jobs scheduled via Agenda.");
   } catch (error) {

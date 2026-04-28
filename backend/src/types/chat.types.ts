@@ -5,15 +5,16 @@
 export interface ChatDto {
   id: string;
   status: "pending" | "accepted" | "rejected";
+  isGroup: boolean;
   createdBy: string;
-  otherUser: {
+  otherUser?: {
     id: string;
     username: string;
     name: string | null;
     email: string;
     avatarUrl: string;
     plan: "free" | "pro";
-  };
+  } | null;
   lastMessage: {
     contentBody: string;
     senderId: string | null;
@@ -21,7 +22,7 @@ export interface ChatDto {
   } | null;
   unreadCount: number;
   createdAt: Date;
-  participants?: string[];
+  participants: string[];
 }
 
 /**

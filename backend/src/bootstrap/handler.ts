@@ -1,4 +1,5 @@
 import { ALLOWED_ORIGINS, NODE_ENV } from "@config/env";
+import * as Sentry from "@sentry/bun";
 import { AppError } from "@utils/AppError";
 import { error as errorResponse, success } from "@utils/response";
 import cookieParser from "cookie-parser";
@@ -35,6 +36,9 @@ export function initializeStatic() {
 }
 
 export function initializeErrorHandlers() {
+  // Sentry error handler MUST be before any other error middleware and after all controllers
+  Sentry.setupExpressErrorHandler(app);
+
   // 404 Not Found handler
   app.use((req, res, next) => {
     const err = errorResponse("ROUTE_NOT_FOUND", `Cannot ${req.method} ${req.path}`);
@@ -54,6 +58,10 @@ export function initializeErrorHandlers() {
     let message = err.message || "Internal Server Error";
     if (NODE_ENV !== "development") {
       message = "Internal Server Error";
+      // Only capture critical non-AppErrors in production to avoid noise
+      if (!(err instanceof AppError)) {
+        Sentry.captureException(err);
+      }
     }
     console.error(err.stack);
     res.status(err.statusCode || 500).json({

@@ -16,6 +16,7 @@
     "info",
     "clock",
     "chevron-down",
+    "chevrons-down",
     "nav-chat",
     "logout",
     "add",
@@ -35,6 +36,12 @@
     "trash",
     "alert-circle",
     "home",
+    "more-vert",
+    "mail",
+    "arrow-left",
+    "star",
+    "chat",
+    "chevron-right",
   ] as const;
 
   type IconName = (typeof VALID_ICONS)[number];

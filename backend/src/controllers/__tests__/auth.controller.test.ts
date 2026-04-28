@@ -1,0 +1,89 @@
+import { forgotPassword, resendVerification, resetPassword, verifyEmail } from "@controllers/auth.controller";
+import { authService } from "@services/auth.service";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@services/auth.service", () => ({
+  authService: {
+    forgotPassword: vi.fn(),
+    resetPassword: vi.fn(),
+    verifyEmail: vi.fn(),
+    resendVerificationEmail: vi.fn(),
+  },
+}));
+
+vi.mock("@config/env", () => ({
+  COOKIE_SAMESITE: "lax",
+  COOKIE_SECURE: false,
+}));
+
+describe("AuthController - Password Reset & Email Verification", () => {
+  let req: any;
+  let res: any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    req = { body: {}, query: {}, user: { id: "user123" } };
+    res = { success: vi.fn() };
+  });
+
+  describe("forgotPassword", () => {
+    it("should call authService.forgotPassword and return success", async () => {
+      req.body.email = "test@example.com";
+      vi.mocked(authService.forgotPassword).mockResolvedValue();
+
+      await forgotPassword(req, res);
+
+      expect(authService.forgotPassword).toHaveBeenCalledWith("test@example.com");
+      expect(res.success).toHaveBeenCalledWith({
+        message: "If an account with that email exists, a reset link has been sent.",
+      });
+    });
+  });
+
+  describe("resetPassword", () => {
+    it("should call authService.resetPassword and return success", async () => {
+      req.body = { token: "valid-token", password: "newpassword123" };
+      vi.mocked(authService.resetPassword).mockResolvedValue();
+
+      await resetPassword(req, res);
+
+      expect(authService.resetPassword).toHaveBeenCalledWith("valid-token", "newpassword123");
+      expect(res.success).toHaveBeenCalledWith({
+        message: "Password has been reset successfully.",
+      });
+    });
+  });
+
+  describe("verifyEmail", () => {
+    it("should verify email with token from query params", async () => {
+      req.query.token = "verify-token-123";
+      vi.mocked(authService.verifyEmail).mockResolvedValue();
+
+      await verifyEmail(req, res);
+
+      expect(authService.verifyEmail).toHaveBeenCalledWith("verify-token-123");
+      expect(res.success).toHaveBeenCalledWith({
+        message: "Email verified successfully.",
+      });
+    });
+
+    it("should throw if token is missing", async () => {
+      req.query = {};
+
+      await expect(verifyEmail(req, res)).rejects.toThrow("Token is required");
+    });
+  });
+
+  describe("resendVerification", () => {
+    it("should call authService.resendVerificationEmail with user id", async () => {
+      vi.mocked(authService.resendVerificationEmail).mockResolvedValue();
+
+      await resendVerification(req, res);
+
+      expect(authService.resendVerificationEmail).toHaveBeenCalledWith("user123");
+      expect(res.success).toHaveBeenCalledWith({
+        message: "Verification email sent.",
+      });
+    });
+  });
+});

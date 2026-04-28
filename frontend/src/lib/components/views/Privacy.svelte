@@ -48,7 +48,7 @@
       content is automatically masked ("scrubbed") after 7 days. This content
       remains securely stored in our database for 365 days but is inaccessible
       on the Free plan. Upgrading to a Pro subscription immediately restores
-      access to your full history. Messages in chats where both participants are
+      access to your full history. Messages in chats where all participants are
       on the Free tier are permanently purged after 12 months.
     </p>
     <p class="mt-4">

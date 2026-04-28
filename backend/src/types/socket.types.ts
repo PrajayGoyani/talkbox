@@ -74,8 +74,9 @@ export interface NotificationDto {
 
 export interface ServerToClientEvents {
   session_error: (payload: { reason: string; message: string }) => void;
-  error: (payload: { message: string }) => void;
+  error: (payload: { message: string; code?: string }) => void;
   user_status: (payload: { userId: string; isOnline: boolean; lastSeen: Date | null }) => void;
+  user_status_batch: (payload: Array<{ userId: string; isOnline: boolean; lastSeen: Date | null }>) => void;
   typing_start: (payload: { chatId: string; userId: string }) => void;
   typing_stop: (payload: { chatId: string; userId: string }) => void;
   message_reaction_update: (payload: {

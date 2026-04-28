@@ -1,9 +1,21 @@
+import { USERNAME_ERROR, USERNAME_REGEX } from "@utils/validation";
 import { z } from "zod";
 
 export const chatRequestSchema = z.object({
   username: z
     .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(30, "Username must be at most 30 characters")
-    .regex(/^@?[a-zA-Z0-9]+$/, "Username must be alphanumeric, optionally starting with @"),
+    .transform((val) => (val.startsWith("@") ? val.slice(1) : val))
+    .refine((val) => USERNAME_REGEX.test(val), USERNAME_ERROR),
+});
+
+export const chatSearchSchema = z.object({
+  q: z
+    .string()
+    .optional()
+    .default("")
+    .transform((val) => {
+      const trimmed = val.trim();
+      const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return escaped.startsWith("@") ? escaped.slice(1) : escaped;
+    }),
 });

@@ -6,6 +6,7 @@ import {
   type SignupRequestDto,
   type UserDto,
 } from "$types/auth.dto";
+import { ApiError } from "$utils/errors";
 import { storage } from "$utils/storage";
 
 // Access tokens expire in 15min typically; refresh 1 min before
@@ -146,6 +147,10 @@ class AuthStore {
         body: JSON.stringify(credentials),
       });
 
+      if (!response.ok) {
+        throw await ApiError.fromResponse(response);
+      }
+
       const res: ApiResponse<AuthResponseDto> = await response.json();
 
       if (res.success) {
@@ -154,8 +159,12 @@ class AuthStore {
       } else {
         this.error = res.error?.message || "Login failed";
       }
-    } catch {
-      this.error = "Network error occurred";
+    } catch (e) {
+      if (!ApiError.handleRateLimit(e)) {
+        this.error = e instanceof ApiError ? e.message : "Network error occurred";
+      } else {
+        this.error = "Too many attempts. Please wait.";
+      }
     } finally {
       this.loading = false;
     }
@@ -174,6 +183,10 @@ class AuthStore {
         body: JSON.stringify(data),
       });
 
+      if (!response.ok) {
+        throw await ApiError.fromResponse(response);
+      }
+
       const res: ApiResponse<AuthResponseDto> = await response.json();
 
       if (res.success) {
@@ -182,8 +195,12 @@ class AuthStore {
       } else {
         this.error = res.error?.message || "Signup failed";
       }
-    } catch {
-      this.error = "Network error occurred";
+    } catch (e) {
+      if (!ApiError.handleRateLimit(e)) {
+        this.error = e instanceof ApiError ? e.message : "Network error occurred";
+      } else {
+        this.error = "Too many attempts. Please wait.";
+      }
     } finally {
       this.loading = false;
     }
@@ -215,8 +232,8 @@ class AuthStore {
     this.scheduleRefresh();
   }
 
-  /** Update user profile (name) */
-  async updateProfile(data: { name?: string | null }) {
+  /** Update user profile (name, bio) */
+  async updateProfile(data: { name?: string | null; bio?: string | null }) {
     try {
       const resp = await fetch(`${API_BASE}/user/profile`, {
         method: "PATCH",
@@ -227,14 +244,19 @@ class AuthStore {
         credentials: "include",
         body: JSON.stringify(data),
       });
+
+      if (!resp.ok) {
+        throw await ApiError.fromResponse(resp);
+      }
+
       const res = await resp.json();
-      if (!resp.ok) throw new Error(res.error?.message || "Failed to update profile");
       if (res.success && res.data) {
         this.user = { ...this.user, ...res.data } as UserDto;
         storage.setUser(this.user);
       }
       return res;
     } catch (e: unknown) {
+      ApiError.handleRateLimit(e);
       console.error("Profile update error", e);
       throw e;
     }
@@ -281,18 +303,138 @@ class AuthStore {
         headers: { Authorization: `Bearer ${this.accessToken}` },
         credentials: "include",
       });
+
+      if (!resp.ok) {
+        throw await ApiError.fromResponse(resp);
+      }
+
       const res = await resp.json();
-      if (!resp.ok) throw new Error(res.error?.message || "Upgrade failed");
       if (res.success && res.data) {
         this.user = { ...this.user, ...res.data } as UserDto;
         storage.setUser(this.user);
       }
       return res;
     } catch (e: unknown) {
+      ApiError.handleRateLimit(e);
       console.error("Upgrade error", e);
       throw e;
     } finally {
       this.loading = false;
+    }
+  }
+
+  // ─── Password Reset ────────────────────────────────────────────────
+
+  /** Request a password reset email */
+  async forgotPassword(email: string): Promise<{ success: boolean; message?: string }> {
+    this.loading = true;
+    this.error = null;
+    try {
+      const response = await fetch(`${API_BASE}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        throw await ApiError.fromResponse(response);
+      }
+
+      const res = await response.json();
+      return { success: true, message: res.data?.message };
+    } catch (e) {
+      if (!ApiError.handleRateLimit(e)) {
+        this.error = e instanceof ApiError ? e.message : "Network error occurred";
+      } else {
+        this.error = "Too many attempts. Please wait.";
+      }
+      return { success: false };
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  /** Reset password using a token from email */
+  async resetPassword(token: string, password: string): Promise<{ success: boolean; message?: string }> {
+    this.loading = true;
+    this.error = null;
+    try {
+      const response = await fetch(`${API_BASE}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ token, password }),
+      });
+
+      if (!response.ok) {
+        throw await ApiError.fromResponse(response);
+      }
+
+      const res = await response.json();
+      return { success: true, message: res.data?.message };
+    } catch (e) {
+      if (!ApiError.handleRateLimit(e)) {
+        this.error = e instanceof ApiError ? e.message : "Network error occurred";
+      } else {
+        this.error = "Too many attempts. Please wait.";
+      }
+      return { success: false };
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  // ─── Email Verification ────────────────────────────────────────────
+
+  /** Verify email using token from verification link */
+  async verifyEmail(token: string): Promise<{ success: boolean; message?: string }> {
+    this.loading = true;
+    this.error = null;
+    try {
+      const response = await fetch(`${API_BASE}/auth/verify-email?token=${encodeURIComponent(token)}`, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw await ApiError.fromResponse(response);
+      }
+
+      const res = await response.json();
+
+      // Update local user state if logged in
+      if (this.user) {
+        this.user = { ...this.user, isEmailVerified: true } as UserDto;
+        storage.setUser(this.user);
+      }
+
+      return { success: true, message: res.data?.message };
+    } catch (e) {
+      this.error = e instanceof ApiError ? e.message : "Verification failed";
+      return { success: false };
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  /** Resend verification email (authenticated) */
+  async resendVerification(): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_BASE}/auth/resend-verification`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${this.accessToken}` },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw await ApiError.fromResponse(response);
+      }
+
+      return true;
+    } catch (e) {
+      ApiError.handleRateLimit(e, "Please wait before requesting another verification email.");
+      console.error("Resend verification error", e);
+      return false;
     }
   }
 }

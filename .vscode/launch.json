@@ -2,16 +2,11 @@
   "configurations": [
     {
       "name": "Attach to process",
-      "type": "node",
+      "type": "bun",
       "request": "attach",
-      "port": 9229,
-      "skipFiles": [
-        // Node.js internal core modules
-        "<node_internals>/**",
-
-        // Ignore all dependencies (optional)
-        "${workspaceFolder}/node_modules/**"
-      ]
+      "url": "ws://localhost:9229/talkbox",
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "/src"
     }
   ]
 }

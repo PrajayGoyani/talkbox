@@ -1,10 +1,12 @@
 <script lang="ts">
   import ChatList from "$components/chat/ChatList.svelte";
   import Icon from "$components/ui/Icon.svelte";
+  import SegmentedControl from "$components/ui/SegmentedControl.svelte";
   import { chatStore, type ChatStatus, type User } from "$state/chat.svelte";
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { slide } from "svelte/transition";
+  import { isValidUsername, USERNAME_ERROR } from "$utils/validation";
 
   const {
     activeChatId,
@@ -20,6 +22,9 @@
 
   let chatListRef: ReturnType<typeof ChatList> | undefined = $state();
   let searchQuery = $state("");
+  let activeTab: "all" | "unread" = $state("all");
+
+  const unreadCountForTab = $derived(chatStore.unreadChatsCount);
 
   // New chat request state
   let showRequestInput = $state(false);
@@ -32,6 +37,11 @@
 
   const handleSendRequest = async () => {
     if (!requestUsername.trim()) return;
+
+    if (!isValidUsername(requestUsername)) {
+      requestError = USERNAME_ERROR;
+      return;
+    }
     requestLoading = true;
     requestError = null;
     requestSuccess = null;
@@ -72,9 +82,12 @@
       <div class="flex items-center gap-2">
         <!-- New Chat Button (Desktop) -->
         <button
-          class="hidden md:flex w-8 h-8 items-center justify-center rounded-lg {showRequestInput
-            ? 'bg-indigo-600 text-white'
-            : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10'} transition-all active:scale-95"
+          class={[
+            "hidden md:flex w-8 h-8 items-center justify-center rounded-lg transition-all active:scale-95",
+            showRequestInput
+              ? "bg-indigo-600 text-white"
+              : "text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10",
+          ]}
           onclick={() => (showRequestInput = !showRequestInput)}
           use:tooltip={{
             text: showRequestInput ? "Close New Chat" : "New Chat",
@@ -121,6 +134,18 @@
         />
       </div>
 
+      <SegmentedControl
+        bind:value={activeTab}
+        options={[
+          { label: "All", value: "all" },
+          {
+            label: "Unread",
+            value: "unread",
+            badge: unreadCountForTab > 0 ? unreadCountForTab : undefined,
+          },
+        ]}
+      />
+
       <!-- Collapsible Request Form -->
       {#if showRequestInput}
         <div
@@ -133,6 +158,7 @@
               placeholder="Enter username..."
               class="flex-1 px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-500/30 bg-white dark:bg-slate-900 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
               bind:value={requestUsername}
+              oninput={() => (requestError = null)}
               onkeydown={(e) => e.key === "Enter" && handleSendRequest()}
               disabled={requestLoading}
             />
@@ -173,7 +199,7 @@
       {activeChatId}
       {onSelectChat}
       {searchQuery}
-      activeTab="active"
+      {activeTab}
     />
   </div>
 
@@ -190,9 +216,6 @@
     <Icon
       name={showRequestInput ? "close" : "add"}
       class="w-6 h-6 transition-transform"
-      style={showRequestInput
-        ? "transform: rotate(0deg)"
-        : "transform: rotate(0deg)"}
     />
   </button>
 </div>

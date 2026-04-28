@@ -52,6 +52,9 @@ class RouterStore {
     const guestRoutes = [
       Route.LOGIN.replace(/^\//, ""),
       Route.SIGNUP.replace(/^\//, ""),
+      Route.FORGOT_PASSWORD.replace(/^\//, ""),
+      Route.RESET_PASSWORD.replace(/^\//, ""),
+      Route.VERIFY_EMAIL.replace(/^\//, ""),
       Route.TERMS.replace(/^\//, ""),
       Route.PRIVACY.replace(/^\//, ""),
       Route.PRICING.replace(/^\//, ""),

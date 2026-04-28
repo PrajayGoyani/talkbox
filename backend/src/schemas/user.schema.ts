@@ -1,3 +1,4 @@
+import { USERNAME_ERROR, USERNAME_REGEX } from "@utils/validation";
 import { z } from "zod";
 
 /**
@@ -12,7 +13,7 @@ const sanitizeName = (val) =>
     .replace(/[^a-zA-Z\s\-']/g, "")
     .replace(/\s+/g, " ")
     .split(" ")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 
 const nameField = z
@@ -22,7 +23,7 @@ const nameField = z
   .transform(sanitizeName);
 
 export const signupSchema = z.object({
-  username: z.string().refine((s) => !s.includes(" "), "Username cannot contain spaces."),
+  username: z.string().regex(USERNAME_REGEX, USERNAME_ERROR),
   email: z.email(),
   password: z.string().min(8),
   name: nameField.optional(),
@@ -35,4 +36,14 @@ export const loginSchema = z.object({
 
 export const updateProfileSchema = z.object({
   name: nameField.optional(),
+  bio: z.string().max(200, "Bio must be at most 200 characters").optional().nullable(),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.email(),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+  password: z.string().min(8),
 });

@@ -9,6 +9,7 @@ export interface AlertData {
 class UIStore {
   isSidebarCollapsed = $state(false);
   notificationsOpen = $state(false);
+  chatInfoOpen = $state(false);
   windowWidth = $state(typeof window !== "undefined" ? window.innerWidth : 1024);
   alerts = $state<AlertData[]>([]);
 
@@ -40,15 +41,31 @@ class UIStore {
     this.notificationsOpen = false;
   }
 
+  toggleChatInfo() {
+    this.chatInfoOpen = !this.chatInfoOpen;
+  }
+
+  closeChatInfo() {
+    this.chatInfoOpen = false;
+  }
+
   /**
-   * Unified navigation that handles common UI resets (sidebar, notifications)
+   * Unified navigation that handles common UI resets (sidebar, notifications, chat info)
    */
-  navigate(path: string, options: { resetSidebar?: boolean; closeNotifications?: boolean } = {}) {
-    const { resetSidebar = true, closeNotifications = true } = options;
+  navigate(
+    path: string,
+    options: {
+      resetSidebar?: boolean;
+      closeNotifications?: boolean;
+      closeChatInfo?: boolean;
+    } = {},
+  ) {
+    const { resetSidebar = true, closeNotifications = true, closeChatInfo = true } = options;
 
     routerStore.navigate(path);
     if (resetSidebar) this.isSidebarCollapsed = false;
     if (closeNotifications) this.notificationsOpen = false;
+    if (closeChatInfo) this.chatInfoOpen = false;
   }
 
   addAlert(message: string, type: "danger" | "success" | "info" = "danger", duration = 4000) {
