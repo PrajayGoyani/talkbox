@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { MONGO_URI } from "@config/env";
 import mongoose from "mongoose";
 import { setServers } from "node:dns/promises";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { connectDB } from "../db";
-import { MONGO_URI } from "@config/env";
 
 vi.mock("mongoose", () => ({
   default: {
