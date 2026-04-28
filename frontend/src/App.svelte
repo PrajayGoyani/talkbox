@@ -225,10 +225,10 @@
 
       <aside
         class={[
-          "glass-panel flex-col z-10 min-h-0 shrink-0 transition-all duration-300",
+          "glass-panel flex-col z-10 min-h-0 flex-none transition-all duration-300",
           uiStore.isSidebarCollapsed
             ? "w-0 opacity-0 border-none overflow-hidden hidden md:flex"
-            : "w-full md:w-[280px] lg:w-[350px] border-r",
+            : "w-full md:w-[280px] lg:w-[350px] md:min-w-[280px] lg:min-w-[350px] border-r",
           selectedChatId ? "hidden md:flex" : "flex flex-1 md:flex-initial",
         ]}
       >
@@ -266,7 +266,7 @@
 
       <section
         class={[
-          "flex-1 min-h-0 flex flex-col relative bg-slate-100/50 dark:bg-slate-950/30",
+          "flex-1 min-h-0 min-w-0 flex flex-col relative bg-slate-100/50 dark:bg-slate-950/30",
           selectedChatId
             ? "flex"
             : "hidden md:flex flex-col justify-center items-center",
@@ -288,10 +288,11 @@
       <!-- Chat Partner Profile Panel -->
       <aside
         class={[
-          "glass-panel flex-col z-10 transition-all duration-300 border-l shrink-0",
+          "glass-panel flex-col z-50 transition-all duration-300 border-l shrink-0",
+          "fixed inset-y-0 right-0 md:relative",
           uiStore.chatInfoOpen && selectedChatId
-            ? "w-full md:w-[300px] lg:w-[350px] opacity-100"
-            : "w-0 opacity-0 border-none overflow-hidden hidden md:flex",
+            ? "w-full md:w-[300px] lg:w-[350px] opacity-100 translate-y-0 md:translate-x-0"
+            : "w-full md:w-0 opacity-0 border-none overflow-hidden translate-y-full md:translate-y-0 md:translate-x-0 hidden md:flex",
         ]}
       >
         <Lazy

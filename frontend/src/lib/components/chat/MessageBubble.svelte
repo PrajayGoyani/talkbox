@@ -5,7 +5,11 @@
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
   import { formatSimpleTime } from "$utils/date";
-  import { getEmojiDisplayMode, parseMessageContent, type MessageSegment } from "$utils/emoji";
+  import {
+    getEmojiDisplayMode,
+    parseMessageContent,
+    type MessageSegment,
+  } from "$utils/emoji";
 
   type Props = {
     msg: Message;
@@ -52,7 +56,7 @@
     class={cn(
       "flex flex-col relative group max-w-[85%] md:max-w-[70%]",
       isSent ? "items-end ml-auto" : "items-start",
-      i > 0 && !isFirstInGroup ? "mt-1" : "mt-3",
+      i > 0 && !isFirstInGroup ? "mt-2" : "mt-3",
     )}
     role="button"
     tabindex="0"
@@ -69,46 +73,34 @@
   >
     <div
       class={cn(
-        "flex flex-wrap gap-1 items-center px-1 rounded-2xl transition-all relative",
+        "flex flex-wrap gap-1 items-center px-1 py-2 rounded-2xl transition-all relative",
         {
           "text-5xl md:text-6xl": emojiDisplayMode === "jumbo-1",
           "text-4xl md:text-5xl": emojiDisplayMode === "jumbo-2",
-          "text-3xl md:text-4xl": emojiDisplayMode !== "jumbo-2",
+          "text-3xl md:text-4xl":
+            emojiDisplayMode !== "jumbo-1" && emojiDisplayMode !== "jumbo-2",
         },
         showMessageActionsId === msg.id &&
           "bg-slate-100 dark:bg-white/5 ring-4 ring-slate-100 dark:ring-white/5",
       )}
     >
+      {#if !msg.isDeleted && !msg.isScrubbed}
+        <MessageReactionPicker {msg} {isSent} />
+      {/if}
       {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
         {#if segment.type === "emoji"}
           {@render renderSegment(segment, true)}
         {/if}
       {/each}
+    </div>
+    <div class={cn("px-2.5 py-1 mt-1 flex items-center min-w-0")}>
+      <span class="text-[9px] font-medium whitespace-nowrap opacity-70">
+        {formatSimpleTime(msg.createdAt)}
+      </span>
+    </div>
 
-      <div
-        class={cn(
-          "absolute flex items-center gap-2",
-          isSent ? "right-0 -bottom-5" : "left-0 -bottom-5",
-        )}
-      >
-        <span class="text-[9px] font-medium whitespace-nowrap opacity-70">
-          {formatSimpleTime(msg.createdAt)}
-          {#if msg.isEdited && !msg.isDeleted}
-            <span class="ml-1 opacity-50 italic">(edited)</span>
-          {/if}
-        </span>
-        {#if !msg.isDeleted && !msg.isScrubbed}
-          <div class="flex items-center gap-1">
-            <MessageReactionPicker
-              {msg}
-              {isSent}
-              onEdit={() => startEditing(msg)}
-            />
-          </div>
-        {/if}
-      </div>
-
-      <!-- Reactions rendering for jumbo -->
+    <!-- Reactions rendering for jumbo -->
+    <div class="flex flex-col gap-1 items-start">
       {@render reactionList(msg, isSent, otherUser, chatStore, authStore)}
     </div>
   </div>
@@ -116,10 +108,10 @@
   <!-- Normal Message Bubble -->
   <div
     class={cn(
-      "chat-bubble rounded-2xl relative group",
+      "chat-bubble rounded-2xl group",
       isSent ? "chat-bubble-sent" : "chat-bubble-received",
       isFirstInGroup && (isSent ? "rounded-tr-none" : "rounded-tl-none"),
-      i > 0 && !isFirstInGroup ? "mt-1" : "mt-2",
+      i > 0 && !isFirstInGroup ? "mt-2" : "mt-3",
       (msg.isDeleted || msg.isScrubbed) && "opacity-60",
     )}
     role="button"
@@ -140,7 +132,7 @@
       }
     }}
   >
-    <div class="relative group/content">
+    <div class="relative">
       {#if messageEditingId === msg.id}
         <div class="flex flex-col gap-2 min-w-[200px] py-1">
           <textarea
@@ -237,7 +229,7 @@
             variant: "jumbo",
           }}
           class={cn(
-            "flex items-center gap-1 px-1.5 py-1 md:py-0.5 rounded-full text-xs transition-all active:scale-90 border shadow-xs",
+            "flex items-center gap-1 px-1.5 py-1 md:py-0.5 rounded-full text-xs transition-all active:scale-90 border shadow-sm",
             reactionStyles,
           )}
         >
@@ -257,12 +249,12 @@
   <span
     class={cn(
       isJumbo
-        ? "hover:scale-110 transition-transform cursor-default"
+        ? "select-none"
         : "cursor-default inline-block align-middle px-0.5",
     )}
     use:tooltip={{
-      text: segment.content + "\n:" + segment.name + ":",
-      variant: "jumbo",
+      text: ":" + segment.name + ":",
+      variant: "default",
       position: "top",
     }}>{segment.content}</span
   >

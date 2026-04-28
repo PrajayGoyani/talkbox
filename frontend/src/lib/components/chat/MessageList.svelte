@@ -195,7 +195,7 @@
       {/if}
 
       {#each groupedMessages as group}
-        <div class="flex flex-col gap-1 mb-8 relative">
+        <div class="flex flex-col gap-1 relative">
           <div
             class="sticky -top-4 z-20 flex justify-center pointer-events-none py-2 -mb-2"
           >

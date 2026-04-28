@@ -2,8 +2,8 @@
   import EmojiPicker from "$components/chat/EmojiPicker.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
-  import { chatStore, type Message } from "$state/chat.svelte";
   import { MESSAGE_MODIFICATION_WINDOW } from "$lib/config";
+  import { chatStore, type Message } from "$state/chat.svelte";
   import { confirmStore } from "$state/confirm.svelte";
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
@@ -110,10 +110,10 @@
     </button>
   {/if}
 
-  {#if isSent && !msg.isDeleted && isWithinModificationWindow}
+  {#if onEdit && isSent && !msg.isDeleted && isWithinModificationWindow}
     <button
       class="p-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-500/10 transition-all active:scale-90"
-      onclick={() => onEdit?.()}
+      onclick={() => onEdit()}
       aria-label="Edit message"
       use:tooltip={{ text: "Edit message", position: "top" }}
       type="button"
