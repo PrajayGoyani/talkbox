@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 import { configureSocket, startServer } from "@/app";
 import { initSentry } from "@/config/sentry";
 
-async function bootstrap() {
+export async function bootstrap() {
   initSentry();
   await connectDB();
   await configureSocket();
