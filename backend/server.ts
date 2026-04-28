@@ -18,9 +18,11 @@ export async function bootstrap() {
     console.log(`\n${signal} received. Shutting down gracefully...`);
 
     try {
+      // 1. Stop background jobs
       await stopAgenda();
 
-      // Properly await server close
+      // 2. Close HTTP server and all active sockets
+      // This will trigger 'disconnect' events on all sockets
       await new Promise<void>((resolve) => {
         server.close(() => {
           console.log("HTTP server closed.");
@@ -28,11 +30,12 @@ export async function bootstrap() {
         });
       });
 
+      // 3. Close Redis (used by socket disconnect handlers)
+      await redisService.close();
+
+      // 4. Close MongoDB
       await mongoose.connection.close();
       console.log("MongoDB connection closed.");
-
-      // Close Redis connections
-      await redisService.close();
     } catch (err) {
       console.error("Error during graceful shutdown:", err);
       process.exit(1);

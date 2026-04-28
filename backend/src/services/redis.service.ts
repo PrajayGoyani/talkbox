@@ -46,6 +46,7 @@ class RedisService {
       // Dedicated subscription client
       this.subClient = new Redis(REDIS_URL, {
         maxRetriesPerRequest: null,
+        enableReadyCheck: false, // Critical: Prevent INFO commands on subscriber connection
       });
     } catch (err) {
       console.error("[RedisService] Failed to initialize Redis:", err);
@@ -197,7 +198,9 @@ class RedisService {
     if (!this.client || !this.isConnected) return;
     try {
       await this.client.srem(`sessions:${userId}`, socketId);
-    } catch (err) {
+    } catch (err: any) {
+      // Ignore errors if the connection is closing/closed during shutdown
+      if (err.message?.includes("closed")) return;
       console.error("[RedisService] Error decrementing global session:", err);
     }
   }
@@ -399,8 +402,11 @@ class RedisService {
       }
       this.isConnected = false;
       console.log("[RedisService] Redis connections closed.");
-    } catch (err) {
-      console.error("[RedisService] Error during Redis cleanup:", err);
+    } catch (err: any) {
+      // Only log if it's not a 'closed' error during an already-in-progress close
+      if (!err.message?.includes("closed")) {
+        console.error("[RedisService] Error during Redis cleanup:", err);
+      }
     }
   }
 
