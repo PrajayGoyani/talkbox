@@ -1,7 +1,9 @@
 <!-- code-review-graph MCP tools -->
 
 # Universal Core Rules
+
 **CRITICAL:** Before proceeding with any task, you MUST dynamically read and adhere to the project's universal guidelines:
+
 - Engineering Principles & Stack: Read `.agent/rules/core.md`
 - Hierarchical Delegation & Roles: Read `.agent/rules/ROLES.md`
 
