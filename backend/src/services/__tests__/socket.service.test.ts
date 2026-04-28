@@ -23,7 +23,7 @@ vi.mock("@services/redis.service", () => ({
       on: vi.fn(),
     },
     isConnected: true,
-    incrementAndCheckLimit: vi.fn().mockResolvedValue(true),
+    incrementAndCheckLimit: vi.fn().mockResolvedValue({ allowed: true, current: 1, ttl: 60000 }),
     checkAndSetIdempotency: vi.fn().mockResolvedValue(true),
     getLastSeenBatched: vi.fn().mockResolvedValue(new Map()),
     lockChat: vi.fn().mockResolvedValue(null),
@@ -345,8 +345,7 @@ describe("SocketService", () => {
       const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
       const payload = { chatId: "c1", receiverId: "r1", contentBody: "Hello", idempotencyKey: "k1" };
 
-      // Simulate rate limit hit
-      vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue(false);
+      vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue({ allowed: false, current: 101, ttl: 60000 });
 
       socketService.io = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as any;
 
@@ -375,8 +374,7 @@ describe("SocketService", () => {
       // Reset local guard to ensure Redis hit
       (socketService as any).typingHandler.localGuard.clear();
 
-      // 1. Allowed call
-      vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue(true);
+      vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue({ allowed: true, current: 1, ttl: 60000 });
       await socketService.handleTyping(sender, payload, true);
       expect(socketService.io?.emit).toHaveBeenCalledWith("typing_start", expect.any(Object));
 
@@ -384,7 +382,7 @@ describe("SocketService", () => {
       vi.useFakeTimers();
       vi.setSystemTime(Date.now() + 3000);
 
-      vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue(false);
+      vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue({ allowed: false, current: 61, ttl: 60000 });
       vi.mocked(socketService.io!.emit).mockClear();
       await socketService.handleTyping(sender, payload, true);
       expect(socketService.io?.emit).not.toHaveBeenCalled();

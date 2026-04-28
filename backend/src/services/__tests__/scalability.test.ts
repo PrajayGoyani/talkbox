@@ -8,7 +8,7 @@ vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
 vi.mock("@services/redis.service", () => ({
   redisService: {
-    incrementAndCheckLimit: vi.fn().mockResolvedValue(true),
+    incrementAndCheckLimit: vi.fn().mockResolvedValue({ allowed: true, current: 1, ttl: 60000 }),
     checkAndSetIdempotency: vi.fn().mockResolvedValue(true),
     isChatLocked: vi.fn().mockResolvedValue(false),
     getCachedPartners: vi.fn(),

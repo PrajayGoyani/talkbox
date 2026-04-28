@@ -19,22 +19,34 @@ describe("RateLimiter Middleware", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     req = { ip: "127.0.0.1", user: undefined };
-    res = {};
+    res = {
+      set: vi.fn(),
+    };
     next = vi.fn();
   });
 
-  it("should allow request if under limit", async () => {
-    vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue(true);
+  it("should allow request if under limit and set headers", async () => {
+    vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue({
+      allowed: true,
+      current: 2,
+      ttl: 55000,
+    });
 
     const middleware = createRateLimiter(5, 60000, "test");
     await middleware(req as Request, res as Response, next);
 
     expect(next).toHaveBeenCalledWith();
-    expect(next).not.toHaveBeenCalledWith(expect.any(Object));
+    expect(res.set).toHaveBeenCalledWith("X-RateLimit-Limit", "5");
+    expect(res.set).toHaveBeenCalledWith("X-RateLimit-Remaining", "3");
+    expect(res.set).toHaveBeenCalledWith("X-RateLimit-Reset", expect.any(String));
   });
 
   it("should block request and trigger L1 local block if over limit", async () => {
-    vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue(false);
+    vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue({
+      allowed: false,
+      current: 6,
+      ttl: 50000,
+    });
 
     const middleware = createRateLimiter(5, 60000, "test");
 
@@ -56,21 +68,27 @@ describe("RateLimiter Middleware", () => {
   });
 
   it("should enforce local limit even when Redis is connected (Fail-through protection)", async () => {
-    (redisService as any).isConnected = true;
-    vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue(true); // Redis says OK
+    let redisCount = 0;
+    vi.mocked(redisService.incrementAndCheckLimit).mockImplementation(async () => {
+      redisCount++;
+      return {
+        allowed: redisCount <= 2,
+        current: redisCount,
+        ttl: 60000,
+      };
+    });
 
     const middleware = createRateLimiter(2, 60000, "test-failthrough");
 
-    // 1st request -> Local 1, Redis hit
+    // 1st request -> Local 1
     await middleware(req as Request, res as Response, next);
     expect(next).toHaveBeenCalledWith();
 
-    // 2nd request -> Local 2, Redis hit
+    // 2nd request -> Local 2
     await middleware(req as Request, res as Response, next);
     expect(next).toHaveBeenCalledWith();
 
     // 3rd request -> Local 3 (Over Local Limit)
-    // Should block LOCALLY even if Redis is slow or would have allowed it
     await middleware(req as Request, res as Response, next);
     expect(next).toHaveBeenCalledWith(
       expect.objectContaining({

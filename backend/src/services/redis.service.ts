@@ -269,12 +269,16 @@ class RedisService {
 
   /**
    * Atomic increment and check for a rate limit key.
-   * Returns true if the limit has NOT been exceeded.
+   * Returns detailed information about the current limit status.
    */
-  async incrementAndCheckLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
+  async incrementAndCheckLimit(
+    key: string,
+    limit: number,
+    windowMs: number,
+  ): Promise<{ allowed: boolean; current: number; ttl: number }> {
     if (!this.client || !this.isConnected) {
       this._logFailOpen("incrementAndCheckLimit");
-      return true; // Fail open if Redis is down
+      return { allowed: true, current: 0, ttl: windowMs };
     }
     try {
       const results =
@@ -282,14 +286,24 @@ class RedisService {
           .multi()
           .incr(key)
           .expire(key, Math.ceil(windowMs / 1000), "NX")
+          .pttl(key)
           .exec()) || [];
 
       const incrRes = results[0];
-      const count = incrRes ? (incrRes[1] as number) : 0;
-      return count <= limit;
+      const count = incrRes && !incrRes[0] ? (incrRes[1] as number) : 0;
+
+      const pttlRes = results[2];
+      // pttl returns -2 if key doesn't exist, -1 if no expire. We fallback to windowMs.
+      const ttl = pttlRes && !pttlRes[0] ? (pttlRes[1] as number) : windowMs;
+
+      return {
+        allowed: count <= limit,
+        current: count,
+        ttl: ttl > 0 ? ttl : windowMs,
+      };
     } catch (err) {
       console.error("[RedisService] Error incrementing rate limit counter:", err);
-      return true; // Fail open
+      return { allowed: true, current: 0, ttl: windowMs };
     }
   }
 
@@ -353,7 +367,12 @@ class RedisService {
    * Store a token mapping to a userId with auto-expiry.
    * Used for password reset and email verification flows.
    */
-  async storeToken(prefix: string, token: string, userId: string, ttlSeconds: number): Promise<void> {
+  async storeToken(
+    prefix: string,
+    token: string,
+    userId: string,
+    ttlSeconds: number,
+  ): Promise<void> {
     if (!this.client || !this.isConnected) return;
     try {
       await this.client.set(`${prefix}:${token}`, userId, "EX", ttlSeconds);

@@ -32,12 +32,12 @@ export class TypingHandler {
 
     if (shouldHitRedis) {
       // 0. Redis Rate limit: 60 per minute
-      const isAllowed = await redisService.incrementAndCheckLimit(
+      const rlStatus = await redisService.incrementAndCheckLimit(
         `rl:socket:typing:${senderId}`,
         60,
         RATE_LIMIT_DEFAULT_WINDOW_MS,
       );
-      if (!isAllowed) return;
+      if (!rlStatus.allowed) return;
       this.localGuard.set(senderId, now);
     }
 

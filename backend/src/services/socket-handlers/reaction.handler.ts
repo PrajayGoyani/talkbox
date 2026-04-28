@@ -21,13 +21,13 @@ export class ReactionHandler {
     const io = this.ioProvider();
 
     // 0. Rate limit
-    const isAllowed = await redisService.incrementAndCheckLimit(
+    const rlStatus = await redisService.incrementAndCheckLimit(
       `rl:socket:reaction:${sender.id}`,
       RATE_LIMIT_SOCKET_MESSAGE_MAX,
       RATE_LIMIT_DEFAULT_WINDOW_MS,
     );
 
-    if (!isAllowed) {
+    if (!rlStatus.allowed) {
       io?.to(`user:${sender.id}`).emit("error", {
         message: "You are reacting too fast. Please slow down.",
         code: "RATE_LIMIT_EXCEEDED",

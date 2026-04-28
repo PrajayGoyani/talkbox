@@ -72,13 +72,13 @@ export class MessageHandler {
     }
 
     // 4. Rate limit (Now that we know it's not a duplicate message)
-    const isAllowed = await redisService.incrementAndCheckLimit(
+    const rlStatus = await redisService.incrementAndCheckLimit(
       `rl:socket:message:${senderId}`,
       RATE_LIMIT_SOCKET_MESSAGE_MAX,
       RATE_LIMIT_DEFAULT_WINDOW_MS,
     );
 
-    if (!isAllowed) {
+    if (!rlStatus.allowed) {
       io?.to(`user:${senderId}`).emit("error", {
         message: "You are sending messages too fast. Please slow down.",
         code: "RATE_LIMIT_EXCEEDED",

@@ -4,18 +4,21 @@ import { AppError } from "@utils/AppError";
 import { NextFunction, Request, Response } from "express";
 import { LRUCache } from "lru-cache";
 
+interface RateLimitState {
+  count: number;
+  resetAt: number;
+}
+
 /**
  * Hybrid Rate Limiter:
  * L1: Local LRU cache to block repeat offenders without hitting Redis.
  * L2: Global Redis counter for distributed synchronization.
  */
 
-const L1_BLOCK_TTL = 10 * 1000; // Block locally for 10s if over limit
-
-// L1: Local cache for users who are already blocked
+// L1: Local cache for users who are already blocked (suppression)
 const localBlockCache = new LRUCache<string, boolean>({
   max: 10000,
-  ttl: L1_BLOCK_TTL,
+  ttl: 10000, // Default 10s local block suppression
 });
 
 /**
@@ -26,10 +29,9 @@ export const createRateLimiter = (
   windowMs: number = RATE_LIMIT_DEFAULT_WINDOW_MS,
   prefix: string = "rl",
 ) => {
-  // L1: Local best-effort fallback if Redis is down
-  const localFallbackCounts = new LRUCache<string, number>({
+  // L1: Local counter for fail-through protection and windowing
+  const localFallbackCounts = new LRUCache<string, RateLimitState>({
     max: 10000,
-    ttl: windowMs,
   });
 
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -42,9 +44,12 @@ export const createRateLimiter = (
     // Use a composite key to avoid collisions between different limiters
     const localKey = `${prefix}:${identifier}`;
     const redisKey = `${prefix}:user:${identifier}`;
+    const now = Date.now();
 
-    // 1. Check L1: Is the user already blocked locally?
+    // 1. Check L1 suppression (Is the user already known to be blocked?)
     if (localBlockCache.get(localKey)) {
+      res.set("X-RateLimit-Limit", maxRequests.toString());
+      res.set("X-RateLimit-Remaining", "0");
       return next(
         AppError.tooMany(
           `Strict limit of ${maxRequests} requests per ${windowMs / 1000}s exceeded. (L1)`,
@@ -54,13 +59,26 @@ export const createRateLimiter = (
     }
 
     // 2. Track count locally (Fail-through Protection)
-    // We increment this ALWAYS to have a local best-effort defense.
-    const localCount = (localFallbackCounts.get(localKey) || 0) + 1;
-    localFallbackCounts.set(localKey, localCount);
+    let state = localFallbackCounts.get(localKey);
 
-    if (localCount > maxRequests) {
-      // Mark as blocked to save local counting overhead for a while
-      localBlockCache.set(localKey, true);
+    // If no state or window has passed, reset the local window
+    if (!state || state.resetAt <= now) {
+      state = { count: 1, resetAt: now + windowMs };
+    } else {
+      state.count++;
+    }
+    localFallbackCounts.set(localKey, state);
+
+    // 3. Early local block (Fail-through)
+    if (state.count > maxRequests) {
+      // Suppress locally for the remainder of the window (up to 10s max)
+      const suppressionTtl = Math.min(10000, state.resetAt - now);
+      localBlockCache.set(localKey, true, { ttl: suppressionTtl });
+
+      res.set("X-RateLimit-Limit", maxRequests.toString());
+      res.set("X-RateLimit-Remaining", "0");
+      res.set("X-RateLimit-Reset", Math.ceil(state.resetAt / 1000).toString());
+
       return next(
         AppError.tooMany(
           `Strict limit of ${maxRequests} requests per ${windowMs / 1000}s exceeded. (Local)`,
@@ -69,14 +87,25 @@ export const createRateLimiter = (
       );
     }
 
-    // 3. Check L2: Global Redis Counter
+    // 4. Check L2: Global Redis Counter
     if (redisService.client && redisService.isConnected) {
       try {
-        const isAllowed = await redisService.incrementAndCheckLimit(redisKey, maxRequests, windowMs);
+        const rl = await redisService.incrementAndCheckLimit(redisKey, maxRequests, windowMs);
 
-        if (!isAllowed) {
-          // Block locally to save Redis calls for next 10s
-          localBlockCache.set(localKey, true);
+        // Sync local state with Redis "truth"
+        state.count = rl.current;
+        state.resetAt = now + rl.ttl;
+        localFallbackCounts.set(localKey, state);
+
+        res.set("X-RateLimit-Limit", maxRequests.toString());
+        res.set("X-RateLimit-Remaining", Math.max(0, maxRequests - rl.current).toString());
+        res.set("X-RateLimit-Reset", Math.ceil(state.resetAt / 1000).toString());
+
+        if (!rl.allowed) {
+          // Block locally to save Redis calls for the remainder of this burst
+          const suppressionTtl = Math.min(10000, rl.ttl);
+          localBlockCache.set(localKey, true, { ttl: suppressionTtl });
+
           return next(
             AppError.tooMany(
               `Strict limit of ${maxRequests} requests per ${windowMs / 1000}s exceeded.`,
@@ -86,8 +115,16 @@ export const createRateLimiter = (
         }
       } catch (err) {
         console.error("[RateLimiter] Redis error, falling back to local:", err);
-        // We already checked the local limit above, so we can just proceed.
+        // Fallback: headers from local state
+        res.set("X-RateLimit-Limit", maxRequests.toString());
+        res.set("X-RateLimit-Remaining", Math.max(0, maxRequests - state.count).toString());
+        res.set("X-RateLimit-Reset", Math.ceil(state.resetAt / 1000).toString());
       }
+    } else {
+      // Redis is down: headers from local state
+      res.set("X-RateLimit-Limit", maxRequests.toString());
+      res.set("X-RateLimit-Remaining", Math.max(0, maxRequests - state.count).toString());
+      res.set("X-RateLimit-Reset", Math.ceil(state.resetAt / 1000).toString());
     }
 
     next();
