@@ -225,7 +225,7 @@
 
       <aside
         class={[
-          "glass-panel flex-col z-10 min-h-0 flex-none transition-all duration-300",
+          "glass-panel flex-col z-10 min-h-0 md:flex-none transition-all duration-300",
           uiStore.isSidebarCollapsed
             ? "w-0 opacity-0 border-none overflow-hidden hidden md:flex"
             : "w-full md:w-[280px] lg:w-[350px] md:min-w-[280px] lg:min-w-[350px] border-r",
