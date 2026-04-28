@@ -22,16 +22,19 @@ const nameField = z
   .max(50, "Name must be at most 50 characters")
   .transform(sanitizeName);
 
+const noPadding = (val: string) => val === val.trim();
+const PADDING_ERROR = "Leading and trailing spaces are not allowed";
+
 export const signupSchema = z.object({
-  username: z.string().regex(USERNAME_REGEX, USERNAME_ERROR),
-  email: z.email(),
-  password: z.string().min(8),
+  username: z.string().trim().lowercase().regex(USERNAME_REGEX, USERNAME_ERROR),
+  email: z.email().trim(),
+  password: z.string().min(8).refine(noPadding, PADDING_ERROR),
   name: nameField.optional(),
 });
 
 export const loginSchema = z.object({
-  username: z.string().nonempty(),
-  password: z.string().nonempty(),
+  username: z.string().trim().lowercase().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required").refine(noPadding, PADDING_ERROR),
 });
 
 export const updateProfileSchema = z.object({

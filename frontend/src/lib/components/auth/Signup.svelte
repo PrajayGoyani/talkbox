@@ -35,19 +35,26 @@
     e.preventDefault();
     errors = {};
 
-    if (!username.trim()) errors.username = "Username is required";
-    else if (!USERNAME_REGEX.test(username)) {
+    const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedUsername) errors.username = "Username is required";
+    else if (!USERNAME_REGEX.test(trimmedUsername)) {
       errors.username = USERNAME_ERROR;
     }
 
-    if (!email.trim()) errors.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!trimmedEmail) errors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       errors.email = "Invalid email format";
     }
 
-    if (!password) errors.password = "Password is required";
-    else if (password.length < 8)
+    if (!password) {
+      errors.password = "Password is required";
+    } else if (password.length < 8) {
       errors.password = "Password must be at least 8 characters";
+    } else if (password !== password.trim()) {
+      errors.password = "Leading or trailing spaces are not allowed in password";
+    }
 
     if (!confirmPassword)
       errors.confirmPassword = "Please confirm your password";
@@ -62,8 +69,8 @@
       : undefined;
 
     const success = await authStore.signup({
-      username: username.toLowerCase(),
-      email,
+      username: trimmedUsername.toLowerCase(),
+      email: trimmedEmail,
       password,
       ...(sanitizedName ? { name: sanitizedName } : {}),
     });

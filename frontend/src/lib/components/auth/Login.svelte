@@ -16,12 +16,22 @@
     e.preventDefault();
     errors = {};
 
-    if (!username.trim()) errors.username = "Username or email is required";
-    if (!password) errors.password = "Password is required";
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) errors.username = "Username or email is required";
+
+    if (!password) {
+      errors.password = "Password is required";
+    } else if (password !== password.trim()) {
+      errors.password =
+        "Leading or trailing spaces are not allowed in password";
+    }
 
     if (Object.keys(errors).length > 0) return;
 
-    const success = await authStore.login({ username, password });
+    const success = await authStore.login({
+      username: trimmedUsername.toLowerCase(),
+      password,
+    });
     if (success) {
       routerStore.navigate("/chat/conversations");
     }
