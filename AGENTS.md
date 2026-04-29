@@ -52,7 +52,7 @@ Future agents MUST use these commands for local development and validation:
 
 - **Testing**: `vp test` (e.g., `vp test path/to/file.test.ts`)
 - **Formatting**: `vp fmt`
-- **Linting**: `vp fmt --check`
+- **Linting**: `bun run check`
 - **Dev Server**: `vp dev`
 
 ## Import Path Schema

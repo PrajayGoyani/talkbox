@@ -32,8 +32,6 @@ Talkbox is a real-time messaging platform providing message synchronization acro
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v20+)
-- [pnpm](https://pnpm.io/) (v10+)
 - [Bun](https://bun.sh/) (latest)
 - [MongoDB](https://www.mongodb.com/) (local or cloud instance)
 
