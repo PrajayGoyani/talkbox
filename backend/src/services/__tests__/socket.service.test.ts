@@ -35,6 +35,7 @@ vi.mock("@services/redis.service", () => ({
     getSyncQueueCount: vi.fn().mockResolvedValue(0),
     popSyncQueue: vi.fn().mockResolvedValue([]),
     isUserOnline: vi.fn().mockResolvedValue(false),
+    takeoverFreeSession: vi.fn(),
   },
 }));
 
@@ -110,6 +111,7 @@ describe("SocketService", () => {
     vi.mocked(redisService.getGlobalSessionCount).mockImplementation(async (uid) => {
       return (socketService as any).activeConnections.get(uid)?.size || 0;
     });
+    vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([]);
   });
 
   describe("handleConnection", () => {
@@ -128,10 +130,13 @@ describe("SocketService", () => {
       const socket2 = createMockSocket(MOCK_USER_ID, "free");
 
       // First connection
+      vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([]);
       await socketService.handleConnection(socket1);
       expect((socketService as any).activeConnections.get(MOCK_USER_ID).size).toBe(1);
 
       // Second connection (Takeover)
+      // Simulate redis identifying socket1 as the victim
+      vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([socket1.id]);
       await socketService.handleConnection(socket2);
 
       // Verify socket1 was notified and disconnected
@@ -139,6 +144,7 @@ describe("SocketService", () => {
         "session_error",
         expect.objectContaining({
           reason: "takeover",
+          message: expect.stringContaining("another window"),
         }),
       );
       expect(socket1.disconnect).toHaveBeenCalled();
@@ -147,6 +153,7 @@ describe("SocketService", () => {
       const userSockets = (socketService as any).activeConnections.get(MOCK_USER_ID);
       expect(userSockets.size).toBe(1);
       expect(userSockets.has(socket2)).toBe(true);
+      expect(userSockets.has(socket1)).toBe(false);
     });
 
     it("should allow multiple connections for a Pro user up to the limit", async () => {

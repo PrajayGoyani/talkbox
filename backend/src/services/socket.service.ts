@@ -62,7 +62,7 @@ export class SocketService {
               this._handleGlobalCacheInvalidation(data.type, data.id);
               break;
             case "session:takeover":
-              this._handleGlobalTakeover(data.userId, data.triggerSocketId);
+              this._handleGlobalTakeover(data.userId, data.victimSocketId);
               break;
           }
         } catch (err) {
@@ -103,9 +103,14 @@ export class SocketService {
       }
     });
 
-    if (plan === "free" && globalCount > 1) {
-      await redisService.publishSessionTakeover(userId, socket.id);
-      this._handleGlobalTakeover(userId, socket.id);
+    if (plan === "free") {
+      const victims = await redisService.takeoverFreeSession(userId, socket.id);
+      if (victims.length > 0) {
+        for (const victimId of victims) {
+          await redisService.publishSessionTakeover(userId, victimId);
+          this._handleGlobalTakeover(userId, victimId);
+        }
+      }
     } else if (plan === "pro" && globalCount > PRO_PLAN_SESSION_LIMIT) {
       userSockets.delete(socket);
       if (userSockets.size === 0) {
@@ -234,12 +239,16 @@ export class SocketService {
     }
   }
 
-  private _handleGlobalTakeover(userId: string, triggerSocketId?: string) {
+  private _handleGlobalTakeover(userId: string, victimSocketId?: string) {
     const userSockets = this.activeConnections.get(userId);
     if (!userSockets) return;
 
     // Use a copy for safe iteration while deleting
-    const socketsToDisconnect = Array.from(userSockets).filter((s) => s.id !== triggerSocketId);
+    // If victimSocketId is provided, we only disconnect that specific socket.
+    // If NOT provided, we kick everyone (fallback/safety).
+    const socketsToDisconnect = Array.from(userSockets).filter((s) => 
+      !victimSocketId || s.id === victimSocketId
+    );
 
     socketsToDisconnect.forEach((s) => {
       s.emit("session_error", { reason: "takeover", message: "Session opened in another window." });

@@ -215,10 +215,48 @@ class RedisService {
     }
   }
 
-  async publishSessionTakeover(userId: string, triggerSocketId: string): Promise<void> {
+  /**
+   * Deterministically swap the active session for a Free user.
+   * Returns a list of socket IDs that were kicked out.
+   */
+  async takeoverFreeSession(userId: string, newSocketId: string): Promise<string[]> {
+    if (!this.client || !this.isConnected) return [];
+    try {
+      const key = `sessions:${userId}`;
+      // Lua script to atomically get current sessions, clear them, and add the new one.
+      // This ensures that even if two connections happen at once, they won't both "win".
+      const script = `
+        local key = KEYS[1]
+        local new_id = ARGV[1]
+        local old_ids = redis.call('SMEMBERS', key)
+        
+        -- Filter out the new_id from victims (unlikely but safe)
+        local victims = {}
+        for _, id in ipairs(old_ids) do
+          if id ~= new_id then
+            table.insert(victims, id)
+          end
+        end
+        
+        redis.call('DEL', key)
+        redis.call('SADD', key, new_id)
+        redis.call('EXPIRE', key, 3600)
+        
+        return victims
+      `;
+
+      const victims = (await this.client.eval(script, 1, key, newSocketId)) as string[];
+      return victims;
+    } catch (err) {
+      console.error("[RedisService] Error during session takeover:", err);
+      return [];
+    }
+  }
+
+  async publishSessionTakeover(userId: string, victimSocketId: string): Promise<void> {
     if (!this.client || !this.isConnected) return;
     try {
-      await this.client.publish("session:takeover", JSON.stringify({ userId, triggerSocketId }));
+      await this.client.publish("session:takeover", JSON.stringify({ userId, victimSocketId }));
     } catch (err) {
       console.error("[RedisService] Error publishing session takeover:", err);
     }
