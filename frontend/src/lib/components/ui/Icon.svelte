@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { getIconData } from "$utils/icons";
+
   /**
    * Icon component using CSS mask-image for dynamic loading.
-   * SVGs are stored in /public/icons/${name}.svg
+   * SVGs are bundled at build time and lazy-loaded on the frontend.
    */
   const VALID_ICONS = [
     "back",
@@ -56,19 +58,29 @@
     [key: string]: any;
   } = $props();
 
+  let iconUrl = $state<string | null>(null);
+
+  $effect(() => {
+    if (name) {
+      getIconData(name).then((url) => {
+        iconUrl = url;
+      });
+    }
+  });
+
   const isValidIcon = (value: string): value is IconName => {
     return VALID_ICONS.includes(value as IconName);
   };
 </script>
 
 <!-- 
-  We use a span with mask-image to load the SVG and background-color: currentColor
+  We use a span with mask-image to render the SVG and background-color: currentColor
   to ensure the icon inherits the surrounding text color.
 -->
-{#if isValidIcon(name)}
+{#if iconUrl}
   <span
     class="icon-container shrink-0 {className}"
-    style:--icon-url="url('/icons/{name}.svg')"
+    style:--icon-url={iconUrl}
     aria-hidden="true"
     {...rest}
   ></span>

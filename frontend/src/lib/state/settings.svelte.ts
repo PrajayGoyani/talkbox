@@ -6,7 +6,7 @@ class SettingsStore {
   constructor() {
     if (typeof window !== "undefined") {
       this.loadSettings();
-      
+
       // Effect to reload settings when user changes
       $effect.root(() => {
         $effect(() => {
@@ -20,10 +20,10 @@ class SettingsStore {
 
   private loadSettings() {
     if (typeof window === "undefined") return;
-    
+
     const userId = authStore.user?.id;
     const key = userId ? `settings_${userId}` : "settings_guest";
-    
+
     try {
       const saved = localStorage.getItem(key);
       if (saved) {
@@ -37,14 +37,17 @@ class SettingsStore {
 
   private saveSettings() {
     if (typeof window === "undefined") return;
-    
+
     const userId = authStore.user?.id;
     const key = userId ? `settings_${userId}` : "settings_guest";
-    
+
     try {
-      localStorage.setItem(key, JSON.stringify({
-        soundEnabled: this.soundEnabled
-      }));
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          soundEnabled: this.soundEnabled,
+        }),
+      );
     } catch (e) {
       console.warn("Failed to save settings", e);
     }
