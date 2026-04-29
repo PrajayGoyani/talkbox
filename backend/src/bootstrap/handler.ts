@@ -87,7 +87,7 @@ export function initializeExtensions() {
 // ____________________ End of Bootstrap Handlers ____________________
 
 // Graceful shutdown
-export const shutdown = async (signal: string) => {
+const shutdown = async (signal: string) => {
   console.log(`\n${signal} received. Shutting down gracefully...`);
 
   try {
@@ -116,3 +116,8 @@ export const shutdown = async (signal: string) => {
 
   process.exit(0);
 };
+
+export function setupGracefulShutdown() {
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+}

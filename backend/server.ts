@@ -2,16 +2,14 @@ import { connectDB } from "@config/db";
 import { startJobs } from "@jobs/jobs";
 
 import { configureSocket, startServer } from "@/app";
-import { shutdown } from "@/bootstrap/handler";
+import { setupGracefulShutdown } from "@/bootstrap/handler";
 
 export async function bootstrap() {
   await connectDB();
   await configureSocket();
   await startJobs();
   startServer();
-
-  process.on("SIGTERM", () => shutdown("SIGTERM"));
-  process.on("SIGINT", () => shutdown("SIGINT"));
+  setupGracefulShutdown();
 }
 
 bootstrap().catch((err) => {
