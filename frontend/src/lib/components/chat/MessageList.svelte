@@ -162,6 +162,7 @@
   <div
     bind:this={messagesContainer}
     class="h-full overflow-y-auto p-4 md:p-6 scrollbar-slim"
+    style="overflow-anchor: none;"
     onscroll={handleMessagesScroll}
   >
     {#if chatStore.isLoadingMessages && chatStore.messages.length === 0}
@@ -194,7 +195,7 @@
         </div>
       {/if}
 
-      {#each groupedMessages as group}
+      {#each groupedMessages as group (group.label)}
         <div class="flex flex-col gap-1 mb-4 relative">
           <div
             class="sticky -top-4 z-20 flex justify-center pointer-events-none py-2 -mb-2"
@@ -208,7 +209,7 @@
             class="before:content-[''] before:absolute before:top-5 before:left-0 before:right-0 before:h-px before:bg-slate-200 dark:before:bg-white/10 before:z-0"
           ></div>
 
-          {#each group.messages as msg, i}
+          {#each group.messages as msg, i (msg.id)}
             {@const isSent = msg.senderId === authStore.user?.id}
             {@const isFirstInGroup =
               i === 0 || group.messages[i - 1].senderId !== msg.senderId}
