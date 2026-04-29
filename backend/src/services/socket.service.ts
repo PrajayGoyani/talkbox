@@ -88,11 +88,30 @@ export class SocketService {
     userSockets.add(socket);
     socket.join(`user:${userId}`);
 
+    // Register disconnect listener EARLIER to prevent leaks on initialization errors
+    socket.on("disconnect", async () => {
+      userSockets?.delete(socket);
+      await redisService.decrementGlobalSession(userId, socket.id);
+
+      const remainingGlobal = await redisService.getGlobalSessionCount(userId);
+      if (userSockets?.size === 0) {
+        this.activeConnections.delete(userId);
+      }
+
+      if (remainingGlobal === 0) {
+        await this.presenceService.notifyStatusChange(userId, false);
+      }
+    });
+
     if (plan === "free" && globalCount > 1) {
       await redisService.publishSessionTakeover(userId, socket.id);
       this._handleGlobalTakeover(userId, socket.id);
     } else if (plan === "pro" && globalCount > PRO_PLAN_SESSION_LIMIT) {
       userSockets.delete(socket);
+      if (userSockets.size === 0) {
+        this.activeConnections.delete(userId);
+      }
+
       await redisService.decrementGlobalSession(userId, socket.id);
       socket.emit("error", {
         message: `Pro session limit reached (max ${PRO_PLAN_SESSION_LIMIT} active tabs).`,
@@ -110,20 +129,6 @@ export class SocketService {
     partnerIds.forEach((pid) => socket.join(`watching:${pid}`));
 
     await this.presenceService.emitPartnersStatus(userId, socket, await this._getPartnerIds(userId));
-
-    socket.on("disconnect", async () => {
-      userSockets?.delete(socket);
-      await redisService.decrementGlobalSession(userId, socket.id);
-
-      const remainingGlobal = await redisService.getGlobalSessionCount(userId);
-      if (userSockets?.size === 0) {
-        this.activeConnections.delete(userId);
-      }
-
-      if (remainingGlobal === 0) {
-        await this.presenceService.notifyStatusChange(userId, false);
-      }
-    });
   }
 
   // ─── Delegates ─────────────────────────────────────────────────────
@@ -232,14 +237,19 @@ export class SocketService {
   private _handleGlobalTakeover(userId: string, triggerSocketId?: string) {
     const userSockets = this.activeConnections.get(userId);
     if (!userSockets) return;
-    userSockets.forEach((s) => {
-      if (s.id !== triggerSocketId) {
-        s.emit("session_error", { reason: "takeover", message: "Session opened in another window." });
-        s.disconnect();
-        userSockets.delete(s);
-      }
+
+    // Use a copy for safe iteration while deleting
+    const socketsToDisconnect = Array.from(userSockets).filter((s) => s.id !== triggerSocketId);
+
+    socketsToDisconnect.forEach((s) => {
+      s.emit("session_error", { reason: "takeover", message: "Session opened in another window." });
+      s.disconnect();
+      userSockets.delete(s);
     });
-    if (userSockets.size === 0) this.activeConnections.delete(userId);
+
+    if (userSockets.size === 0) {
+      this.activeConnections.delete(userId);
+    }
   }
 
   private _handleGlobalCacheInvalidation(type: string, id: string) {
