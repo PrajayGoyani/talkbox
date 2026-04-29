@@ -109,7 +109,6 @@ class AuthStore {
   private async fetchMe() {
     try {
       const resp = await fetch(`${API_BASE}/auth/me`, {
-        headers: { Authorization: `Bearer ${this.accessToken}` },
         credentials: "include",
       });
       if (resp.status === 401) {

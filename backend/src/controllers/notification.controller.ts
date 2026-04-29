@@ -2,10 +2,10 @@ import { notificationService } from "@services/notification.service";
 import { Request, Response, NextFunction } from "express";
 
 export const getNotifications = async (req: Request, res: Response) => {
-  const limit = Math.min(parseInt(req.query.limit as string) || 15, 50);
-  const skip = parseInt(req.query.skip as string) || 0;
+  const limit = Math.min(parseInt((req.query.limit || req.headers["x-limit"]) as string) || 15, 50);
+  const cursor = ((req.query.cursor || req.headers["x-cursor"]) as string) || null;
 
-  const result = await notificationService.getByUser(req.user!.id, { limit, skip });
+  const result = await notificationService.getByUser(req.user!.id, { limit, cursor });
   res.success(result);
 };
 

@@ -18,7 +18,8 @@ export function initializeMiddlewares() {
     origin: ALLOWED_ORIGINS,
     credentials: true,
     optionsSuccessStatus: 200,
-    maxAge: 86400,
+    maxAge: 86400, // 24 hours
+    allowedHeaders: ["Content-Type", "Authorization", "X-Cursor", "X-Limit"],
   };
 
   app.use(cors(corsOptions));

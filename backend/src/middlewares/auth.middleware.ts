@@ -4,7 +4,12 @@ import { Request, Response, NextFunction } from "express";
 
 export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  let token = authHeader && authHeader.split(" ")[1];
+
+  // Fallback to cookie if header is missing (for CORS-friendly GET requests)
+  if (!token && req.cookies) {
+    token = req.cookies.access_token;
+  }
 
   if (!token) {
     return res.status(401).json({ message: "Authentication required. No token provided." });

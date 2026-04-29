@@ -11,8 +11,10 @@ interface CreateNotificationDto {
 }
 
 interface NotificationListResult {
-  notifications: INotification[];
+  notifications: any[];
   unreadCount: number;
+  nextCursor: string | null;
+  hasMore: boolean;
 }
 
 class NotificationService {
@@ -32,27 +34,35 @@ class NotificationService {
     return notification.populate("senderId", "username email avatar_url");
   }
 
-  /**
-   * Get paginated notifications for a user.
-   * Defaults: limit 15, skip 0, sorted newest first.
-   */
   async getByUser(
     userId: string | ObjectId,
-    { limit = 15, skip = 0 }: { limit?: number; skip?: number } = {},
+    { limit = 15, cursor = null }: { limit?: number; cursor?: string | null } = {},
   ): Promise<NotificationListResult> {
-    const notifications = await Notification.find({ recipientId: userId })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
+    const query: any = { recipientId: userId };
+
+    if (cursor) {
+      query._id = { $lt: new ObjectId(cursor) };
+    }
+
+    const notifications = await Notification.find(query)
+      .sort({ _id: -1 })
+      .limit(limit + 1)
       .populate("senderId", "username email avatar_url")
       .lean();
+
+    const hasMore = notifications.length > limit;
+    if (hasMore) {
+      notifications.pop();
+    }
+
+    const nextCursor = hasMore ? notifications[notifications.length - 1]._id.toString() : null;
 
     const unreadCount = await Notification.countDocuments({
       recipientId: userId,
       isRead: false,
     });
 
-    return { notifications, unreadCount };
+    return { notifications, unreadCount, nextCursor, hasMore };
   }
 
   /**

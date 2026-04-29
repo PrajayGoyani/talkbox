@@ -8,7 +8,7 @@ class NotificationStore {
   unreadCount = $state(0);
   loading = $state(false);
   hasMore = $state(true);
-  private skip = 0;
+  private nextCursor: string | null = null;
   private readonly LIMIT = 15;
 
   async fetchNotifications(reset = false) {
@@ -16,20 +16,23 @@ class NotificationStore {
     this.loading = true;
 
     if (reset) {
-      this.skip = 0;
+      this.nextCursor = null;
       this.notifications = [];
     }
 
     try {
-      const resp = await fetch(`${API_BASE}/notifications?limit=${this.LIMIT}&skip=${this.skip}`, {
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
+      const url = new URL(`${API_BASE}/notifications`, window.location.origin);
+      url.searchParams.set("limit", this.LIMIT.toString());
+      if (this.nextCursor) url.searchParams.set("cursor", this.nextCursor);
+
+      const resp = await fetch(url.toString(), {
         credentials: "include",
       });
 
       if (!resp.ok) throw new Error("Failed to load notifications");
 
       const result = await resp.json();
-      const { notifications, unreadCount } = result.data as NotificationResponse;
+      const { notifications, unreadCount, nextCursor, hasMore } = result.data as NotificationResponse;
 
       if (reset) {
         this.notifications = notifications;
@@ -38,8 +41,8 @@ class NotificationStore {
       }
 
       this.unreadCount = unreadCount;
-      this.skip += notifications.length;
-      this.hasMore = notifications.length === this.LIMIT;
+      this.nextCursor = nextCursor;
+      this.hasMore = hasMore;
     } catch (e) {
       console.error("Failed to fetch notifications:", e);
     } finally {
@@ -51,7 +54,6 @@ class NotificationStore {
     try {
       const resp = await fetch(`${API_BASE}/notifications/${id}/read`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
         credentials: "include",
       });
 
@@ -68,7 +70,6 @@ class NotificationStore {
     try {
       const resp = await fetch(`${API_BASE}/notifications/read-all`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${authStore.accessToken}` },
         credentials: "include",
       });
 

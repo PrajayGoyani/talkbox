@@ -3,15 +3,15 @@ import { chatService } from "@services/chat.service";
 import { Request, Response } from "express";
 
 export const getChatListing = async (req: Request, res: Response) => {
-  const limit = parseInt(req.query.limit as string) || 20;
-  const cursor = (req.query.cursor as string) || null;
+  const limit = parseInt((req.query.limit || req.headers["x-limit"]) as string) || 20;
+  const cursor = ((req.query.cursor || req.headers["x-cursor"]) as string) || null;
   const result = await chatService.getChatListing(req.user!.id, limit, cursor);
   res.success(result);
 };
 
 export const getChatRequests = async (req: Request, res: Response) => {
-  const limit = parseInt(req.query.limit as string) || 20;
-  const cursor = (req.query.cursor as string) || null;
+  const limit = parseInt((req.query.limit || req.headers["x-limit"]) as string) || 20;
+  const cursor = ((req.query.cursor || req.headers["x-cursor"]) as string) || null;
   const result = await chatService.getChatRequests(req.user!.id, limit, cursor);
   res.success(result);
 };
@@ -21,8 +21,8 @@ export const searchChats = async (req: Request, res: Response) => {
   if (!query) {
     return res.success({ data: [], nextCursor: null, hasMore: false });
   }
-  const limit = parseInt(req.query.limit as string) || 20;
-  const cursor = (req.query.cursor as string) || null;
+  const limit = parseInt((req.query.limit || req.headers["x-limit"]) as string) || 20;
+  const cursor = ((req.query.cursor || req.headers["x-cursor"]) as string) || null;
   const result = await chatService.searchChats(req.user!.id, query, limit, cursor);
   res.success(result);
 };
@@ -48,8 +48,8 @@ export const deleteChat = async (req: Request, res: Response) => {
 };
 
 export const getChatMessages = async (req: Request, res: Response) => {
-  const limit = parseInt(req.query.limit as string) || 50;
-  const cursor = (req.query.cursor as string) || undefined;
+  const limit = parseInt((req.query.limit || req.headers["x-limit"]) as string) || 50;
+  const cursor = ((req.query.cursor || req.headers["x-cursor"]) as string) || undefined;
   const messages = await chatService.getChatMessages(
     req.params.chatId as string,
     req.user!.id,

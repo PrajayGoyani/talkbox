@@ -8,7 +8,6 @@ export class ChatService {
   /** Load messages for a chat via REST */
   async loadMessages(chatId: string, signal?: AbortSignal) {
     const resp = await fetch(`${API_BASE}/chat/${chatId}/messages?limit=50`, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` },
       credentials: "include",
       signal,
     });
@@ -23,7 +22,6 @@ export class ChatService {
   /** Load older messages using cursor */
   async loadOlderMessages(chatId: string, oldestMessageId: string, signal?: AbortSignal) {
     const resp = await fetch(`${API_BASE}/chat/${chatId}/messages?limit=50&cursor=${oldestMessageId}`, {
-      headers: { Authorization: `Bearer ${authStore.accessToken}` },
       credentials: "include",
       signal,
     });
@@ -53,10 +51,6 @@ export class ChatService {
     const endpoint = url.toString();
 
     const resp = await fetch(endpoint, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${authStore.accessToken}`,
-      },
       credentials: "include",
       signal,
     });
@@ -75,9 +69,6 @@ export class ChatService {
     if (cursor) url.searchParams.set("cursor", cursor);
 
     const resp = await fetch(url.toString(), {
-      headers: {
-        Authorization: `Bearer ${authStore.accessToken}`,
-      },
       credentials: "include",
     });
     if (!resp.ok) {
