@@ -8,7 +8,12 @@ import express from "express";
 import path from "path";
 
 // import helmet from 'helmet';
-import { app } from "@/app";
+import { app, server } from "@/app";
+import { stopAgenda } from "@/config/agenda";
+import { redisService } from "@/services/redis.service";
+import mongoose from "mongoose";
+
+// ____________________ Bootstrap Handlers ____________________
 
 // global application-level middlewares
 export function initializeMiddlewares() {
@@ -41,7 +46,7 @@ export function initializeErrorHandlers() {
   Sentry.setupExpressErrorHandler(app);
 
   // 404 Not Found handler
-  app.use((req, res, next) => {
+  app.use((req, res, _next) => {
     const err = errorResponse("ROUTE_NOT_FOUND", `Cannot ${req.method} ${req.path}`);
     if (NODE_ENV === "development") {
       console.log(err);
@@ -50,7 +55,7 @@ export function initializeErrorHandlers() {
   });
 
   // Global error handler
-  app.use((err, req, res, next) => {
+  app.use((err, _req, res, _next) => {
     if (err instanceof AppError) {
       res.status(err.statusCode).json(errorResponse(err.code, err.message, err.details));
       return;
@@ -78,3 +83,36 @@ export function initializeExtensions() {
     return this.status(statusCode).json(success(data));
   };
 }
+
+// ____________________ End of Bootstrap Handlers ____________________
+
+// Graceful shutdown
+export const shutdown = async (signal: string) => {
+  console.log(`\n${signal} received. Shutting down gracefully...`);
+
+  try {
+    // 1. Stop background jobs
+    await stopAgenda();
+
+    // 2. Close HTTP server and all active sockets
+    // This will trigger 'disconnect' events on all sockets
+    await new Promise<void>((resolve) => {
+      server.close(() => {
+        console.log("HTTP server closed.");
+        resolve();
+      });
+    });
+
+    // 3. Close Redis (used by socket disconnect handlers)
+    await redisService.close();
+
+    // 4. Close MongoDB
+    await mongoose.connection.close();
+    console.log("MongoDB connection closed.");
+  } catch (err) {
+    console.error("Error during graceful shutdown:", err);
+    process.exit(1);
+  }
+
+  process.exit(0);
+};
