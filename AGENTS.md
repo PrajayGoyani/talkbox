@@ -83,6 +83,7 @@ Future agents MUST use these commands for local development and validation:
 - `@bootstrap/*`: `./src/bootstrap/*`
 - `@routes/*`: `./src/routes/*`
 - `@jobs/*`: `./src/jobs/*`
+- `@repositories/*`: `./src/repositories/*`
 
 ### Frontend (`frontend/tsconfig.app.json`)
 
