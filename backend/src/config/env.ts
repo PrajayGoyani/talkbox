@@ -1,7 +1,9 @@
 import "dotenv/config";
 
 if (!process.env.ALLOWED_ORIGINS) {
-  console.warn("Warning: ALLOWED_ORIGINS environment variable is missing. Using default local origins.");
+  console.warn(
+    "Warning: ALLOWED_ORIGINS environment variable is missing. Using default local origins.",
+  );
 }
 
 export const PORT = process.env.PORT || 5000;
@@ -16,7 +18,9 @@ export const SENTRY_DSN = process.env.SENTRY_DSN as string;
 export const BCRYPT_SALT = Number(process.env.BCRYPT_SALT) || 12;
 export const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 export const UPLOAD_STRATEGY = process.env.UPLOAD_STRATEGY as string;
-export const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:4173")
+export const ALLOWED_ORIGINS = (
+  process.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:4173"
+)
   .split(",")
   .map((o) => o.trim());
 export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME as string;
@@ -29,7 +33,7 @@ export const DEBUG_JOBS = process.env.DEBUG_JOBS === "true";
 export const REACTIONS_MAX_UNIQUE = Number(process.env.REACTIONS_MAX_UNIQUE) || 20;
 export const FREE_PLAN_SCRUB_DAYS = Number(process.env.FREE_PLAN_SCRUB_DAYS) || 7;
 export const FREE_PLAN_CHAT_LIMIT = Number(process.env.FREE_PLAN_CHAT_LIMIT) || 5;
-export const PRO_PLAN_SESSION_LIMIT = Number(process.env.PRO_PLAN_SESSION_LIMIT) || 10;
+export const PRO_PLAN_SESSION_LIMIT = Number(process.env.PRO_PLAN_SESSION_LIMIT) || 5;
 export const RETENTION_MESSAGE_DAYS = Number(process.env.RETENTION_MESSAGE_DAYS) || 365;
 export const RETENTION_DELETED_CHAT_DAYS = Number(process.env.RETENTION_DELETED_CHAT_DAYS) || 14;
 export const RETENTION_NOTIFICATION_DAYS = Number(process.env.RETENTION_NOTIFICATION_DAYS) || 30;
@@ -41,13 +45,16 @@ export const SUBSCRIPTION_BATCH_SIZE = Number(process.env.SUBSCRIPTION_BATCH_SIZ
 export const MESSAGE_MODIFY_LIMIT_HOURS = Number(process.env.MESSAGE_MODIFY_LIMIT_HOURS) || 1;
 
 // Rate Limits
-export const RATE_LIMIT_DEFAULT_WINDOW_MS = Number(process.env.RATE_LIMIT_DEFAULT_WINDOW_MS) || 60 * 1000;
+export const RATE_LIMIT_DEFAULT_WINDOW_MS =
+  Number(process.env.RATE_LIMIT_DEFAULT_WINDOW_MS) || 60 * 1000;
 export const RATE_LIMIT_DEFAULT_MAX = Number(process.env.RATE_LIMIT_DEFAULT_MAX) || 100;
 export const RATE_LIMIT_AUTH_MAX = Number(process.env.RATE_LIMIT_AUTH_MAX) || 10;
-export const RATE_LIMIT_SOCKET_MESSAGE_MAX = Number(process.env.RATE_LIMIT_SOCKET_MESSAGE_MAX) || 20;
+export const RATE_LIMIT_SOCKET_MESSAGE_MAX =
+  Number(process.env.RATE_LIMIT_SOCKET_MESSAGE_MAX) || 20;
 
 // Cookie Configuration Overrides
-export const COOKIE_SAMESITE = process.env.COOKIE_SAMESITE || (NODE_ENV === "production" ? "none" : "lax");
+export const COOKIE_SAMESITE =
+  process.env.COOKIE_SAMESITE || (NODE_ENV === "production" ? "none" : "lax");
 export const COOKIE_SECURE = process.env.COOKIE_SECURE === "true" || NODE_ENV === "production";
 
 // Email / SMTP (optional — graceful no-op if not configured)

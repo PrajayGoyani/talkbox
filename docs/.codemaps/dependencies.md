@@ -1,29 +1,33 @@
-<!-- Generated: 2026-04-20 | Files scanned: 2 | Token estimate: ~400 -->
-# Project Dependencies
+<!-- Generated: 2026-04-30 | Files scanned: 2 | Token estimate: ~500 -->
+# Project Dependencies (v1.7.0)
 
 ## Backend
-- **Core**: `express` (v5), `typescript` (v6), `tsx` (runtime).
-- **ODM**: `mongoose`.
-- **Real-time**: `socket.io`.
+- **Core**: `express` (v5), `typescript` (v6), `bun` (runtime).
+- **ODM**: `mongoose` (v9).
+- **Real-time**: `socket.io` (v4), `@socket.io/redis-adapter`.
+- **Cache**: `ioredis`, `lru-cache` (L1/L2 strategy).
 - **Auth**: `jsonwebtoken`, `bcrypt`.
-- **Media**: `multer`, `cloudinary`, `multer-storage-cloudinary`, `sharp`.
+- **Media**: `multer`, `cloudinary`, `sharp`.
+- **Email**: `nodemailer`.
 - **Validation**: `zod`.
 - **Jobs**: `agenda`.
+- **Monitoring**: `@sentry/bun`.
 
 ## Frontend
 - **Framework**: `svelte` (v5).
-- **Bundler**: `vite` (customized via `vp` / `voidzero-dev`).
-- **Styling**: `tailwindcss` (v4), `tailwind-merge`.
+- **Bundler**: `vite` (v6) via `vite-plus`.
+- **Styling**: `tailwindcss` (v4), `tailwind-merge`, `clsx`.
 - **Communication**: `socket.io-client`.
-- **UI Components**: `emoji-picker-element`.
+- **UI Components**: `emoji-picker-element`, `canvas-confetti`.
 
 ## External Integrations
-- **MongoDB**: Primary database (hosted or local).
+- **MongoDB**: Primary database.
 - **Cloudinary**: Cloud storage for profile avatars.
-- **UI-Avatars**: Fallback service for generated user avatars.
-- **Voidzero/VitePlus**: Build toolchain and development environment enhancement.
+- **Vite Plus (vp)**: Unified build toolchain and development environment.
+- **Sentry**: Error tracking and performance monitoring.
 
 ## Development Tools
-- **Package Manager**: `pnpm` (v10).
+- **Package Manager**: `bun` (v1.3.13).
+- **Toolchain**: `vite-plus` (`vp`) for test, dev, and fmt.
 - **Linter/Checker**: `svelte-check`, `tsc`.
-- **Process Manager**: `pm2` (via `ecosystem.config.cjs`).
+

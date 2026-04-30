@@ -64,7 +64,7 @@
     <h2 class="text-2xl font-bold mb-4">6. Subscription Plans</h2>
     <p>
       Talkbox offers a Free tier and a Pro subscription. By subscribing to the
-      Pro plan, you gain access to increased usage limits, including up to 10
+      Pro plan, you gain access to increased usage limits, including up to 5
       concurrent sessions and <strong>unlimited message history</strong>. Free
       tier users are limited to 1 concurrent session, 5 active chat threads, and
       <strong>7 days of message history</strong>.

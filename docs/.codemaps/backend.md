@@ -1,49 +1,54 @@
-<!-- Generated: 2026-04-20 | Files scanned: ~50 | Token estimate: ~800 -->
+<!-- Generated: 2026-04-30 | Files scanned: ~150 | Token estimate: ~800 -->
 # Backend Architecture
 
 ## API Routes
 
 ### Auth (`/api/auth`)
-- `POST /signup` -> `auth.controller.signup` (with `signupSchema` validation)
-- `POST /login` -> `auth.controller.login` (with `loginSchema` validation)
+- `POST /signup` -> `auth.controller.signup`
+- `POST /login` -> `auth.controller.login`
 - `POST /refresh` -> `auth.controller.refresh`
 - `POST /logout` -> `auth.controller.logout`
-- `GET  /me` -> `auth.controller.getMe` (Auth required)
+- `GET  /me` -> `auth.controller.getMe`
+- `POST /upgrade-pro` -> `auth.controller.upgradeToPro`
+- `POST /forgot-password` -> `auth.controller.forgotPassword`
+- `POST /reset-password` -> `auth.controller.resetPassword`
+- `GET  /verify-email` -> `auth.controller.verifyEmail`
+- `POST /resend-verification` -> `auth.controller.resendVerification`
 
 ### Chat (`/api/chat`)
-- `GET  /` -> `chat.controller.getChatListing`
+- `GET  /` -> `chat.controller.getChatListing` (Cursor pagination)
 - `GET  /requests` -> `chat.controller.getChatRequests`
 - `GET  /search` -> `chat.controller.searchChats`
-- `POST /request` -> `chat.controller.requestChat` (Chat request validation)
+- `POST /request` -> `chat.controller.requestChat`
 - `PUT  /:chatId/accept` -> `chat.controller.acceptChat`
 - `PUT  /:chatId/reject` -> `chat.controller.rejectChat`
 - `DELETE /:chatId` -> `chat.controller.deleteChat`
-- `GET  /:chatId/messages` -> `chat.controller.getChatMessages`
-- `PUT  /:chatId/read` -> `chat.controller.markChatRead`
+- `GET  /:chatId/messages` -> `chat.controller.getChatMessages` (Plan-aware scrubbing)
+- `PUT  /:chatId/read" -> "chat.controller.markChatRead`
 
 ### User (`/api/user`)
-- `POST /avatar` -> `user.controller.uploadAvatar` (Multer memory storage)
+- `POST /avatar` -> `user.controller.uploadAvatar`
 - `PATCH /profile` -> `user.controller.updateProfile`
 - `GET  /search` -> `user.controller.searchByUsername`
 
-### Notifications (`/api/notifications`)
-- `GET  /` -> `notification.controller.getNotifications`
-- `PUT  /read-all` -> `notification.controller.markAllAsRead`
-- `PUT  /:id/read` -> `notification.controller.markAsRead`
-
 ## Middleware Chain
-1. `authenticateToken`: Validates JWT in auth header.
-2. `rateLimiter`: Limits request frequency.
-3. `validate(schema)`: Validates body/params using Zod.
+1. `authenticateToken`: Validates JWT.
+2. `rateLimiter`: Distributed (Redis) with L1 local block fallback ("Fail-through protection").
+3. `validate(schema)`: Zod schema validation.
 
 ## Key Services
-- `ChatService`: `backend/src/services/chat.service.ts`
-- `SocketService`: `backend/src/services/socket.service.ts`
-- `NotificationService`: `backend/src/services/notification.service.ts`
-- `AuthService`: `backend/src/services/auth.service.ts`
+- `ChatService`: Business logic for chat orchestration and message history.
+- `SocketService`: High-performance WebSocket management with L1/L2 participant/partner caching.
+- `PresenceService`: Real-time status broadcasting via Redis pub/sub.
+- `RedisService`: Centralized Redis operations (Idempotency, Presence Sync Queue, Session Management).
 
 ## Sockets
-- Namespace: Root (`/`)
 - Authenticated via JWT handshake.
-- Handlers: `handleConnection`, `handleTyping`, `saveAndDeliverMessage`.
-- Security: User existence check on connection.
+- **Distributed Session Management**:
+  - Free users: One active session (deterministic takeover).
+  - Pro users: Up to 5 active sessions.
+- **Handlers**:
+  - `MessageHandler`: Save and deliver with idempotency checks.
+  - `ReactionHandler`: Manage emoji reactions with slug normalization.
+  - `TypingHandler`: Throttled typing indicators.
+

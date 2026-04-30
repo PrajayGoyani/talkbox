@@ -1,41 +1,47 @@
-<!-- Generated: 2026-04-20 | Files scanned: ~60 | Token estimate: ~800 -->
+<!-- Generated: 2026-04-30 | Files scanned: ~150 | Token estimate: ~800 -->
 # Frontend Architecture
 
 ## Page Tree
 - **Guest Access**
   - `/login`: User authentication.
   - `/signup`: User registration.
-  - `/terms`, `/privacy`: Legal documents.
+  - `/forgot-password`, `/reset-password`: Account recovery.
+  - `/verify-email`: Registration completion.
 - **Authenticated Access (`/chat`)**
-  - `/chat/conversations`: Main chat listing and active conversations.
-  - `/chat/requests`: Pending and outgoing chat invitations.
-  - `/chat/profile`: Update personal info and avatar.
-  - `/chat/settings`: App preferences and logout.
+  - `/chat/conversations`: Main chat listing.
+  - `/chat/requests`: Pending chat invitations.
+  - `/chat/profile`: Profile management and bio update.
+  - `/chat/pricing`: Account upgrade (Free -> Pro).
+  - `/chat/settings`: App preferences.
 
 ## Component Hierarchy (`App.svelte`)
 1. **Layout Shell**
-   - `IconRail`: Navigation icons, notifications count, logout.
-   - `Sidebar` (`aside`): Dynamic panels based on active route.
-     - `ConversationsPanel`, `ProfilePanel`, `RequestsPanel`, `SettingsPanel`.
+   - `IconRail`: Navigation, notifications badge, logout.
+   - `Sidebar` (`aside`): Dynamic panels (`ConversationsPanel`, `ProfilePanel`, `RequestsPanel`, `SettingsPanel`).
    - `Main Content` (`section`):
-     - `ChatWindow`: Active conversation view with message list and input.
-     - `Home`: Welcome screen when no chat is selected.
+     - `ChatWindow`: Active conversation view.
+     - `Pricing`: Pro plan landing page.
+     - `Home`: Default welcome view.
 2. **Global Overlays**
-   - `NotificationsDropdown`: List of recent alerts.
-   - `ToastContainer`: Real-time message alerts.
-   - `GlobalTooltip`, `ReactionTooltip`, `ConfirmationDialog`.
-   - `Alert`: Global error/info banners.
+   - `NotificationsDropdown`: Historical alerts.
+   - `ToastContainer`: Real-time toast alerts.
+   - `GlobalTooltip`: Shared tooltip system.
+   - `ConfirmationDialog`: Atomic confirm/cancel flows.
 
 ## State Management (Svelte 5 Runes)
-- **`authStore`**: Manages user object, loading state, and session login/logout.
+- **`authStore`**: User session, profile updates, and plan status ($state).
 - **`chatStore`**:
-  - `chats`: Array of active conversations.
-  - `messages`: Map of messages for loaded chats.
-  - `socket`: Connection to `Socket.io` backend.
-  - `requests`: Pending chat invitations.
-- **`uiStore`**: Handles global UI states (sidebar collapse, active alerts, navigation).
-- **`routerStore`**: Custom hash-based router tracking URL segments.
-- **`notificationStore`**: Tracks unread counts and historical notifications.
+  - `chats`: Array of active conversations with local pinning logic.
+  - `messages`: Reactive array of messages for the active chat.
+  - `socketManager`: Delegated WebSocket lifecycle and event handling.
+  - `onlineStatus`: SvelteMap tracking partner presence.
+  - `typingStatus`: SvelteMap tracking throttled typing events.
+- **`uiStore`**: Global UI flags (sidebar, notifications, alerts).
+- **`routerStore`**: Hash-based routing with segment parsing.
 
-## Routing Logic
-Uses a custom `routerStore` that listens to `hashchange` events. The `App.svelte` file uses derived runes to determine which snippets and components to render based on `routerStore.segments`.
+## Logic & Patterns
+- **Virtual List**: `MessageList` uses `overflow-anchor` for stable scrolling.
+- **Pinning**: Local-first pinning using `localStorage`.
+- **Abort Controllers**: Prevent race conditions during concurrent REST requests.
+- **Browser Notifications**: Integrated via the browser `Notification` API.
+

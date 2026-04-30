@@ -33,7 +33,7 @@
       period: "/month",
       description: "For power users who need the ultimate chat experience.",
       features: [
-        "10 Active sessions limit",
+        "5 Active sessions limit",
         "Infinite chats",
         "Unlimited history",
         "Priority support",

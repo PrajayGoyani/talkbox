@@ -33,7 +33,9 @@
   <section class="mb-12">
     <h2 class="text-2xl font-bold mb-4">5. Subscription Plans & Payments</h2>
     <p>
-      Talkbox offers a Free tier and a Pro subscription. Payments are securely
+      Talkbox offers a Free tier and a Pro subscription. By subscribing to the
+      Pro plan, you gain access to increased usage limits, including up to 5
+      active sessions and unlimited message history. Payments are securely
       processed via <strong>[Processor Name, e.g., Stripe]</strong>. Your
       financial data is subject to the [Processor Name] Privacy Policy and Terms
       of Service.
