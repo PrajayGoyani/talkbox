@@ -68,15 +68,19 @@
     </div>
   {:else if isLoading}
     <div class="p-3 flex flex-col gap-3 w-[350px] h-[400px] max-w-full">
-      <div class="flex gap-2 mb-2">
+      <Skeleton width="100%" height="32px" rounded="8px" />
+      <div class="flex gap-2 mt-2">
         {#each Array(9) as _}
           <Skeleton width="24px" height="24px" rounded="4px" />
         {/each}
       </div>
-      <Skeleton width="100%" height="32px" rounded="8px" />
-      <div class="grid grid-cols-9 gap-2 mt-2">
-        {#each Array(36) as _}
-          <Skeleton width="28px" height="28px" rounded="6px" />
+      <div class="grid gap-y-2 md:gap-y-3 mt-2">
+        {#each Array(7) as _}
+          <div class="grid grid-cols-9 gap-x-2 md:gap-x-11">
+            {#each Array(9) as _}
+              <Skeleton width="28px" height="28px" rounded="6px" />
+            {/each}
+          </div>
         {/each}
       </div>
     </div>
