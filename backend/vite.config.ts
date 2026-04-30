@@ -1,4 +1,9 @@
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
 import { defineConfig } from "vite-plus";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // https://viteplus.dev/config/
 export default defineConfig({
@@ -17,6 +22,7 @@ export default defineConfig({
       "@routes": "/src/routes",
       "@jobs": "/src/jobs",
       "@repositories": "/src/repositories",
+      "@shared": resolve(__dirname, "../shared"),
     },
   },
   fmt: {

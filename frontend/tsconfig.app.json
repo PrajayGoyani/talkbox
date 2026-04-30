@@ -25,7 +25,8 @@
       "$types/*": ["./src/lib/types/*"],
       "$services/*": ["./src/lib/services/*"],
       "$assets/*": ["./src/assets/*"],
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["../shared/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"]

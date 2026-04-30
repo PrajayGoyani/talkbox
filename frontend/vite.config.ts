@@ -1,7 +1,12 @@
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { compression } from "vite-plugin-compression2";
 import { defineConfig } from "vite-plus";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // https://viteplus.dev/config/
 export default defineConfig({
@@ -26,6 +31,7 @@ export default defineConfig({
       $services: "/src/lib/services",
       $assets: "/src/assets",
       "@": "/src",
+      "@shared": resolve(__dirname, "../shared"),
     },
   },
   run: {
