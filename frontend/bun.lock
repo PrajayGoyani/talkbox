@@ -17,10 +17,10 @@
         "@tsconfig/svelte": "^5.0.8",
         "@types/bun": "^1.3.13",
         "@types/canvas-confetti": "^1.9.0",
+        "@typescript/native-preview": "7.0.0-dev.20260425.1",
         "svelte": "^5.55.5",
         "svelte-check": "^4.4.6",
         "tailwindcss": "^4.2.4",
-        "typescript": "~5.9.3",
         "vite": "npm:@voidzero-dev/vite-plus-core@latest",
         "vite-plugin-compression2": "^1.4.0",
         "vite-plus": "^0.1.20",
@@ -188,6 +188,22 @@
     "@types/node": ["@types/node@24.12.2", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-A1sre26ke7HDIuY/M23nd9gfB+nrmhtYyMINbjI1zHJxYteKR6qSMX56FsmjMcDb3SMcjJg5BiRRgOCC/yBD0g=="],
 
     "@types/trusted-types": ["@types/trusted-types@2.0.7", "", {}, "sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw=="],
+
+    "@typescript/native-preview": ["@typescript/native-preview@7.0.0-dev.20260425.1", "", { "optionalDependencies": { "@typescript/native-preview-darwin-arm64": "7.0.0-dev.20260425.1", "@typescript/native-preview-darwin-x64": "7.0.0-dev.20260425.1", "@typescript/native-preview-linux-arm": "7.0.0-dev.20260425.1", "@typescript/native-preview-linux-arm64": "7.0.0-dev.20260425.1", "@typescript/native-preview-linux-x64": "7.0.0-dev.20260425.1", "@typescript/native-preview-win32-arm64": "7.0.0-dev.20260425.1", "@typescript/native-preview-win32-x64": "7.0.0-dev.20260425.1" }, "bin": { "tsgo": "bin/tsgo.js" } }, "sha512-qhSVDT9DsoKPBeEm777eUUkiCDjBFlF7wwjfMvcPctZFVHfD6b1O1icpfCdQHPqzjrSXWu2YaNiY0DXbljTmgw=="],
+
+    "@typescript/native-preview-darwin-arm64": ["@typescript/native-preview-darwin-arm64@7.0.0-dev.20260425.1", "", { "os": "darwin", "cpu": "arm64" }, "sha512-vM7O+PlxHRUT4Dv0VkxEmU3N2uyWeSFrhu57O7s3SE9TX1ENljwQlCFG0oQdBGLBRo+SZSoedxKL5jOGlD1eiw=="],
+
+    "@typescript/native-preview-darwin-x64": ["@typescript/native-preview-darwin-x64@7.0.0-dev.20260425.1", "", { "os": "darwin", "cpu": "x64" }, "sha512-EiikklZSuEvMhZEeN0VRb0vmedhLgtKwz5p4Oz9e8hlJ4lLrslgvX7Z7JWb2YSKlhm14dUlRMvdoe+6t+56rSA=="],
+
+    "@typescript/native-preview-linux-arm": ["@typescript/native-preview-linux-arm@7.0.0-dev.20260425.1", "", { "os": "linux", "cpu": "arm" }, "sha512-9eWInaHqhfTu1Mt/1M85p5M+HlSStahAQkqYaW9rJzUWRe+AcVUKsN6I7U7iwxbkCT8gFZsMCRqABcwBUWw3kg=="],
+
+    "@typescript/native-preview-linux-arm64": ["@typescript/native-preview-linux-arm64@7.0.0-dev.20260425.1", "", { "os": "linux", "cpu": "arm64" }, "sha512-5KJ++prl1dscJtxnkE7Cb6rjud4T3nO4mcnKhkCfYcQaFtFrvcZhBtDobwcpSzHbfsW0MeM+QCy1UfWoK4gjUQ=="],
+
+    "@typescript/native-preview-linux-x64": ["@typescript/native-preview-linux-x64@7.0.0-dev.20260425.1", "", { "os": "linux", "cpu": "x64" }, "sha512-a/E/8UL2x6nWmIJwrrbEvLz938RMcrFfm5hLRKaPMjCE32bgwesBZEG5jRn8fzQes+4HICRXKEaL544jtb/Syg=="],
+
+    "@typescript/native-preview-win32-arm64": ["@typescript/native-preview-win32-arm64@7.0.0-dev.20260425.1", "", { "os": "win32", "cpu": "arm64" }, "sha512-BZ7jEnaNZHkHbq9LWuqqIgYMmMb2E2NReMybjOyl3ASFmJHYekDnytXIT3Zbp4dyPLJV55faGzLqMw2MMS81NA=="],
+
+    "@typescript/native-preview-win32-x64": ["@typescript/native-preview-win32-x64@7.0.0-dev.20260425.1", "", { "os": "win32", "cpu": "x64" }, "sha512-/iwK50mO31lKr1KVDRCqW5xGyKArZuq9jQr2b/PJ3e0xEuV6hoJ4Kok11LA1lhx1uctqr3UXKmfwQF3HWqcZTQ=="],
 
     "@voidzero-dev/vite-plus-core": ["@voidzero-dev/vite-plus-core@0.1.20", "", { "dependencies": { "@oxc-project/runtime": "=0.127.0", "@oxc-project/types": "=0.127.0", "lightningcss": "^1.30.2", "postcss": "^8.5.6" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@arethetypeswrong/core": "^0.18.1", "@tsdown/css": "0.21.10", "@tsdown/exe": "0.21.10", "@types/node": "^20.19.0 || >=22.12.0", "@vitejs/devtools": "^0.1.0", "esbuild": "^0.27.0 || ^0.28.0", "jiti": ">=1.21.0", "less": "^4.0.0", "publint": "^0.3.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "typescript": "^5.0.0 || ^6.0.0", "unplugin-unused": "^0.5.0", "yaml": "^2.4.2" }, "optionalPeers": ["@arethetypeswrong/core", "@tsdown/css", "@tsdown/exe", "@types/node", "@vitejs/devtools", "esbuild", "jiti", "less", "publint", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "typescript", "unplugin-unused", "yaml"] }, "sha512-4KmzRfzwTeG3JuvDijrdqWusSgRvLMKDPrVsDdtbDVVjEMq0VnM8lSH+Nvepd6Pg+SuSVUP212OIfH/3Yn1bfA=="],
 

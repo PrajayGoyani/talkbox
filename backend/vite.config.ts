@@ -16,6 +16,7 @@ export default defineConfig({
       "@bootstrap": "/src/bootstrap",
       "@routes": "/src/routes",
       "@jobs": "/src/jobs",
+      "@repositories": "/src/repositories",
     },
   },
   fmt: {

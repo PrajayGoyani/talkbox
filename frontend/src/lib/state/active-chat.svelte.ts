@@ -1,13 +1,11 @@
 import type { Message } from "$types/chat";
 
 import { chatService } from "$services/chat.service";
-import { chatStore } from "$state/chat.svelte";
 import { ApiError } from "$utils/errors";
 
 const LOADER_AWAIT_MS = 300;
 
-class ActiveChatStore {
-  // State
+class MessageStore {
   activeChatId: string | null = $state(null);
   messages: Array<Message> = $state([]);
   hasMoreMessages = $state(true);
@@ -31,7 +29,6 @@ class ActiveChatStore {
     try {
       const loadedMessages = await chatService.loadMessages(chatId, this.messagesAbortController.signal);
 
-      // Guard against race conditions
       if (this.activeChatId !== chatId) return;
 
       const elapsed = Date.now() - startTime;
@@ -44,7 +41,7 @@ class ActiveChatStore {
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return;
       console.error("Failed to load messages:", e);
-      chatStore.lastError = "Failed to load messages. Please try again.";
+      // We can use a global error store or handle it in the Facade
     } finally {
       this.isLoadingMessages = false;
     }
@@ -75,7 +72,6 @@ class ActiveChatStore {
     } catch (e: unknown) {
       if (e instanceof Error && e.name === "AbortError") return;
       console.error("Failed to load older messages:", e);
-      chatStore.lastError = "Failed to load older messages.";
     } finally {
       this.isLoadingMessages = false;
     }
@@ -89,8 +85,6 @@ class ActiveChatStore {
     this.hasMoreMessages = true;
     this.isLoadingMessages = false;
   }
-
-  // --- Handlers for Real-time Events ---
 
   handleReceiveMessage(message: Message) {
     if (message.chatId === this.activeChatId) {
@@ -149,4 +143,5 @@ class ActiveChatStore {
   }
 }
 
-export const activeChatStore = new ActiveChatStore();
+export const messageStore = new MessageStore();
+export const activeChatStore = messageStore; // Legacy alias for backward compatibility

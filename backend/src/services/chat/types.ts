@@ -1,0 +1,34 @@
+import { IChat } from "@models/chat.model";
+import { ObjectId } from "mongodb";
+
+import { ChatListingResponse } from "@/types/chat.types";
+import { MessageDto } from "@/types/socket.types";
+
+export interface IChatListingService {
+  getChatListing(userId: string | ObjectId, limit?: number, cursor?: string | null): Promise<ChatListingResponse>;
+  getChatRequests(userId: string | ObjectId, limit?: number, cursor?: string | null): Promise<ChatListingResponse>;
+  searchChats(
+    userId: string | ObjectId,
+    query: string,
+    limit?: number,
+    cursor?: string | null,
+  ): Promise<ChatListingResponse>;
+}
+
+export interface IChatActionService {
+  requestChat(senderId: string | ObjectId, targetUsername: string): Promise<IChat>;
+  acceptChat(chatId: string, userId: string): Promise<IChat>;
+  rejectChat(chatId: string | ObjectId, userId: string | ObjectId): Promise<IChat>;
+  deleteChat(chatId: string | ObjectId, userId: string | ObjectId): Promise<{ message: string }>;
+}
+
+export interface IMessageService {
+  getChatMessages(
+    chatId: string | ObjectId,
+    userId: string,
+    limit?: number,
+    cursor?: string | null,
+    plan?: "free" | "pro",
+  ): Promise<MessageDto[]>;
+  markChatRead(chatId: string | ObjectId, userId: string | ObjectId): Promise<{ message: string }>;
+}

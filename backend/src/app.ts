@@ -1,3 +1,4 @@
+import { initChatEventListeners } from "@bootstrap/chat-events";
 import {
   initializeErrorHandlers,
   initializeExtensions,
@@ -20,6 +21,7 @@ export async function configureSocket() {
 export function startServer() {
   // Note: the order must be: extensions -> static -> middlewares -> routes -> error handlers
   initializeExtensions();
+  initChatEventListeners();
   initializeStatic();
   initializeMiddlewares();
   registerRoutes();

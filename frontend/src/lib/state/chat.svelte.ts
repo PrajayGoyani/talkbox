@@ -5,282 +5,168 @@ import type { Socket } from "socket.io-client";
 import { chatService } from "$services/chat.service";
 import { notificationService } from "$services/notification.service";
 import { SocketManager } from "$services/socket.manager.svelte";
-import { activeChatStore } from "$state/active-chat.svelte";
+import { messageStore } from "$state/active-chat.svelte";
 import { authStore } from "$state/auth.svelte";
 import { routerStore } from "$state/router.svelte";
-import { ApiError } from "$utils/errors";
-import { SvelteMap, SvelteSet } from "svelte/reactivity";
+
+import { chatListStore } from "./chat/chat-list.svelte";
+import { presenceStore } from "./chat/presence.svelte";
 
 export * from "$types/chat";
 
-const LOADER_AWAIT_MS = 300;
-
 class ChatStore {
-  // State
-  isConnected = $state(false);
+  // --- Delegated State ---
   get messages() {
-    return activeChatStore.messages;
+    return messageStore.messages;
   }
   get hasMoreMessages() {
-    return activeChatStore.hasMoreMessages;
+    return messageStore.hasMoreMessages;
   }
   get isLoadingMessages() {
-    return activeChatStore.isLoadingMessages;
+    return messageStore.isLoadingMessages;
   }
   get isSendingMessage() {
-    return activeChatStore.isSendingMessage;
+    return messageStore.isSendingMessage;
   }
   set isSendingMessage(val: boolean) {
-    activeChatStore.isSendingMessage = val;
+    messageStore.isSendingMessage = val;
   }
   get activeChatId() {
-    return activeChatStore.activeChatId;
+    return messageStore.activeChatId;
   }
 
-  onlineStatus = new SvelteMap<string, { isOnline: boolean; lastSeen: Date | null }>();
-  typingStatus = new SvelteMap<string, SvelteSet<string>>();
-  chats: Array<Chat> = $state([]);
-  hasMoreChats = $state(true);
-  chatCursor: string | null = $state(null);
-  isLoadingMoreChats = $state(false);
+  get chats() {
+    return chatListStore.chats;
+  }
+  get requests() {
+    return chatListStore.requests;
+  }
+  get hasMoreChats() {
+    return chatListStore.hasMoreChats;
+  }
+  get isLoadingMoreChats() {
+    return chatListStore.isLoadingMoreChats;
+  }
+  get unreadChatsCount() {
+    return chatListStore.unreadChatsCount;
+  }
+  get pendingRequestCount() {
+    return chatListStore.pendingRequestCount;
+  }
+  set pendingRequestCount(val: number) {
+    chatListStore.pendingRequestCount = val;
+  }
 
-  requests: Array<Chat> = $state([]);
-  hasMoreRequests = $state(true);
-  requestCursor: string | null = $state(null);
-  isLoadingMoreRequests = $state(false);
+  get currentSearchQuery() {
+    return chatListStore.currentSearchQuery;
+  }
+  set currentSearchQuery(val: string) {
+    chatListStore.currentSearchQuery = val;
+  }
 
-  pendingRequestCount = $state(0);
+  get onlineStatus() {
+    return presenceStore.onlineStatus;
+  }
+  get typingStatus() {
+    return presenceStore.typingStatus;
+  }
+
   lastError: string | null = $state(null);
-  currentSearchQuery = $state("");
-  unreadChatsCount = $state(0);
-  private pinnedChatIds: Set<string> = new Set();
-  /** Map for O(1) chat lookups by ID */
-  private chatsMap: Map<string, Chat> = new Map();
+  isConnected = $state(false);
 
-  private chatsAbortController: AbortController | null = null;
-
-  private requestsAbortController: AbortController | null = null;
-
-  // Callbacks for UI refresh
+  private socketManager: SocketManager;
   private onChatListRefresh: (() => void) | null = null;
   private onToastCallback: ((data: MessageAlert) => void) | null = null;
 
-  // Services
-  private socketManager: SocketManager;
-
   constructor() {
     this.socketManager = new SocketManager(this);
-    if (typeof window !== "undefined") {
-      // Effect to load pins when user changes
-      $effect.root(() => {
-        $effect(() => {
-          if (authStore.user?.id) {
-            this.loadPinnedChats();
-            this.sortChats();
-          }
-        });
-      });
-    }
   }
 
   get socket(): Socket | null {
     return this.socketManager.socket;
   }
 
-  /** Register a callback that gets called when chats should be refreshed */
   onRefreshChats(cb: () => void) {
     this.onChatListRefresh = cb;
   }
 
-  /** Register a callback for toast notifications */
   onToast(cb: (data: MessageAlert) => void) {
     this.onToastCallback = cb;
   }
 
-  // --- Connection Management ---
-
+  // --- Connection ---
   async connect() {
     return this.socketManager.connect();
   }
 
   disconnect() {
     this.socketManager.disconnect();
-    this.chatsAbortController?.abort();
-    this.chatsAbortController = null;
-    activeChatStore.clear();
-    this.onlineStatus.clear();
-    this.typingStatus.clear();
+    messageStore.clear();
+    presenceStore.clear();
   }
 
-  // --- REST API Operations (Delegated to ChatService) ---
-
+  // --- Actions ---
   async loadMessages(chatId: string) {
-    return activeChatStore.initialize(chatId);
+    return messageStore.initialize(chatId);
   }
-
   async loadOlderMessages() {
-    return activeChatStore.loadOlderMessages();
+    return messageStore.loadOlderMessages();
   }
-
   async fetchChats(query = "") {
-    this.chatsAbortController?.abort();
-    this.chatsAbortController = new AbortController();
-    this.lastError = null;
-    try {
-      const result = await chatService.fetchChats(query, 20, null, this.chatsAbortController.signal);
-
-      this.currentSearchQuery = query;
-      this.chatsMap.clear();
-      this.chats = (result.data || []).map((chat) => {
-        const isPinned = this.pinnedChatIds.has(chat.id);
-        const lastUpdate = chat.lastMessage?.sentAt || chat.createdAt;
-        const normalized = {
-          ...chat,
-          isPinned,
-          _lastUpdateTs: new Date(lastUpdate).getTime(),
-        };
-        this.chatsMap.set(chat.id, normalized);
-        return normalized;
-      });
-      this.unreadChatsCount = this.chats.filter((c) => (c.unreadCount ?? 0) > 0).length;
-      this.sortChats();
-      this.hasMoreChats = result.hasMore ?? false;
-      this.chatCursor = result.nextCursor ?? null;
-
-      return this.chats;
-    } catch (e: any) {
-      if (e instanceof Error && e.name === "AbortError") return;
-      console.error("Failed to fetch chats:", e);
-
-      if (ApiError.handleRateLimit(e, "Easy there! You're searching too fast. Please wait a minute.")) {
-        this.lastError = "rate-limited";
-      } else {
-        this.lastError = e.message || "Failed to fetch chats";
-      }
-    }
+    return chatListStore.fetchChats(query);
   }
-
   async loadMoreChats() {
-    if (!this.hasMoreChats || this.isLoadingMoreChats || this.chatsAbortController?.signal.aborted) return;
-
-    this.isLoadingMoreChats = true;
-    try {
-      const result = await chatService.fetchChats(
-        this.currentSearchQuery,
-        20,
-        this.chatCursor,
-        this.chatsAbortController?.signal,
-      );
-      const newChats = result.data.map((chat) => {
-        const normalized = {
-          ...chat,
-          isPinned: this.pinnedChatIds.has(chat.id),
-          _lastUpdateTs: new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime(),
-        };
-        this.chatsMap.set(chat.id, normalized);
-        return normalized;
-      });
-      this.chats.push(...newChats);
-      this.unreadChatsCount = this.chats.filter((c) => (c.unreadCount ?? 0) > 0).length;
-      this.sortChats();
-      this.hasMoreChats = result.hasMore;
-      this.chatCursor = result.nextCursor;
-    } catch (e: any) {
-      if (e instanceof Error && e.name === "AbortError") return;
-      console.error("Failed to load more chats:", e);
-
-      if (ApiError.handleRateLimit(e, "Slow down! You've hit a rate limit. Please wait a moment.")) {
-        this.lastError = "rate-limited";
-      } else {
-        this.lastError = e.message || "Failed to load more chats";
-      }
-    } finally {
-      this.isLoadingMoreChats = false;
-    }
+    return chatListStore.loadMoreChats();
   }
-
   async fetchRequests() {
-    this.requestsAbortController?.abort();
-    this.requestsAbortController = new AbortController();
-    this.lastError = null;
-    try {
-      const result = await chatService.fetchRequests(20, null);
-      this.requests = result.data;
-      this.hasMoreRequests = result.hasMore;
-      this.requestCursor = result.nextCursor;
-      return this.requests;
-    } catch (e: any) {
-      if (e instanceof Error && e.name === "AbortError") return;
-      console.error("Failed to fetch requests:", e);
-      this.lastError = e.message || "Failed to fetch requests";
-    }
+    return chatListStore.fetchRequests();
   }
-
   async loadMoreRequests() {
-    if (!this.hasMoreRequests || this.isLoadingMoreRequests) return;
-
-    this.isLoadingMoreRequests = true;
-    try {
-      const result = await chatService.fetchRequests(20, this.requestCursor);
-      this.requests.push(...result.data);
-      this.hasMoreRequests = result.hasMore;
-      this.requestCursor = result.nextCursor;
-    } catch (e: any) {
-      console.error("Failed to load more requests:", e);
-      this.lastError = e.message || "Failed to load more requests";
-    } finally {
-      this.isLoadingMoreRequests = false;
-    }
+    return chatListStore.loadMoreRequests();
   }
 
   async markChatRead(chatId: string) {
     try {
       await chatService.markChatRead(chatId);
-      this.patchChatLocally(chatId, { unreadCount: 0 });
-    } catch (e: unknown) {
+      chatListStore.patchChatLocally(chatId, { unreadCount: 0 });
+    } catch (e) {
       console.error("Failed to mark chat as read:", e);
     }
   }
 
   async acceptChat(chatId: string) {
-    this.lastError = null;
     try {
       await chatService.acceptChat(chatId);
-      await Promise.all([this.fetchChats(), this.fetchRequests()]);
+      await Promise.all([chatListStore.fetchChats(), chatListStore.fetchRequests()]);
     } catch (e: any) {
-      console.error("Failed to accept chat:", e);
       this.lastError = e.message || "Failed to accept chat";
       throw e;
     }
   }
 
   async rejectChat(chatId: string) {
-    this.lastError = null;
     try {
       await chatService.rejectChat(chatId);
-      await this.fetchRequests();
+      await chatListStore.fetchRequests();
     } catch (e: any) {
-      console.error("Failed to reject chat:", e);
       this.lastError = e.message || "Failed to reject chat";
       throw e;
     }
   }
 
   async sendChatRequest(username: string) {
-    try {
-      const result = await chatService.sendChatRequest(username);
-      await this.fetchRequests();
-      return result;
-    } catch (e: unknown) {
-      console.error("Failed to send chat request:", e);
-      throw e;
-    }
+    const result = await chatService.sendChatRequest(username);
+    await chatListStore.fetchRequests();
+    return result;
   }
 
-  // --- Socket Operations (Delegated to SocketManager) ---
+  toggleChatPin(chatId: string) {
+    chatListStore.toggleChatPin(chatId);
+  }
 
+  // --- Socket Operations ---
   async sendMessage(chatId: string, receiverId: string, contentBody: string) {
-    activeChatStore.isSendingMessage = true;
+    messageStore.isSendingMessage = true;
     this.socketManager.sendMessage(chatId, receiverId, contentBody);
   }
 
@@ -300,56 +186,49 @@ class ChatStore {
     this.socketManager.editMessage(messageId, contentBody);
   }
 
-  // --- Internal Handlers for SocketManager ---
-
+  // --- Handlers ---
   handleReceiveMessage(message: Message) {
-    activeChatStore.handleReceiveMessage(message);
+    messageStore.handleReceiveMessage(message);
+    presenceStore.setTyping(message.chatId, message.senderId, false);
 
-    // Clear typing indicator instantly
-    if (this.typingStatus.has(message.chatId)) {
-      this.typingStatus.get(message.chatId)?.delete(message.senderId);
-    }
-
-    const isViewing = message.chatId === this.activeChatId;
+    const isViewing = message.chatId === messageStore.activeChatId;
     const isOtherUser = message.senderId !== authStore.user?.id;
     const shouldInc = !isViewing && isOtherUser;
 
-    const chat = this.chatsMap.get(message.chatId);
     if (isOtherUser) {
       notificationService.notify({
         chatId: message.chatId,
         senderId: message.senderId,
-        senderUsername: chat?.otherUser?.username || message.senderId,
+        senderUsername: chatListStore.chatsMap?.get(message.chatId)?.otherUser?.username || message.senderId,
         preview: message.contentBody,
       });
     }
 
-    const currentUnread = chat?.unreadCount || 0;
+    const currentChat = chatListStore.chatsMap?.get(message.chatId);
+    const currentUnread = currentChat?.unreadCount || 0;
 
-    const updates: Partial<Chat> & { lastUpdate?: string } = {
-      lastMessage: {
-        contentBody: message.contentBody,
-        senderId: message.senderId,
-        sentAt: message.createdAt,
+    chatListStore.patchChatLocally(
+      message.chatId,
+      {
+        lastMessage: {
+          contentBody: message.contentBody,
+          senderId: message.senderId,
+          sentAt: message.createdAt,
+        },
+        unreadCount: shouldInc ? currentUnread + 1 : currentUnread,
       },
-      unreadCount: shouldInc ? currentUnread + 1 : currentUnread,
-    };
-
-    this.patchChatLocally(message.chatId, updates, true);
+      true,
+    );
   }
 
   handleMessageAlert(data: MessageAlert) {
-    const isChatOpen = data.chatId === this.activeChatId;
-    const isTabFocused = document.hasFocus();
-
-    if (isChatOpen && isTabFocused) {
+    const isChatOpen = data.chatId === messageStore.activeChatId;
+    if (isChatOpen && document.hasFocus()) {
       void this.markChatRead(data.chatId);
     }
-
-    if (!isTabFocused) {
+    if (!document.hasFocus()) {
       notificationService.showBrowserNotification(data);
     }
-
     if (this.onToastCallback && !isChatOpen) {
       this.onToastCallback(data);
     }
@@ -357,7 +236,7 @@ class ChatStore {
 
   handleNotification(notification: Notification) {
     if (notification.type === "chat_request") {
-      this.pendingRequestCount += 1;
+      chatListStore.pendingRequestCount += 1;
       if (this.onToastCallback) {
         this.onToastCallback({
           chatId: notification.referenceId,
@@ -366,7 +245,7 @@ class ChatStore {
         } as any);
       }
       if (routerStore.segments[1] === "requests") {
-        void this.fetchRequests();
+        void chatListStore.fetchRequests();
       }
       notificationService.notify({
         chatId: notification.referenceId,
@@ -374,84 +253,52 @@ class ChatStore {
         senderUsername: "System",
         preview: notification.message,
       });
-
     }
-
-    if (this.onChatListRefresh) {
-      this.onChatListRefresh();
-    }
+    if (this.onChatListRefresh) this.onChatListRefresh();
   }
 
   handleChatAccepted(_data: { chatId: string }) {
-    void this.fetchChats();
-    if (routerStore.segments[1] === "requests") {
-      void this.fetchRequests();
-    }
-    if (this.onChatListRefresh) {
-      this.onChatListRefresh();
-    }
+    void chatListStore.fetchChats();
+    if (routerStore.segments[1] === "requests") void chatListStore.fetchRequests();
+    if (this.onChatListRefresh) this.onChatListRefresh();
   }
 
-  handleReactionUpdate(data: {
-    messageId: string;
-    chatId: string;
-    reactions: Array<{ emoji: string; slug?: string; users: string[] }>;
-  }) {
-    activeChatStore.handleReactionUpdate(data);
+  handleReactionUpdate(data: any) {
+    messageStore.handleReactionUpdate(data);
   }
 
   handleMessageDeleted(data: { messageId: string; chatId: string; isLastMessage?: boolean }) {
-    activeChatStore.handleMessageDeleted(data);
-
-    const chat = this.chatsMap.get(data.chatId);
-    if (chat && chat.lastMessage) {
-      const isLatest =
-        data.isLastMessage ??
-        (this.activeChatId === data.chatId &&
-          this.messages.length > 0 &&
-          this.messages[this.messages.length - 1].id === data.messageId);
-
-      if (isLatest) {
-        this.patchChatLocally(data.chatId, {
-          lastMessage: {
-            ...chat.lastMessage,
-            contentBody: "Message deleted",
-          },
-        });
-      }
+    messageStore.handleMessageDeleted(data);
+    const chat = chatListStore.chatsMap?.get(data.chatId);
+    if (
+      chat?.lastMessage &&
+      (data.isLastMessage ||
+        (messageStore.activeChatId === data.chatId &&
+          messageStore.messages[messageStore.messages.length - 1]?.id === data.messageId))
+    ) {
+      chatListStore.patchChatLocally(data.chatId, {
+        lastMessage: { ...chat.lastMessage, contentBody: "Message deleted" },
+      });
     }
   }
 
-  handleMessageUpdated(data: {
-    messageId: string;
-    chatId: string;
-    contentBody: string;
-    isEdited: boolean;
-    editedAt: string;
-  }) {
-    activeChatStore.handleMessageUpdated(data);
-
-    const chat = this.chatsMap.get(data.chatId);
-    if (chat && chat.lastMessage) {
-      const isLatest =
-        this.activeChatId === data.chatId &&
-        this.messages.length > 0 &&
-        this.messages[this.messages.length - 1].id === data.messageId;
-
-      if (isLatest) {
-        this.patchChatLocally(data.chatId, {
-          lastMessage: {
-            ...chat.lastMessage,
-            contentBody: data.contentBody,
-          },
-        });
-      }
+  handleMessageUpdated(data: any) {
+    messageStore.handleMessageUpdated(data);
+    const chat = chatListStore.chatsMap?.get(data.chatId);
+    if (
+      chat?.lastMessage &&
+      messageStore.activeChatId === data.chatId &&
+      messageStore.messages[messageStore.messages.length - 1]?.id === data.messageId
+    ) {
+      chatListStore.patchChatLocally(data.chatId, {
+        lastMessage: { ...chat.lastMessage, contentBody: data.contentBody },
+      });
     }
   }
 
   handleMessageSentAck(chatId: string, message: Message) {
-    activeChatStore.handleMessageSentAck(chatId, message);
-    this.patchChatLocally(
+    messageStore.handleMessageSentAck(chatId, message);
+    chatListStore.patchChatLocally(
       chatId,
       {
         lastMessage: {
@@ -464,125 +311,12 @@ class ChatStore {
     );
   }
 
-  handleProfileUpdate(data: { userId: string } & Partial<import("$types/chat").User>) {
+  handleProfileUpdate(data: { userId: string } & Partial<Chat["otherUser"]>) {
     const { userId, ...updates } = data;
-
-    // Update the local cache of chats
-    this.chats.forEach((chat) => {
-      if (chat.otherUser?.id === userId) {
-        // Apply updates to the otherUser object
-        Object.assign(chat.otherUser, updates);
-      }
+    chatListStore.chats.forEach((chat) => {
+      if (chat.otherUser?.id === userId) Object.assign(chat.otherUser, updates);
     });
-
-    // Update internal map as well
-    this.chatsMap.forEach((chat) => {
-      if (chat.otherUser?.id === userId) {
-        Object.assign(chat.otherUser, updates);
-      }
-    });
-
-    // Trigger re-sort/re-render if name changed
-    if (updates.name || updates.username) {
-      this.sortChats(false);
-    }
-  }
-
-  // --- UI Helpers ---
-
-  private patchChatLocally(chatId: string, updates: Partial<Chat>, moveToTop = false) {
-    const chat = this.chatsMap.get(chatId);
-    if (!chat) {
-      if (this.onChatListRefresh) this.onChatListRefresh();
-      return;
-    }
-
-    const chatIndex = this.chats.findIndex((c) => c.id === chatId);
-
-    // Check if unread status is changing to update counter
-    const wasUnread = (chat.unreadCount ?? 0) > 0;
-    Object.assign(chat, updates);
-    const isUnread = (chat.unreadCount ?? 0) > 0;
-
-    if (wasUnread !== isUnread) {
-      this.unreadChatsCount += isUnread ? 1 : -1;
-    }
-
-    // Update internal timestamp for sorting
-    const lastUpdate = chat.lastMessage?.sentAt || chat.createdAt;
-    chat._lastUpdateTs = new Date(lastUpdate).getTime();
-
-    if (moveToTop && chatIndex > 0) {
-      this.chats.splice(chatIndex, 1);
-      this.chats.unshift(chat);
-      this.sortChats(false); // Pins are already normalized
-    } else if (moveToTop || updates.lastMessage) {
-      this.sortChats(false);
-    }
-  }
-
-  // --- Pinning Logic ---
-
-  private loadPinnedChats() {
-    if (!authStore.user?.id) return;
-    try {
-      const saved = localStorage.getItem(`pinned_chats_${authStore.user.id}`);
-      if (saved) {
-        this.pinnedChatIds = new Set(JSON.parse(saved));
-      } else {
-        this.pinnedChatIds = new Set();
-      }
-    } catch (e) {
-      console.warn("Failed to load pinned chats", e);
-    }
-  }
-
-  private savePinnedChats() {
-    if (!authStore.user?.id) return;
-    try {
-      localStorage.setItem(`pinned_chats_${authStore.user.id}`, JSON.stringify(Array.from(this.pinnedChatIds)));
-    } catch (e) {
-      console.warn("Failed to save pinned chats", e);
-    }
-  }
-
-  toggleChatPin(chatId: string) {
-    const chat = this.chatsMap.get(chatId);
-    if (this.pinnedChatIds.has(chatId)) {
-      this.pinnedChatIds.delete(chatId);
-      if (chat) chat.isPinned = false;
-    } else {
-      this.pinnedChatIds.add(chatId);
-      if (chat) chat.isPinned = true;
-    }
-    this.savePinnedChats();
-    this.sortChats(false); // Pins are already updated
-  }
-
-  private sortChats(verifyPins = true) {
-    if (verifyPins) {
-      this.chats.forEach((chat: Chat) => {
-        chat.isPinned = this.pinnedChatIds.has(chat.id);
-        if (!chat._lastUpdateTs) {
-          chat._lastUpdateTs = new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime();
-        }
-      });
-    }
-
-    // Sort: Pinned first, then by internal timestamp (descending)
-    this.chats.sort((a: Chat, b: Chat) => {
-      const aPinned = a.isPinned ? 1 : 0;
-      const bPinned = b.isPinned ? 1 : 0;
-
-      if (aPinned !== bPinned) return bPinned - aPinned;
-      const aTs = a._lastUpdateTs || 0;
-      const bTs = b._lastUpdateTs || 0;
-      return bTs - aTs;
-    });
-
-    // Re-assign to self to ensure Svelte 5 tracks the order change for any
-    // consumers that might not be deeply tracking the mutation.
-    this.chats = this.chats;
+    if (updates.name || updates.username) chatListStore.sortChats(false);
   }
 }
 

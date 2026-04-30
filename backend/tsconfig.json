@@ -25,7 +25,8 @@
       "@config/*": ["./src/config/*"],
       "@bootstrap/*": ["./src/bootstrap/*"],
       "@routes/*": ["./src/routes/*"],
-      "@jobs/*": ["./src/jobs/*"]
+      "@jobs/*": ["./src/jobs/*"],
+      "@repositories/*": ["./src/repositories/*"]
     }
   },
   "include": ["src/**/*", "server.ts"],
