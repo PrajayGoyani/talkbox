@@ -1,5 +1,4 @@
-import { FREE_PLAN_SCRUB_DAYS, MESSAGE_MODIFY_LIMIT_HOURS } from "@root/shared/constants/chat";
-import { isScrubbed, isWithinModificationWindow } from "@root/shared/utils/message";
+import { FREE_PLAN_SCRUB_DAYS, MESSAGE_MODIFY_LIMIT_HOURS } from "@config/env";
 
 /**
  * Returns the cutoff date for Free-plan message scrubbing.
@@ -23,15 +22,13 @@ export const getModifyCutoff = (): Date => {
 /**
  * Returns true if the message is scrubbed for the given plan.
  */
-export const isScrubbedLogic = (plan: "free" | "pro", messageCreatedAt: Date): boolean => {
-  return isScrubbed(messageCreatedAt, plan, FREE_PLAN_SCRUB_DAYS);
+export const isScrubbed = (plan: "free" | "pro", messageCreatedAt: Date): boolean => {
+  return plan === "free" && messageCreatedAt < getScrubCutoff();
 };
 
 /**
  * Returns true if the message is past the modification time limit.
  */
 export const isPastModifyLimit = (messageCreatedAt: Date): boolean => {
-  return !isWithinModificationWindow(messageCreatedAt, MESSAGE_MODIFY_LIMIT_HOURS);
+  return messageCreatedAt < getModifyCutoff();
 };
-
-export { isScrubbedLogic as isScrubbed };

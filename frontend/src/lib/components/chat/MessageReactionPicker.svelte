@@ -2,7 +2,6 @@
   import EmojiPicker from "$components/chat/EmojiPicker.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
-  import { MESSAGE_MODIFICATION_WINDOW } from "$lib/config";
   import { isWithinModificationWindow as sharedIsWithinModificationWindow } from "@root/shared/utils/message";
   import { chatStore } from "$state/chat.svelte";
   import type { MessageDto } from "@root/shared/types/chat.dto";

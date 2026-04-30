@@ -1,9 +1,5 @@
-import { DISALLOWED_EMOJIS } from "@root/shared/constants/chat";
 import { getDisallowedEmojis as sharedGetDisallowedEmojis } from "@root/shared/utils/emoji";
 
-
-// Cache the regex for performance (compiled once at module load)
-const DISALLOWED_REGEX = new RegExp([...DISALLOWED_EMOJIS].join("|"), "gu");
 
 export interface MessageSegment {
   type: "text" | "emoji" | "link" | "code";
