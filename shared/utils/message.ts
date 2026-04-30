@@ -1,4 +1,4 @@
-import { MESSAGE_MODIFY_LIMIT_HOURS, FREE_PLAN_SCRUB_DAYS } from "../constants/chat.js";
+import { MESSAGE_MODIFY_LIMIT_HOURS, FREE_PLAN_SCRUB_DAYS } from "@shared/constants/chat";
 
 /**
  * Checks if a message is within the modification time limit.

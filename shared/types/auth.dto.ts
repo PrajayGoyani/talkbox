@@ -1,5 +1,3 @@
-import type { ApiResponse } from "./api.dto";
-
 /**
  * User Data Transfer Object
  */

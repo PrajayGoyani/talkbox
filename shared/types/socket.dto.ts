@@ -6,8 +6,8 @@ import type {
   ProfileUpdateDto,
   TypingIndicatorDto,
   UserStatusDto,
-} from "./chat.dto.js";
-import type { NotificationDto } from "./notification.dto.js";
+} from "@shared/types/chat.dto";
+import type { NotificationDto } from "@shared/types/notification.dto";
 
 export interface ServerToClientEvents {
   session_error: (payload: { reason: string; message: string }) => void;

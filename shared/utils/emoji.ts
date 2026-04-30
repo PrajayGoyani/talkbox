@@ -1,4 +1,4 @@
-import { DISALLOWED_EMOJIS } from "../constants/chat.js";
+import { DISALLOWED_EMOJIS } from "@shared/constants/chat";
 
 /**
  * Finds and returns any disallowed emojis present in the text.
