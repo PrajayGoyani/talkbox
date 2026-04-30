@@ -1,19 +1,21 @@
-import type { Chat, Message, MessageAlert } from "$types/chat";
-import type { Notification } from "$types/notification";
+import type { MessageAlert } from "$types/chat";
 import type { Socket } from "socket.io-client";
 
 import { chatService } from "$services/chat.service";
-import { notificationService } from "$services/notification.service";
+import { SocketHandler } from "$services/socket-handler.svelte";
 import { SocketManager } from "$services/socket.manager.svelte";
 import { messageStore } from "$state/active-chat.svelte";
-import { authStore } from "$state/auth.svelte";
-import { routerStore } from "$state/router.svelte";
 
 import { chatListStore } from "./chat/chat-list.svelte";
 import { presenceStore } from "./chat/presence.svelte";
 
 export * from "$types/chat";
 
+/**
+ * Facade for Chat-related state and actions.
+ * Orchestrates multiple domain stores (messageStore, chatListStore, presenceStore)
+ * and delegates socket management to SocketManager via SocketHandler.
+ */
 class ChatStore {
   // --- Delegated State ---
   get messages() {
@@ -26,10 +28,10 @@ class ChatStore {
     return messageStore.isLoadingMessages;
   }
   get isSendingMessage() {
-    return messageStore.isSendingMessage;
+    return this.socketHandler.isSendingMessage;
   }
   set isSendingMessage(val: boolean) {
-    messageStore.isSendingMessage = val;
+    this.socketHandler.isSendingMessage = val;
   }
   get activeChatId() {
     return messageStore.activeChatId;
@@ -72,14 +74,20 @@ class ChatStore {
   }
 
   lastError: string | null = $state(null);
-  isConnected = $state(false);
+
+  get isConnected() {
+    return this.socketHandler.isConnected;
+  }
+  set isConnected(val: boolean) {
+    this.socketHandler.isConnected = val;
+  }
 
   private socketManager: SocketManager;
-  private onChatListRefresh: (() => void) | null = null;
-  private onToastCallback: ((data: MessageAlert) => void) | null = null;
+  private socketHandler: SocketHandler;
 
   constructor() {
-    this.socketManager = new SocketManager(this);
+    this.socketHandler = new SocketHandler();
+    this.socketManager = new SocketManager(this.socketHandler);
   }
 
   get socket(): Socket | null {
@@ -87,11 +95,11 @@ class ChatStore {
   }
 
   onRefreshChats(cb: () => void) {
-    this.onChatListRefresh = cb;
+    this.socketHandler.setCallbacks({ onRefresh: cb });
   }
 
   onToast(cb: (data: MessageAlert) => void) {
-    this.onToastCallback = cb;
+    this.socketHandler.setCallbacks({ onToast: cb });
   }
 
   // --- Connection ---
@@ -166,7 +174,7 @@ class ChatStore {
 
   // --- Socket Operations ---
   async sendMessage(chatId: string, receiverId: string, contentBody: string) {
-    messageStore.isSendingMessage = true;
+    this.socketHandler.isSendingMessage = true;
     this.socketManager.sendMessage(chatId, receiverId, contentBody);
   }
 
@@ -184,139 +192,6 @@ class ChatStore {
 
   editMessage(messageId: string, contentBody: string) {
     this.socketManager.editMessage(messageId, contentBody);
-  }
-
-  // --- Handlers ---
-  handleReceiveMessage(message: Message) {
-    messageStore.handleReceiveMessage(message);
-    presenceStore.setTyping(message.chatId, message.senderId, false);
-
-    const isViewing = message.chatId === messageStore.activeChatId;
-    const isOtherUser = message.senderId !== authStore.user?.id;
-    const shouldInc = !isViewing && isOtherUser;
-
-    if (isOtherUser) {
-      notificationService.notify({
-        chatId: message.chatId,
-        senderId: message.senderId,
-        senderUsername: chatListStore.chatsMap?.get(message.chatId)?.otherUser?.username || message.senderId,
-        preview: message.contentBody,
-      });
-    }
-
-    const currentChat = chatListStore.chatsMap?.get(message.chatId);
-    const currentUnread = currentChat?.unreadCount || 0;
-
-    chatListStore.patchChatLocally(
-      message.chatId,
-      {
-        lastMessage: {
-          contentBody: message.contentBody,
-          senderId: message.senderId,
-          sentAt: message.createdAt,
-        },
-        unreadCount: shouldInc ? currentUnread + 1 : currentUnread,
-      },
-      true,
-    );
-  }
-
-  handleMessageAlert(data: MessageAlert) {
-    const isChatOpen = data.chatId === messageStore.activeChatId;
-    if (isChatOpen && document.hasFocus()) {
-      void this.markChatRead(data.chatId);
-    }
-    if (!document.hasFocus()) {
-      notificationService.showBrowserNotification(data);
-    }
-    if (this.onToastCallback && !isChatOpen) {
-      this.onToastCallback(data);
-    }
-  }
-
-  handleNotification(notification: Notification) {
-    if (notification.type === "chat_request") {
-      chatListStore.pendingRequestCount += 1;
-      if (this.onToastCallback) {
-        this.onToastCallback({
-          chatId: notification.referenceId,
-          senderUsername: "System",
-          preview: notification.message,
-        } as any);
-      }
-      if (routerStore.segments[1] === "requests") {
-        void chatListStore.fetchRequests();
-      }
-      notificationService.notify({
-        chatId: notification.referenceId,
-        senderId: "system",
-        senderUsername: "System",
-        preview: notification.message,
-      });
-    }
-    if (this.onChatListRefresh) this.onChatListRefresh();
-  }
-
-  handleChatAccepted(_data: { chatId: string }) {
-    void chatListStore.fetchChats();
-    if (routerStore.segments[1] === "requests") void chatListStore.fetchRequests();
-    if (this.onChatListRefresh) this.onChatListRefresh();
-  }
-
-  handleReactionUpdate(data: any) {
-    messageStore.handleReactionUpdate(data);
-  }
-
-  handleMessageDeleted(data: { messageId: string; chatId: string; isLastMessage?: boolean }) {
-    messageStore.handleMessageDeleted(data);
-    const chat = chatListStore.chatsMap?.get(data.chatId);
-    if (
-      chat?.lastMessage &&
-      (data.isLastMessage ||
-        (messageStore.activeChatId === data.chatId &&
-          messageStore.messages[messageStore.messages.length - 1]?.id === data.messageId))
-    ) {
-      chatListStore.patchChatLocally(data.chatId, {
-        lastMessage: { ...chat.lastMessage, contentBody: "Message deleted" },
-      });
-    }
-  }
-
-  handleMessageUpdated(data: any) {
-    messageStore.handleMessageUpdated(data);
-    const chat = chatListStore.chatsMap?.get(data.chatId);
-    if (
-      chat?.lastMessage &&
-      messageStore.activeChatId === data.chatId &&
-      messageStore.messages[messageStore.messages.length - 1]?.id === data.messageId
-    ) {
-      chatListStore.patchChatLocally(data.chatId, {
-        lastMessage: { ...chat.lastMessage, contentBody: data.contentBody },
-      });
-    }
-  }
-
-  handleMessageSentAck(chatId: string, message: Message) {
-    messageStore.handleMessageSentAck(chatId, message);
-    chatListStore.patchChatLocally(
-      chatId,
-      {
-        lastMessage: {
-          contentBody: message.contentBody,
-          senderId: message.senderId,
-          sentAt: message.createdAt,
-        },
-      },
-      true,
-    );
-  }
-
-  handleProfileUpdate(data: { userId: string } & Partial<Chat["otherUser"]>) {
-    const { userId, ...updates } = data;
-    chatListStore.chats.forEach((chat) => {
-      if (chat.otherUser?.id === userId) Object.assign(chat.otherUser, updates);
-    });
-    if (updates.name || updates.username) chatListStore.sortChats(false);
   }
 }
 

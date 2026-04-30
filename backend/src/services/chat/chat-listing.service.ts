@@ -1,7 +1,7 @@
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { ObjectId } from "mongodb";
 
-import { ChatListingResponse, ChatDto } from "@/types/chat.types";
+import { ChatDto, ChatListingResponse } from "@/types/chat.types";
 
 import { IChatListingService } from "./types";
 
@@ -27,7 +27,10 @@ export class ChatListingService implements IChatListingService {
             $or: [
               { "lastMessage.sentAt": { $lt: decoded.t } },
               {
-                $and: [{ "lastMessage.sentAt": decoded.t }, { _id: { $lt: new ObjectId(decoded.id) } }],
+                $and: [
+                  { "lastMessage.sentAt": decoded.t },
+                  { _id: { $lt: new ObjectId(decoded.id) } },
+                ],
               },
             ],
           },
@@ -35,11 +38,7 @@ export class ChatListingService implements IChatListingService {
       }
     }
 
-    const chats = await (this.repository as any).chatModel
-      .find(query)
-      .sort({ "lastMessage.sentAt": -1, _id: -1 })
-      .limit(limit + 1)
-      .populate("participants", "username name email avatar_url plan bio");
+    const chats = await this.repository.findAcceptedChatsByUser(userId, query, limit + 1);
 
     const hasMore = chats.length > limit;
     const results = hasMore ? chats.slice(0, limit) : chats;
@@ -47,7 +46,10 @@ export class ChatListingService implements IChatListingService {
     let nextCursor: string | null = null;
     if (hasMore && results.length > 0) {
       const last = results[results.length - 1];
-      nextCursor = this.repository.encodeCursor(last.lastMessage?.sentAt || last.createdAt, last._id.toString());
+      nextCursor = this.repository.encodeCursor(
+        last.lastMessage?.sentAt || last.createdAt,
+        last._id.toString(),
+      );
     }
 
     return {
@@ -84,11 +86,7 @@ export class ChatListingService implements IChatListingService {
       }
     }
 
-    const chats = await (this.repository as any).chatModel
-      .find(query)
-      .sort({ createdAt: -1, _id: -1 })
-      .limit(limit + 1)
-      .populate("participants", "username name email avatar_url plan bio");
+    const chats = await this.repository.findPendingRequestsByUser(userId, query, limit + 1);
 
     const hasMore = chats.length > limit;
     const results = hasMore ? chats.slice(0, limit) : chats;

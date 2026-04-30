@@ -10,11 +10,11 @@ export class ChatRepository {
     return this.chatModel.findById(id);
   }
 
-  public async findOne(query: any) {
+  public async findOne(query: Record<string, any>) {
     return this.chatModel.findOne(query);
   }
 
-  public async countDocuments(query: any) {
+  public async countDocuments(query: Record<string, any>) {
     return this.chatModel.countDocuments(query);
   }
 
@@ -23,13 +23,15 @@ export class ChatRepository {
       const decoded = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
       if (!ObjectId.isValid(decoded.id)) return null;
       return { t: new Date(decoded.t), id: decoded.id };
-    } catch (_e) {
+    } catch {
       return null;
     }
   }
 
   public encodeCursor(timestamp: Date, id: string | ObjectId) {
-    return Buffer.from(JSON.stringify({ t: timestamp.getTime(), id: id.toString() })).toString("base64");
+    return Buffer.from(JSON.stringify({ t: timestamp.getTime(), id: id.toString() })).toString(
+      "base64",
+    );
   }
 
   public transformChat(chat: IChat, userId: string | ObjectId): ChatDto {
@@ -38,7 +40,7 @@ export class ChatRepository {
 
     let otherUser: any = null;
     if (!chat.isGroup) {
-      otherUser = chat.participants.find((p: any) => p._id.toString() !== userIdStr);
+      otherUser = chat.participants.find((p: any) => p._id && p._id.toString() !== userIdStr);
     }
 
     return {
@@ -52,7 +54,8 @@ export class ChatRepository {
             username: otherUser.username,
             name: otherUser.name || null,
             email: otherUser.email,
-            avatarUrl: otherUser.avatar_url || `https://ui-avatars.com/api/?name=${otherUser.username}`,
+            avatarUrl:
+              otherUser.avatar_url || `https://ui-avatars.com/api/?name=${otherUser.username}`,
             plan: otherUser.plan,
             bio: otherUser.bio,
           }
@@ -73,7 +76,12 @@ export class ChatRepository {
   /**
    * Complex Search Aggregation
    */
-  public async searchChats(userId: ObjectId, query: string, limit: number, cursorObj: { t: Date; id: string } | null) {
+  public async searchChats(
+    userId: ObjectId,
+    query: string,
+    limit: number,
+    cursorObj: { t: Date; id: string } | null,
+  ) {
     const q = new RegExp("^" + query, "i");
     const pipeline: any[] = [
       {
@@ -116,7 +124,10 @@ export class ChatRepository {
           $or: [
             { sortTime: { $lt: cursorObj.t } },
             {
-              $and: [{ sortTime: { $eq: cursorObj.t } }, { _id: { $lt: new ObjectId(cursorObj.id) } }],
+              $and: [
+                { sortTime: { $eq: cursorObj.t } },
+                { _id: { $lt: new ObjectId(cursorObj.id) } },
+              ],
             },
           ],
         },
@@ -162,6 +173,53 @@ export class ChatRepository {
     });
 
     return this.chatModel.aggregate(pipeline);
+  }
+
+  public async findAcceptedChatsByUser(
+    userId: string | ObjectId,
+    query: Record<string, any>,
+    limit: number,
+  ) {
+    return this.chatModel
+      .find(query)
+      .sort({ "lastMessage.sentAt": -1, _id: -1 })
+      .limit(limit)
+      .populate("participants", "username name email avatar_url plan bio");
+  }
+
+  public async findPendingRequestsByUser(
+    userId: string | ObjectId,
+    query: Record<string, any>,
+    limit: number,
+  ) {
+    return this.chatModel
+      .find(query)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit)
+      .populate("participants", "username name email avatar_url plan bio");
+  }
+
+  public async markAsRead(chatId: string | ObjectId, userId: string | ObjectId) {
+    return this.chatModel.findOneAndUpdate(
+      {
+        _id: chatId,
+        participants: userId,
+      },
+      { $set: { [`unreadCounts.${userId.toString()}`]: 0 } },
+      { new: true },
+    );
+  }
+
+  public async findOneAndUpdate(query: Record<string, any>, update: any) {
+    return this.chatModel.findOneAndUpdate(query, update, { new: true });
+  }
+
+  public async create(data: Partial<IChat>) {
+    return this.chatModel.create(data);
+  }
+
+  public async updateById(id: string | ObjectId, update: any) {
+    return this.chatModel.findByIdAndUpdate(id, update, { new: true });
   }
 }
 
