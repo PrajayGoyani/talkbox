@@ -29,9 +29,6 @@ export default defineConfig({
     },
   },
   run: {
-    cache: {
-      tasks: true,
-    },
     tasks: {
       "build-task": {
         command: "vp build",

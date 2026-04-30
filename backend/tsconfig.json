@@ -27,8 +27,7 @@
       "@bootstrap/*": ["./src/bootstrap/*"],
       "@routes/*": ["./src/routes/*"],
       "@jobs/*": ["./src/jobs/*"],
-      "@repositories/*": ["./src/repositories/*"],
-      "@root/shared/*": ["../shared/*"]
+      "@repositories/*": ["./src/repositories/*"]
     }
   },
   "include": ["src/**/*", "server.ts"],

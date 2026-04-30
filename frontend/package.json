@@ -5,14 +5,14 @@
   "type": "module",
   "scripts": {
     "build": "vp run --cache build-task",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsgo -p tsconfig.node.json",
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsgo -p tsconfig.bun.json",
     "dev": "vp dev",
     "fmt": "vp fmt",
     "fmt:check": "vp fmt --check",
     "preview": "vp preview"
   },
   "dependencies": {
-    "@root/shared": "../shared",
+    "@root/shared": "workspace:*",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "emoji-picker-element": "^1.29.1",

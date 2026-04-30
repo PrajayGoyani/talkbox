@@ -15,8 +15,7 @@ endif
 # Install dependencies for frontend and backend
 install:
 	@echo "Installing dependencies..."
-	cd backend && bun install
-	cd frontend && bun install
+	bun install
 	@echo "Installation complete!"
 
 # Unified build command (incremental)
