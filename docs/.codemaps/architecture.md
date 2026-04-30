@@ -1,12 +1,13 @@
-<!-- Generated: 2026-04-30 | Files scanned: ~150 | Token estimate: ~800 -->
+<!-- Generated: 2026-05-01 | Files scanned: ~150 | Token estimate: ~800 -->
 # Project Architecture
 
 ## System Overview
-Real-time chat application with a Svelte frontend and Express backend. Uses Socket.io for bi-directional communication, MongoDB for persistent storage, and Redis for distributed state, pub/sub, and caching.
+Real-time chat application with a Svelte frontend and a Bun-based Express backend. Uses Socket.io for bi-directional communication, MongoDB for persistent storage, and Redis for distributed state, pub/sub, and caching.
 
 ## Components
 - **Frontend (Svelte 5)**: Client-side application using runes for state management and a custom hash router. Built with Vite Plus.
-- **Backend (Express/TS)**: REST API and WebSocket server handling authentication, chat orchestration, and notifications.
+- **Backend (Bun/Express)**: REST API and WebSocket server handling authentication, chat orchestration, and notifications.
+- **Shared (./shared)**: Shared types, Zod schemas, and utility functions used by both frontend and backend.
 - **Storage (MongoDB)**: Primary data store for users, chats, messages, and notifications.
 - **Cache & Pub/Sub (Redis)**: Distributed session management, presence tracking, and L2 cache for participants.
 - **Media (Cloudinary)**: External service for avatar and media hosting.

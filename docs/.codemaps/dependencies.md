@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-30 | Files scanned: 2 | Token estimate: ~500 -->
+<!-- Generated: 2026-05-01 | Files scanned: 2 | Token estimate: ~500 -->
 # Project Dependencies (v1.7.0)
 
 ## Backend
@@ -19,6 +19,10 @@
 - **Styling**: `tailwindcss` (v4), `tailwind-merge`, `clsx`.
 - **Communication**: `socket.io-client`.
 - **UI Components**: `emoji-picker-element`, `canvas-confetti`.
+
+## Shared
+- **Workspace**: `@root/shared` (Internal dependency).
+- **Validation**: `zod`.
 
 ## External Integrations
 - **MongoDB**: Primary database.

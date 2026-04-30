@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-30 | Files scanned: ~150 | Token estimate: ~800 -->
+<!-- Generated: 2026-05-01 | Files scanned: ~150 | Token estimate: ~800 -->
 # Backend Architecture
 
 ## API Routes
@@ -24,7 +24,7 @@
 - `PUT  /:chatId/reject` -> `chat.controller.rejectChat`
 - `DELETE /:chatId` -> `chat.controller.deleteChat`
 - `GET  /:chatId/messages` -> `chat.controller.getChatMessages` (Plan-aware scrubbing)
-- `PUT  /:chatId/read" -> "chat.controller.markChatRead`
+- `PUT  /:chatId/read` -> `chat.controller.markChatRead`
 
 ### User (`/api/user`)
 - `POST /avatar` -> `user.controller.uploadAvatar`

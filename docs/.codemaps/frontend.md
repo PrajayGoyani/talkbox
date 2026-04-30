@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-30 | Files scanned: ~150 | Token estimate: ~800 -->
+<!-- Generated: 2026-05-01 | Files scanned: ~150 | Token estimate: ~800 -->
 # Frontend Architecture
 
 ## Page Tree

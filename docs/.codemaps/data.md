@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-30 | Files scanned: ~20 | Token estimate: ~700 -->
+<!-- Generated: 2026-05-01 | Files scanned: ~20 | Token estimate: ~700 -->
 # Data Architecture
 
 ## Database Models (MongoDB/Mongoose)
