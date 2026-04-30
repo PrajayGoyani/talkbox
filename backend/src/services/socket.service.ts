@@ -246,9 +246,7 @@ export class SocketService {
     // Use a copy for safe iteration while deleting
     // If victimSocketId is provided, we only disconnect that specific socket.
     // If NOT provided, we kick everyone (fallback/safety).
-    const socketsToDisconnect = Array.from(userSockets).filter((s) => 
-      !victimSocketId || s.id === victimSocketId
-    );
+    const socketsToDisconnect = Array.from(userSockets).filter((s) => !victimSocketId || s.id === victimSocketId);
 
     socketsToDisconnect.forEach((s) => {
       s.emit("session_error", { reason: "takeover", message: "Session opened in another window." });

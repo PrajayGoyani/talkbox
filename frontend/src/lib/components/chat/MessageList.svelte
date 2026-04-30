@@ -13,6 +13,8 @@
     type Message,
     type User,
   } from "$state/chat.svelte";
+  import { activeChatStore } from "$state/active-chat.svelte";
+
   import { getDateLabel } from "$utils/date";
   import { throttle } from "$utils/timing";
   import { onMount, tick } from "svelte";
@@ -63,7 +65,7 @@
     const groups: { label: string; messages: Message[] }[] = [];
     let lastDateKey = "";
 
-    for (const msg of chatStore.messages) {
+    for (const msg of activeChatStore.messages) {
       const dateKey = msg.createdAt.slice(0, 10);
       if (groups.length === 0 || dateKey !== lastDateKey) {
         groups.push({
@@ -77,6 +79,7 @@
     }
     return groups;
   });
+
 
   export const scrollToBottom = (instant = false) => {
     if (messagesContainer) {
@@ -116,12 +119,12 @@
         const entry = entries[0];
         if (
           entry.isIntersecting &&
-          chatStore.hasMoreMessages &&
-          !chatStore.isLoadingMessages
+          activeChatStore.hasMoreMessages &&
+          !activeChatStore.isLoadingMessages
         ) {
           const scrollBottom =
             messagesContainer!.scrollHeight - messagesContainer!.scrollTop;
-          chatStore.loadOlderMessages().then(async () => {
+          activeChatStore.loadOlderMessages().then(async () => {
             await tick();
             if (messagesContainer) {
               messagesContainer.scrollTop =
@@ -129,6 +132,7 @@
             }
           });
         }
+
       },
       {
         root: messagesContainer,
@@ -142,10 +146,11 @@
 
   // Export scroll to bottom for parent
   $effect(() => {
-    if (chatStore.messages.length > 0 && !userHasScrolledUp) {
+    if (activeChatStore.messages.length > 0 && !userHasScrolledUp) {
       scrollToBottom(true);
     }
   });
+
 
   // Use a resize observer to keep skeleton count accurate
   onMount(() => {
@@ -165,13 +170,14 @@
     style="overflow-anchor: none;"
     onscroll={handleMessagesScroll}
   >
-    {#if chatStore.isLoadingMessages && chatStore.messages.length === 0}
+    {#if activeChatStore.isLoadingMessages && activeChatStore.messages.length === 0}
       <div class="flex flex-col gap-4">
         {#each Array(messageSkeletonCount) as _, i}
           <MessageSkeleton sent={i % 2 === 0} />
         {/each}
       </div>
-    {:else if chatStore.messages.length === 0}
+    {:else if activeChatStore.messages.length === 0}
+
       <div
         class="flex flex-col items-center justify-center gap-4 h-full text-slate-500 opacity-60 text-center py-20"
       >
@@ -188,12 +194,13 @@
     {:else}
       <div bind:this={topSentinel} class="h-1 -mt-4"></div>
 
-      {#if chatStore.isLoadingMessages && chatStore.hasMoreMessages}
+      {#if activeChatStore.isLoadingMessages && activeChatStore.hasMoreMessages}
         <div class="flex flex-col gap-4 mb-6">
           <MessageSkeleton sent={false} />
           <MessageSkeleton sent={true} />
         </div>
       {/if}
+
 
       {#each groupedMessages as group (group.label)}
         <div class="flex flex-col gap-1 mb-4 relative">

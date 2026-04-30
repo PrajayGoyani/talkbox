@@ -10,7 +10,9 @@
     type Message,
     type User,
   } from "$state/chat.svelte";
+  import { activeChatStore } from "$state/active-chat.svelte";
   import { tick } from "svelte";
+
 
   let {
     chatId,
@@ -59,7 +61,8 @@
   };
 
   const saveEditing = async (msgId: string) => {
-    const msg = chatStore.messages.find((m) => m.id === msgId);
+    const msg = activeChatStore.messages.find((m) => m.id === msgId);
+
 
     if (!msg || editInputValue.trim() === msg.contentBody) {
       cancelEditing();

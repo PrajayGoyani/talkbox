@@ -4,6 +4,8 @@
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
   import { chatStore, type User } from "$state/chat.svelte";
+  import { activeChatStore } from "$state/active-chat.svelte";
+
   import { uiStore } from "$state/ui.svelte";
   import { getDisallowedEmojis } from "$utils/emoji";
 
@@ -28,7 +30,8 @@
   };
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || chatStore.isSendingMessage || !otherUser) return;
+    if (!messageInput.trim() || activeChatStore.isSendingMessage || !otherUser) return;
+
 
     const found = getDisallowedEmojis(messageInput.trim());
     if (found.length > 0) {
@@ -86,12 +89,13 @@
   };
 
   $effect(() => {
-    if (!chatStore.isSendingMessage && textareaElement && chatId) {
+    if (!activeChatStore.isSendingMessage && textareaElement && chatId) {
       tick().then(() => {
         textareaElement?.focus();
       });
     }
   });
+
 </script>
 
 <div class="p-2.5 md:p-4 glass-panel border-t flex gap-2 md:gap-3 items-center relative z-40">
@@ -125,12 +129,13 @@
     class="bg-indigo-600 hover:bg-indigo-700 text-white w-9 h-9 md:w-[42px] md:h-[42px] rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
     aria-label="Send message"
     onclick={handleSendMessage}
-    disabled={!messageInput.trim() || chatStore.isSendingMessage}
+    disabled={!messageInput.trim() || activeChatStore.isSendingMessage}
   >
-    {#if chatStore.isSendingMessage}
+    {#if activeChatStore.isSendingMessage}
       <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
     {:else}
       <Icon name="send" class="w-5 h-5" />
     {/if}
+
   </button>
 </div>

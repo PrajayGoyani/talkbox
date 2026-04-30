@@ -60,7 +60,9 @@ describe("AuthMiddleware", () => {
     await authenticateToken(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining("No token provided") }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining("No token provided") }),
+    );
     expect(next).not.toHaveBeenCalled();
   });
 

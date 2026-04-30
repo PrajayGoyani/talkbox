@@ -2,12 +2,12 @@ import type { Chat, Message, MessageAlert } from "$types/chat";
 import type { Notification } from "$types/notification";
 import type { Socket } from "socket.io-client";
 
-import { ASSETS } from "$lib/config";
 import { chatService } from "$services/chat.service";
+import { notificationService } from "$services/notification.service";
 import { SocketManager } from "$services/socket.manager.svelte";
+import { activeChatStore } from "$state/active-chat.svelte";
 import { authStore } from "$state/auth.svelte";
 import { routerStore } from "$state/router.svelte";
-import { playNotificationSound } from "$utils/audio";
 import { ApiError } from "$utils/errors";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
@@ -18,11 +18,24 @@ const LOADER_AWAIT_MS = 300;
 class ChatStore {
   // State
   isConnected = $state(false);
-  messages: Array<Message> = $state([]);
-  hasMoreMessages = $state(true);
-  isLoadingMessages = $state(false);
-  isSendingMessage = $state(false);
-  activeChatId: string | null = $state(null);
+  get messages() {
+    return activeChatStore.messages;
+  }
+  get hasMoreMessages() {
+    return activeChatStore.hasMoreMessages;
+  }
+  get isLoadingMessages() {
+    return activeChatStore.isLoadingMessages;
+  }
+  get isSendingMessage() {
+    return activeChatStore.isSendingMessage;
+  }
+  set isSendingMessage(val: boolean) {
+    activeChatStore.isSendingMessage = val;
+  }
+  get activeChatId() {
+    return activeChatStore.activeChatId;
+  }
 
   onlineStatus = new SvelteMap<string, { isOnline: boolean; lastSeen: Date | null }>();
   typingStatus = new SvelteMap<string, SvelteSet<string>>();
@@ -44,8 +57,8 @@ class ChatStore {
   /** Map for O(1) chat lookups by ID */
   private chatsMap: Map<string, Chat> = new Map();
 
-  private messagesAbortController: AbortController | null = null;
   private chatsAbortController: AbortController | null = null;
+
   private requestsAbortController: AbortController | null = null;
 
   // Callbacks for UI refresh
@@ -92,12 +105,9 @@ class ChatStore {
 
   disconnect() {
     this.socketManager.disconnect();
-    this.messagesAbortController?.abort();
     this.chatsAbortController?.abort();
-    this.messagesAbortController = null;
     this.chatsAbortController = null;
-    this.messages = [];
-    this.activeChatId = null;
+    activeChatStore.clear();
     this.onlineStatus.clear();
     this.typingStatus.clear();
   }
@@ -105,65 +115,11 @@ class ChatStore {
   // --- REST API Operations (Delegated to ChatService) ---
 
   async loadMessages(chatId: string) {
-    this.messagesAbortController?.abort();
-    this.messagesAbortController = new AbortController();
-
-    this.activeChatId = chatId;
-    this.messages = [];
-    this.hasMoreMessages = true;
-    this.isLoadingMessages = true;
-    const startTime = Date.now();
-    try {
-      const loadedMessages = await chatService.loadMessages(chatId, this.messagesAbortController.signal);
-
-      // Guard against race conditions
-      if (this.activeChatId !== chatId) return;
-
-      const elapsed = Date.now() - startTime;
-      if (elapsed < LOADER_AWAIT_MS) {
-        await new Promise((r) => setTimeout(r, LOADER_AWAIT_MS - elapsed));
-      }
-
-      this.messages = loadedMessages;
-      this.hasMoreMessages = loadedMessages.length >= 50; // Dynamic check
-    } catch (e) {
-      if (e instanceof Error && e.name === "AbortError") return;
-      console.error("Failed to load messages:", e);
-      this.lastError = "Failed to load messages. Please try again.";
-    } finally {
-      this.isLoadingMessages = false;
-    }
+    return activeChatStore.initialize(chatId);
   }
 
   async loadOlderMessages() {
-    if (!this.activeChatId || !this.hasMoreMessages || this.isLoadingMessages || this.messages.length === 0) return;
-
-    this.isLoadingMessages = true;
-    const oldestMessageId = this.messages[0].id;
-    const startTime = Date.now();
-    try {
-      const olderMessages = await chatService.loadOlderMessages(
-        this.activeChatId,
-        oldestMessageId,
-        this.messagesAbortController?.signal,
-      );
-
-      const elapsed = Date.now() - startTime;
-      if (elapsed < LOADER_AWAIT_MS) {
-        await new Promise((r) => setTimeout(r, LOADER_AWAIT_MS - elapsed));
-      }
-
-      if (olderMessages.length > 0) {
-        this.messages.unshift(...olderMessages);
-      }
-      this.hasMoreMessages = olderMessages.length >= 50;
-    } catch (e: unknown) {
-      if (e instanceof Error && e.name === "AbortError") return;
-      console.error("Failed to load older messages:", e);
-      this.lastError = "Failed to load older messages.";
-    } finally {
-      this.isLoadingMessages = false;
-    }
+    return activeChatStore.loadOlderMessages();
   }
 
   async fetchChats(query = "") {
@@ -324,6 +280,7 @@ class ChatStore {
   // --- Socket Operations (Delegated to SocketManager) ---
 
   async sendMessage(chatId: string, receiverId: string, contentBody: string) {
+    activeChatStore.isSendingMessage = true;
     this.socketManager.sendMessage(chatId, receiverId, contentBody);
   }
 
@@ -346,9 +303,7 @@ class ChatStore {
   // --- Internal Handlers for SocketManager ---
 
   handleReceiveMessage(message: Message) {
-    if (message.chatId === this.activeChatId) {
-      this.messages.push(message);
-    }
+    activeChatStore.handleReceiveMessage(message);
 
     // Clear typing indicator instantly
     if (this.typingStatus.has(message.chatId)) {
@@ -359,11 +314,16 @@ class ChatStore {
     const isOtherUser = message.senderId !== authStore.user?.id;
     const shouldInc = !isViewing && isOtherUser;
 
+    const chat = this.chatsMap.get(message.chatId);
     if (isOtherUser) {
-      playNotificationSound();
+      notificationService.notify({
+        chatId: message.chatId,
+        senderId: message.senderId,
+        senderUsername: chat?.otherUser?.username || message.senderId,
+        preview: message.contentBody,
+      });
     }
 
-    const chat = this.chatsMap.get(message.chatId);
     const currentUnread = chat?.unreadCount || 0;
 
     const updates: Partial<Chat> & { lastUpdate?: string } = {
@@ -387,7 +347,7 @@ class ChatStore {
     }
 
     if (!isTabFocused) {
-      this.showBrowserNotification(data);
+      notificationService.showBrowserNotification(data);
     }
 
     if (this.onToastCallback && !isChatOpen) {
@@ -408,7 +368,13 @@ class ChatStore {
       if (routerStore.segments[1] === "requests") {
         void this.fetchRequests();
       }
-      playNotificationSound();
+      notificationService.notify({
+        chatId: notification.referenceId,
+        senderId: "system",
+        senderUsername: "System",
+        preview: notification.message,
+      });
+
     }
 
     if (this.onChatListRefresh) {
@@ -431,23 +397,12 @@ class ChatStore {
     chatId: string;
     reactions: Array<{ emoji: string; slug?: string; users: string[] }>;
   }) {
-    if (data.chatId === this.activeChatId) {
-      const msg = this.messages.find((m) => m.id === data.messageId);
-      if (msg) {
-        msg.reactions = data.reactions;
-      }
-    }
+    activeChatStore.handleReactionUpdate(data);
   }
 
   handleMessageDeleted(data: { messageId: string; chatId: string; isLastMessage?: boolean }) {
-    if (data.chatId === this.activeChatId) {
-      const msg = this.messages.find((m) => m.id === data.messageId);
-      if (msg) {
-        msg.contentBody = "This message was deleted";
-        msg.isDeleted = true;
-        msg.reactions = [];
-      }
-    }
+    activeChatStore.handleMessageDeleted(data);
+
     const chat = this.chatsMap.get(data.chatId);
     if (chat && chat.lastMessage) {
       const isLatest =
@@ -474,14 +429,7 @@ class ChatStore {
     isEdited: boolean;
     editedAt: string;
   }) {
-    if (data.chatId === this.activeChatId) {
-      const msg = this.messages.find((m) => m.id === data.messageId);
-      if (msg) {
-        msg.contentBody = data.contentBody;
-        msg.isEdited = data.isEdited;
-        msg.editedAt = data.editedAt;
-      }
-    }
+    activeChatStore.handleMessageUpdated(data);
 
     const chat = this.chatsMap.get(data.chatId);
     if (chat && chat.lastMessage) {
@@ -502,10 +450,7 @@ class ChatStore {
   }
 
   handleMessageSentAck(chatId: string, message: Message) {
-    const exists = this.messages.some((m: Message) => m.idempotencyKey === message.idempotencyKey);
-    if (!exists) {
-      this.messages.push(message);
-    }
+    activeChatStore.handleMessageSentAck(chatId, message);
     this.patchChatLocally(
       chatId,
       {
@@ -638,23 +583,6 @@ class ChatStore {
     // Re-assign to self to ensure Svelte 5 tracks the order change for any
     // consumers that might not be deeply tracking the mutation.
     this.chats = this.chats;
-  }
-
-  private showBrowserNotification(data: MessageAlert) {
-    if (!("Notification" in window) || Notification.permission !== "granted") return;
-
-    const displayName = data.senderName || data.senderUsername;
-    const notification = new Notification(displayName, {
-      body: data.preview,
-      icon: ASSETS.NOTIFICATION_ICON,
-      tag: `msg-${data.chatId}-${Date.now()}`,
-      silent: false,
-    });
-
-    notification.onclick = () => {
-      window.focus();
-      notification.close();
-    };
   }
 }
 

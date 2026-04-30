@@ -5,13 +5,13 @@ import { error as errorResponse, success } from "@utils/response";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
+import mongoose from "mongoose";
 import path from "path";
 
 // import helmet from 'helmet';
 import { app, server } from "@/app";
 import { stopAgenda } from "@/config/agenda";
 import { redisService } from "@/services/redis.service";
-import mongoose from "mongoose";
 
 // ____________________ Bootstrap Handlers ____________________
 

@@ -1,496 +1,134 @@
-import { REDIS_URL } from "@config/env";
-import * as Sentry from "@sentry/bun";
-import { Redis } from "ioredis";
+import { RedisBaseService } from "./redis/base";
+import { RedisGuardService } from "./redis/guard";
+import { RedisPresenceService } from "./redis/presence";
+import { RedisSessionService } from "./redis/session";
 
 /**
- * Key Patterns:
- * - partners:userId (Set of partner User IDs)
- * - online_users (Set of currently online User IDs)
- * - sessions:userId (Set of active Socket IDs for this user)
+ * Facade for decomposed Redis services.
+ * Maintains backward compatibility with the existing API.
  */
 class RedisService {
-  public client: Redis | null = null;
-  public subClient: Redis | null = null;
-  public isConnected = false;
-  private lastFailOpenLogAt = 0;
-  private failOpenCount = 0;
-  private readonly FAIL_OPEN_LOG_INTERVAL = 60 * 1000; // Log at most once per minute after threshold
-  private readonly FAIL_OPEN_ALERT_THRESHOLD = 5; // Alert on first 5 failures instantly
+  private base: RedisBaseService;
+  private presence: RedisPresenceService;
+  private session: RedisSessionService;
+  private guard: RedisGuardService;
 
   constructor() {
-    if (!REDIS_URL) {
-      console.warn("[RedisService] REDIS_URL not provided. Redis features will be disabled.");
-      return;
-    }
-
-    try {
-      this.client = new Redis(REDIS_URL, {
-        maxRetriesPerRequest: null,
-        reconnectOnError: (err) => {
-          const targetError = "READONLY";
-          if (err.message.includes(targetError)) return true;
-          return false;
-        },
-      });
-
-      this.client.on("connect", () => {
-        this.isConnected = true;
-        this.failOpenCount = 0;
-        console.log("[RedisService] Connected to Redis.");
-      });
-
-      this.client.on("error", (err) => {
-        console.error("[RedisService] Redis Client Error:", err);
-      });
-
-      // Dedicated subscription client
-      this.subClient = new Redis(REDIS_URL, {
-        maxRetriesPerRequest: null,
-        enableReadyCheck: false, // Critical: Prevent INFO commands on subscriber connection
-      });
-    } catch (err) {
-      console.error("[RedisService] Failed to initialize Redis:", err);
-    }
+    this.base = new RedisBaseService();
+    this.presence = new RedisPresenceService(this.base);
+    this.session = new RedisSessionService(this.base);
+    this.guard = new RedisGuardService(this.base);
   }
 
-  // ─── Partner Caching (L2) ──────────────────────────────────────────
-
-  async getCachedPartners(userId: string, activeOnly = false): Promise<Set<string> | null> {
-    if (!this.client || !this.isConnected) return null;
-    const key = activeOnly ? `partners:${userId}:active` : `partners:${userId}`;
-    try {
-      const partners = await this.client.smembers(key);
-      return partners.length > 0 ? new Set(partners) : null;
-    } catch (err) {
-      console.error("[RedisService] Error getting cached partners:", err);
-      return null;
-    }
+  // Getters and setters for core properties (backward compatibility/tests)
+  get client() {
+    return this.base.client;
+  }
+  set client(val: any) {
+    this.base.client = val;
   }
 
-  async setCachedPartners(userId: string, partnerIds: string[], activeOnly = false): Promise<void> {
-    if (!this.client || !this.isConnected || partnerIds.length === 0) return;
-    const key = activeOnly ? `partners:${userId}:active` : `partners:${userId}`;
-    try {
-      await this.client
-        .multi()
-        .del(key)
-        .sadd(key, ...partnerIds)
-        .expire(key, 1800)
-        .exec(); // 30 mins TTL
-    } catch (err) {
-      console.error("[RedisService] Error setting cached partners:", err);
-    }
+  get subClient() {
+    return this.base.subClient;
+  }
+  set subClient(val: any) {
+    this.base.subClient = val;
   }
 
-  async invalidatePartnerCache(userId: string): Promise<void> {
-    if (!this.client || !this.isConnected) return;
-    try {
-      await this.client.del(`partners:${userId}`, `partners:${userId}:active`);
-    } catch (err) {
-      console.error("[RedisService] Error invalidating partner cache:", err);
-    }
+  get isConnected() {
+    return this.base.isConnected;
+  }
+  set isConnected(val: boolean) {
+    this.base.isConnected = val;
   }
 
-  // ─── Presence Tracking (Global) ────────────────────────────────────
-
-  async setUserOnline(userId: string): Promise<void> {
-    if (!this.client || !this.isConnected) return;
-    try {
-      await this.client.sadd("online_users", userId);
-      // Notify all server instances via Pub/Sub
-      await this.client.publish("presence:updates", JSON.stringify({ userId, isOnline: true }));
-    } catch (err) {
-      console.error("[RedisService] Error setting user online:", err);
-    }
+  // ─── Presence ──────────────────────────────────────────────────────
+  getCachedPartners(userId: string, activeOnly = false) {
+    return this.presence.getCachedPartners(userId, activeOnly);
+  }
+  setCachedPartners(userId: string, partnerIds: string[], activeOnly = false) {
+    return this.presence.setCachedPartners(userId, partnerIds, activeOnly);
+  }
+  invalidatePartnerCache(userId: string) {
+    return this.presence.invalidatePartnerCache(userId);
+  }
+  setUserOnline(userId: string) {
+    return this.presence.setUserOnline(userId);
+  }
+  setUserOffline(userId: string, lastSeen?: Date) {
+    return this.presence.setUserOffline(userId, lastSeen);
+  }
+  getLastSeenBatched(userIds: string[]) {
+    return this.presence.getLastSeenBatched(userIds);
+  }
+  isUserOnline(userId: string) {
+    return this.presence.isUserOnline(userId);
+  }
+  getOnlineUsers(userIds: string[]) {
+    return this.presence.getOnlineUsers(userIds);
+  }
+  queuePresenceSync(userId: string) {
+    return this.presence.queuePresenceSync(userId);
+  }
+  queuePresenceSyncBatched(userIds: string[]) {
+    return this.presence.queuePresenceSyncBatched(userIds);
+  }
+  getSyncQueueCount() {
+    return this.presence.getSyncQueueCount();
+  }
+  popSyncQueue(limit: number) {
+    return this.presence.popSyncQueue(limit);
   }
 
-  async setUserOffline(userId: string, lastSeen: Date = new Date()): Promise<void> {
-    if (!this.client || !this.isConnected) return;
-    try {
-      await this.client
-        .multi()
-        .srem("online_users", userId)
-        .set(`user:ls:${userId}`, lastSeen.toISOString(), "EX", 604800) // 7-day TTL auto-pruning
-        .exec();
-
-      // Notify all server instances via Pub/Sub
-      await this.client.publish("presence:updates", JSON.stringify({ userId, isOnline: false }));
-    } catch (err) {
-      console.error("[RedisService] Error setting user offline:", err);
-    }
+  // ─── Sessions & Tokens ─────────────────────────────────────────────
+  incrementGlobalSession(userId: string, socketId: string) {
+    return this.session.incrementGlobalSession(userId, socketId);
+  }
+  decrementGlobalSession(userId: string, socketId: string) {
+    return this.session.decrementGlobalSession(userId, socketId);
+  }
+  getGlobalSessionCount(userId: string) {
+    return this.session.getGlobalSessionCount(userId);
+  }
+  takeoverFreeSession(userId: string, newSocketId: string) {
+    return this.session.takeoverFreeSession(userId, newSocketId);
+  }
+  publishSessionTakeover(userId: string, victimSocketId: string) {
+    return this.session.publishSessionTakeover(userId, victimSocketId);
+  }
+  publishCacheInvalidation(type: "user" | "partner" | "chat", id: string) {
+    return this.session.publishCacheInvalidation(type, id);
+  }
+  storeToken(prefix: string, token: string, userId: string, ttlSeconds: number) {
+    return this.session.storeToken(prefix, token, userId, ttlSeconds);
+  }
+  getToken(prefix: string, token: string) {
+    return this.session.getToken(prefix, token);
+  }
+  deleteToken(prefix: string, token: string) {
+    return this.session.deleteToken(prefix, token);
   }
 
-  async getLastSeenBatched(userIds: string[]): Promise<Map<string, Date>> {
-    if (!this.client || !this.isConnected || userIds.length === 0) return new Map();
-    try {
-      const keys = userIds.map((id) => `user:ls:${id}`);
-      const results = await this.client.mget(...keys);
-      const lastSeenMap = new Map<string, Date>();
-
-      results.forEach((val, index) => {
-        if (val) {
-          lastSeenMap.set(userIds[index], new Date(val));
-        }
-      });
-
-      return lastSeenMap;
-    } catch (err) {
-      console.error("[RedisService] Error getting batched last seen:", err);
-      return new Map();
-    }
+  // ─── Guard (Locks/Limits) ──────────────────────────────────────────
+  lockChat(chatId: string) {
+    return this.guard.lockChat(chatId);
+  }
+  unlockChat(chatId: string) {
+    return this.guard.unlockChat(chatId);
+  }
+  isChatLocked(chatId: string) {
+    return this.guard.isChatLocked(chatId);
+  }
+  incrementAndCheckLimit(key: string, limit: number, windowMs: number) {
+    return this.guard.incrementAndCheckLimit(key, limit, windowMs);
+  }
+  checkAndSetIdempotency(key: string, ttlSeconds?: number) {
+    return this.guard.checkAndSetIdempotency(key, ttlSeconds);
   }
 
-  async isUserOnline(userId: string): Promise<boolean> {
-    if (!this.client || !this.isConnected) return false;
-    try {
-      return (await this.client.sismember("online_users", userId)) === 1;
-    } catch (err) {
-      console.error("[RedisService] Error checking user online:", err);
-      return false;
-    }
-  }
-
-  async getOnlineUsers(userIds: string[]): Promise<Set<string>> {
-    if (!this.client || !this.isConnected || userIds.length === 0) return new Set();
-    try {
-      // Find intersection of requested users and online users
-      // Optimization: use SINTER if we can create a temp set, but for small batches pipeline is safer
-      const pipeline = this.client.pipeline();
-      userIds.forEach((id) => pipeline.sismember("online_users", id));
-      const results = await pipeline.exec();
-
-      const online = new Set<string>();
-      results?.forEach((res, index) => {
-        const [err, isMember] = res;
-        if (!err && isMember === 1) online.add(userIds[index]);
-      });
-      return online;
-    } catch (err) {
-      console.error("[RedisService] Error getting online users:", err);
-      return new Set();
-    }
-  }
-
-  // ─── Global Session Tracking ───────────────────────────────────────
-
-  async incrementGlobalSession(userId: string, socketId: string): Promise<number> {
-    if (!this.client || !this.isConnected) return 0;
-    try {
-      const key = `sessions:${userId}`;
-      const results =
-        (await this.client
-          .multi()
-          .sadd(key, socketId)
-          .scard(key)
-          .expire(key, 3600) // 1 hour safety TTL (refreshed on interaction)
-          .exec()) || [];
-
-      // Results are [ [err, res], [err, res], ... ]
-      const cardRes = results[1];
-      return cardRes ? (cardRes[1] as number) : 0;
-    } catch (err) {
-      console.error("[RedisService] Error incrementing global session:", err);
-      return 0;
-    }
-  }
-
-  async decrementGlobalSession(userId: string, socketId: string): Promise<void> {
-    if (!this.client || !this.isConnected) return;
-    try {
-      await this.client.srem(`sessions:${userId}`, socketId);
-    } catch (err: any) {
-      // Ignore errors if the connection is closing/closed during shutdown
-      if (err.message?.includes("closed")) return;
-      console.error("[RedisService] Error decrementing global session:", err);
-    }
-  }
-
-  async getGlobalSessionCount(userId: string): Promise<number> {
-    if (!this.client || !this.isConnected) return 0;
-    try {
-      return await this.client.scard(`sessions:${userId}`);
-    } catch (err) {
-      console.error("[RedisService] Error getting global session count:", err);
-      return 0;
-    }
-  }
-
-  /**
-   * Deterministically swap the active session for a Free user.
-   * Returns a list of socket IDs that were kicked out.
-   */
-  async takeoverFreeSession(userId: string, newSocketId: string): Promise<string[]> {
-    if (!this.client || !this.isConnected) return [];
-    try {
-      const key = `sessions:${userId}`;
-      // Lua script to atomically get current sessions, clear them, and add the new one.
-      // This ensures that even if two connections happen at once, they won't both "win".
-      const script = `
-        local key = KEYS[1]
-        local new_id = ARGV[1]
-        local old_ids = redis.call('SMEMBERS', key)
-        
-        -- Filter out the new_id from victims (unlikely but safe)
-        local victims = {}
-        for _, id in ipairs(old_ids) do
-          if id ~= new_id then
-            table.insert(victims, id)
-          end
-        end
-        
-        redis.call('DEL', key)
-        redis.call('SADD', key, new_id)
-        redis.call('EXPIRE', key, 3600)
-        
-        return victims
-      `;
-
-      const victims = (await this.client.eval(script, 1, key, newSocketId)) as string[];
-      return victims;
-    } catch (err) {
-      console.error("[RedisService] Error during session takeover:", err);
-      return [];
-    }
-  }
-
-  async publishSessionTakeover(userId: string, victimSocketId: string): Promise<void> {
-    if (!this.client || !this.isConnected) return;
-    try {
-      await this.client.publish("session:takeover", JSON.stringify({ userId, victimSocketId }));
-    } catch (err) {
-      console.error("[RedisService] Error publishing session takeover:", err);
-    }
-  }
-
-  // ─── Cache Invalidation ────────────────────────────────────────────
-
-  async publishCacheInvalidation(type: "user" | "partner" | "chat", id: string): Promise<void> {
-    if (!this.client || !this.isConnected) return;
-    try {
-      await this.client.publish("cache:invalidate", JSON.stringify({ type, id }));
-    } catch (err) {
-      console.error("[RedisService] Error publishing cache invalidation:", err);
-    }
-  }
-
-  // ─── Chat Lockdown (Global) ────────────────────────────────────────
-
-  async lockChat(chatId: string): Promise<void> {
-    if (!this.client || !this.isConnected) return;
-    try {
-      await this.client.sadd("lockdown:chats", chatId);
-    } catch (err) {
-      console.error("[RedisService] Error locking chat:", err);
-    }
-  }
-
-  async unlockChat(chatId: string): Promise<void> {
-    if (!this.client || !this.isConnected) return;
-    try {
-      await this.client.srem("lockdown:chats", chatId);
-    } catch (err) {
-      console.error("[RedisService] Error unlocking chat:", err);
-    }
-  }
-
-  async isChatLocked(chatId: string): Promise<boolean> {
-    if (!this.client || !this.isConnected) return false;
-    try {
-      return (await this.client.sismember("lockdown:chats", chatId)) === 1;
-    } catch (err) {
-      console.error("[RedisService] Error checking chat lockdown:", err);
-      return false;
-    }
-  }
-
-  // ─── Rate Limiting (Global) ────────────────────────────────────────
-
-  /**
-   * Atomic increment and check for a rate limit key.
-   * Returns detailed information about the current limit status.
-   */
-  async incrementAndCheckLimit(
-    key: string,
-    limit: number,
-    windowMs: number,
-  ): Promise<{ allowed: boolean; current: number; ttl: number }> {
-    if (!this.client || !this.isConnected) {
-      this._logFailOpen("incrementAndCheckLimit");
-      return { allowed: true, current: 0, ttl: windowMs };
-    }
-    try {
-      const results =
-        (await this.client
-          .multi()
-          .incr(key)
-          .expire(key, Math.ceil(windowMs / 1000), "NX")
-          .pttl(key)
-          .exec()) || [];
-
-      const incrRes = results[0];
-      const count = incrRes && !incrRes[0] ? (incrRes[1] as number) : 0;
-
-      const pttlRes = results[2];
-      // pttl returns -2 if key doesn't exist, -1 if no expire. We fallback to windowMs.
-      const ttl = pttlRes && !pttlRes[0] ? (pttlRes[1] as number) : windowMs;
-
-      return {
-        allowed: count <= limit,
-        current: count,
-        ttl: ttl > 0 ? ttl : windowMs,
-      };
-    } catch (err) {
-      console.error("[RedisService] Error incrementing rate limit counter:", err);
-      return { allowed: true, current: 0, ttl: windowMs };
-    }
-  }
-
-  /**
-   * Atomic check-and-set for idempotency keys.
-   * Returns true if the key did NOT exist (request is new).
-   * Returns false if the key already existed (duplicate request).
-   */
-  async checkAndSetIdempotency(key: string, ttlSeconds = 900): Promise<boolean> {
-    if (!this.client || !this.isConnected) {
-      this._logFailOpen("checkAndSetIdempotency");
-      return true; // Fail open (allow DB fallback)
-    }
-    try {
-      // "NX" = Only set if it doesn't exist. "EX" = Set expiration.
-      const res = await this.client.set(`idempotency:${key}`, "1", "EX", ttlSeconds, "NX");
-      return res === "OK";
-    } catch (err) {
-      console.error("[RedisService] Error checking idempotency key:", err);
-      return true; // Fail open (allow DB fallback)
-    }
-  }
-
-  // ─── Presence Sync Queue ──────────────────────────────────────────
-
-  async queuePresenceSync(userId: string): Promise<void> {
-    return this.queuePresenceSyncBatched([userId]);
-  }
-
-  async queuePresenceSyncBatched(userIds: string[]): Promise<void> {
-    if (!this.client || !this.isConnected || userIds.length === 0) return;
-    try {
-      await this.client.sadd("presence_sync_queue", ...userIds);
-    } catch (err) {
-      console.error("[RedisService] Error queuing presence sync batch:", err);
-    }
-  }
-
-  async getSyncQueueCount(): Promise<number> {
-    if (!this.client || !this.isConnected) return 0;
-    try {
-      return await this.client.scard("presence_sync_queue");
-    } catch {
-      return 0;
-    }
-  }
-
-  async popSyncQueue(limit: number): Promise<string[]> {
-    if (!this.client || !this.isConnected) return [];
-    try {
-      return await this.client.spop("presence_sync_queue", limit);
-    } catch (err) {
-      console.error("[RedisService] Error popping sync queue:", err);
-      return [];
-    }
-  }
-
-  // ─── Ephemeral Token Management ────────────────────────────────────
-
-  /**
-   * Store a token mapping to a userId with auto-expiry.
-   * Used for password reset and email verification flows.
-   */
-  async storeToken(
-    prefix: string,
-    token: string,
-    userId: string,
-    ttlSeconds: number,
-  ): Promise<void> {
-    if (!this.client || !this.isConnected) return;
-    try {
-      await this.client.set(`${prefix}:${token}`, userId, "EX", ttlSeconds);
-    } catch (err) {
-      console.error(`[RedisService] Error storing ${prefix} token:`, err);
-    }
-  }
-
-  /**
-   * Retrieve the userId associated with a token.
-   * Returns null if expired or not found.
-   */
-  async getToken(prefix: string, token: string): Promise<string | null> {
-    if (!this.client || !this.isConnected) return null;
-    try {
-      return await this.client.get(`${prefix}:${token}`);
-    } catch (err) {
-      console.error(`[RedisService] Error getting ${prefix} token:`, err);
-      return null;
-    }
-  }
-
-  /**
-   * Delete a token (e.g. after successful password reset or verification).
-   */
-  async deleteToken(prefix: string, token: string): Promise<void> {
-    if (!this.client || !this.isConnected) return;
-    try {
-      await this.client.del(`${prefix}:${token}`);
-    } catch (err) {
-      console.error(`[RedisService] Error deleting ${prefix} token:`, err);
-    }
-  }
-
-  // ─── Cleanup ───────────────────────────────────────────────────────
-
-  async close(): Promise<void> {
-    try {
-      if (this.client) {
-        await this.client.quit();
-        this.client = null;
-      }
-      if (this.subClient) {
-        await this.subClient.quit();
-        this.subClient = null;
-      }
-      this.isConnected = false;
-      console.log("[RedisService] Redis connections closed.");
-    } catch (err: any) {
-      // Only log if it's not a 'closed' error during an already-in-progress close
-      if (!err.message?.includes("closed")) {
-        console.error("[RedisService] Error during Redis cleanup:", err);
-      }
-    }
-  }
-
-  private _logFailOpen(operation: string) {
-    this.failOpenCount++;
-    const now = Date.now();
-
-    // Strategy: Alert on every failure for the first few (to catch intermittent issues)
-    // then throttle to once per minute to avoid spamming Sentry during total outages.
-    const shouldAlert =
-      this.failOpenCount <= this.FAIL_OPEN_ALERT_THRESHOLD ||
-      now - this.lastFailOpenLogAt > this.FAIL_OPEN_LOG_INTERVAL;
-
-    if (shouldAlert) {
-      if (this.failOpenCount > this.FAIL_OPEN_ALERT_THRESHOLD) {
-        this.lastFailOpenLogAt = now;
-      }
-
-      Sentry.captureMessage(
-        `[RedisService] Fail-open: Redis is disconnected during ${operation} (Total failures: ${this.failOpenCount})`,
-        {
-          level: "warning",
-          tags: { service: "redis", operation: "fail-open", source: operation },
-          extra: { totalFailures: this.failOpenCount },
-        },
-      );
-    }
+  // ─── Lifecycle ─────────────────────────────────────────────────────
+  close() {
+    return this.base.close();
   }
 }
 
