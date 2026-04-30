@@ -1,7 +1,6 @@
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
-import { ObjectId } from "mongodb";
-
 import { ChatDto, ChatListingResponseDto } from "@root/shared/types/chat.dto";
+import { ObjectId } from "mongodb";
 
 import { IChatListingService } from "./types";
 
@@ -27,10 +26,7 @@ export class ChatListingService implements IChatListingService {
             $or: [
               { "lastMessage.sentAt": { $lt: decoded.t } },
               {
-                $and: [
-                  { "lastMessage.sentAt": decoded.t },
-                  { _id: { $lt: new ObjectId(decoded.id) } },
-                ],
+                $and: [{ "lastMessage.sentAt": decoded.t }, { _id: { $lt: new ObjectId(decoded.id) } }],
               },
             ],
           },
@@ -46,10 +42,7 @@ export class ChatListingService implements IChatListingService {
     let nextCursor: string | null = null;
     if (hasMore && results.length > 0) {
       const last = results[results.length - 1];
-      nextCursor = this.repository.encodeCursor(
-        last.lastMessage?.sentAt || last.createdAt,
-        last._id.toString(),
-      );
+      nextCursor = this.repository.encodeCursor(last.lastMessage?.sentAt || last.createdAt, last._id.toString());
     }
 
     return {

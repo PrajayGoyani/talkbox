@@ -1,14 +1,12 @@
-import { Request } from "express";
-import type {
-  AcceptChatRequestDto,
-  RejectChatRequestDto,
-} from "@root/shared/types/chat.dto";
 import type {
   ForgotPasswordRequestDto,
   LoginRequestDto,
   ResetPasswordRequestDto,
   SignupRequestDto,
 } from "@root/shared/types/auth.dto";
+import type { AcceptChatRequestDto, RejectChatRequestDto } from "@root/shared/types/chat.dto";
+
+import { Request } from "express";
 
 export type AcceptChatRequest = Request<AcceptChatRequestDto, {}, {}>;
 export type RejectChatRequest = Request<RejectChatRequestDto, {}, {}>;

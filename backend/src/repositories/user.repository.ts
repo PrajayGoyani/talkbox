@@ -1,6 +1,6 @@
 import User, { IUser, IUserModel } from "@models/user.model";
-import { ObjectId } from "mongodb";
 import { UserDto } from "@root/shared/types/auth.dto";
+import { ObjectId } from "mongodb";
 
 export class UserRepository {
   constructor(public userModel: IUserModel) {}

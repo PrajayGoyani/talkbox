@@ -1,9 +1,8 @@
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { MessageRepository, messageRepository } from "@repositories/message.repository";
+import { MessageDto } from "@root/shared/types/chat.dto";
 import { AppError } from "@utils/AppError";
 import { ObjectId } from "mongodb";
-
-import { MessageDto } from "@root/shared/types/chat.dto";
 
 import { IMessageService } from "./types";
 
@@ -40,10 +39,7 @@ export class MessageService implements IMessageService {
     return transformed.reverse();
   }
 
-  async markChatRead(
-    chatId: string | ObjectId,
-    userId: string | ObjectId,
-  ): Promise<{ message: string }> {
+  async markChatRead(chatId: string | ObjectId, userId: string | ObjectId): Promise<{ message: string }> {
     const result = await this.chatRepo.markAsRead(chatId, userId);
 
     if (!result) {

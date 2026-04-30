@@ -1,5 +1,5 @@
-import type { MessageDto, MessageAlertDto } from "@root/shared/types/chat.dto";
 import type { UserDto } from "@root/shared/types/auth.dto";
+import type { MessageDto, MessageAlertDto } from "@root/shared/types/chat.dto";
 import type { NotificationDto } from "@root/shared/types/notification.dto";
 
 import { chatService } from "$services/chat.service";
@@ -48,8 +48,7 @@ export class SocketHandler implements ChatStoreSocket {
       notificationService.notify({
         chatId: message.chatId,
         senderId: message.senderId,
-        senderUsername:
-          chatListStore.chatsMap?.get(message.chatId)?.otherUser?.username || message.senderId,
+        senderUsername: chatListStore.chatsMap?.get(message.chatId)?.otherUser?.username || message.senderId,
         preview: message.contentBody,
       });
     }

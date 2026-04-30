@@ -3,13 +3,13 @@ import { IChat } from "@models/chat.model";
 import { IMessage } from "@models/message.model";
 import { chatRepository } from "@repositories/chat.repository";
 import { messageRepository } from "@repositories/message.repository";
+import { MessageDto } from "@root/shared/types/chat.dto";
 import { chatLockdownService } from "@services/chat-lockdown.service";
 import { redisService } from "@services/redis.service";
 import { AppError } from "@utils/AppError";
 import { isPastModifyLimit, isScrubbed } from "@utils/date.utils";
 import { ObjectId } from "mongodb";
 
-import { MessageDto } from "@root/shared/types/chat.dto";
 import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
 
 export class MessageHandler {
@@ -34,9 +34,7 @@ export class MessageHandler {
 
   private isLastMessage(chat: IChat, message: IMessage): boolean {
     return Boolean(
-      chat.lastMessage &&
-      chat.lastMessage.sentAt &&
-      chat.lastMessage.sentAt.getTime() === message.createdAt.getTime(),
+      chat.lastMessage && chat.lastMessage.sentAt && chat.lastMessage.sentAt.getTime() === message.createdAt.getTime(),
     );
   }
 
@@ -133,8 +131,7 @@ export class MessageHandler {
       // If it's the receiver, also send an alert
       if (pId === receiverId) {
         try {
-          const preview =
-            contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
+          const preview = contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
           io?.to(`user:${pId}`).emit("message_alert", {
             chatId,
             senderId,

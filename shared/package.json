@@ -2,6 +2,22 @@
   "name": "@root/shared",
   "version": "1.0.0",
   "type": "module",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "*"
+      ],
+      "types/*": [
+        "types/*.ts"
+      ],
+      "constants/*": [
+        "constants/*.ts"
+      ],
+      "utils/*": [
+        "utils/*.ts"
+      ]
+    }
+  },
   "exports": {
     "./types/api.dto": "./types/api.dto.ts",
     "./types/auth.dto": "./types/auth.dto.ts",
@@ -13,13 +29,5 @@
     "./utils/validation": "./utils/validation.ts",
     "./utils/emoji": "./utils/emoji.ts",
     "./utils/message": "./utils/message.ts"
-  },
-  "typesVersions": {
-    "*": {
-      "*": ["*"],
-      "types/*": ["types/*.ts"],
-      "constants/*": ["constants/*.ts"],
-      "utils/*": ["utils/*.ts"]
-    }
   }
 }

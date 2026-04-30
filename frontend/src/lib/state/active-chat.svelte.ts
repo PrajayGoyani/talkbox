@@ -26,10 +26,7 @@ class MessageStore {
 
     const startTime = Date.now();
     try {
-      const loadedMessages = await chatService.loadMessages(
-        chatId,
-        this.messagesAbortController.signal,
-      );
+      const loadedMessages = await chatService.loadMessages(chatId, this.messagesAbortController.signal);
 
       if (this.activeChatId !== chatId) return;
 
@@ -50,13 +47,7 @@ class MessageStore {
   }
 
   async loadOlderMessages() {
-    if (
-      !this.activeChatId ||
-      !this.hasMoreMessages ||
-      this.isLoadingMessages ||
-      this.messages.length === 0
-    )
-      return;
+    if (!this.activeChatId || !this.hasMoreMessages || this.isLoadingMessages || this.messages.length === 0) return;
 
     this.isLoadingMessages = true;
     const oldestMessageId = this.messages[0].id;

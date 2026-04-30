@@ -1,7 +1,7 @@
-import { fileURLToPath } from "url";
-import { dirname, resolve } from "path";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 import { compression } from "vite-plugin-compression2";
 import { defineConfig } from "vite-plus";
 

@@ -1,18 +1,14 @@
-import {
-  RATE_LIMIT_DEFAULT_WINDOW_MS,
-  RATE_LIMIT_SOCKET_MESSAGE_MAX,
-  REACTIONS_MAX_UNIQUE,
-} from "@config/env";
+import { RATE_LIMIT_DEFAULT_WINDOW_MS, RATE_LIMIT_SOCKET_MESSAGE_MAX, REACTIONS_MAX_UNIQUE } from "@config/env";
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
+import { MessageReactionUpdateDto } from "@root/shared/types/chat.dto";
+import { getDisallowedEmojis } from "@root/shared/utils/emoji";
 import { redisService } from "@services/redis.service";
 import { isScrubbed } from "@utils/date.utils";
 import { getCanonicalSlug } from "@utils/emoji.utils";
-import { getDisallowedEmojis } from "@root/shared/utils/emoji";
 import { Types } from "mongoose";
 
 import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
-import { MessageReactionUpdateDto } from "@root/shared/types/chat.dto";
 
 export class ReactionHandler {
   constructor(private ioProvider: () => TypedIO | null) {}
@@ -88,9 +84,7 @@ export class ReactionHandler {
           reactionGroup.users.push(senderIdIdx);
           if (
             canonicalSlug &&
-            (!reactionGroup.slug ||
-              reactionGroup.slug === "emoji" ||
-              reactionGroup.slug !== canonicalSlug)
+            (!reactionGroup.slug || reactionGroup.slug === "emoji" || reactionGroup.slug !== canonicalSlug)
           ) {
             reactionGroup.slug = canonicalSlug;
           }

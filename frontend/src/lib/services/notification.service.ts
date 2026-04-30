@@ -1,8 +1,8 @@
 import type { MessageAlertDto } from "@root/shared/types/chat.dto";
 
 import { ASSETS } from "$lib/config";
-import { playNotificationSound } from "$utils/audio";
 import { messageStore } from "$state/active-chat.svelte";
+import { playNotificationSound } from "$utils/audio";
 
 export class NotificationService {
   /**

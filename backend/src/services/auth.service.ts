@@ -1,3 +1,5 @@
+import type { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from "@root/shared/types/auth.dto";
+
 import { getAgenda } from "@config/agenda";
 import { RESET_TOKEN_TTL, VERIFY_TOKEN_TTL } from "@config/env";
 import { JOBS } from "@jobs/agenda-jobs";
@@ -11,16 +13,7 @@ import { generateAccessToken, generateTokens, verifyRefreshToken } from "@utils/
 import crypto from "crypto";
 import { ObjectId } from "mongodb";
 
-import type {
-  AuthResponseDto,
-  LoginRequestDto,
-  SignupRequestDto,
-  UserDto,
-} from "@root/shared/types/auth.dto";
-
 // Internal aliases removed - using shared DTOs directly
-
-
 
 export class AuthService {
   constructor(private userRepository: UserRepository) {}

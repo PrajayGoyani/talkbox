@@ -3,7 +3,10 @@ import { MESSAGE_MODIFY_LIMIT_HOURS, FREE_PLAN_SCRUB_DAYS } from "@shared/consta
 /**
  * Checks if a message is within the modification time limit.
  */
-export const isWithinModificationWindow = (createdAt: string | Date, limitHours = MESSAGE_MODIFY_LIMIT_HOURS): boolean => {
+export const isWithinModificationWindow = (
+  createdAt: string | Date,
+  limitHours = MESSAGE_MODIFY_LIMIT_HOURS,
+): boolean => {
   const date = typeof createdAt === "string" ? new Date(createdAt) : createdAt;
   const limitMs = limitHours * 60 * 60 * 1000;
   return date.getTime() > Date.now() - limitMs;
@@ -12,7 +15,11 @@ export const isWithinModificationWindow = (createdAt: string | Date, limitHours 
 /**
  * Checks if a message is scrubbed based on the user's plan.
  */
-export const isScrubbed = (createdAt: string | Date, plan: "free" | "pro", scrubDays = FREE_PLAN_SCRUB_DAYS): boolean => {
+export const isScrubbed = (
+  createdAt: string | Date,
+  plan: "free" | "pro",
+  scrubDays = FREE_PLAN_SCRUB_DAYS,
+): boolean => {
   if (plan === "pro") return false;
   const date = typeof createdAt === "string" ? new Date(createdAt) : createdAt;
   const cutoff = new Date();

@@ -1,9 +1,9 @@
 import { RATE_LIMIT_DEFAULT_WINDOW_MS } from "@config/env";
 import Chat from "@models/chat.model";
+import { TypingIndicatorDto } from "@root/shared/types/chat.dto";
 import { redisService } from "@services/redis.service";
 import { LRUCache } from "lru-cache";
 
-import { TypingIndicatorDto } from "@root/shared/types/chat.dto";
 import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
 
 export class TypingHandler {

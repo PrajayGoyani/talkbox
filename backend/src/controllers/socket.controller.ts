@@ -10,9 +10,7 @@ import { Server } from "socket.io";
 
 import { JWTPayload, TypedIO, TypedSocket } from "@/types/socket.types";
 
-export const configureSocketServer = (
-  server: import("http").Server | import("https").Server,
-): TypedIO => {
+export const configureSocketServer = (server: import("http").Server | import("https").Server): TypedIO => {
   const io: TypedIO = new Server(server, {
     cors: {
       origin: ALLOWED_ORIGINS,
@@ -62,10 +60,7 @@ export const configureSocketServer = (
 
     socket.on("send_message", async (data, ack) => {
       if (NODE_ENV === "development") {
-        console.log(
-          `[SocketController] send_message received from user ${socket.data.user.id}:`,
-          data,
-        );
+        console.log(`[SocketController] send_message received from user ${socket.data.user.id}:`, data);
       }
       try {
         const message = await socketService.saveAndDeliverMessage(socket.data.user as any, data);

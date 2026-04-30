@@ -34,7 +34,12 @@ export class ChatService {
   }
 
   /** Load chats list via REST */
-  async fetchChats(query = "", limit = 20, cursor: string | null = null, signal?: AbortSignal): Promise<ChatListingResponseDto> {
+  async fetchChats(
+    query = "",
+    limit = 20,
+    cursor: string | null = null,
+    signal?: AbortSignal,
+  ): Promise<ChatListingResponseDto> {
     const url = new URL(
       query.trim().length > 0 ? `${API_BASE}/chat/search` : `${API_BASE}/chat`,
       window.location.origin,

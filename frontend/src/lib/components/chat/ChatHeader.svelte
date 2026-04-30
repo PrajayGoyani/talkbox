@@ -2,20 +2,22 @@
   import Avatar from "$components/ui/Avatar.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import type { ChatStatus } from "$state/chat.svelte";
-  import type { UserDto } from "@root/shared/types/auth.dto";
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { formatTimeAgo } from "$utils/date";
+  import type { UserDto } from "@root/shared/types/auth.dto";
 
-  let { 
-    otherUser, 
+  let {
+    otherUser,
     status,
     partnerStatus,
-    onBack
-  }: { 
-    otherUser: UserDto | null; 
+    onBack,
+  }: {
+    otherUser: UserDto | null;
     status?: ChatStatus;
-    partnerStatus: { isOnline: boolean; lastSeen: string | Date | null } | undefined;
+    partnerStatus:
+      | { isOnline: boolean; lastSeen: string | Date | null }
+      | undefined;
     onBack?: () => void;
   } = $props();
 
@@ -75,7 +77,10 @@
           </span>
         {/if}
         <button
-          use:tooltip={{ text: copied ? "Copied!" : "Copy username", position: "top" }}
+          use:tooltip={{
+            text: copied ? "Copied!" : "Copy username",
+            position: "right",
+          }}
           onclick={handleCopyUsername}
           class="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-600/10 transition-all active:scale-95 flex items-center justify-center"
           aria-label="Copy username"
@@ -128,4 +133,3 @@
     </button>
   </div>
 </div>
-

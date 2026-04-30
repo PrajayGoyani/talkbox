@@ -151,7 +151,11 @@ describe("AuthService - Password Reset & Email Verification", () => {
       await authService.verifyEmail("valid-verify-token");
 
       expect(redisService.getToken).toHaveBeenCalledWith("verify", "valid-verify-token");
-      expect(mockUserModel.findByIdAndUpdate).toHaveBeenCalledWith("user123", { isEmailVerified: true }, expect.any(Object));
+      expect(mockUserModel.findByIdAndUpdate).toHaveBeenCalledWith(
+        "user123",
+        { isEmailVerified: true },
+        expect.any(Object),
+      );
       expect(redisService.deleteToken).toHaveBeenCalledWith("verify", "valid-verify-token");
     });
 

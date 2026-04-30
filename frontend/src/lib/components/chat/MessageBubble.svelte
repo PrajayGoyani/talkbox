@@ -2,8 +2,6 @@
   import MessageReactionPicker from "$components/chat/MessageReactionPicker.svelte";
   import { authStore } from "$state/auth.svelte";
   import { chatStore } from "$state/chat.svelte";
-  import type { MessageDto } from "@root/shared/types/chat.dto";
-  import type { UserDto } from "@root/shared/types/auth.dto";
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
   import { formatSimpleTime } from "$utils/date";
@@ -12,6 +10,8 @@
     parseMessageContent,
     type MessageSegment,
   } from "$utils/emoji";
+  import type { UserDto } from "@root/shared/types/auth.dto";
+  import type { MessageDto } from "@root/shared/types/chat.dto";
 
   type Props = {
     msg: MessageDto;

@@ -1,5 +1,5 @@
-import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 import { defineConfig } from "vite-plus";
 
 const __filename = fileURLToPath(import.meta.url);

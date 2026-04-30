@@ -1,9 +1,8 @@
 import Message, { IMessage, IMessageModel } from "@models/message.model";
+import { MessageDto } from "@root/shared/types/chat.dto";
 import { getScrubCutoff } from "@utils/date.utils";
 import { extractEmojiMetadata } from "@utils/emoji.utils";
 import { ObjectId } from "mongodb";
-
-import { MessageDto } from "@root/shared/types/chat.dto";
 
 export class MessageRepository {
   constructor(public messageModel: IMessageModel) {}

@@ -1,9 +1,8 @@
 import Chat, { IChat, IChatModel } from "@models/chat.model";
 import Message, { IMessageModel } from "@models/message.model";
 import User, { IUserModel } from "@models/user.model";
-import { Server } from "socket.io";
-
 import { ChatListingResponseDto, MessageDto } from "@root/shared/types/chat.dto";
+import { Server } from "socket.io";
 
 import { chatActionService } from "./chat/chat-action.service";
 import { chatListingService } from "./chat/chat-listing.service";

@@ -1,7 +1,6 @@
 import { IChat } from "@models/chat.model";
-import { ObjectId } from "mongodb";
-
 import { ChatListingResponseDto, MessageDto } from "@root/shared/types/chat.dto";
+import { ObjectId } from "mongodb";
 
 export interface IChatListingService {
   getChatListing(userId: string | ObjectId, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto>;

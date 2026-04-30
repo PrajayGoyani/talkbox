@@ -18,8 +18,8 @@ Ensure every message is delivered exactly-once (effectively) and displayed in th
 
 ## **Examples**
 
-* **Input**: "Add a function to save messages."  
-* **Response**: The agent should propose a plan that includes adding an idempotency_key column to the messages table and implementing the check-before-insert logic.
+- **Input**: "Add a function to save messages."
+- **Response**: The agent should propose a plan that includes adding an idempotency_key column to the messages table and implementing the check-before-insert logic.
 
 ### **Defining a Security Audit Skill**
 

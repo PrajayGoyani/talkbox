@@ -1,7 +1,6 @@
 import Chat, { IChat, IChatModel } from "@models/chat.model";
-import { ObjectId } from "mongodb";
-
 import { ChatDto } from "@root/shared/types/chat.dto";
+import { ObjectId } from "mongodb";
 
 export class ChatRepository {
   constructor(public chatModel: IChatModel) {}
@@ -29,9 +28,7 @@ export class ChatRepository {
   }
 
   public encodeCursor(timestamp: Date, id: string | ObjectId) {
-    return Buffer.from(JSON.stringify({ t: timestamp.getTime(), id: id.toString() })).toString(
-      "base64",
-    );
+    return Buffer.from(JSON.stringify({ t: timestamp.getTime(), id: id.toString() })).toString("base64");
   }
 
   public transformChat(chat: IChat, userId: string | ObjectId): ChatDto {
@@ -54,8 +51,7 @@ export class ChatRepository {
             username: otherUser.username,
             name: otherUser.name || null,
             email: otherUser.email,
-            avatarUrl:
-              otherUser.avatar_url || `https://ui-avatars.com/api/?name=${otherUser.username}`,
+            avatarUrl: otherUser.avatar_url || `https://ui-avatars.com/api/?name=${otherUser.username}`,
             plan: otherUser.plan,
             bio: otherUser.bio,
           }
@@ -76,12 +72,7 @@ export class ChatRepository {
   /**
    * Complex Search Aggregation
    */
-  public async searchChats(
-    userId: ObjectId,
-    query: string,
-    limit: number,
-    cursorObj: { t: Date; id: string } | null,
-  ) {
+  public async searchChats(userId: ObjectId, query: string, limit: number, cursorObj: { t: Date; id: string } | null) {
     const q = new RegExp("^" + query, "i");
     const pipeline: any[] = [
       {
@@ -124,10 +115,7 @@ export class ChatRepository {
           $or: [
             { sortTime: { $lt: cursorObj.t } },
             {
-              $and: [
-                { sortTime: { $eq: cursorObj.t } },
-                { _id: { $lt: new ObjectId(cursorObj.id) } },
-              ],
+              $and: [{ sortTime: { $eq: cursorObj.t } }, { _id: { $lt: new ObjectId(cursorObj.id) } }],
             },
           ],
         },
@@ -175,11 +163,7 @@ export class ChatRepository {
     return this.chatModel.aggregate(pipeline);
   }
 
-  public async findAcceptedChatsByUser(
-    userId: string | ObjectId,
-    query: Record<string, any>,
-    limit: number,
-  ) {
+  public async findAcceptedChatsByUser(userId: string | ObjectId, query: Record<string, any>, limit: number) {
     return this.chatModel
       .find(query)
       .sort({ "lastMessage.sentAt": -1, _id: -1 })
@@ -187,11 +171,7 @@ export class ChatRepository {
       .populate("participants", "username name email avatar_url plan bio");
   }
 
-  public async findPendingRequestsByUser(
-    userId: string | ObjectId,
-    query: Record<string, any>,
-    limit: number,
-  ) {
+  public async findPendingRequestsByUser(userId: string | ObjectId, query: Record<string, any>, limit: number) {
     return this.chatModel
       .find(query)
       .sort({ createdAt: -1, _id: -1 })

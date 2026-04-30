@@ -18,11 +18,11 @@ Build applications with the Anthropic Claude API and SDKs.
 
 ## Model Selection
 
-| Model | ID | Best For |
-|-------|-----|----------|
-| Opus 4.6 | `claude-opus-4-6` | Complex reasoning, architecture, research |
-| Sonnet 4.6 | `claude-sonnet-4-6` | Balanced coding, most development tasks |
-| Haiku 4.5 | `claude-haiku-4-5-20251001` | Fast responses, high-volume, cost-sensitive |
+| Model      | ID                          | Best For                                    |
+| ---------- | --------------------------- | ------------------------------------------- |
+| Opus 4.6   | `claude-opus-4-6`           | Complex reasoning, architecture, research   |
+| Sonnet 4.6 | `claude-sonnet-4-6`         | Balanced coding, most development tasks     |
+| Haiku 4.5  | `claude-haiku-4-5-20251001` | Fast responses, high-volume, cost-sensitive |
 
 Default to Sonnet 4.6 unless the task requires deep reasoning (Opus) or speed/cost optimization (Haiku).
 
@@ -92,9 +92,7 @@ const client = new Anthropic(); // reads ANTHROPIC_API_KEY from env
 const message = await client.messages.create({
   model: "claude-sonnet-4-6",
   max_tokens: 1024,
-  messages: [
-    { role: "user", content: "Explain async/await in TypeScript" }
-  ],
+  messages: [{ role: "user", content: "Explain async/await in TypeScript" }],
 });
 console.log(message.content[0].text);
 ```
@@ -297,13 +295,13 @@ while True:
 
 ## Cost Optimization
 
-| Strategy | Savings | When to Use |
-|----------|---------|-------------|
-| Prompt caching | Up to 90% on cached tokens | Repeated system prompts or context |
-| Batches API | 50% | Non-time-sensitive bulk processing |
-| Haiku instead of Sonnet | ~75% | Simple tasks, classification, extraction |
-| Shorter max_tokens | Variable | When you know output will be short |
-| Streaming | None (same cost) | Better UX, same price |
+| Strategy                | Savings                    | When to Use                              |
+| ----------------------- | -------------------------- | ---------------------------------------- |
+| Prompt caching          | Up to 90% on cached tokens | Repeated system prompts or context       |
+| Batches API             | 50%                        | Non-time-sensitive bulk processing       |
+| Haiku instead of Sonnet | ~75%                       | Simple tasks, classification, extraction |
+| Shorter max_tokens      | Variable                   | When you know output will be short       |
+| Streaming               | None (same cost)           | Better UX, same price                    |
 
 ## Error Handling
 

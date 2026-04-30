@@ -11,9 +11,9 @@ Enforce military-grade security standards for one-to-one private communication.
 
 ## **Core Instructions**
 
-1. **E2EE Verification**: Ensure all messages are encrypted using the Signal Protocol primitives. Verify that private keys are never transmitted to the server.  
-2. **Storage Audit**: Check that mobile clients use expo-secure-store and web clients avoid LocalStorage for sensitive keys.  
-3. **Authentication Audit**: Ensure every socket event is authenticated and that userId is never trusted from the client payload without server-side session validation.  
+1. **E2EE Verification**: Ensure all messages are encrypted using the Signal Protocol primitives. Verify that private keys are never transmitted to the server.
+2. **Storage Audit**: Check that mobile clients use expo-secure-store and web clients avoid LocalStorage for sensitive keys.
+3. **Authentication Audit**: Ensure every socket event is authenticated and that userId is never trusted from the client payload without server-side session validation.
 4. **Tool Use**: Use the provided Python script scripts/audit_encryption.py to simulate a MITM attack and verify the system's resilience.
 
 ## **Challenging Architectural Anti-Patterns**
@@ -25,9 +25,9 @@ A critical requirement for an agent-first IDE is the ability to challenge and co
 Many developers begin Node.js projects by putting all routes, socket listeners, and database logic into a single server.js or app.js file. The agent must be instructed to critically challenge this pattern. When a user asks to "add a new feature to app.js," the agent should instead propose a refactor that extracts the logic into a dedicated Controller or Use Case.
 The agent should explain the benefits of this refactor:
 
-* **Improved Testability**: Individual use cases can be unit-tested in isolation without starting a network server.
-* **Reduced Coupling**: Changing the database schema (e.g., from MongoDB to PostgreSQL) should not require changes to the business logic.
-* **Onboarding Velocity**: New developers can navigate the project structure more easily when it follows a standard Clean Architecture.
+- **Improved Testability**: Individual use cases can be unit-tested in isolation without starting a network server.
+- **Reduced Coupling**: Changing the database schema (e.g., from MongoDB to PostgreSQL) should not require changes to the business logic.
+- **Onboarding Velocity**: New developers can navigate the project structure more easily when it follows a standard Clean Architecture.
 
 ### **Prohibiting State Fragmentation in the Frontend**
 
