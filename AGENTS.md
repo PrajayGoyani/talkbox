@@ -7,25 +7,25 @@
 - Engineering Principles & Stack: Read `.agent/rules/core.md`
 - Hierarchical Delegation & Roles: Read `.agent/rules/ROLES.md`
 
-## MCP Tools: code-review-graph
+## MCP Tools: Knowledge Graphs
 
-**IMPORTANT: This project has a knowledge graph. ALWAYS use the
-code-review-graph MCP tools BEFORE using Grep/Glob/Read to explore
-the codebase.** The graph is faster, cheaper (fewer tokens), and gives
-you structural context (callers, dependents, test coverage) that file
-scanning cannot.
+**IMPORTANT: This project uses dual knowledge graphs. ALWAYS use the
+MCP tools BEFORE using Grep/Glob/Read to explore the codebase.** The
+graphs are faster, cheaper (fewer tokens), and provide structural and
+semantic context that file scanning cannot.
 
 ### When to use graph tools FIRST
 
-- **Exploring code**: `semantic_search_nodes` or `query_graph` instead of Grep
-- **Understanding impact**: `get_impact_radius` instead of manually tracing imports
-- **Code review**: `detect_changes` + `get_review_context` instead of reading entire files
-- **Finding relationships**: `query_graph` with callers_of/callees_of/imports_of/tests_for
-- **Architecture questions**: `get_architecture_overview` + `list_communities`
+- **Exploring code**: `code_review_graph.semantic_search_nodes` or `query_graph`
+- **Semantic Discovery**: `graphify.query_graph` for conceptual questions
+- **Understanding impact**: `code_review_graph.get_impact_radius`
+- **Tracing relationships**: `graphify.get_neighbors` or `shortest_path`
+- **Code review**: `detect_changes` + `get_review_context`
+- **Finding architecture chokepoints**: `graphify.god_nodes` or `code_review_graph.get_bridge_nodes`
 
-Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
+Fall back to Grep/Glob/Read **only** when the graphs don't cover what you need.
 
-### Key Tools
+### Key Tools: code-review-graph
 
 | Tool                        | Use when                                               |
 | --------------------------- | ------------------------------------------------------ |
@@ -38,11 +38,22 @@ Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
 | `get_architecture_overview` | Understanding high-level codebase structure            |
 | `refactor_tool`             | Planning renames, finding dead code                    |
 
+### Key Tools: graphify
+
+| Tool            | Use when                                                |
+| --------------- | ------------------------------------------------------- |
+| `query_graph`   | BFS/DFS search for conceptual/semantic context          |
+| `get_neighbors` | Finding direct relations and edge details for a concept |
+| `shortest_path` | Understanding how two distant concepts are linked       |
+| `god_nodes`     | Identifying core abstractions and most connected nodes  |
+| `graph_stats`   | Getting a high-level overview of graph health/size      |
+| `get_node`      | Fetching full details for a specific concept or ID      |
+
 ### Workflow
 
-1. The graph auto-updates on file changes (via hooks).
-2. Use `detect_changes` for code review.
-3. Use `get_affected_flows` to understand impact.
+1. The graphs auto-update on file changes (via hooks).
+2. Use `graphify` for broad discovery and conceptual mapping.
+3. Use `code-review-graph` for detailed structural analysis and review.
 4. Use `query_graph` pattern="tests_for" to check coverage.
 
 ## Toolchain: Vite Plus (vp)

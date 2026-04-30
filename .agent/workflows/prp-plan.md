@@ -92,11 +92,20 @@ Do NOT guess. Ask. A plan built on assumptions fails during implementation.
 
 ## Phase 2 — EXPLORE
 
-Gather deep codebase intelligence. Search the codebase directly for each category below.
+Gather deep codebase intelligence. **MANDATORY: Use knowledge graph tools (code-review-graph and graphify) BEFORE using Grep/Glob/Read.**
+
+### Graph-Powered Discovery
+
+Use the following pattern for exploration:
+
+1. **Conceptual Discovery** (`graphify.query_graph`): Search for the feature's core concepts to understand the high-level semantic landscape.
+2. **Structural Analysis** (`code_review_graph.semantic_search_nodes`): Find concrete code entities (classes, functions) related to the feature.
+3. **Relationship Tracing** (`code_review_graph.query_graph`): Use `callers_of`, `callees_of`, and `imports_of` to map dependencies.
+4. **Impact Assessment** (`code_review_graph.get_impact_radius`): Understand the blast radius of potential changes.
 
 ### Codebase Search (8 Categories)
 
-For each category, search using grep, find, and file reading:
+For each category, use graph tools first, falling back to grep/find only if necessary:
 
 1. **Similar Implementations** — Find existing features that resemble the planned one. Look for analogous patterns, endpoints, components, or modules.
 

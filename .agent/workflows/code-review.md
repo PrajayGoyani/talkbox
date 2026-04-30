@@ -100,8 +100,9 @@ Build review context:
 
 1. **Project rules** — Read `CLAUDE.md`, `.claude/docs/`, and any contributing guidelines
 2. **PRP artifacts** — Check `.claude/PRPs/reports/` and `.claude/PRPs/plans/` for implementation context related to this PR
-3. **PR intent** — Parse PR description for goals, linked issues, test plans
-4. **Changed files** — List all modified files and categorize by type (source, test, config, docs)
+3. **Graph Intelligence** — Use `graphify` and `code-review-graph` to understand the PR's impact on core abstractions (`god_nodes`) and execution flows (`get_affected_flows`).
+4. **PR intent** — Parse PR description for goals, linked issues, test plans
+5. **Changed files** — List all modified files and categorize by type (source, test, config, docs)
 
 ### Phase 3 — REVIEW
 
