@@ -67,8 +67,8 @@ describe("ChatService", () => {
 
   describe("getChatMessages (Scrubbing)", () => {
     it("should scrub old messages for Free users", async () => {
-      const chatId = "chat1";
-      const userId = "free_user";
+      const chatId = "507f191e810c19729de860ef";
+      const userId = "507f191e810c19729de860f0";
 
       const oldDate = new Date();
       oldDate.setDate(oldDate.getDate() - (FREE_PLAN_SCRUB_DAYS + 1));
@@ -121,8 +121,8 @@ describe("ChatService", () => {
     });
 
     it("should NOT scrub old messages for Pro users", async () => {
-      const chatId = "chat1";
-      const userId = "pro_user";
+      const chatId = "507f191e810c19729de860f1";
+      const userId = "507f191e810c19729de860f2";
 
       const oldDate = new Date();
       oldDate.setDate(oldDate.getDate() - 30);
