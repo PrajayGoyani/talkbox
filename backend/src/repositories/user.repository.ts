@@ -26,7 +26,7 @@ export class UserRepository {
   }
 
   public async updateById(id: string | ObjectId, update: any) {
-    return this.userModel.findByIdAndUpdate(id, update, { new: true });
+    return this.userModel.findByIdAndUpdate(id, update, { returnDocument: "after" });
   }
 
   public transformUser(user: IUser): SanitizedUser {

@@ -1,4 +1,8 @@
-import { REACTIONS_MAX_UNIQUE, RATE_LIMIT_SOCKET_MESSAGE_MAX, RATE_LIMIT_DEFAULT_WINDOW_MS } from "@config/env";
+import {
+  RATE_LIMIT_DEFAULT_WINDOW_MS,
+  RATE_LIMIT_SOCKET_MESSAGE_MAX,
+  REACTIONS_MAX_UNIQUE,
+} from "@config/env";
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
 import { redisService } from "@services/redis.service";
@@ -75,7 +79,9 @@ export class ReactionHandler {
           const canonicalSlug = getCanonicalSlug(emoji, slug);
           if (
             canonicalSlug &&
-            (!reactionGroup.slug || reactionGroup.slug === "emoji" || reactionGroup.slug !== canonicalSlug)
+            (!reactionGroup.slug ||
+              reactionGroup.slug === "emoji" ||
+              reactionGroup.slug !== canonicalSlug)
           ) {
             reactionGroup.slug = canonicalSlug;
           }

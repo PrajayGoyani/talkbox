@@ -10,7 +10,9 @@ import { Server } from "socket.io";
 
 import { JWTPayload, TypedIO, TypedSocket } from "@/types/socket.types";
 
-export const configureSocketServer = (server: import("http").Server | import("https").Server): TypedIO => {
+export const configureSocketServer = (
+  server: import("http").Server | import("https").Server,
+): TypedIO => {
   const io: TypedIO = new Server(server, {
     cors: {
       origin: ALLOWED_ORIGINS,
@@ -40,15 +42,11 @@ export const configureSocketServer = (server: import("http").Server | import("ht
     try {
       const decoded = jwt.verify(token, JWT_SECRET_KEY) as unknown as JWTPayload;
 
-      // Use shared user cache service
       const user = await userCacheService.getUser(decoded.id);
-
       if (!user) {
         return next(AppError.unauthorized("User not found"));
       }
 
-      // Attach verified user profile to the socket
-      // TypedSocket expectation is slightly different from SanitizedUser but compatible in key fields
       socket.data.user = user as any;
       next();
     } catch (error) {
@@ -64,10 +62,12 @@ export const configureSocketServer = (server: import("http").Server | import("ht
 
     socket.on("send_message", async (data, ack) => {
       if (NODE_ENV === "development") {
-        console.log(`[SocketController] send_message received from user ${socket.data.user.id}:`, data);
+        console.log(
+          `[SocketController] send_message received from user ${socket.data.user.id}:`,
+          data,
+        );
       }
       try {
-        // Ensure userId is never trusted from the client payload without server-side validation.
         const message = await socketService.saveAndDeliverMessage(socket.data.user as any, data);
         if (ack) ack({ status: "ok", message });
       } catch (err) {
@@ -82,6 +82,7 @@ export const configureSocketServer = (server: import("http").Server | import("ht
     socket.on("delete_message", async (data) => {
       socketService.handleDeleteMessage(socket.data.user as any, data);
     });
+
     socket.on("edit_message", async (data) => {
       socketService.handleEditMessage(socket.data.user as any, data);
     });

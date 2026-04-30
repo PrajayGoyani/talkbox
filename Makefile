@@ -1,3 +1,15 @@
+# Default app name (can be overridden via APP=backend or APP=frontend)
+APP ?=
+
+# Map shorthand names to full PM2 names
+ifeq ($(APP),backend)
+  APP_NAME := chat-app-backend
+else ifeq ($(APP),frontend)
+  APP_NAME := chat-app-frontend
+else
+  APP_NAME := $(APP)
+endif
+
 .PHONY: install up dev down status logs help
 
 # Install dependencies for frontend and backend
@@ -45,16 +57,16 @@ status:
 # 	@echo "\nDetailed stats for Frontend:"
 # 	bunx pm2 describe chat-app-frontend | grep -v "─" | grep -v "│" | head -n 25
 
-# Tail logs for all services
+# Tail logs for all services or a specific one
 logs:
-	bunx pm2 logs
+	bunx pm2 logs $(APP_NAME)
 
 # Show help
 help:
 	@echo "Available commands:"
-	@echo "  make install     - Install dependencies for backend and frontend"
-	@echo "  make up          - Start in Production mode (Backend 'start', Frontend 'preview')"
-	@echo "  make dev         - Start in Development mode (Backend 'dev', Frontend 'dev')"
-	@echo "  make down        - Stop and remove both applications"
-	@echo "  make status      - Show health and resource usage statistics"
-	@echo "  make logs        - View real-time logs"
+	@echo "  make install         - Install dependencies for backend and frontend"
+	@echo "  make up              - Start in Production mode (Backend 'start', Frontend 'preview')"
+	@echo "  make dev             - Start in Development mode (Backend 'dev', Frontend 'dev')"
+	@echo "  make down            - Stop and remove both applications"
+	@echo "  make status          - Show health and resource usage statistics"
+	@echo "  make logs [APP=...]  - View real-time logs (optional: APP=backend|frontend)"

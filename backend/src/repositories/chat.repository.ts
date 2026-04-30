@@ -206,12 +206,12 @@ export class ChatRepository {
         participants: userId,
       },
       { $set: { [`unreadCounts.${userId.toString()}`]: 0 } },
-      { new: true },
+      { returnDocument: "after" },
     );
   }
 
   public async findOneAndUpdate(query: Record<string, any>, update: any) {
-    return this.chatModel.findOneAndUpdate(query, update, { new: true });
+    return this.chatModel.findOneAndUpdate(query, update, { returnDocument: "after" });
   }
 
   public async create(data: Partial<IChat>) {
@@ -219,7 +219,7 @@ export class ChatRepository {
   }
 
   public async updateById(id: string | ObjectId, update: any) {
-    return this.chatModel.findByIdAndUpdate(id, update, { new: true });
+    return this.chatModel.findByIdAndUpdate(id, update, { returnDocument: "after" });
   }
 }
 

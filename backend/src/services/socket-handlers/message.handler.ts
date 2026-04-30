@@ -1,4 +1,4 @@
-import { RATE_LIMIT_SOCKET_MESSAGE_MAX, RATE_LIMIT_DEFAULT_WINDOW_MS } from "@config/env";
+import { RATE_LIMIT_DEFAULT_WINDOW_MS, RATE_LIMIT_SOCKET_MESSAGE_MAX } from "@config/env";
 import { IChat } from "@models/chat.model";
 import { IMessage } from "@models/message.model";
 import { chatRepository } from "@repositories/chat.repository";
@@ -33,7 +33,9 @@ export class MessageHandler {
 
   private isLastMessage(chat: IChat, message: IMessage): boolean {
     return Boolean(
-      chat.lastMessage && chat.lastMessage.sentAt && chat.lastMessage.sentAt.getTime() === message.createdAt.getTime(),
+      chat.lastMessage &&
+      chat.lastMessage.sentAt &&
+      chat.lastMessage.sentAt.getTime() === message.createdAt.getTime(),
     );
   }
 
@@ -130,7 +132,8 @@ export class MessageHandler {
       // If it's the receiver, also send an alert
       if (pId === receiverId) {
         try {
-          const preview = contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
+          const preview =
+            contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
           io?.to(`user:${pId}`).emit("message_alert", {
             chatId,
             senderId,
@@ -169,14 +172,20 @@ export class MessageHandler {
     );
 
     const isLast = this.isLastMessage(chat, message);
-    const updatePayload = { messageId: messageId.toString(), chatId: message.chatId.toString(), isLastMessage: isLast };
+    const updatePayload = {
+      messageId: messageId.toString(),
+      chatId: message.chatId.toString(),
+      isLastMessage: isLast,
+    };
 
     chat.participants.forEach((p: any) => {
       io?.to(`user:${p.toString()}`).emit("message_deleted", updatePayload);
     });
 
     if (isLast) {
-      await chatRepository.updateById(chat._id, { $set: { "lastMessage.contentBody": "Message deleted" } });
+      await chatRepository.updateById(chat._id, {
+        $set: { "lastMessage.contentBody": "Message deleted" },
+      });
     }
   }
 
@@ -188,28 +197,21 @@ export class MessageHandler {
     const io = this.ioProvider();
 
     const trimmedContent = contentBody.trim();
-    await messageRepository.updateOne(
-      { _id: messageId },
-      {
-        $set: {
-          contentBody: trimmedContent,
-          isEdited: true,
-          editedAt: new Date(),
-        },
-      },
-    );
-    // Update local object for subsequent logic (isLast)
-    message.contentBody = trimmedContent;
-    message.isEdited = true;
-    message.editedAt = new Date();
+    const updates = {
+      contentBody: trimmedContent,
+      isEdited: true,
+      editedAt: new Date(),
+    };
+
+    await messageRepository.updateOne({ _id: messageId }, { $set: updates });
 
     const isLast = this.isLastMessage(chat, message);
     const updatePayload = {
       messageId: messageId.toString(),
       chatId: message.chatId.toString(),
-      contentBody: message.contentBody,
-      isEdited: message.isEdited,
-      editedAt: message.editedAt,
+      contentBody: updates.contentBody,
+      isEdited: updates.isEdited,
+      editedAt: updates.editedAt,
     };
 
     chat.participants.forEach((p: any) => {
@@ -217,7 +219,9 @@ export class MessageHandler {
     });
 
     if (isLast) {
-      await chatRepository.updateById(chat._id, { $set: { "lastMessage.contentBody": message.contentBody } });
+      await chatRepository.updateById(chat._id, {
+        $set: { "lastMessage.contentBody": updates.contentBody },
+      });
     }
   }
 }
