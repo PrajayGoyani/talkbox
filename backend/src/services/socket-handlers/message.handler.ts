@@ -9,7 +9,8 @@ import { AppError } from "@utils/AppError";
 import { isPastModifyLimit, isScrubbed } from "@utils/date.utils";
 import { ObjectId } from "mongodb";
 
-import { AuthenticatedSocketUser, MessageDto, TypedIO } from "@/types/socket.types";
+import { MessageDto } from "@root/shared/types/chat.dto";
+import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
 
 export class MessageHandler {
   constructor(private ioProvider: () => TypedIO | null) {}

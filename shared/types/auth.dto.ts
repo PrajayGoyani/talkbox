@@ -1,3 +1,5 @@
+import type { ApiResponse } from "./api.dto";
+
 /**
  * User Data Transfer Object
  */
@@ -8,22 +10,9 @@ export interface UserDto {
   email: string;
   avatarUrl?: string;
   plan: "free" | "pro";
-  subscriptionExpiresAt?: string | null;
+  subscriptionExpiresAt?: string | Date | null;
   isEmailVerified?: boolean;
   bio?: string | null;
-}
-
-/**
- * Standard API Response Envelope
- */
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  error?: {
-    code: string;
-    message: string;
-    details?: any;
-  };
 }
 
 /**
@@ -51,4 +40,19 @@ export interface SignupRequestDto {
   email: string;
   password: string;
   name?: string;
+}
+
+/**
+ * Forgot Password Request Payload
+ */
+export interface ForgotPasswordRequestDto {
+  email: string;
+}
+
+/**
+ * Reset Password Request Payload
+ */
+export interface ResetPasswordRequestDto {
+  token: string;
+  password: string;
 }

@@ -1,7 +1,7 @@
 import Chat, { IChat, IChatModel } from "@models/chat.model";
 import { ObjectId } from "mongodb";
 
-import { ChatDto } from "@/types/chat.types";
+import { ChatDto } from "@root/shared/types/chat.dto";
 
 export class ChatRepository {
   constructor(public chatModel: IChatModel) {}

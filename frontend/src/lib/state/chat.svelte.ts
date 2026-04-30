@@ -1,4 +1,4 @@
-import type { MessageAlert } from "$types/chat";
+import type { MessageAlertDto } from "@root/shared/types/chat.dto";
 import type { Socket } from "socket.io-client";
 
 import { chatService } from "$services/chat.service";
@@ -9,7 +9,7 @@ import { messageStore } from "$state/active-chat.svelte";
 import { chatListStore } from "./chat/chat-list.svelte";
 import { presenceStore } from "./chat/presence.svelte";
 
-export * from "$types/chat";
+export * from "$lib/types/chat";
 
 /**
  * Facade for Chat-related state and actions.
@@ -98,7 +98,7 @@ class ChatStore {
     this.socketHandler.setCallbacks({ onRefresh: cb });
   }
 
-  onToast(cb: (data: MessageAlert) => void) {
+  onToast(cb: (data: MessageAlertDto) => void) {
     this.socketHandler.setCallbacks({ onToast: cb });
   }
 

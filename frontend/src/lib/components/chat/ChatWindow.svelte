@@ -4,13 +4,10 @@
   import MessageList from "$components/chat/MessageList.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import { authStore } from "$state/auth.svelte";
-  import {
-    chatStore,
-    type ChatStatus,
-    type Message,
-    type User,
-  } from "$state/chat.svelte";
-  import { activeChatStore } from "$state/active-chat.svelte";
+  import { chatStore, type ChatStatus } from "$state/chat.svelte";
+  import type { MessageDto } from "@root/shared/types/chat.dto";
+  import type { UserDto } from "@root/shared/types/auth.dto";
+  import { messageStore } from "$state/active-chat.svelte";
   import { tick } from "svelte";
 
 
@@ -21,7 +18,7 @@
     onBack,
   }: {
     chatId: string;
-    otherUser: User | null;
+    otherUser: UserDto | null;
     status: ChatStatus;
     onBack: () => void;
   } = $props();
@@ -44,7 +41,7 @@
     target.style.height = `${target.scrollHeight}px`;
   };
 
-  const startEditing = (msg: Message) => {
+  const startEditing = (msg: MessageDto) => {
     messageEditingId = msg.id;
     editInputValue = msg.contentBody;
     tick().then(() => {
@@ -61,7 +58,7 @@
   };
 
   const saveEditing = async (msgId: string) => {
-    const msg = activeChatStore.messages.find((m) => m.id === msgId);
+    const msg = messageStore.messages.find((m: MessageDto) => m.id === msgId);
 
 
     if (!msg || editInputValue.trim() === msg.contentBody) {

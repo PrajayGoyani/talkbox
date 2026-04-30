@@ -7,8 +7,8 @@
     chatStore,
     type Chat,
     type ChatStatus,
-    type User,
   } from "$state/chat.svelte";
+  import type { UserDto } from "@root/shared/types/auth.dto";
   import { onMount, untrack } from "svelte";
   import { debounce } from "$utils/timing";
   import { CHAT_SEARCH_DEBOUNCE } from "$lib/config";
@@ -20,7 +20,7 @@
     searchQuery: _searchQuery = "",
   } = $props<{
     activeChatId?: string | null;
-    onSelectChat: (chatId: string, otherUser: User, status: ChatStatus) => void;
+    onSelectChat: (chatId: string, otherUser: UserDto, status: ChatStatus) => void;
     activeTab?: "all" | "unread";
     searchQuery?: string;
   }>();

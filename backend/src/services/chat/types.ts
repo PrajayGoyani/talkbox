@@ -1,18 +1,17 @@
 import { IChat } from "@models/chat.model";
 import { ObjectId } from "mongodb";
 
-import { ChatListingResponse } from "@/types/chat.types";
-import { MessageDto } from "@/types/socket.types";
+import { ChatListingResponseDto, MessageDto } from "@root/shared/types/chat.dto";
 
 export interface IChatListingService {
-  getChatListing(userId: string | ObjectId, limit?: number, cursor?: string | null): Promise<ChatListingResponse>;
-  getChatRequests(userId: string | ObjectId, limit?: number, cursor?: string | null): Promise<ChatListingResponse>;
+  getChatListing(userId: string | ObjectId, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto>;
+  getChatRequests(userId: string | ObjectId, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto>;
   searchChats(
     userId: string | ObjectId,
     query: string,
     limit?: number,
     cursor?: string | null,
-  ): Promise<ChatListingResponse>;
+  ): Promise<ChatListingResponseDto>;
 }
 
 export interface IChatActionService {

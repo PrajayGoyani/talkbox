@@ -1,4 +1,5 @@
-import type { Chat, Message, MessageAlert } from "$types/chat";
+import type { Chat, MessageAlertDto } from "$lib/types/chat";
+import type { MessageDto } from "@root/shared/types/chat.dto";
 
 export interface IChatListStore {
   chats: Chat[];

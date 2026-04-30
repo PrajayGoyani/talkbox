@@ -3,8 +3,7 @@ import Message, { IMessageModel } from "@models/message.model";
 import User, { IUserModel } from "@models/user.model";
 import { Server } from "socket.io";
 
-import { ChatListingResponse } from "@/types/chat.types";
-import { MessageDto } from "@/types/socket.types";
+import { ChatListingResponseDto, MessageDto } from "@root/shared/types/chat.dto";
 
 import { chatActionService } from "./chat/chat-action.service";
 import { chatListingService } from "./chat/chat-listing.service";
@@ -32,11 +31,11 @@ class ChatService {
   }
 
   // --- Listings ---
-  async getChatListing(userId: string | any, limit?: number, cursor?: string | null): Promise<ChatListingResponse> {
+  async getChatListing(userId: string | any, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto> {
     return chatListingService.getChatListing(userId, limit, cursor);
   }
 
-  async getChatRequests(userId: string | any, limit?: number, cursor?: string | null): Promise<ChatListingResponse> {
+  async getChatRequests(userId: string | any, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto> {
     return chatListingService.getChatRequests(userId, limit, cursor);
   }
 
@@ -45,7 +44,7 @@ class ChatService {
     query: string,
     limit?: number,
     cursor?: string | null,
-  ): Promise<ChatListingResponse> {
+  ): Promise<ChatListingResponseDto> {
     return chatListingService.searchChats(userId, query, limit, cursor);
   }
 

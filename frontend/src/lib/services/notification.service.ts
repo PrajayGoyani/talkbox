@@ -1,4 +1,4 @@
-import type { MessageAlert } from "$types/chat";
+import type { MessageAlertDto } from "@root/shared/types/chat.dto";
 
 import { ASSETS } from "$lib/config";
 import { playNotificationSound } from "$utils/audio";
@@ -9,7 +9,7 @@ export class NotificationService {
    * Primary entry point for alerting the user of a new message or event.
    * Handles both audio and visual notifications based on context.
    */
-  notify(data: MessageAlert) {
+  notify(data: MessageAlertDto) {
     // 1. Play sound if it's not the currently selected chat OR if the window isn't focused
     const isSelected = data.chatId === messageStore.activeChatId;
     const isFocused = typeof document !== "undefined" && document.hasFocus();
@@ -27,7 +27,7 @@ export class NotificationService {
   /**
    * Specifically triggers a browser notification.
    */
-  showBrowserNotification(data: MessageAlert) {
+  showBrowserNotification(data: MessageAlertDto) {
     if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") {
       return;
     }

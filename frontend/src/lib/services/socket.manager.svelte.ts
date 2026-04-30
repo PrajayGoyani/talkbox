@@ -1,6 +1,13 @@
-import type { Message, MessageAlert } from "$types/chat";
-import type { MessageAckDto, RawMessageDto, TypingIndicatorDto, UserStatusDto } from "$types/chat.dto";
-import type { Notification } from "$types/notification";
+import type {
+  MessageAckDto,
+  MessageDto,
+  MessageReactionUpdateDto,
+  TypingIndicatorDto,
+  UserStatusDto,
+  MessageAlertDto,
+} from "@root/shared/types/chat.dto";
+import type { UserDto } from "@root/shared/types/auth.dto";
+import type { NotificationDto } from "@root/shared/types/notification.dto";
 import type { Socket } from "socket.io-client";
 
 import { authStore } from "$state/auth.svelte";
@@ -25,17 +32,13 @@ export interface ChatStoreSocket {
   activeChatId: string | null;
   typingStatus: SvelteMap<string, SvelteSet<string>>;
   onlineStatus: SvelteMap<string, { isOnline: boolean; lastSeen: Date | null }>;
-  handleReceiveMessage(msg: Message): void;
-  handleMessageAlert(data: MessageAlert): void;
-  handleNotification(notification: Notification): void;
+  handleReceiveMessage(msg: MessageDto): void;
+  handleMessageAlert(data: MessageAlertDto): void;
+  handleNotification(notification: NotificationDto): void;
   handleChatAccepted(data: { chatId: string }): void;
-  handleReactionUpdate(data: {
-    messageId: string;
-    chatId: string;
-    reactions: Array<{ emoji: string; slug?: string; users: string[] }>;
-  }): void;
+  handleReactionUpdate(data: MessageReactionUpdateDto): void;
   handleMessageDeleted(data: { messageId: string; chatId: string; isLastMessage?: boolean }): void;
-  handleMessageSentAck(chatId: string, msg: Message): void;
+  handleMessageSentAck(chatId: string, msg: MessageDto): void;
   handleMessageUpdated(data: {
     messageId: string;
     chatId: string;
@@ -43,7 +46,7 @@ export interface ChatStoreSocket {
     isEdited: boolean;
     editedAt: string;
   }): void;
-  handleProfileUpdate(data: { userId: string } & Partial<import("$types/chat").User>): void;
+  handleProfileUpdate(data: { userId: string } & Partial<UserDto>): void;
 }
 
 export class SocketManager {
@@ -97,7 +100,8 @@ export class SocketManager {
 
         const upgrade = await confirmStore.show({
           title: "Session Disconnected",
-          message: "Your session was taken over by another window. Free accounts are limited to one active session.",
+          message:
+            "Your session was taken over by another window. Free accounts are limited to one active session.",
           confirmText: "Upgrade to Pro",
           cancelText: "Reconnect",
           variant: "warning",
@@ -112,8 +116,7 @@ export class SocketManager {
     });
 
     // Listen for incoming messages
-    this.socket.on("receive_message", (rawMessage: RawMessageDto) => {
-      const message: Message = { ...rawMessage, id: rawMessage._id || rawMessage.id! };
+    this.socket.on("receive_message", (message: MessageDto) => {
       this.store.handleReceiveMessage(message);
     });
 
@@ -157,12 +160,12 @@ export class SocketManager {
     });
 
     // Listen for message alerts (toast / browser notification)
-    this.socket.on("message_alert", (data: MessageAlert) => {
+    this.socket.on("message_alert", (data: MessageAlertDto) => {
       this.store.handleMessageAlert(data);
     });
 
     // When a notification arrives, delegate to notificationStore and refresh chat list
-    this.socket.on("notification", (notification: Notification) => {
+    this.socket.on("notification", (notification: NotificationDto) => {
       notificationStore.addRealTimeNotification(notification);
       this.store.handleNotification(notification);
     });
@@ -171,30 +174,35 @@ export class SocketManager {
       this.store.handleChatAccepted(data);
     });
 
+    this.socket.on("message_reaction_update", (data: MessageReactionUpdateDto) => {
+      this.store.handleReactionUpdate(data);
+    });
+
     this.socket.on(
-      "message_reaction_update",
-      (data: {
-        messageId: string;
-        chatId: string;
-        reactions: Array<{ emoji: string; slug?: string; users: string[] }>;
-      }) => {
-        this.store.handleReactionUpdate(data);
+      "message_deleted",
+      (data: { messageId: string; chatId: string; isLastMessage?: boolean }) => {
+        this.store.handleMessageDeleted(data);
       },
     );
-
-    this.socket.on("message_deleted", (data: { messageId: string; chatId: string; isLastMessage?: boolean }) => {
-      this.store.handleMessageDeleted(data);
-    });
 
     this.socket.on(
       "message_updated",
-      (data: { messageId: string; chatId: string; contentBody: string; isEdited: boolean; editedAt: string }) => {
+      (data: {
+        messageId: string;
+        chatId: string;
+        contentBody: string;
+        isEdited: boolean;
+        editedAt: string;
+      }) => {
         this.store.handleMessageUpdated(data);
       },
     );
-    this.socket.on("profile_updated", (data: { userId: string } & Partial<import("$types/chat").User>) => {
-      this.store.handleProfileUpdate(data);
-    });
+    this.socket.on(
+      "profile_updated",
+      (data: { userId: string } & Partial<UserDto>) => {
+        this.store.handleProfileUpdate(data);
+      },
+    );
   }
 
   disconnect() {
@@ -235,8 +243,7 @@ export class SocketManager {
         clearTimeout(timeout);
         this.store.isSendingMessage = false;
         if (ack?.status === "ok" && ack.message) {
-          const message = { ...ack.message, id: ack.message._id || ack.message.id! };
-          this.store.handleMessageSentAck(chatId, message);
+          this.store.handleMessageSentAck(chatId, ack.message);
         }
       },
     );

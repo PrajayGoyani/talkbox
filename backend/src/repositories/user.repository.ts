@@ -1,6 +1,6 @@
 import User, { IUser, IUserModel } from "@models/user.model";
 import { ObjectId } from "mongodb";
-import { SanitizedUser } from "@/services/auth.service";
+import { UserDto } from "@root/shared/types/auth.dto";
 
 export class UserRepository {
   constructor(public userModel: IUserModel) {}
@@ -29,7 +29,7 @@ export class UserRepository {
     return this.userModel.findByIdAndUpdate(id, update, { returnDocument: "after" });
   }
 
-  public transformUser(user: IUser): SanitizedUser {
+  public transformUser(user: IUser): UserDto {
     const obj = user.toObject ? user.toObject() : (user as any);
     return {
       id: obj._id.toString(),

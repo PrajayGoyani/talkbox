@@ -1,10 +1,10 @@
-import type { Notification, NotificationResponse } from "$types/notification";
+import type { NotificationDto, NotificationResponseDto } from "@root/shared/types/notification.dto";
 
 import { API_BASE } from "$lib/config";
 import { authStore } from "$state/auth.svelte";
 
 class NotificationStore {
-  notifications = $state<Notification[]>([]);
+  notifications = $state<NotificationDto[]>([]);
   unreadCount = $state(0);
   loading = $state(false);
   hasMore = $state(true);
@@ -32,7 +32,7 @@ class NotificationStore {
       if (!resp.ok) throw new Error("Failed to load notifications");
 
       const result = await resp.json();
-      const { notifications, unreadCount, nextCursor, hasMore } = result.data as NotificationResponse;
+      const { notifications, unreadCount, nextCursor, hasMore } = result.data as NotificationResponseDto;
 
       if (reset) {
         this.notifications = notifications;
@@ -82,7 +82,7 @@ class NotificationStore {
     }
   }
 
-  addRealTimeNotification(notification: Notification) {
+  addRealTimeNotification(notification: NotificationDto) {
     // Only add non-message notifications here (messages are handled by chatStore)
     if (notification.type === "new_message") return;
 

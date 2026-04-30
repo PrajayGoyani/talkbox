@@ -1,7 +1,9 @@
 <script lang="ts">
   import MessageReactionPicker from "$components/chat/MessageReactionPicker.svelte";
   import { authStore } from "$state/auth.svelte";
-  import { chatStore, type Message, type User } from "$state/chat.svelte";
+  import { chatStore } from "$state/chat.svelte";
+  import type { MessageDto } from "@root/shared/types/chat.dto";
+  import type { UserDto } from "@root/shared/types/auth.dto";
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
   import { formatSimpleTime } from "$utils/date";
@@ -12,16 +14,16 @@
   } from "$utils/emoji";
 
   type Props = {
-    msg: Message;
+    msg: MessageDto;
     isSent: boolean;
-    otherUser: User | null;
+    otherUser: UserDto | null;
     isFirstInGroup: boolean;
     i: number;
     isTouchDevice: boolean;
     messageEditingId: string | null;
     editInputValue: string;
     editTextareaElement: HTMLTextAreaElement | undefined;
-    startEditing: (msg: Message) => void;
+    startEditing: (msg: MessageDto) => void;
     cancelEditing: () => void;
     saveEditing: (msgId: string) => void;
     handleEditKeydown: (e: KeyboardEvent, msgId: string) => void;
@@ -192,9 +194,9 @@
 {/if}
 
 {#snippet reactionList(
-  msg: Message,
+  msg: MessageDto,
   isSent: boolean,
-  otherUser: User | null,
+  otherUser: UserDto | null,
   chatStore: any,
   authStore: any,
 )}

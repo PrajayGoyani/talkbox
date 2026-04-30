@@ -7,7 +7,8 @@ import { ReactionHandler } from "@services/socket-handlers/reaction.handler";
 import { TypingHandler } from "@services/socket-handlers/typing.handler";
 import { LRUCache } from "lru-cache";
 
-import { AuthenticatedSocketUser, MessageDto, TypedIO, TypedSocket } from "@/types/socket.types";
+import { MessageDto } from "@root/shared/types/chat.dto";
+import { AuthenticatedSocketUser, TypedIO, TypedSocket } from "@/types/socket.types";
 
 const PARTICIPANT_CACHE_TTL_MS = 10 * 60 * 1000;
 const PARTICIPANT_CACHE_MAX = 10000;

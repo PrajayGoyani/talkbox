@@ -64,8 +64,10 @@ export const ASSETS = {
 };
 // --- UI Constants ---
 
+import { MESSAGE_MODIFY_LIMIT_HOURS } from "@root/shared/constants/chat";
+
 /** Maximum time allowed to edit or delete a message (ms) */
-export const MESSAGE_MODIFICATION_WINDOW = 60 * 60 * 1000; // 1 hour
+export const MESSAGE_MODIFICATION_WINDOW = MESSAGE_MODIFY_LIMIT_HOURS * 60 * 60 * 1000; // 1 hour
 
 /** Approximate height of a message skeleton for layout calculation (px) */
 export const MESSAGE_SKELETON_HEIGHT = 90;

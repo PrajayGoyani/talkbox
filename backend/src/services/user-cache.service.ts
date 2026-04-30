@@ -1,5 +1,5 @@
 import User from "@models/user.model";
-import { SanitizedUser } from "@services/auth.service";
+import { UserDto } from "@root/shared/types/auth.dto";
 import { redisService } from "@services/redis.service";
 import { LRUCache } from "lru-cache";
 
@@ -7,7 +7,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
 const CACHE_MAX_ENTRIES = 50000;
 
 class UserCacheService {
-  private cache: LRUCache<string, SanitizedUser>;
+  private cache: LRUCache<string, UserDto>;
 
   constructor() {
     this.cache = new LRUCache({
@@ -40,7 +40,7 @@ class UserCacheService {
     }
   }
 
-  async getUser(userId: string): Promise<SanitizedUser | null> {
+  async getUser(userId: string): Promise<UserDto | null> {
     const cached = this.cache.get(userId);
     if (cached) {
       return cached;
@@ -49,7 +49,7 @@ class UserCacheService {
     const user = await User.findById(userId);
     if (!user) return null;
 
-    const sanitized: SanitizedUser = {
+    const sanitized: UserDto = {
       id: user._id.toString(),
       username: user.username,
       name: user.name,
@@ -70,7 +70,7 @@ class UserCacheService {
     this.cache.delete(userId);
   }
 
-  set(userId: string, user: SanitizedUser) {
+  set(userId: string, user: UserDto) {
     this.cache.set(userId, user);
   }
 }

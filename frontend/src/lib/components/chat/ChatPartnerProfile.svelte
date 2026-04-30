@@ -1,14 +1,14 @@
 <script lang="ts">
   import Avatar from "$components/ui/Avatar.svelte";
   import Icon from "$components/ui/Icon.svelte";
-  import type { User } from "$state/chat.svelte";
+  import type { UserDto } from "@root/shared/types/auth.dto";
   import { tooltipStore } from "$state/tooltip.svelte";
 
   let {
     user,
     onClose,
   }: {
-    user: User | null;
+    user: UserDto | null;
     onClose: () => void;
   } = $props();
 

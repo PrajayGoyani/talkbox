@@ -3,6 +3,7 @@ import Chat from "@models/chat.model";
 import { redisService } from "@services/redis.service";
 import { LRUCache } from "lru-cache";
 
+import { TypingIndicatorDto } from "@root/shared/types/chat.dto";
 import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
 
 export class TypingHandler {
@@ -67,12 +68,14 @@ export class TypingHandler {
     }
 
     const io = this.ioProvider();
+    const typingPayload: TypingIndicatorDto = {
+      chatId,
+      userId: senderId,
+    };
+
     for (const pId of participantSet) {
       if (pId !== senderId) {
-        io?.to(`user:${pId}`).emit(isTyping ? "typing_start" : "typing_stop", {
-          chatId,
-          userId: senderId,
-        });
+        io?.to(`user:${pId}`).emit(isTyping ? "typing_start" : "typing_stop", typingPayload);
       }
     }
   }

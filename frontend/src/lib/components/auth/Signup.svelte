@@ -4,7 +4,7 @@
   import { Route } from "$lib/utils/routes";
   import { authStore } from "$state/auth.svelte";
   import { routerStore } from "$state/router.svelte";
-  import { USERNAME_ERROR, USERNAME_REGEX } from "$utils/validation";
+  import { USERNAME_ERROR, USERNAME_REGEX } from "@root/shared/constants/validation";
 
   const { toggleLogin } = $props<{ toggleLogin: any }>();
 

@@ -10,12 +10,7 @@ interface CreateNotificationDto {
   message: string;
 }
 
-interface NotificationListResult {
-  notifications: any[];
-  unreadCount: number;
-  nextCursor: string | null;
-  hasMore: boolean;
-}
+import type { NotificationResponseDto } from "@root/shared/types/notification.dto";
 
 class NotificationService {
   /**
@@ -37,7 +32,7 @@ class NotificationService {
   async getByUser(
     userId: string | ObjectId,
     { limit = 15, cursor = null }: { limit?: number; cursor?: string | null } = {},
-  ): Promise<NotificationListResult> {
+  ): Promise<NotificationResponseDto> {
     const query: any = { recipientId: userId };
 
     if (cursor) {
@@ -62,7 +57,7 @@ class NotificationService {
       isRead: false,
     });
 
-    return { notifications, unreadCount, nextCursor, hasMore };
+    return { notifications: notifications as any, unreadCount, nextCursor, hasMore };
   }
 
   /**

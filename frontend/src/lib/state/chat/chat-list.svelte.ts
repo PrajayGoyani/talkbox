@@ -1,4 +1,4 @@
-import type { Chat } from "$types/chat";
+import type { Chat } from "$lib/types/chat";
 
 import { chatService } from "$services/chat.service";
 import { authStore } from "$state/auth.svelte";

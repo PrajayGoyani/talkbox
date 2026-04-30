@@ -1,5 +1,6 @@
-import type { Message, MessageAlert } from "$types/chat";
-import type { Notification } from "$types/notification";
+import type { MessageDto, MessageAlertDto } from "@root/shared/types/chat.dto";
+import type { UserDto } from "@root/shared/types/auth.dto";
+import type { NotificationDto } from "@root/shared/types/notification.dto";
 
 import { chatService } from "$services/chat.service";
 import { notificationService } from "$services/notification.service";
@@ -28,14 +29,14 @@ export class SocketHandler implements ChatStoreSocket {
   }
 
   private onChatListRefresh: (() => void) | null = null;
-  private onToastCallback: ((data: MessageAlert) => void) | null = null;
+  private onToastCallback: ((data: MessageAlertDto) => void) | null = null;
 
-  setCallbacks(callbacks: { onRefresh?: () => void; onToast?: (data: MessageAlert) => void }) {
+  setCallbacks(callbacks: { onRefresh?: () => void; onToast?: (data: MessageAlertDto) => void }) {
     this.onChatListRefresh = callbacks.onRefresh || null;
     this.onToastCallback = callbacks.onToast || null;
   }
 
-  handleReceiveMessage(message: Message) {
+  handleReceiveMessage(message: MessageDto) {
     messageStore.handleReceiveMessage(message);
     presenceStore.setTyping(message.chatId, message.senderId, false);
 
@@ -70,7 +71,7 @@ export class SocketHandler implements ChatStoreSocket {
     );
   }
 
-  handleMessageAlert(data: MessageAlert) {
+  handleMessageAlert(data: MessageAlertDto) {
     const isChatOpen = data.chatId === messageStore.activeChatId;
     if (isChatOpen && document.hasFocus()) {
       void chatService.markChatRead(data.chatId).then(() => {
@@ -85,7 +86,7 @@ export class SocketHandler implements ChatStoreSocket {
     }
   }
 
-  handleNotification(notification: Notification) {
+  handleNotification(notification: NotificationDto) {
     if (notification.type === "chat_request") {
       chatListStore.pendingRequestCount += 1;
       if (this.onToastCallback) {
@@ -132,7 +133,7 @@ export class SocketHandler implements ChatStoreSocket {
           messageStore.messages[messageStore.messages.length - 1]?.id === data.messageId))
     ) {
       chatListStore.patchChatLocally(data.chatId, {
-        lastMessage: { ...chat.lastMessage, contentBody: "Message deleted" },
+        lastMessage: { ...chat.lastMessage, contentBody: "This message was deleted" },
       });
     }
   }
@@ -157,7 +158,7 @@ export class SocketHandler implements ChatStoreSocket {
     }
   }
 
-  handleMessageSentAck(chatId: string, message: Message) {
+  handleMessageSentAck(chatId: string, message: MessageDto) {
     messageStore.handleMessageSentAck(chatId, message);
     chatListStore.patchChatLocally(
       chatId,
@@ -172,7 +173,7 @@ export class SocketHandler implements ChatStoreSocket {
     );
   }
 
-  handleProfileUpdate(data: { userId: string } & Partial<import("$types/chat").User>) {
+  handleProfileUpdate(data: { userId: string } & Partial<UserDto>) {
     const { userId, ...updates } = data;
     chatListStore.chats.forEach((chat) => {
       if (chat.otherUser?.id === userId) Object.assign(chat.otherUser, updates);

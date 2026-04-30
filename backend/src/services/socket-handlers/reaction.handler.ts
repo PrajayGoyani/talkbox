@@ -8,9 +8,11 @@ import Message from "@models/message.model";
 import { redisService } from "@services/redis.service";
 import { isScrubbed } from "@utils/date.utils";
 import { getCanonicalSlug } from "@utils/emoji.utils";
+import { getDisallowedEmojis } from "@root/shared/utils/emoji";
 import { Types } from "mongoose";
 
 import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
+import { MessageReactionUpdateDto } from "@root/shared/types/chat.dto";
 
 export class ReactionHandler {
   constructor(private ioProvider: () => TypedIO | null) {}
@@ -23,6 +25,9 @@ export class ReactionHandler {
   ) {
     const { messageId, emoji, slug } = payload;
     const io = this.ioProvider();
+
+    // -1. Block disallowed emojis
+    if (getDisallowedEmojis(emoji).length > 0) return;
 
     // 0. Rate limit
     const rlStatus = await redisService.incrementAndCheckLimit(
@@ -65,18 +70,22 @@ export class ReactionHandler {
       const senderIdIdx = new Types.ObjectId(sender.id);
       const reactionIndex = message.reactions.findIndex((r) => r.emoji === emoji);
 
+      let action: "added" | "removed" | null = null;
+      const canonicalSlug = getCanonicalSlug(emoji, slug);
+
       if (reactionIndex > -1) {
         const reactionGroup = message.reactions[reactionIndex];
         const userIndex = reactionGroup.users.findIndex((u) => u.toString() === senderIdStr);
 
         if (userIndex > -1) {
+          action = "removed";
           reactionGroup.users.splice(userIndex, 1);
           if (reactionGroup.users.length === 0) {
             message.reactions.splice(reactionIndex, 1);
           }
         } else {
+          action = "added";
           reactionGroup.users.push(senderIdIdx);
-          const canonicalSlug = getCanonicalSlug(emoji, slug);
           if (
             canonicalSlug &&
             (!reactionGroup.slug ||
@@ -87,25 +96,34 @@ export class ReactionHandler {
           }
         }
       } else if (message.reactions.length < REACTIONS_MAX_UNIQUE) {
+        action = "added";
         message.reactions.push({
           emoji,
-          slug: getCanonicalSlug(emoji, slug),
+          slug: canonicalSlug,
           users: [senderIdIdx],
         });
       }
 
+      if (!action) return;
+
       message.markModified("reactions");
       await message.save();
 
-      const savedMessage = message.toObject();
-      const updatePayload = {
+      // const savedMessage = message.toObject();
+      const updatePayload: MessageReactionUpdateDto = {
         messageId: messageId.toString(),
         chatId: chatIdStr,
-        reactions: savedMessage.reactions.map((r: any) => ({
-          emoji: r.emoji,
-          slug: r.slug,
-          users: r.users.map((u: any) => u.toString()),
-        })),
+        // reactions: savedMessage.reactions.map((r: any) => ({
+        //   emoji: r.emoji,
+        //   slug: r.slug,
+        //   users: r.users.map((u: any) => u.toString()),
+        // })),
+        reaction: {
+          action: action as "added" | "removed",
+          emoji,
+          slug: canonicalSlug,
+          userId: senderIdStr,
+        },
       };
 
       chat.participants.forEach((p: any) => {

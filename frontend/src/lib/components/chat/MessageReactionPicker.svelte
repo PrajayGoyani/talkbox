@@ -3,7 +3,9 @@
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
   import { MESSAGE_MODIFICATION_WINDOW } from "$lib/config";
-  import { chatStore, type Message } from "$state/chat.svelte";
+  import { isWithinModificationWindow as sharedIsWithinModificationWindow } from "@root/shared/utils/message";
+  import { chatStore } from "$state/chat.svelte";
+  import type { MessageDto } from "@root/shared/types/chat.dto";
   import { confirmStore } from "$state/confirm.svelte";
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
@@ -13,7 +15,7 @@
     isSent,
     onEdit,
   }: {
-    msg: Message;
+    msg: MessageDto;
     isSent: boolean;
     onEdit?: () => void;
   } = $props();
@@ -24,8 +26,7 @@
   // --- Zenith: 1-hour time limit check ---
   const isWithinModificationWindow = $derived.by(() => {
     if (msg.isDeleted || msg.isScrubbed) return false;
-    const sentAt = new Date(msg.createdAt).getTime();
-    return sentAt > Date.now() - MESSAGE_MODIFICATION_WINDOW;
+    return sharedIsWithinModificationWindow(msg.createdAt);
   });
   // ---------------------------------------
 

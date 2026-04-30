@@ -7,13 +7,10 @@
     SCROLL_THROTTLE_DURATION,
   } from "$lib/config";
   import { authStore } from "$state/auth.svelte";
-  import {
-    chatStore,
-    type ChatStatus,
-    type Message,
-    type User,
-  } from "$state/chat.svelte";
-  import { activeChatStore } from "$state/active-chat.svelte";
+  import { chatStore, type ChatStatus } from "$state/chat.svelte";
+  import type { MessageDto } from "@root/shared/types/chat.dto";
+  import type { UserDto } from "@root/shared/types/auth.dto";
+  import { messageStore } from "$state/active-chat.svelte";
 
   import { getDateLabel } from "$utils/date";
   import { throttle } from "$utils/timing";
@@ -35,13 +32,13 @@
     showMessageActionsId = $bindable(),
   }: {
     chatId: string;
-    otherUser: User | null;
+    otherUser: UserDto | null;
     status?: ChatStatus;
     isTouchDevice: boolean;
     messageEditingId: string | null;
     editInputValue: string;
     editTextareaElement: HTMLTextAreaElement | undefined;
-    startEditing: (msg: Message) => void;
+    startEditing: (msg: MessageDto) => void;
     cancelEditing: () => void;
     saveEditing: (msgId: string) => void;
     handleEditKeydown: (e: KeyboardEvent, msgId: string) => void;
@@ -62,11 +59,11 @@
 
   // Group messages for better sticky header handling
   const groupedMessages = $derived.by(() => {
-    const groups: { label: string; messages: Message[] }[] = [];
+    const groups: { label: string; messages: MessageDto[] }[] = [];
     let lastDateKey = "";
 
-    for (const msg of activeChatStore.messages) {
-      const dateKey = msg.createdAt.slice(0, 10);
+    for (const msg of messageStore.messages) {
+      const dateKey = (typeof msg.createdAt === 'string' ? msg.createdAt : msg.createdAt.toISOString()).slice(0, 10);
       if (groups.length === 0 || dateKey !== lastDateKey) {
         groups.push({
           label: getDateLabel(msg.createdAt),
@@ -119,12 +116,12 @@
         const entry = entries[0];
         if (
           entry.isIntersecting &&
-          activeChatStore.hasMoreMessages &&
-          !activeChatStore.isLoadingMessages
+          messageStore.hasMoreMessages &&
+          !messageStore.isLoadingMessages
         ) {
           const scrollBottom =
             messagesContainer!.scrollHeight - messagesContainer!.scrollTop;
-          activeChatStore.loadOlderMessages().then(async () => {
+          messageStore.loadOlderMessages().then(async () => {
             await tick();
             if (messagesContainer) {
               messagesContainer.scrollTop =
@@ -146,7 +143,7 @@
 
   // Export scroll to bottom for parent
   $effect(() => {
-    if (activeChatStore.messages.length > 0 && !userHasScrolledUp) {
+    if (messageStore.messages.length > 0 && !userHasScrolledUp) {
       scrollToBottom(true);
     }
   });
@@ -170,13 +167,13 @@
     style="overflow-anchor: none;"
     onscroll={handleMessagesScroll}
   >
-    {#if activeChatStore.isLoadingMessages && activeChatStore.messages.length === 0}
+    {#if messageStore.isLoadingMessages && messageStore.messages.length === 0}
       <div class="flex flex-col gap-4">
         {#each Array(messageSkeletonCount) as _, i}
           <MessageSkeleton sent={i % 2 === 0} />
         {/each}
       </div>
-    {:else if activeChatStore.messages.length === 0}
+    {:else if messageStore.messages.length === 0}
 
       <div
         class="flex flex-col items-center justify-center gap-4 h-full text-slate-500 opacity-60 text-center py-20"
@@ -194,7 +191,7 @@
     {:else}
       <div bind:this={topSentinel} class="h-1 -mt-4"></div>
 
-      {#if activeChatStore.isLoadingMessages && activeChatStore.hasMoreMessages}
+      {#if messageStore.isLoadingMessages && messageStore.hasMoreMessages}
         <div class="flex flex-col gap-4 mb-6">
           <MessageSkeleton sent={false} />
           <MessageSkeleton sent={true} />

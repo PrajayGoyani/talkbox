@@ -1,28 +1,17 @@
 import { Request } from "express";
+import type {
+  AcceptChatRequestDto,
+  RejectChatRequestDto,
+} from "@root/shared/types/chat.dto";
+import type {
+  ForgotPasswordRequestDto,
+  LoginRequestDto,
+  ResetPasswordRequestDto,
+  SignupRequestDto,
+} from "@root/shared/types/auth.dto";
 
-interface AccpetChatPayload {
-  chatId: string;
-}
-
-interface RejectChatPayload {
-  chatId: string;
-}
-
-export type AcceptChatRequest = Request<AccpetChatPayload, {}, {}>;
-export type RejectChatRequest = Request<RejectChatPayload, {}, {}>;
-
-// Auth Request Types
-export interface SignupPayload {
-  username: string;
-  email: string;
-  password: string;
-  name: string;
-}
-
-export interface LoginPayload {
-  username: string;
-  password: string;
-}
+export type AcceptChatRequest = Request<AcceptChatRequestDto, {}, {}>;
+export type RejectChatRequest = Request<RejectChatRequestDto, {}, {}>;
 
 export interface RefreshRequest extends Request {
   cookies: {
@@ -30,17 +19,8 @@ export interface RefreshRequest extends Request {
   };
 }
 
-export type SignupRequest = Request<{}, {}, SignupPayload>;
-export type LoginRequest = Request<{}, {}, LoginPayload>;
+export type SignupRequest = Request<{}, {}, SignupRequestDto>;
+export type LoginRequest = Request<{}, {}, LoginRequestDto>;
 
-export interface ForgotPasswordPayload {
-  email: string;
-}
-
-export interface ResetPasswordPayload {
-  token: string;
-  password: string;
-}
-
-export type ForgotPasswordRequest = Request<{}, {}, ForgotPasswordPayload>;
-export type ResetPasswordRequest = Request<{}, {}, ResetPasswordPayload>;
+export type ForgotPasswordRequest = Request<{}, {}, ForgotPasswordRequestDto>;
+export type ResetPasswordRequest = Request<{}, {}, ResetPasswordRequestDto>;

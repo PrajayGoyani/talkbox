@@ -2,11 +2,17 @@
   import ChatList from "$components/chat/ChatList.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import SegmentedControl from "$components/ui/SegmentedControl.svelte";
-  import { chatStore, type ChatStatus, type User } from "$state/chat.svelte";
+  import { chatStore, type ChatStatus } from "$state/chat.svelte";
+  import type { UserDto } from "@root/shared/types/auth.dto";
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { slide } from "svelte/transition";
-  import { isValidUsername, USERNAME_ERROR } from "$utils/validation";
+  import {
+    isValidUsername,
+  } from "@root/shared/utils/validation";
+  import {
+    USERNAME_ERROR,
+  } from "@root/shared/constants/validation";
 
   const {
     activeChatId,
@@ -15,7 +21,7 @@
     onNotificationToggle,
   } = $props<{
     activeChatId?: string | null;
-    onSelectChat: (chatId: string, otherUser: User, status: ChatStatus) => void;
+    onSelectChat: (chatId: string, otherUser: UserDto, status: ChatStatus) => void;
     unreadCount?: number;
     onNotificationToggle?: () => void;
   }>();

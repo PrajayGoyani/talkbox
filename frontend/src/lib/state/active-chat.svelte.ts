@@ -1,13 +1,12 @@
-import type { Message } from "$types/chat";
+import type { MessageDto, MessageReactionUpdateDto } from "@root/shared/types/chat.dto";
 
 import { chatService } from "$services/chat.service";
-import { ApiError } from "$utils/errors";
 
 const LOADER_AWAIT_MS = 300;
 
 class MessageStore {
   activeChatId: string | null = $state(null);
-  messages: Array<Message> = $state([]);
+  messages: Array<MessageDto> = $state([]);
   hasMoreMessages = $state(true);
   isLoadingMessages = $state(false);
   isSendingMessage = $state(false);
@@ -27,7 +26,10 @@ class MessageStore {
 
     const startTime = Date.now();
     try {
-      const loadedMessages = await chatService.loadMessages(chatId, this.messagesAbortController.signal);
+      const loadedMessages = await chatService.loadMessages(
+        chatId,
+        this.messagesAbortController.signal,
+      );
 
       if (this.activeChatId !== chatId) return;
 
@@ -48,7 +50,13 @@ class MessageStore {
   }
 
   async loadOlderMessages() {
-    if (!this.activeChatId || !this.hasMoreMessages || this.isLoadingMessages || this.messages.length === 0) return;
+    if (
+      !this.activeChatId ||
+      !this.hasMoreMessages ||
+      this.isLoadingMessages ||
+      this.messages.length === 0
+    )
+      return;
 
     this.isLoadingMessages = true;
     const oldestMessageId = this.messages[0].id;
@@ -86,21 +94,39 @@ class MessageStore {
     this.isLoadingMessages = false;
   }
 
-  handleReceiveMessage(message: Message) {
+  handleReceiveMessage(message: MessageDto) {
     if (message.chatId === this.activeChatId) {
       this.messages.push(message);
     }
   }
 
-  handleReactionUpdate(data: {
-    messageId: string;
-    chatId: string;
-    reactions: Array<{ emoji: string; slug?: string; users: string[] }>;
-  }) {
+  handleReactionUpdate(data: MessageReactionUpdateDto) {
     if (data.chatId === this.activeChatId) {
       const msg = this.messages.find((m) => m.id === data.messageId);
       if (msg) {
-        msg.reactions = data.reactions;
+        if (data.reaction) {
+          // Surgical Update: Mutate the local reactions array for a smoother state transition
+          const { action, emoji, slug, userId } = data.reaction;
+          if (!msg.reactions) msg.reactions = [];
+
+          const group = msg.reactions.find((r) => r.emoji === emoji);
+
+          if (action === "added") {
+            if (!group) {
+              msg.reactions.push({ emoji, slug, users: [userId] });
+            } else if (!group.users.includes(userId)) {
+              group.users.push(userId);
+            }
+          } else if (action === "removed" && group) {
+            group.users = group.users.filter((id) => id !== userId);
+            if (group.users.length === 0) {
+              msg.reactions = msg.reactions.filter((r) => r.emoji !== emoji);
+            }
+          }
+        } else if (data.reactions) {
+          // Fallback: If no granular data is provided, replace the entire state
+          msg.reactions = data.reactions;
+        }
       }
     }
   }
@@ -133,7 +159,7 @@ class MessageStore {
     }
   }
 
-  handleMessageSentAck(chatId: string, message: Message) {
+  handleMessageSentAck(chatId: string, message: MessageDto) {
     if (chatId === this.activeChatId) {
       const exists = this.messages.some((m) => m.idempotencyKey === message.idempotencyKey);
       if (!exists) {
@@ -144,4 +170,3 @@ class MessageStore {
 }
 
 export const messageStore = new MessageStore();
-export const activeChatStore = messageStore; // Legacy alias for backward compatibility

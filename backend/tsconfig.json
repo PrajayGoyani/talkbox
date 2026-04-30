@@ -14,6 +14,7 @@
     "outDir": "dist",
     "incremental": true,
     "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "rootDir": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@controllers/*": ["./src/controllers/*"],
@@ -26,7 +27,8 @@
       "@bootstrap/*": ["./src/bootstrap/*"],
       "@routes/*": ["./src/routes/*"],
       "@jobs/*": ["./src/jobs/*"],
-      "@repositories/*": ["./src/repositories/*"]
+      "@repositories/*": ["./src/repositories/*"],
+      "@root/shared/*": ["../shared/*"]
     }
   },
   "include": ["src/**/*", "server.ts"],

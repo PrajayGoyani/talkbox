@@ -3,7 +3,7 @@ import { MessageRepository, messageRepository } from "@repositories/message.repo
 import { AppError } from "@utils/AppError";
 import { ObjectId } from "mongodb";
 
-import { MessageDto } from "@/types/socket.types";
+import { MessageDto } from "@root/shared/types/chat.dto";
 
 import { IMessageService } from "./types";
 

@@ -4,7 +4,8 @@
   import TypingIndicator from "$components/ui/TypingIndicator.svelte";
   import { cn } from "$lib/utils/cn";
   import { authStore } from "$state/auth.svelte";
-  import { chatStore, type Chat, type ChatStatus, type User } from "$state/chat.svelte";
+  import { chatStore, type Chat, type ChatStatus } from "$state/chat.svelte";
+  import type { UserDto } from "@root/shared/types/auth.dto";
   import { formatListTime } from "$utils/date";
 
   interface Props {
@@ -13,7 +14,7 @@
     isMenuOpen: boolean;
     isMenuTarget: boolean;
     processingState: "accepting" | "rejecting" | null;
-    onSelect: (chatId: string, otherUser: User, status: ChatStatus) => void;
+    onSelect: (chatId: string, otherUser: UserDto, status: ChatStatus) => void;
     onContextMenu: (e: MouseEvent, chat: Chat) => void;
     onAccept: (chatId: string) => void;
     onReject: (chatId: string) => void;
@@ -31,7 +32,7 @@
     onReject,
   }: Props = $props();
 
-  const displayName = $derived(chat.otherUser.name || chat.otherUser.username);
+  const displayName = $derived(chat.otherUser?.name || chat.otherUser?.username || "Unknown");
   const typingUsers = $derived(chatStore.typingStatus.get(chat.id));
   const isTyping = $derived(
     (typingUsers?.size ?? 0) > 0 && !typingUsers?.has(authStore.user?.id || ""),
@@ -51,8 +52,8 @@
     )}
     role="button"
     tabindex="0"
-    onclick={() => onSelect(chat.id, chat.otherUser, chat.status)}
-    onkeydown={(e) => e.key === "Enter" && onSelect(chat.id, chat.otherUser, chat.status)}
+    onclick={() => chat.otherUser && onSelect(chat.id, chat.otherUser, chat.status)}
+    onkeydown={(e) => e.key === "Enter" && chat.otherUser && onSelect(chat.id, chat.otherUser, chat.status)}
     oncontextmenu={(e) => onContextMenu(e, chat)}
   >
     <!-- Pinned Indicator -->
@@ -64,11 +65,11 @@
 
     <div class="relative shrink-0">
       <Avatar
-        user={chat.otherUser}
+        user={chat.otherUser || null}
         showBadge={true}
         class="w-11 h-11 bg-slate-200 dark:bg-slate-800 text-lg text-slate-600 dark:text-slate-300"
       />
-      {#if chatStore.onlineStatus.get(chat.otherUser.id)?.isOnline}
+      {#if chat.otherUser && chatStore.onlineStatus.get(chat.otherUser.id)?.isOnline}
         <div
           class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-sm"
         ></div>

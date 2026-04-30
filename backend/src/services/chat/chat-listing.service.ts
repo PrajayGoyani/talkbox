@@ -1,7 +1,7 @@
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { ObjectId } from "mongodb";
 
-import { ChatDto, ChatListingResponse } from "@/types/chat.types";
+import { ChatDto, ChatListingResponseDto } from "@root/shared/types/chat.dto";
 
 import { IChatListingService } from "./types";
 
@@ -12,7 +12,7 @@ export class ChatListingService implements IChatListingService {
     userId: string | ObjectId,
     limit = 20,
     cursor: string | null = null,
-  ): Promise<ChatListingResponse> {
+  ): Promise<ChatListingResponseDto> {
     const query: any = {
       participants: userId,
       isDeleted: false,
@@ -63,7 +63,7 @@ export class ChatListingService implements IChatListingService {
     userId: string | ObjectId,
     limit = 20,
     cursor: string | null = null,
-  ): Promise<ChatListingResponse> {
+  ): Promise<ChatListingResponseDto> {
     const query: any = {
       participants: userId,
       isDeleted: false,
@@ -109,7 +109,7 @@ export class ChatListingService implements IChatListingService {
     query: string,
     limit = 20,
     cursor: string | null = null,
-  ): Promise<ChatListingResponse> {
+  ): Promise<ChatListingResponseDto> {
     const uid = new ObjectId(userId);
     const cursorObj = cursor ? this.repository.decodeCursor(cursor) : null;
 

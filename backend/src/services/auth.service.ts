@@ -11,30 +11,21 @@ import { generateAccessToken, generateTokens, verifyRefreshToken } from "@utils/
 import crypto from "crypto";
 import { ObjectId } from "mongodb";
 
-import { LoginPayload, SignupPayload } from "@/controllers/types";
+import type {
+  AuthResponseDto,
+  LoginRequestDto,
+  SignupRequestDto,
+  UserDto,
+} from "@root/shared/types/auth.dto";
 
-export interface SanitizedUser {
-  id: string;
-  username: string;
-  name: string | null;
-  email: string;
-  avatarUrl: string;
-  plan: "free" | "pro";
-  subscriptionExpiresAt: Date | null;
-  isEmailVerified: boolean;
-  bio: string | null;
-}
+// Internal aliases removed - using shared DTOs directly
 
-export interface AuthResponse {
-  user: SanitizedUser;
-  accessToken: string;
-  refreshToken: string;
-}
+
 
 export class AuthService {
   constructor(private userRepository: UserRepository) {}
 
-  async signup({ username, email, password, name }: SignupPayload): Promise<AuthResponse> {
+  async signup({ username, email, password, name }: SignupRequestDto): Promise<AuthResponseDto> {
     const existingUser = await this.userRepository.exists({ email });
     if (existingUser) {
       throw AppError.conflict("User already exists", "USER_EXISTS");
@@ -53,7 +44,7 @@ export class AuthService {
     };
   }
 
-  async login({ username, password }: LoginPayload): Promise<AuthResponse> {
+  async login({ username, password }: LoginRequestDto): Promise<AuthResponseDto> {
     const user = await this.userRepository.findByEmailOrUsername(username);
     if (!user) {
       throw AppError.unauthorized("Invalid credentials", "INVALID_CREDENTIALS");
@@ -164,7 +155,7 @@ export class AuthService {
 
   // ─── Subscription ──────────────────────────────────────────────────
 
-  async upgradeToPro(userId: string | ObjectId): Promise<SanitizedUser> {
+  async upgradeToPro(userId: string | ObjectId): Promise<UserDto> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw AppError.notFound("User");
 

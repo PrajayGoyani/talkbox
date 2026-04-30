@@ -3,8 +3,9 @@
   import EmojiPicker from "$components/chat/EmojiPicker.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
-  import { chatStore, type User } from "$state/chat.svelte";
-  import { activeChatStore } from "$state/active-chat.svelte";
+  import { chatStore } from "$state/chat.svelte";
+  import type { UserDto } from "@root/shared/types/auth.dto";
+  import { messageStore } from "$state/active-chat.svelte";
 
   import { uiStore } from "$state/ui.svelte";
   import { getDisallowedEmojis } from "$utils/emoji";
@@ -16,7 +17,7 @@
     onSend
   }: {
     chatId: string;
-    otherUser: User | null;
+    otherUser: UserDto | null;
     isTouchDevice: boolean;
     onSend?: () => void;
   } = $props();
@@ -30,7 +31,7 @@
   };
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || activeChatStore.isSendingMessage || !otherUser) return;
+    if (!messageInput.trim() || messageStore.isSendingMessage || !otherUser) return;
 
 
     const found = getDisallowedEmojis(messageInput.trim());
@@ -89,7 +90,7 @@
   };
 
   $effect(() => {
-    if (!activeChatStore.isSendingMessage && textareaElement && chatId) {
+    if (!messageStore.isSendingMessage && textareaElement && chatId) {
       tick().then(() => {
         textareaElement?.focus();
       });
@@ -129,9 +130,9 @@
     class="bg-indigo-600 hover:bg-indigo-700 text-white w-9 h-9 md:w-[42px] md:h-[42px] rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
     aria-label="Send message"
     onclick={handleSendMessage}
-    disabled={!messageInput.trim() || activeChatStore.isSendingMessage}
+    disabled={!messageInput.trim() || messageStore.isSendingMessage}
   >
-    {#if activeChatStore.isSendingMessage}
+    {#if messageStore.isSendingMessage}
       <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
     {:else}
       <Icon name="send" class="w-5 h-5" />

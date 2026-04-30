@@ -1687,7 +1687,7 @@
       "norm_label": ".handlereceivemessage()"
     },
     {
-      "label": ".handleMessageAlert()",
+      "label": ".handleMessageAlertDto()",
       "file_type": "code",
       "source_file": "frontend/src/lib/state/chat.svelte.ts",
       "source_location": "L341",

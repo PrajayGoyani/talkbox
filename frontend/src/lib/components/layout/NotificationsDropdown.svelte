@@ -2,7 +2,7 @@
   import NotificationSkeleton from "$components/layout/NotificationSkeleton.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import { notificationStore } from "$state/notification.svelte";
-  import type { Notification } from "$types/notification";
+  import type { NotificationDto } from "@root/shared/types/notification.dto";
   import { formatTimeAgo } from "$utils/date";
   import { onMount, untrack } from "svelte";
   import { quintOut } from "svelte/easing";
@@ -19,7 +19,7 @@
     }
   });
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = (notification: NotificationDto) => {
     if (!notification.isRead) notificationStore.markAsRead(notification._id);
     onNavigate(notification.type, notification.referenceId);
     isOpen = false;

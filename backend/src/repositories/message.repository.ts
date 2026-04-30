@@ -3,7 +3,7 @@ import { getScrubCutoff } from "@utils/date.utils";
 import { extractEmojiMetadata } from "@utils/emoji.utils";
 import { ObjectId } from "mongodb";
 
-import { MessageDto } from "@/types/socket.types";
+import { MessageDto } from "@root/shared/types/chat.dto";
 
 export class MessageRepository {
   constructor(public messageModel: IMessageModel) {}

@@ -1,7 +1,8 @@
 <script lang="ts">
   import Avatar from "$components/ui/Avatar.svelte";
   import Icon from "$components/ui/Icon.svelte";
-  import type { ChatStatus, User } from "$state/chat.svelte";
+  import type { ChatStatus } from "$state/chat.svelte";
+  import type { UserDto } from "@root/shared/types/auth.dto";
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { formatTimeAgo } from "$utils/date";
@@ -12,7 +13,7 @@
     partnerStatus,
     onBack
   }: { 
-    otherUser: User | null; 
+    otherUser: UserDto | null; 
     status?: ChatStatus;
     partnerStatus: { isOnline: boolean; lastSeen: string | Date | null } | undefined;
     onBack?: () => void;
