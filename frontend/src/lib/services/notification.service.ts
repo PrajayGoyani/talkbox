@@ -2,6 +2,7 @@ import type { MessageAlert } from "$types/chat";
 
 import { ASSETS } from "$lib/config";
 import { playNotificationSound } from "$utils/audio";
+import { messageStore } from "$state/active-chat.svelte";
 
 export class NotificationService {
   /**
@@ -9,8 +10,13 @@ export class NotificationService {
    * Handles both audio and visual notifications based on context.
    */
   notify(data: MessageAlert) {
-    // 1. Play sound
-    playNotificationSound();
+    // 1. Play sound if it's not the currently selected chat OR if the window isn't focused
+    const isSelected = data.chatId === messageStore.activeChatId;
+    const isFocused = typeof document !== "undefined" && document.hasFocus();
+
+    if (!isSelected || !isFocused) {
+      playNotificationSound();
+    }
 
     // 2. Show browser notification if tab is hidden
     if (typeof document !== "undefined" && !document.hasFocus()) {
