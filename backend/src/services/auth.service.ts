@@ -1,7 +1,8 @@
 import { getAgenda } from "@config/agenda";
 import { RESET_TOKEN_TTL, VERIFY_TOKEN_TTL } from "@config/env";
 import { JOBS } from "@jobs/agenda-jobs";
-import User, { IUser, IUserModel } from "@models/user.model";
+import { IUser } from "@models/user.model";
+import { UserRepository, userRepository } from "@repositories/user.repository";
 import { emailService } from "@services/email.service";
 import { redisService } from "@services/redis.service";
 import { socketService } from "@services/socket.service";
@@ -31,19 +32,15 @@ export interface AuthResponse {
 }
 
 export class AuthService {
-  public User: IUserModel;
-
-  constructor(userModel: IUserModel) {
-    this.User = userModel;
-  }
+  constructor(private userRepository: UserRepository) {}
 
   async signup({ username, email, password, name }: SignupPayload): Promise<AuthResponse> {
-    const existingUser = await this.User.exists({ email });
+    const existingUser = await this.userRepository.exists({ email });
     if (existingUser) {
       throw AppError.conflict("User already exists", "USER_EXISTS");
     }
 
-    const user = await this.User.create({ username, email, password, name: name || null });
+    const user = await this.userRepository.create({ username, email, password, name: name || null });
     const userObject = user.toObject();
     const tokens = generateTokens({ id: userObject._id.toString() });
 
@@ -51,13 +48,13 @@ export class AuthService {
     this._sendVerificationEmail(userObject._id.toString(), email);
 
     return {
-      user: this.sanitize(user) as SanitizedUser,
+      user: this.userRepository.transformUser(user),
       ...tokens,
     };
   }
 
   async login({ username, password }: LoginPayload): Promise<AuthResponse> {
-    const user = await this.User.findByEmailOrUsername(username);
+    const user = await this.userRepository.findByEmailOrUsername(username);
     if (!user) {
       throw AppError.unauthorized("Invalid credentials", "INVALID_CREDENTIALS");
     }
@@ -67,14 +64,13 @@ export class AuthService {
       throw AppError.unauthorized("Invalid credentials", "INVALID_CREDENTIALS");
     }
 
-    // Performance: Use findByIdAndUpdate for lastSeen to avoid full .save() overhead
+    // Performance: Use updateById for lastSeen to avoid full .save() overhead
     // which triggers expensive Mongoose lifecycle hooks.
-    await this.User.findByIdAndUpdate(user._id, { $set: { lastSeen: new Date() } });
+    await this.userRepository.updateById(user._id, { $set: { lastSeen: new Date() } });
 
-    const userObject = user.toObject();
-    const tokens = generateTokens({ id: userObject._id.toString() });
+    const tokens = generateTokens({ id: user._id.toString() });
     return {
-      user: this.sanitize(user) as SanitizedUser,
+      user: this.userRepository.transformUser(user),
       ...tokens,
     };
   }
@@ -85,7 +81,7 @@ export class AuthService {
     }
 
     const payload = verifyRefreshToken(refreshToken);
-    const user = await this.User.findById((payload as any).id);
+    const user = await this.userRepository.findById((payload as any).id);
     if (!user) throw AppError.unauthorized("Invalid user", "INVALID_USER");
     const accessToken = generateAccessToken({ id: user._id.toString() });
 
@@ -93,24 +89,9 @@ export class AuthService {
   }
 
   async getMe(userId: string | ObjectId): Promise<IUser> {
-    const user = await this.User.findById(userId).select("-password -__v");
+    const user = await this.userRepository.findById(userId);
     if (!user) throw AppError.notFound("User");
     return user;
-  }
-
-  sanitize(user: IUser): SanitizedUser {
-    const obj = user.toObject ? user.toObject() : (user as any);
-    return {
-      id: obj._id,
-      username: obj.username,
-      name: obj.name || null,
-      email: obj.email,
-      avatarUrl: user.avatarUrl, // Use virtual
-      plan: obj.plan,
-      subscriptionExpiresAt: obj.subscriptionExpiresAt,
-      isEmailVerified: obj.isEmailVerified ?? false,
-      bio: obj.bio || null,
-    };
   }
 
   // ─── Password Reset ────────────────────────────────────────────────
@@ -120,7 +101,7 @@ export class AuthService {
    * Always returns void — never reveals whether the email exists (prevents enumeration).
    */
   async forgotPassword(email: string): Promise<void> {
-    const user = await this.User.findOne({ email });
+    const user = await this.userRepository.findOne({ email });
     if (!user) return; // Silently ignore — prevent email enumeration
 
     const token = crypto.randomBytes(32).toString("hex");
@@ -135,7 +116,7 @@ export class AuthService {
     const userId = await redisService.getToken("reset", token);
     if (!userId) throw AppError.badRequest("Invalid or expired reset token", "INVALID_RESET_TOKEN");
 
-    const user = await this.User.findById(userId);
+    const user = await this.userRepository.findById(userId);
     if (!user) throw AppError.notFound("User");
 
     user.password = newPassword; // pre-save hook hashes it
@@ -152,7 +133,7 @@ export class AuthService {
     const userId = await redisService.getToken("verify", token);
     if (!userId) throw AppError.badRequest("Invalid or expired verification token", "INVALID_VERIFY_TOKEN");
 
-    await this.User.findByIdAndUpdate(userId, { isEmailVerified: true });
+    await this.userRepository.updateById(userId, { isEmailVerified: true });
     await redisService.deleteToken("verify", token);
   }
 
@@ -160,7 +141,7 @@ export class AuthService {
    * Resend email verification for an authenticated user.
    */
   async resendVerificationEmail(userId: string): Promise<void> {
-    const user = await this.User.findById(userId);
+    const user = await this.userRepository.findById(userId);
     if (!user) throw AppError.notFound("User");
     if (user.isEmailVerified) throw AppError.badRequest("Email already verified", "ALREADY_VERIFIED");
 
@@ -184,7 +165,7 @@ export class AuthService {
   // ─── Subscription ──────────────────────────────────────────────────
 
   async upgradeToPro(userId: string | ObjectId): Promise<SanitizedUser> {
-    const user = await this.User.findById(userId);
+    const user = await this.userRepository.findById(userId);
     if (!user) throw AppError.notFound("User");
 
     const oldPlan = user.plan;
@@ -212,8 +193,8 @@ export class AuthService {
     // Broadcast plan update to partners
     void socketService.notifyProfileUpdate(userId.toString(), { plan: "pro" });
 
-    return this.sanitize(user);
+    return this.userRepository.transformUser(user);
   }
 }
 
-export const authService = new AuthService(User);
+export const authService = new AuthService(userRepository);

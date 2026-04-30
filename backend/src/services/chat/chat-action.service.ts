@@ -1,9 +1,8 @@
 import { FREE_PLAN_CHAT_LIMIT } from "@config/env";
 import { IChat } from "@models/chat.model";
-import User from "@models/user.model";
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
+import { UserRepository, userRepository } from "@repositories/user.repository";
 import { chatLockdownService } from "@services/chat-lockdown.service";
-import { socketService } from "@services/socket.service";
 import { AppError } from "@utils/AppError";
 import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
 import { ObjectId } from "mongodb";
@@ -11,15 +10,18 @@ import { ObjectId } from "mongodb";
 import { IChatActionService } from "./types";
 
 export class ChatActionService implements IChatActionService {
-  constructor(private repository: ChatRepository) {}
+  constructor(
+    private repository: ChatRepository,
+    private userRepository: UserRepository,
+  ) {}
 
   async requestChat(senderId: string | ObjectId, targetUsername: string): Promise<IChat> {
-    const targetUser = await User.findOne({ username: targetUsername });
+    const targetUser = await this.userRepository.findOne({ username: targetUsername });
     if (!targetUser) {
       throw AppError.notFound("User", "USER_NOT_FOUND");
     }
 
-    const requestingUser = await User.findById(senderId);
+    const requestingUser = await this.userRepository.findById(senderId);
 
     if (requestingUser?.plan === "free") {
       const activeCount = await this.repository.countDocuments({
@@ -28,156 +30,142 @@ export class ChatActionService implements IChatActionService {
         isDeleted: false,
       });
       if (activeCount >= FREE_PLAN_CHAT_LIMIT) {
-        throw AppError.limitReached("Active chats", "CHAT_LIMIT_REACHED");
+        throw AppError.forbidden(
+          "Free plan chat limit reached. Upgrade to Pro to start more chats.",
+          "CHAT_LIMIT_REACHED",
+        );
       }
     }
 
-    if (targetUser._id.toString() === senderId.toString()) {
-      throw AppError.badRequest("You cannot start a chat with yourself", "SELF_CHAT");
-    }
+    const senderObjectId = new ObjectId(senderId);
+    const targetId = targetUser._id as ObjectId;
 
-    const sortedParticipants = [new ObjectId(targetUser._id), new ObjectId(senderId)].sort((a, b) =>
-      a.toString().localeCompare(b.toString()),
-    );
-    const [userA, userB] = sortedParticipants;
+    if (senderObjectId.equals(targetId)) {
+      throw AppError.badRequest("You cannot chat with yourself");
+    }
 
     const existingChat = await this.repository.findOne({
-      userA,
-      userB,
-      isGroup: false,
+      participants: { $all: [senderObjectId, targetId] },
       isDeleted: false,
     });
-    if (existingChat) {
-      if (existingChat.status === "rejected") {
-        const updated = await this.repository.updateById(existingChat._id, {
-          status: "pending",
-          createdBy: senderId,
-        });
 
-        if (updated) {
-          eventBus.emit(CHAT_EVENTS.REQUESTED, {
-            chat: updated,
-            senderId,
-            targetUserId: targetUser._id,
-          });
-          return updated;
-        }
+    if (existingChat) {
+      if (existingChat.status === "accepted") {
+        throw AppError.conflict("Chat already exists");
       }
       if (existingChat.status === "pending") {
-        throw AppError.badRequest("A chat request is already pending", "CHAT_ALREADY_PENDING");
+        throw AppError.conflict("Chat request is already pending");
       }
-      throw AppError.badRequest("You already have an active chat with this user", "CHAT_EXISTS");
     }
 
     const chat = await this.repository.create({
-      userA,
-      userB,
-      participants: sortedParticipants,
-      isGroup: false,
-      createdBy: new ObjectId(senderId),
+      participants: [senderObjectId, targetId],
       status: "pending",
-      isFreeTierOnly:
-        (requestingUser?.plan as any) === "free" && (targetUser?.plan as any) === "free",
-      lastMessage: {
-        contentBody: null,
-        senderId: null,
-        sentAt: new Date(),
-      },
+      createdBy: senderObjectId,
     });
 
+    // Emit event for side-effects (notifications, etc)
     eventBus.emit(CHAT_EVENTS.REQUESTED, {
       chat,
-      senderId,
-      targetUserId: targetUser._id,
-      senderUsername: requestingUser?.username,
+      senderId: senderObjectId,
+      targetUserId: targetId,
+      senderUsername: requestingUser?.username || "Someone",
     });
 
     return chat;
   }
 
-  async acceptChat(chatId: string, userId: string): Promise<IChat> {
+  async acceptChat(chatId: string | ObjectId, userId: string | ObjectId): Promise<IChat> {
     const chat = await this.repository.findById(chatId);
-    if (!chat) throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
-    if (chat.status !== "pending")
-      throw AppError.badRequest("Chat is not pending", "CHAT_NOT_PENDING");
-    if (chat.createdBy.toString() === userId.toString()) {
-      throw AppError.forbidden("Only the receiver can accept a chat request");
+    if (!chat) throw AppError.notFound("Chat");
+
+    if (chat.status !== "pending") {
+      throw AppError.badRequest("Chat is already " + chat.status);
     }
 
     const isParticipant = chat.participants.some((p: any) => p.toString() === userId.toString());
     if (!isParticipant) {
-      throw AppError.forbidden("You are not part of this chat");
+      throw AppError.forbidden("You are not authorized to accept this chat");
     }
 
-    const updated = await this.repository.updateById(chatId, { status: "accepted" });
-    if (!updated) throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
-
-    for (const p of updated.participants) {
-      await socketService.invalidatePartnerCache(p.toString());
+    if (chat.createdBy?.toString() === userId.toString()) {
+      throw AppError.forbidden("You cannot accept your own chat request");
     }
 
-    const acceptor = await User.findById(userId);
+    const updatedChat = await this.repository.updateById(chatId, {
+      status: "accepted",
+      acceptedAt: new Date(),
+    });
+
+    if (!updatedChat) throw AppError.notFound("Chat");
+
+    const acceptor = await this.userRepository.findById(userId);
+
+    // Emit event for real-time updates and notifications
     eventBus.emit(CHAT_EVENTS.ACCEPTED, {
-      chat: updated,
+      chat: updatedChat,
       userId,
       acceptorUsername: acceptor?.username,
     });
 
-    return updated;
+    return updatedChat;
   }
 
   async rejectChat(chatId: string | ObjectId, userId: string | ObjectId): Promise<IChat> {
     const chat = await this.repository.findById(chatId);
-    if (!chat) throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
-    if (chat.status !== "pending")
-      throw AppError.badRequest("Chat is not pending", "CHAT_NOT_PENDING");
-    if (chat.createdBy.toString() === userId.toString()) {
-      throw AppError.forbidden("Only the receiver can reject a chat request");
+    if (!chat) throw AppError.notFound("Chat");
+
+    if (chat.status !== "pending") {
+      throw AppError.badRequest("Only pending requests can be rejected");
     }
 
     const isParticipant = chat.participants.some((p: any) => p.toString() === userId.toString());
     if (!isParticipant) {
-      throw AppError.forbidden("You are not part of this chat");
+      throw AppError.forbidden("You are not authorized to reject this chat");
     }
 
-    const updated = await this.repository.updateById(chatId, { status: "rejected" });
-    if (!updated) throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
+    const updatedChat = await this.repository.updateById(chatId, {
+      status: "rejected",
+      isDeleted: true,
+      deletedAt: new Date(),
+    });
 
-    const rejector = await User.findById(userId);
+    if (!updatedChat) throw AppError.notFound("Chat");
+
+    const rejector = await this.userRepository.findById(userId);
+
+    // Emit event for side-effects
     eventBus.emit(CHAT_EVENTS.REJECTED, {
-      chat: updated,
+      chat: updatedChat,
       userId,
       rejectorUsername: rejector?.username,
     });
 
-    return updated;
+    return updatedChat;
   }
 
-  async deleteChat(
-    chatId: string | ObjectId,
-    userId: string | ObjectId,
-  ): Promise<{ message: string }> {
+  async deleteChat(chatId: string | ObjectId, userId: string | ObjectId): Promise<{ message: string }> {
     const chat = await this.repository.findById(chatId);
-    if (!chat) {
-      throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
-    }
+    if (!chat) throw AppError.notFound("Chat");
 
     const isParticipant = chat.participants.some((p: any) => p.toString() === userId.toString());
     if (!isParticipant) {
-      throw AppError.forbidden("You are not part of this chat");
+      throw AppError.forbidden("You are not authorized to delete this chat");
     }
 
-    await this.repository.updateById(chatId, { isDeleted: true, deletedAt: new Date() });
+    await this.repository.updateById(chatId, {
+      isDeleted: true,
+      deletedAt: new Date(),
+    });
 
-    for (const p of chat.participants) {
-      await socketService.invalidatePartnerCache(p.toString());
-    }
+    // Invalidate lockdown cache immediately
+    await chatLockdownService.lockdownChat(chatId.toString());
 
-    await chatLockdownService.lockdownChat(chatId);
+    // Emit event for side-effects
     eventBus.emit(CHAT_EVENTS.DELETED, { chatId, userId });
 
     return { message: "Chat successfully deleted" };
   }
 }
 
-export const chatActionService = new ChatActionService(chatRepository);
+export const chatActionService = new ChatActionService(chatRepository, userRepository);

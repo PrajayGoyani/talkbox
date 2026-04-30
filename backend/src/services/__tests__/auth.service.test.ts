@@ -72,10 +72,12 @@ const mockUserModel: any = {
   create: vi.fn(),
 };
 
-// Create AuthService with mock model
+// Create AuthService with mock repository
+import { UserRepository } from "@repositories/user.repository";
 import { AuthService } from "@services/auth.service";
 
-const authService = new AuthService(mockUserModel);
+const mockUserRepository = new UserRepository(mockUserModel);
+const authService = new AuthService(mockUserRepository);
 
 // Import mocked dependencies
 import { emailService } from "@services/email.service";
@@ -149,7 +151,7 @@ describe("AuthService - Password Reset & Email Verification", () => {
       await authService.verifyEmail("valid-verify-token");
 
       expect(redisService.getToken).toHaveBeenCalledWith("verify", "valid-verify-token");
-      expect(mockUserModel.findByIdAndUpdate).toHaveBeenCalledWith("user123", { isEmailVerified: true });
+      expect(mockUserModel.findByIdAndUpdate).toHaveBeenCalledWith("user123", { isEmailVerified: true }, expect.any(Object));
       expect(redisService.deleteToken).toHaveBeenCalledWith("verify", "valid-verify-token");
     });
 
@@ -185,11 +187,11 @@ describe("AuthService - Password Reset & Email Verification", () => {
     });
   });
 
-  // ─── sanitize ──────────────────────────────────────────────────────
+  // ─── transformUser (formerly sanitize) ─────────────────────────────
 
-  describe("sanitize", () => {
-    it("should include isEmailVerified in sanitized output", () => {
-      const result = authService.sanitize(mockUser as any);
+  describe("transformUser", () => {
+    it("should include isEmailVerified in transformed output", () => {
+      const result = mockUserRepository.transformUser(mockUser as any);
 
       expect(result).toHaveProperty("isEmailVerified", false);
       expect(result).toHaveProperty("id", "user123");
@@ -210,7 +212,7 @@ describe("AuthService - Password Reset & Email Verification", () => {
         avatarUrl: "/default.png",
       };
 
-      const result = authService.sanitize(legacyUser as any);
+      const result = mockUserRepository.transformUser(legacyUser as any);
       expect(result.isEmailVerified).toBe(false);
     });
   });

@@ -1,11 +1,13 @@
 import { RATE_LIMIT_SOCKET_MESSAGE_MAX, RATE_LIMIT_DEFAULT_WINDOW_MS } from "@config/env";
-import Chat, { IChat } from "@models/chat.model";
-import Message, { IMessage } from "@models/message.model";
+import { IChat } from "@models/chat.model";
+import { IMessage } from "@models/message.model";
+import { chatRepository } from "@repositories/chat.repository";
+import { messageRepository } from "@repositories/message.repository";
 import { chatLockdownService } from "@services/chat-lockdown.service";
 import { redisService } from "@services/redis.service";
 import { AppError } from "@utils/AppError";
 import { isPastModifyLimit, isScrubbed } from "@utils/date.utils";
-import { extractEmojiMetadata } from "@utils/emoji.utils";
+import { ObjectId } from "mongodb";
 
 import { AuthenticatedSocketUser, MessageDto, TypedIO } from "@/types/socket.types";
 
@@ -16,17 +18,17 @@ export class MessageHandler {
     sender: AuthenticatedSocketUser,
     messageId: string,
   ): Promise<{ message: IMessage; chat: IChat } | null> {
-    const message = await Message.findById(messageId).select("chatId senderId createdAt isDeleted contentBody").lean();
+    const message = await messageRepository.findOne({ _id: messageId });
     if (!message || message.isDeleted) return null;
 
-    const chat = await Chat.findById(message.chatId).select("participants status lastMessage").lean();
+    const chat = await chatRepository.findById(message.chatId);
     if (!chat || chat.status !== "accepted") return null;
 
     if (isScrubbed(sender.plan, message.createdAt)) return null;
     if (message.senderId.toString() !== sender.id) return null;
     if (isPastModifyLimit(message.createdAt)) return null;
 
-    return { message: message as any, chat: chat as any };
+    return { message, chat };
   }
 
   private isLastMessage(chat: IChat, message: IMessage): boolean {
@@ -62,12 +64,10 @@ export class MessageHandler {
     }
 
     // 3. Deduplication (L2 check)
-    // If not new to Redis, it definitely exists in DB.
-    // If new to Redis, it MIGHT still exist in DB (e.g. Redis eviction), so we still check before create
     if (!isNewToRedis) {
-      const existingMessage = await Message.findOne({ idempotencyKey }).lean();
+      const existingMessage = await messageRepository.findOne({ idempotencyKey });
       if (existingMessage) {
-        return this.toDto(existingMessage);
+        return messageRepository.transformMessage(existingMessage, sender.plan);
       }
     }
 
@@ -89,33 +89,30 @@ export class MessageHandler {
     // 5. Save
     let message: IMessage;
     try {
-      message = await Message.create({ chatId, senderId, contentBody, idempotencyKey });
+      message = await messageRepository.create({
+        chatId: new ObjectId(chatId),
+        senderId: new ObjectId(senderId),
+        contentBody,
+        idempotencyKey,
+      });
     } catch (err: any) {
       if (err.code === 11000) {
         // Mongo duplicate key error - someone beat us to it
-        const existing = await Message.findOne({ idempotencyKey }).lean();
-        if (existing) return this.toDto(existing);
+        const existing = await messageRepository.findOne({ idempotencyKey });
+        if (existing) return messageRepository.transformMessage(existing, sender.plan);
       }
       throw err;
     }
 
     // 6. Update Chat
-    const chat = await Chat.findOneAndUpdate(
-      {
-        _id: chatId,
-        status: "accepted",
-        isDeleted: false,
-        participants: senderId,
-      },
-      {
-        lastMessage: { contentBody, senderId, sentAt: message.createdAt },
-        $inc: { [`unreadCounts.${receiverId}`]: 1 },
-      },
-      { new: true, lean: true },
-    );
+    const chat = await chatRepository.updateById(chatId, {
+      lastMessage: { contentBody, senderId, sentAt: message.createdAt },
+      $inc: { [`unreadCounts.${receiverId}`]: 1 },
+    });
 
     if (!chat) {
-      await Message.findByIdAndDelete(message._id);
+      // Manual rollback if chat update fails
+      await messageRepository.updateOne({ _id: message._id }, { $set: { isDeleted: true } });
       throw AppError.forbidden("Message delivery failed: Chat is invalid or restricted.");
     }
 
@@ -123,7 +120,7 @@ export class MessageHandler {
       updateCache(chatId, new Set(chat.participants.map((p: any) => p.toString())));
     }
 
-    const dto = this.toDto(message.toObject(), contentBody);
+    const dto = messageRepository.transformMessage(message, sender.plan);
 
     // 7. Deliver to all participants
     for (const p of chat.participants) {
@@ -158,7 +155,7 @@ export class MessageHandler {
     const { message, chat } = result;
     const io = this.ioProvider();
 
-    await Message.updateOne(
+    await messageRepository.updateOne(
       { _id: messageId },
       {
         $set: {
@@ -179,7 +176,7 @@ export class MessageHandler {
     });
 
     if (isLast) {
-      await Chat.updateOne({ _id: chat._id }, { $set: { "lastMessage.contentBody": "Message deleted" } });
+      await chatRepository.updateById(chat._id, { $set: { "lastMessage.contentBody": "Message deleted" } });
     }
   }
 
@@ -191,7 +188,7 @@ export class MessageHandler {
     const io = this.ioProvider();
 
     const trimmedContent = contentBody.trim();
-    await Message.updateOne(
+    await messageRepository.updateOne(
       { _id: messageId },
       {
         $set: {
@@ -220,23 +217,7 @@ export class MessageHandler {
     });
 
     if (isLast) {
-      await Chat.updateOne({ _id: chat._id }, { $set: { "lastMessage.contentBody": message.contentBody } });
+      await chatRepository.updateById(chat._id, { $set: { "lastMessage.contentBody": message.contentBody } });
     }
-  }
-
-  private toDto(messageObj: any, contentOverride?: string): MessageDto {
-    const content = contentOverride || messageObj.contentBody;
-    return {
-      ...messageObj,
-      id: messageObj._id.toString(),
-      chatId: messageObj.chatId.toString(),
-      senderId: messageObj.senderId.toString(),
-      emojiMetadata: extractEmojiMetadata(content),
-      reactions: messageObj.reactions?.map((r: any) => ({
-        emoji: r.emoji,
-        slug: r.slug,
-        users: r.users.map((u: any) => u.toString()),
-      })),
-    } as MessageDto;
   }
 }

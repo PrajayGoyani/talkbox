@@ -1,17 +1,13 @@
-import User, { IUserModel } from "@models/user.model";
+import { UserRepository, userRepository } from "@repositories/user.repository";
 import { redisService } from "@services/redis.service";
 import { socketService } from "@services/socket.service";
 import { AppError } from "@utils/AppError";
 
 class UserService {
-  public User: IUserModel;
-
-  constructor(userModel: IUserModel) {
-    this.User = userModel;
-  }
+  constructor(private userRepository: UserRepository) {}
 
   async searchByUsername(username: string) {
-    const user = await this.User.findByEmailOrUsername(username);
+    const user = await this.userRepository.findByEmailOrUsername(username);
     if (!user) {
       throw AppError.notFound("User not found", "USER_NOT_FOUND");
     }
@@ -19,7 +15,7 @@ class UserService {
   }
 
   async uploadAvatar(userId: string, fileOrUrl: string) {
-    const user = await this.User.findById(userId);
+    const user = await this.userRepository.findById(userId);
     if (!user) {
       throw AppError.notFound("User not found", "USER_NOT_FOUND");
     }
@@ -37,7 +33,7 @@ class UserService {
   }
 
   async updateProfile(userId: string, data: { name?: string; bio?: string | null; avatar_url?: string }) {
-    const user = await this.User.findById(userId);
+    const user = await this.userRepository.findById(userId);
     if (!user) {
       throw AppError.notFound("User not found", "USER_NOT_FOUND");
     }
@@ -62,4 +58,4 @@ class UserService {
   }
 }
 
-export const userService = new UserService(User as unknown as IUserModel);
+export const userService = new UserService(userRepository);
