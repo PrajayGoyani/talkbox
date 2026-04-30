@@ -21,22 +21,67 @@ async function migrate() {
   for (const doc of chatDocs) {
     const update = {};
 
-    // Convert userA, userB, createdBy if they are strings
+    // 1. Convert userA, userB, createdBy if they are strings
     for (const field of ["userA", "userB", "createdBy"]) {
       if (typeof doc[field] === "string") {
         try {
           update[field] = new mongoose.Types.ObjectId(doc[field]);
-        } catch (_e) {
+        } catch {
           console.warn(`Skipping invalid ${field} value: ${doc[field]} in chat ${doc._id}`);
         }
       }
     }
 
-    // Convert lastMessage.senderId if it's a string
+    // 2. Handle participants array
+    let currentParticipants = doc.participants || [];
+    let participantsChanged = false;
+
+    if (Array.isArray(currentParticipants)) {
+      const newParticipants = currentParticipants.map((p) => {
+        if (typeof p === "string") {
+          try {
+            participantsChanged = true;
+            return new mongoose.Types.ObjectId(p);
+          } catch {
+            console.warn(`Skipping invalid participant value: ${p} in chat ${doc._id}`);
+            return p;
+          }
+        }
+        return p;
+      });
+      if (participantsChanged) {
+        update.participants = newParticipants;
+        currentParticipants = newParticipants;
+      }
+    }
+
+    // 3. Populate participants from userA/userB if missing or empty
+    if (currentParticipants.length === 0) {
+      const uA = update.userA || doc.userA;
+      const uB = update.userB || doc.userB;
+
+      if (uA && uB) {
+        try {
+          // Ensure they are ObjectIds for sorting
+          const oidA = typeof uA === "string" ? new mongoose.Types.ObjectId(uA) : uA;
+          const oidB = typeof uB === "string" ? new mongoose.Types.ObjectId(uB) : uB;
+
+          const sorted = [oidA, oidB].sort((a, b) => a.toString().localeCompare(b.toString()));
+          update.participants = sorted;
+          update.userA = sorted[0];
+          update.userB = sorted[1];
+          if (doc.isGroup === undefined) update.isGroup = false;
+        } catch (e) {
+          console.warn(`Failed to populate participants for chat ${doc._id}: ${e.message}`);
+        }
+      }
+    }
+
+    // 4. Convert lastMessage.senderId if it's a string
     if (doc.lastMessage && typeof doc.lastMessage.senderId === "string") {
       try {
         update["lastMessage.senderId"] = new mongoose.Types.ObjectId(doc.lastMessage.senderId);
-      } catch (_e) {
+      } catch {
         console.warn(`Skipping invalid lastMessage.senderId in chat ${doc._id}`);
       }
     }
@@ -60,7 +105,7 @@ async function migrate() {
       if (typeof doc[field] === "string") {
         try {
           update[field] = new mongoose.Types.ObjectId(doc[field]);
-        } catch (_e) {
+        } catch {
           console.warn(`Skipping invalid ${field} value: ${doc[field]} in message ${doc._id}`);
         }
       }
