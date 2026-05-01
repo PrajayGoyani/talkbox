@@ -1,5 +1,5 @@
-import { redisService } from "@services/redis.service";
 import { UserRepository } from "@repositories/user.repository";
+import { redisService } from "@services/redis.service";
 
 import { TypedIO, TypedSocket } from "@/types/socket.types";
 

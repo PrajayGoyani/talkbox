@@ -1,7 +1,7 @@
+import { INotification } from "@models/notification.model";
 import { NotificationRepository, notificationRepository } from "@repositories/notification.repository";
 import { AppError } from "@utils/AppError";
 import { ObjectId } from "mongodb";
-import { INotification } from "@models/notification.model";
 
 interface CreateNotificationDto {
   recipientId: string | ObjectId;
@@ -42,7 +42,7 @@ class NotificationService {
     const nextCursor = hasMore ? results[results.length - 1]._id.toString() : null;
 
     const unreadCount = await this.repository.countUnread(userId);
-    
+
     const mapped = results.map((n) => this.repository.transformNotification(n));
 
     return { notifications: mapped, unreadCount, nextCursor, hasMore };

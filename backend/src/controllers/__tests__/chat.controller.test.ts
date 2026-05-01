@@ -41,7 +41,7 @@ describe("ChatController", () => {
 
     it("should use defaults if limit/cursor are missing", async () => {
       await getChatMessages(req, res);
-      expect(chatService.getChatMessages).toHaveBeenCalledWith("chat123", "user123", 50, undefined, "free");
+      expect(chatService.getChatMessages).toHaveBeenCalledWith("chat123", "user123", 50, null, "free");
     });
 
     it("should prioritize headers for limit/cursor if query is missing", async () => {

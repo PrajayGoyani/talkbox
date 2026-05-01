@@ -99,8 +99,7 @@ export class SocketManager {
 
         const upgrade = await confirmStore.show({
           title: "Session Disconnected",
-          message:
-            "Your session was taken over by another window. Free accounts are limited to one active session.",
+          message: "Your session was taken over by another window. Free accounts are limited to one active session.",
           confirmText: "Upgrade to Pro",
           cancelText: "Reconnect",
           variant: "warning",
@@ -172,22 +171,13 @@ export class SocketManager {
       this.store.handleReactionUpdate(data);
     });
 
-    this.socket.on(
-      "message_deleted",
-      (data: { messageId: string; chatId: string; isLastMessage?: boolean }) => {
-        this.store.handleMessageDeleted(data);
-      },
-    );
+    this.socket.on("message_deleted", (data: { messageId: string; chatId: string; isLastMessage?: boolean }) => {
+      this.store.handleMessageDeleted(data);
+    });
 
     this.socket.on(
       "message_updated",
-      (data: {
-        messageId: string;
-        chatId: string;
-        contentBody: string;
-        isEdited: boolean;
-        editedAt: string;
-      }) => {
+      (data: { messageId: string; chatId: string; contentBody: string; isEdited: boolean; editedAt: string }) => {
         this.store.handleMessageUpdated(data);
       },
     );

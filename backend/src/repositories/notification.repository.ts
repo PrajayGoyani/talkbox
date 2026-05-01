@@ -46,10 +46,7 @@ export class NotificationRepository {
   }
 
   public async markAllAsRead(userId: string | ObjectId) {
-    return this.notificationModel.updateMany(
-      { recipientId: new ObjectId(userId), isRead: false },
-      { isRead: true },
-    );
+    return this.notificationModel.updateMany({ recipientId: new ObjectId(userId), isRead: false }, { isRead: true });
   }
 
   public transformNotification(n: any): NotificationDto {

@@ -1,8 +1,4 @@
-import {
-  RATE_LIMIT_DEFAULT_WINDOW_MS,
-  RATE_LIMIT_SOCKET_MESSAGE_MAX,
-  REACTIONS_MAX_UNIQUE,
-} from "@config/env";
+import { RATE_LIMIT_DEFAULT_WINDOW_MS, RATE_LIMIT_SOCKET_MESSAGE_MAX, REACTIONS_MAX_UNIQUE } from "@config/env";
 import { ChatRepository } from "@repositories/chat.repository";
 import { MessageRepository } from "@repositories/message.repository";
 import { MessageReactionUpdateDto } from "@root/shared/types/chat.dto";
@@ -92,9 +88,7 @@ export class ReactionHandler {
           reactionGroup.users.push(senderIdIdx);
           if (
             canonicalSlug &&
-            (!reactionGroup.slug ||
-              reactionGroup.slug === "emoji" ||
-              reactionGroup.slug !== canonicalSlug)
+            (!reactionGroup.slug || reactionGroup.slug === "emoji" || reactionGroup.slug !== canonicalSlug)
           ) {
             reactionGroup.slug = canonicalSlug;
           }

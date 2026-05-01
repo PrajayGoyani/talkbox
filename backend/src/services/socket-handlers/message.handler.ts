@@ -7,8 +7,8 @@ import { MessageDto } from "@root/shared/types/chat.dto";
 import { chatLockdownService } from "@services/chat-lockdown.service";
 import { redisService } from "@services/redis.service";
 import { AppError } from "@utils/AppError";
-import { eventBus, CHAT_EVENTS } from "@utils/event-bus";
 import { isPastModifyLimit, isScrubbed } from "@utils/date.utils";
+import { eventBus, CHAT_EVENTS } from "@utils/event-bus";
 import { ObjectId } from "mongodb";
 
 import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";

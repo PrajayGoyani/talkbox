@@ -1,14 +1,14 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
-import { ObjectId } from "mongodb";
-import { socketService } from "@services/socket.service";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { IMessage } from "@models/message.model";
 import { IChat } from "@models/chat.model";
 import Chat from "@models/chat.model";
+import { IMessage } from "@models/message.model";
 import Message from "@models/message.model";
 import User from "@models/user.model";
-import { CHAT_EVENTS, eventBus, USER_EVENTS } from "@utils/event-bus";
 import { redisService } from "@services/redis.service";
+import { socketService } from "@services/socket.service";
+import { CHAT_EVENTS, eventBus, USER_EVENTS } from "@utils/event-bus";
+import { ObjectId } from "mongodb";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies
 vi.mock("@models/chat.model");
@@ -168,7 +168,7 @@ describe("SocketService", () => {
       await socketService.handleConnection(socket1);
 
       (socketService as any)._handleGlobalTakeover(MOCK_USER_ID, socket1.id);
-      
+
       // Manually trigger disconnect to simulate what Socket.io would do
       await socket1Disconnect();
 
@@ -213,7 +213,10 @@ describe("SocketService", () => {
       await socketService.handleConnection(extraSocket);
 
       // Pro users are NOT rejected, they trigger a takeover of the oldest session
-      expect(extraSocket.emit).not.toHaveBeenCalledWith("error", expect.objectContaining({ code: "SESSION_LIMIT_EXCEEDED" }));
+      expect(extraSocket.emit).not.toHaveBeenCalledWith(
+        "error",
+        expect.objectContaining({ code: "SESSION_LIMIT_EXCEEDED" }),
+      );
       expect(redisService.publishSessionTakeover).toHaveBeenCalledWith(userId, oldestSocketId);
       expect(extraSocket.disconnect).not.toHaveBeenCalled();
 
@@ -241,7 +244,7 @@ describe("SocketService", () => {
     });
   });
 
-  describe("Message Operations", () => {    
+  describe("Message Operations", () => {
     it("should deliver message and update chat atomically", async () => {
       const sender = { id: MOCK_USER_ID, plan: "pro", name: "Sender", username: "sender" } as any;
       const payload = {
@@ -295,20 +298,25 @@ describe("SocketService", () => {
     it("should return existing message on idempotency match", async () => {
       const sender = { id: MOCK_USER_ID } as any;
       const payload = { chatId: "507f1f77bcf86cd799439044", idempotencyKey: "existing-key" } as any;
-      const existing = { 
-        _id: new ObjectId("507f1f77bcf86cd799439077"), 
-        chatId: new ObjectId("507f1f77bcf86cd799439044"), 
-        senderId: new ObjectId(MOCK_USER_ID), 
+      const existing = {
+        _id: new ObjectId("507f1f77bcf86cd799439077"),
+        chatId: new ObjectId("507f1f77bcf86cd799439044"),
+        senderId: new ObjectId(MOCK_USER_ID),
         createdAt: new Date(),
-        toObject: () => ({ 
-          _id: new ObjectId("507f1f77bcf86cd799439077"), 
+        toObject: () => ({
+          _id: new ObjectId("507f1f77bcf86cd799439077"),
           chatId: new ObjectId("507f1f77bcf86cd799439044"),
           senderId: new ObjectId(MOCK_USER_ID),
-          reactions: [] 
-        }) 
+          reactions: [],
+        }),
       } as unknown as IMessage;
 
-      vi.mocked(Chat.findById).mockReturnValue(createQueryMock({ participants: [new ObjectId(MOCK_USER_ID), new ObjectId("507f1f77bcf86cd799439055")], status: "accepted" }) as any);
+      vi.mocked(Chat.findById).mockReturnValue(
+        createQueryMock({
+          participants: [new ObjectId(MOCK_USER_ID), new ObjectId("507f1f77bcf86cd799439055")],
+          status: "accepted",
+        }) as any,
+      );
       vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(false);
       vi.mocked(Message.findOne).mockResolvedValue(existing as any);
 
@@ -319,11 +327,7 @@ describe("SocketService", () => {
 
     it("should deliver message to all participants in a group chat", async () => {
       const sender = { id: MOCK_USER_ID, plan: "pro", name: "Sender", username: "sender" } as any;
-      const participants = [
-        MOCK_USER_ID,
-        "507f1f77bcf86cd799439055",
-        "507f1f77bcf86cd799439066",
-      ];
+      const participants = [MOCK_USER_ID, "507f1f77bcf86cd799439055", "507f1f77bcf86cd799439066"];
       const payload = {
         chatId: "507f1f77bcf86cd799439044",
         receiverId: "507f1f77bcf86cd799439055",
@@ -382,14 +386,17 @@ describe("SocketService", () => {
 
     it("should broadcast global status update to the partner's watching room", () => {
       const partnerId = "507f1f77bcf86cd799439088";
-      
+
       // Simulate receiving an event from the EventBus (which SocketService emits on Redis message)
       eventBus.emit(USER_EVENTS.PRESENCE_CHANGED, { userId: partnerId, isOnline: true });
-      
-      expect(eventBus.emit).toHaveBeenCalledWith(USER_EVENTS.PRESENCE_CHANGED, expect.objectContaining({
-        userId: partnerId,
-        isOnline: true
-      }));
+
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        USER_EVENTS.PRESENCE_CHANGED,
+        expect.objectContaining({
+          userId: partnerId,
+          isOnline: true,
+        }),
+      );
     });
   });
 
@@ -425,7 +432,9 @@ describe("SocketService", () => {
       const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
       const payload = { chatId: "c1", receiverId: "r1", contentBody: "Hello", idempotencyKey: "k1" };
 
-      vi.mocked(Chat.findById).mockReturnValue(createQueryMock({ participants: [MOCK_USER_ID, "r1"], status: "accepted" }) as any);
+      vi.mocked(Chat.findById).mockReturnValue(
+        createQueryMock({ participants: [MOCK_USER_ID, "r1"], status: "accepted" }) as any,
+      );
       vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue({ allowed: false, current: 101, ttl: 60000 });
 
       socketService.io = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as any;

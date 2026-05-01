@@ -1,8 +1,8 @@
-import { ObjectId } from "mongodb";
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
 import { redisService } from "@services/redis.service";
 import { socketService } from "@services/socket.service";
+import { ObjectId } from "mongodb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@models/chat.model");
@@ -38,7 +38,12 @@ describe("Scalability Optimizations", () => {
         ...data,
         _id: new ObjectId("507f1f77bcf86cd799439066"),
         createdAt: new Date(),
-        toObject: () => ({ ...data, _id: new ObjectId("507f1f77bcf86cd799439066"), createdAt: new Date(), reactions: [] }),
+        toObject: () => ({
+          ...data,
+          _id: new ObjectId("507f1f77bcf86cd799439066"),
+          createdAt: new Date(),
+          reactions: [],
+        }),
       } as any),
     );
     vi.mocked(Message.findOne).mockResolvedValue(null);
@@ -61,8 +66,18 @@ describe("Scalability Optimizations", () => {
   describe("Thundering Herd Protection (_getPartnerIds)", () => {
     it("should only trigger one database query for concurrent partner requests", async () => {
       const mockChats = [
-        { _id: new ObjectId(MOCK_CHAT_ID), participants: [MOCK_USER_ID, "507f1f77bcf86cd799439088"], userA: MOCK_USER_ID, userB: "507f1f77bcf86cd799439088" },
-        { _id: new ObjectId(), participants: ["507f1f77bcf86cd799439099", MOCK_USER_ID], userA: "507f1f77bcf86cd799439099", userB: MOCK_USER_ID },
+        {
+          _id: new ObjectId(MOCK_CHAT_ID),
+          participants: [MOCK_USER_ID, "507f1f77bcf86cd799439088"],
+          userA: MOCK_USER_ID,
+          userB: "507f1f77bcf86cd799439088",
+        },
+        {
+          _id: new ObjectId(),
+          participants: ["507f1f77bcf86cd799439099", MOCK_USER_ID],
+          userA: "507f1f77bcf86cd799439099",
+          userB: MOCK_USER_ID,
+        },
       ];
 
       // Delay the DB response to simulate concurrency
@@ -101,7 +116,12 @@ describe("Scalability Optimizations", () => {
   describe("Redis Idempotency L1 Guard", () => {
     it("should skip DB findOne if Redis says the message is new", async () => {
       const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
-      const payload = { chatId: MOCK_CHAT_ID, receiverId: MOCK_RECEIVER_ID, contentBody: "Hi", idempotencyKey: "unique-key" };
+      const payload = {
+        chatId: MOCK_CHAT_ID,
+        receiverId: MOCK_RECEIVER_ID,
+        contentBody: "Hi",
+        idempotencyKey: "unique-key",
+      };
 
       vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(true);
 
@@ -114,21 +134,26 @@ describe("Scalability Optimizations", () => {
 
     it("should hit DB findOne if Redis says the message is a duplicate", async () => {
       const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
-      const payload = { chatId: MOCK_CHAT_ID, receiverId: MOCK_RECEIVER_ID, contentBody: "Hi", idempotencyKey: "dup-key" };
+      const payload = {
+        chatId: MOCK_CHAT_ID,
+        receiverId: MOCK_RECEIVER_ID,
+        contentBody: "Hi",
+        idempotencyKey: "dup-key",
+      };
 
       vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(false);
-      vi.mocked(Message.findOne).mockResolvedValue({ 
-        _id: new ObjectId("507f1f77bcf86cd799439077"), 
-        chatId: new ObjectId(MOCK_CHAT_ID), 
-        senderId: new ObjectId(MOCK_USER_ID), 
+      vi.mocked(Message.findOne).mockResolvedValue({
+        _id: new ObjectId("507f1f77bcf86cd799439077"),
+        chatId: new ObjectId(MOCK_CHAT_ID),
+        senderId: new ObjectId(MOCK_USER_ID),
         contentBody: "Hi",
         toObject: () => ({
           _id: new ObjectId("507f1f77bcf86cd799439077"),
           chatId: new ObjectId(MOCK_CHAT_ID),
           senderId: new ObjectId(MOCK_USER_ID),
           contentBody: "Hi",
-          reactions: []
-        })
+          reactions: [],
+        }),
       } as any);
 
       const result = await socketService.saveAndDeliverMessage(sender, payload);
@@ -140,23 +165,28 @@ describe("Scalability Optimizations", () => {
 
     it("should NOT consume rate limit token for legitimate retries (duplicates)", async () => {
       const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
-      const payload = { chatId: MOCK_CHAT_ID, receiverId: MOCK_RECEIVER_ID, contentBody: "Retry", idempotencyKey: "retry-key" };
+      const payload = {
+        chatId: MOCK_CHAT_ID,
+        receiverId: MOCK_RECEIVER_ID,
+        contentBody: "Retry",
+        idempotencyKey: "retry-key",
+      };
 
       // Simulate Redis L1 hit for idempotency (already set)
       vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(false);
       // Simulate DB hit
-      vi.mocked(Message.findOne).mockResolvedValue({ 
-        _id: new ObjectId("507f1f77bcf86cd799439077"), 
-        chatId: new ObjectId(MOCK_CHAT_ID), 
-        senderId: new ObjectId(MOCK_USER_ID), 
+      vi.mocked(Message.findOne).mockResolvedValue({
+        _id: new ObjectId("507f1f77bcf86cd799439077"),
+        chatId: new ObjectId(MOCK_CHAT_ID),
+        senderId: new ObjectId(MOCK_USER_ID),
         contentBody: "Retry",
         toObject: () => ({
           _id: new ObjectId("507f1f77bcf86cd799439077"),
           chatId: new ObjectId(MOCK_CHAT_ID),
           senderId: new ObjectId(MOCK_USER_ID),
           contentBody: "Retry",
-          reactions: []
-        })
+          reactions: [],
+        }),
       } as any);
 
       await socketService.saveAndDeliverMessage(sender, payload);

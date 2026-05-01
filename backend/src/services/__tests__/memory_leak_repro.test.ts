@@ -1,5 +1,5 @@
-import Chat from "@models/chat.model";
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
+import Chat from "@models/chat.model";
 import { redisService } from "@services/redis.service";
 import { socketService } from "@services/socket.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";

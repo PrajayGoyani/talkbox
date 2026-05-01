@@ -60,7 +60,9 @@ describe("SocketService Takeover Race Condition", () => {
 
     // Capture disconnect handlers
     let disconnectA: any;
-    socketA.on.mockImplementation((ev: string, fn: any) => { if (ev === "disconnect") disconnectA = fn; });
+    socketA.on.mockImplementation((ev: string, fn: any) => {
+      if (ev === "disconnect") disconnectA = fn;
+    });
 
     // Register them properly
     vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([]);
@@ -93,8 +95,12 @@ describe("SocketService Takeover Race Condition", () => {
     const socketVictim2 = createMockSocket(MOCK_USER_ID, "socket-Victim2");
 
     let disconnect1: any, disconnect2: any;
-    socketVictim1.on.mockImplementation((ev: string, fn: any) => { if (ev === "disconnect") disconnect1 = fn; });
-    socketVictim2.on.mockImplementation((ev: string, fn: any) => { if (ev === "disconnect") disconnect2 = fn; });
+    socketVictim1.on.mockImplementation((ev: string, fn: any) => {
+      if (ev === "disconnect") disconnect1 = fn;
+    });
+    socketVictim2.on.mockImplementation((ev: string, fn: any) => {
+      if (ev === "disconnect") disconnect2 = fn;
+    });
 
     vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([]);
     await socketService.handleConnection(socketWinner);
@@ -122,8 +128,12 @@ describe("SocketService Takeover Race Condition", () => {
     const socketB = createMockSocket(MOCK_USER_ID, "socket-B");
 
     let d1: any, d2: any;
-    socketA.on.mockImplementation((ev: string, fn: any) => { if (ev === "disconnect") d1 = fn; });
-    socketB.on.mockImplementation((ev: string, fn: any) => { if (ev === "disconnect") d2 = fn; });
+    socketA.on.mockImplementation((ev: string, fn: any) => {
+      if (ev === "disconnect") d1 = fn;
+    });
+    socketB.on.mockImplementation((ev: string, fn: any) => {
+      if (ev === "disconnect") d2 = fn;
+    });
 
     vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([]);
     await socketService.handleConnection(socketA);

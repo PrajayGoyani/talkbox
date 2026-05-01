@@ -1,5 +1,4 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
-import { eventBus, USER_EVENTS } from "@utils/event-bus";
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { MessageRepository, messageRepository } from "@repositories/message.repository";
 import { UserRepository, userRepository } from "@repositories/user.repository";
@@ -9,6 +8,7 @@ import { redisService } from "@services/redis.service";
 import { MessageHandler } from "@services/socket-handlers/message.handler";
 import { ReactionHandler } from "@services/socket-handlers/reaction.handler";
 import { TypingHandler } from "@services/socket-handlers/typing.handler";
+import { eventBus, USER_EVENTS } from "@utils/event-bus";
 import { LRUCache } from "lru-cache";
 
 import { AuthenticatedSocketUser, TypedIO, TypedSocket } from "@/types/socket.types";
@@ -149,9 +149,7 @@ export class SocketService {
     if (!userSockets) return;
 
     // Use an array to avoid modification-during-iteration issues if any
-    const socketsToKick = Array.from(userSockets).filter(
-      (s) => !victimSocketId || s.id === victimSocketId,
-    );
+    const socketsToKick = Array.from(userSockets).filter((s) => !victimSocketId || s.id === victimSocketId);
 
     for (const socket of socketsToKick) {
       socket.emit("error", {
