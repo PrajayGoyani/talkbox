@@ -92,22 +92,22 @@ describe("AuthService - Password Reset & Email Verification", () => {
 
   describe("forgotPassword", () => {
     it("should generate token, store in Redis, and send email for existing user", async () => {
-      mockUserModel.findOne.mockResolvedValue(mockUser);
+      vi.spyOn(mockUserModel, "findOne").mockResolvedValue(mockUser);
 
       await authService.forgotPassword("test@example.com");
 
-      expect(mockUserModel.findOne).toHaveBeenCalledWith({ email: "test@example.com" });
-      expect(redisService.storeToken).toHaveBeenCalledWith("reset", expect.any(String), "user123", 3600);
-      expect(emailService.sendResetEmail).toHaveBeenCalledWith("test@example.com", expect.any(String));
+      expect(vi.spyOn(mockUserModel, "findOne")).toHaveBeenCalledWith({ email: "test@example.com" });
+      expect(vi.spyOn(redisService, "storeToken")).toHaveBeenCalledWith("reset", expect.any(String), "user123", 3600);
+      expect(vi.spyOn(emailService, "sendResetEmail")).toHaveBeenCalledWith("test@example.com", expect.any(String));
     });
 
     it("should silently succeed for non-existent email (prevents enumeration)", async () => {
-      mockUserModel.findOne.mockResolvedValue(null);
+      vi.spyOn(mockUserModel, "findOne").mockResolvedValue(null);
 
       await authService.forgotPassword("nonexistent@example.com");
 
-      expect(redisService.storeToken).not.toHaveBeenCalled();
-      expect(emailService.sendResetEmail).not.toHaveBeenCalled();
+      expect(vi.spyOn(redisService, "storeToken")).not.toHaveBeenCalled();
+      expect(vi.spyOn(emailService, "sendResetEmail")).not.toHaveBeenCalled();
       // No error thrown — this is the key security behavior
     });
   });
@@ -116,17 +116,17 @@ describe("AuthService - Password Reset & Email Verification", () => {
 
   describe("resetPassword", () => {
     it("should verify token, update password, and delete token", async () => {
-      vi.mocked(redisService.getToken).mockResolvedValue("user123");
-      mockUserModel.findById.mockResolvedValue({ ...mockUser, save: vi.fn() });
+      vi.spyOn(redisService, "getToken").mockResolvedValue("user123");
+      vi.spyOn(mockUserModel, "findById").mockResolvedValue({ ...mockUser, save: vi.fn() });
 
       await authService.resetPassword("valid-token", "newpassword123");
 
-      expect(redisService.getToken).toHaveBeenCalledWith("reset", "valid-token");
-      expect(redisService.deleteToken).toHaveBeenCalledWith("reset", "valid-token");
+      expect(vi.spyOn(redisService, "getToken")).toHaveBeenCalledWith("reset", "valid-token");
+      expect(vi.spyOn(redisService, "deleteToken")).toHaveBeenCalledWith("reset", "valid-token");
     });
 
     it("should throw for invalid/expired token", async () => {
-      vi.mocked(redisService.getToken).mockResolvedValue(null);
+      vi.spyOn(redisService, "getToken").mockResolvedValue(null);
 
       await expect(authService.resetPassword("expired-token", "newpass")).rejects.toThrow(
         "Invalid or expired reset token",
@@ -134,8 +134,8 @@ describe("AuthService - Password Reset & Email Verification", () => {
     });
 
     it("should throw if user not found after token valid", async () => {
-      vi.mocked(redisService.getToken).mockResolvedValue("user456");
-      mockUserModel.findById.mockResolvedValue(null);
+      vi.spyOn(redisService, "getToken").mockResolvedValue("user456");
+      vi.spyOn(mockUserModel, "findById").mockResolvedValue(null);
 
       await expect(authService.resetPassword("valid-token", "newpass")).rejects.toThrow();
     });
@@ -145,22 +145,22 @@ describe("AuthService - Password Reset & Email Verification", () => {
 
   describe("verifyEmail", () => {
     it("should verify token, update user, and delete token", async () => {
-      vi.mocked(redisService.getToken).mockResolvedValue("user123");
-      mockUserModel.findByIdAndUpdate.mockResolvedValue(mockUser);
+      vi.spyOn(redisService, "getToken").mockResolvedValue("user123");
+      vi.spyOn(mockUserModel, "findByIdAndUpdate").mockResolvedValue(mockUser);
 
       await authService.verifyEmail("valid-verify-token");
 
-      expect(redisService.getToken).toHaveBeenCalledWith("verify", "valid-verify-token");
-      expect(mockUserModel.findByIdAndUpdate).toHaveBeenCalledWith(
+      expect(vi.spyOn(redisService, "getToken")).toHaveBeenCalledWith("verify", "valid-verify-token");
+      expect(vi.spyOn(mockUserModel, "findByIdAndUpdate")).toHaveBeenCalledWith(
         "user123",
         { isEmailVerified: true },
         expect.any(Object),
       );
-      expect(redisService.deleteToken).toHaveBeenCalledWith("verify", "valid-verify-token");
+      expect(vi.spyOn(redisService, "deleteToken")).toHaveBeenCalledWith("verify", "valid-verify-token");
     });
 
     it("should throw for expired verification token", async () => {
-      vi.mocked(redisService.getToken).mockResolvedValue(null);
+      vi.spyOn(redisService, "getToken").mockResolvedValue(null);
 
       await expect(authService.verifyEmail("expired-token")).rejects.toThrow("Invalid or expired verification token");
     });
@@ -170,22 +170,22 @@ describe("AuthService - Password Reset & Email Verification", () => {
 
   describe("resendVerificationEmail", () => {
     it("should send verification email for unverified user", async () => {
-      mockUserModel.findById.mockResolvedValue({ ...mockUser, isEmailVerified: false });
+      vi.spyOn(mockUserModel, "findById").mockResolvedValue({ ...mockUser, isEmailVerified: false });
 
       await authService.resendVerificationEmail("user123");
 
-      expect(redisService.storeToken).toHaveBeenCalledWith("verify", expect.any(String), "user123", 86400);
-      expect(emailService.sendVerificationEmail).toHaveBeenCalledWith("test@example.com", expect.any(String));
+      expect(vi.spyOn(redisService, "storeToken")).toHaveBeenCalledWith("verify", expect.any(String), "user123", 86400);
+      expect(vi.spyOn(emailService, "sendVerificationEmail")).toHaveBeenCalledWith("test@example.com", expect.any(String));
     });
 
     it("should throw if user already verified", async () => {
-      mockUserModel.findById.mockResolvedValue({ ...mockUser, isEmailVerified: true });
+      vi.spyOn(mockUserModel, "findById").mockResolvedValue({ ...mockUser, isEmailVerified: true });
 
       await expect(authService.resendVerificationEmail("user123")).rejects.toThrow("Email already verified");
     });
 
     it("should throw if user not found", async () => {
-      mockUserModel.findById.mockResolvedValue(null);
+      vi.spyOn(mockUserModel, "findById").mockResolvedValue(null);
 
       await expect(authService.resendVerificationEmail("nonexistent")).rejects.toThrow();
     });

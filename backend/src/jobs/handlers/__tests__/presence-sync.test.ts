@@ -23,36 +23,36 @@ vi.mock("@services/redis.service", () => ({
 describe("PresenceSyncHandler", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    vi.mocked(redisService.getSyncQueueCount).mockResolvedValue(0);
+    vi.spyOn(redisService, "getSyncQueueCount").mockResolvedValue(0);
   });
 
   it("should process users in batches and perform bulkWrite", async () => {
     const userIds = ["u1", "u2"];
     const lastSeenMap = new Map([["u1", new Date()]]);
 
-    vi.mocked(redisService.popSyncQueue).mockResolvedValueOnce(userIds).mockResolvedValueOnce([]);
-    vi.mocked(redisService.getLastSeenBatched).mockResolvedValue(lastSeenMap);
-    vi.mocked(User.bulkWrite).mockResolvedValue({} as any);
+    vi.spyOn(redisService, "popSyncQueue").mockResolvedValueOnce(userIds).mockResolvedValueOnce([]);
+    vi.spyOn(redisService, "getLastSeenBatched").mockResolvedValue(lastSeenMap);
+    vi.spyOn(User, "bulkWrite").mockResolvedValue({} as any);
 
     await presenceSyncHandler();
 
-    expect(redisService.popSyncQueue).toHaveBeenCalled();
-    expect(User.bulkWrite).toHaveBeenCalled();
+    expect(vi.spyOn(redisService, "popSyncQueue")).toHaveBeenCalled();
+    expect(vi.spyOn(User, "bulkWrite")).toHaveBeenCalled();
   });
 
   it("should re-queue users if bulkWrite fails", async () => {
     const userIds = ["u1", "u2"];
     const lastSeenMap = new Map([["u1", new Date()]]);
 
-    vi.mocked(redisService.popSyncQueue).mockResolvedValueOnce(userIds);
-    vi.mocked(redisService.getLastSeenBatched).mockResolvedValueOnce(lastSeenMap);
-    vi.mocked(User.bulkWrite).mockRejectedValueOnce(new Error("DB Error"));
-    vi.mocked(redisService.queuePresenceSyncBatched).mockResolvedValueOnce(undefined);
+    vi.spyOn(redisService, "popSyncQueue").mockResolvedValueOnce(userIds);
+    vi.spyOn(redisService, "getLastSeenBatched").mockResolvedValueOnce(lastSeenMap);
+    vi.spyOn(User, "bulkWrite").mockRejectedValueOnce(new Error("DB Error"));
+    vi.spyOn(redisService, "queuePresenceSyncBatched").mockResolvedValueOnce(undefined);
 
     await presenceSyncHandler();
 
-    expect(redisService.queuePresenceSyncBatched).toHaveBeenCalled();
-    const calls = vi.mocked(redisService.queuePresenceSyncBatched).mock.calls;
+    expect(vi.spyOn(redisService, "queuePresenceSyncBatched")).toHaveBeenCalled();
+    const calls = vi.spyOn(redisService, "queuePresenceSyncBatched").mock.calls;
     expect(calls[0][0]).toEqual(expect.arrayContaining(userIds));
   });
 
@@ -62,15 +62,15 @@ describe("PresenceSyncHandler", () => {
 
     // Explicitly mock ALL 50 calls plus one more just in case
     for (let i = 0; i < 50; i++) {
-      vi.mocked(redisService.popSyncQueue).mockResolvedValueOnce(fullBatch);
+      vi.spyOn(redisService, "popSyncQueue").mockResolvedValueOnce(fullBatch);
     }
-    vi.mocked(redisService.popSyncQueue).mockResolvedValue([]); // Fallback
+    vi.spyOn(redisService, "popSyncQueue").mockResolvedValue([]); // Fallback
 
-    vi.mocked(redisService.getLastSeenBatched).mockResolvedValue(new Map([["u0", new Date()]]));
-    vi.mocked(User.bulkWrite).mockResolvedValue({} as any);
+    vi.spyOn(redisService, "getLastSeenBatched").mockResolvedValue(new Map([["u0", new Date()]]));
+    vi.spyOn(User, "bulkWrite").mockResolvedValue({} as any);
 
     await presenceSyncHandler();
 
-    expect(redisService.popSyncQueue).toHaveBeenCalledTimes(50);
+    expect(vi.spyOn(redisService, "popSyncQueue")).toHaveBeenCalledTimes(50);
   });
 });

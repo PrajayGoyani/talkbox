@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import Chat from "@models/chat.model";
 import { redisService } from "@services/redis.service";
 import { socketService } from "@services/socket.service";
@@ -49,7 +48,7 @@ describe("SocketService Takeover Race Condition", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (socketService as any).activeConnections.clear();
-    vi.mocked(Chat.find).mockReturnValue({
+    vi.spyOn(Chat, "find").mockReturnValue({
       select: vi.fn().mockReturnThis(),
       lean: vi.fn().mockResolvedValue([]),
     } as any);
@@ -66,7 +65,7 @@ describe("SocketService Takeover Race Condition", () => {
     });
 
     // Register them properly
-    vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([]);
+    vi.spyOn(redisService, "takeoverFreeSession").mockResolvedValue([]);
     await socketService.handleConnection(socketA);
     await socketService.handleConnection(socketB);
 
@@ -103,7 +102,7 @@ describe("SocketService Takeover Race Condition", () => {
       if (ev === "disconnect") disconnect2 = fn;
     });
 
-    vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([]);
+    vi.spyOn(redisService, "takeoverFreeSession").mockResolvedValue([]);
     await socketService.handleConnection(socketWinner);
     await socketService.handleConnection(socketVictim1);
     await socketService.handleConnection(socketVictim2);
@@ -136,7 +135,7 @@ describe("SocketService Takeover Race Condition", () => {
       if (ev === "disconnect") d2 = fn;
     });
 
-    vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([]);
+    vi.spyOn(redisService, "takeoverFreeSession").mockResolvedValue([]);
     await socketService.handleConnection(socketA);
     await socketService.handleConnection(socketB);
 

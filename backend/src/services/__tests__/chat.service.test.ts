@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import { FREE_PLAN_CHAT_LIMIT, FREE_PLAN_SCRUB_DAYS } from "@config/env";
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
@@ -24,25 +23,25 @@ describe("ChatService", () => {
     it("should allow a Free user to request a chat if below limit", async () => {
       const targetUser = { _id: TARGET_ID, username: "target" };
 
-      vi.mocked(User.findOne).mockResolvedValue(targetUser as any);
-      vi.mocked(User.findById).mockResolvedValue({ _id: SENDER_ID, plan: "free" } as any);
+      vi.spyOn(User, "findOne").mockResolvedValue(targetUser as any);
+      vi.spyOn(User, "findById").mockResolvedValue({ _id: SENDER_ID, plan: "free" } as any);
       // Mock count of accepted chats
-      vi.mocked(Chat.countDocuments).mockResolvedValue(FREE_PLAN_CHAT_LIMIT - 1);
-      vi.mocked(Chat.findOne).mockResolvedValue(null);
-      vi.mocked(Chat.create).mockResolvedValue({ _id: "chat123" } as any);
-      vi.mocked(Notification.create).mockResolvedValue({ populate: vi.fn().mockResolvedValue({}) } as any);
+      vi.spyOn(Chat, "countDocuments").mockResolvedValue(FREE_PLAN_CHAT_LIMIT - 1);
+      vi.spyOn(Chat, "findOne").mockResolvedValue(null);
+      vi.spyOn(Chat, "create").mockResolvedValue({ _id: "chat123" } as any);
+      vi.spyOn(Notification, "create").mockResolvedValue({ populate: vi.fn().mockResolvedValue({}) } as any);
 
       await chatService.requestChat(SENDER_ID, "target");
 
-      expect(Chat.create).toHaveBeenCalled();
+      expect(vi.spyOn(Chat, "create")).toHaveBeenCalled();
     });
 
     it("should throw error if Free user reached active chat limit", async () => {
       const targetUser = { _id: TARGET_ID, username: "target" };
 
-      vi.mocked(User.findOne).mockResolvedValue(targetUser as any);
-      vi.mocked(User.findById).mockResolvedValue({ _id: SENDER_ID, plan: "free" } as any);
-      vi.mocked(Chat.countDocuments).mockResolvedValue(FREE_PLAN_CHAT_LIMIT);
+      vi.spyOn(User, "findOne").mockResolvedValue(targetUser as any);
+      vi.spyOn(User, "findById").mockResolvedValue({ _id: SENDER_ID, plan: "free" } as any);
+      vi.spyOn(Chat, "countDocuments").mockResolvedValue(FREE_PLAN_CHAT_LIMIT);
 
       await expect(chatService.requestChat(SENDER_ID, "target")).rejects.toThrow(
         expect.objectContaining({ code: "CHAT_LIMIT_REACHED" }),
@@ -52,17 +51,17 @@ describe("ChatService", () => {
     it("should NOT enforce limit for Pro users", async () => {
       const targetUser = { _id: TARGET_ID, username: "target" };
 
-      vi.mocked(User.findOne).mockResolvedValue(targetUser as any);
-      vi.mocked(User.findById).mockResolvedValue({ _id: SENDER_ID, plan: "pro" } as any);
+      vi.spyOn(User, "findOne").mockResolvedValue(targetUser as any);
+      vi.spyOn(User, "findById").mockResolvedValue({ _id: SENDER_ID, plan: "pro" } as any);
       // Even if count is high
-      vi.mocked(Chat.countDocuments).mockResolvedValue(100);
-      vi.mocked(Chat.findOne).mockResolvedValue(null);
-      vi.mocked(Chat.create).mockResolvedValue({ _id: "chat123" } as any);
-      vi.mocked(Notification.create).mockResolvedValue({ populate: vi.fn().mockResolvedValue({}) } as any);
+      vi.spyOn(Chat, "countDocuments").mockResolvedValue(100);
+      vi.spyOn(Chat, "findOne").mockResolvedValue(null);
+      vi.spyOn(Chat, "create").mockResolvedValue({ _id: "chat123" } as any);
+      vi.spyOn(Notification, "create").mockResolvedValue({ populate: vi.fn().mockResolvedValue({}) } as any);
 
       await chatService.requestChat(SENDER_ID, "target");
 
-      expect(Chat.create).toHaveBeenCalled();
+      expect(vi.spyOn(Chat, "create")).toHaveBeenCalled();
     });
   });
 
@@ -101,12 +100,12 @@ describe("ChatService", () => {
         },
       ];
 
-      vi.mocked(Chat.findById).mockResolvedValue({
+      vi.spyOn(Chat, "findById").mockResolvedValue({
         _id: chatId,
         status: "accepted",
         participants: [userId, "other"],
       } as any);
-      vi.mocked(Message.find).mockReturnValue({
+      vi.spyOn(Message, "find").mockReturnValue({
         sort: vi.fn().mockReturnThis(),
         limit: vi.fn().mockResolvedValue(mockMessages as any),
       } as any);
@@ -142,12 +141,12 @@ describe("ChatService", () => {
         },
       ];
 
-      vi.mocked(Chat.findById).mockResolvedValue({
+      vi.spyOn(Chat, "findById").mockResolvedValue({
         _id: chatId,
         status: "accepted",
         participants: [userId, "other"],
       } as any);
-      vi.mocked(Message.find).mockReturnValue({
+      vi.spyOn(Message, "find").mockReturnValue({
         sort: vi.fn().mockReturnThis(),
         limit: vi.fn().mockResolvedValue(mockMessages as any),
       } as any);

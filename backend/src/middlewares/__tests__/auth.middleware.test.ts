@@ -34,7 +34,7 @@ describe("AuthMiddleware", () => {
   it("should authenticate via Authorization header", async () => {
     req.headers.authorization = "Bearer valid-token";
     vi.mocked(verifyAccessToken).mockReturnValue({ id: "user123" } as any);
-    vi.mocked(userCacheService.getUser).mockResolvedValue({ id: "user123", username: "test" } as any);
+    vi.spyOn(userCacheService, "getUser").mockResolvedValue({ id: "user123", username: "test" } as any);
 
     await authenticateToken(req, res, next);
 
@@ -47,7 +47,7 @@ describe("AuthMiddleware", () => {
   it("should authenticate via access_token cookie if header is missing", async () => {
     req.cookies.access_token = "cookie-token";
     vi.mocked(verifyAccessToken).mockReturnValue({ id: "user456" } as any);
-    vi.mocked(userCacheService.getUser).mockResolvedValue({ id: "user456", username: "cookie-user" } as any);
+    vi.spyOn(userCacheService, "getUser").mockResolvedValue({ id: "user456", username: "cookie-user" } as any);
 
     await authenticateToken(req, res, next);
 

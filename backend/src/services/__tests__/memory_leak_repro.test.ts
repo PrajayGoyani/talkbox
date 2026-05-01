@@ -1,5 +1,4 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
-/* eslint-disable @typescript-eslint/unbound-method */
 import Chat from "@models/chat.model";
 import { redisService } from "@services/redis.service";
 import { socketService } from "@services/socket.service";
@@ -51,7 +50,7 @@ describe("SocketService Memory Leak Reproduction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (socketService as any).activeConnections.clear();
-    vi.mocked(Chat.find).mockReturnValue({
+    vi.spyOn(Chat, "find").mockReturnValue({
       select: vi.fn().mockReturnThis(),
       lean: vi.fn().mockResolvedValue([]),
     } as any);
@@ -61,8 +60,8 @@ describe("SocketService Memory Leak Reproduction", () => {
     const userId = MOCK_PRO_USER_ID;
 
     // Simulate Redis saying this is the (LIMIT + 1)-th session globally
-    vi.mocked(redisService.incrementGlobalSession).mockResolvedValue(PRO_PLAN_SESSION_LIMIT + 1);
-    vi.mocked(redisService.getOldestSession).mockResolvedValue("some-old-id");
+    vi.spyOn(redisService, "incrementGlobalSession").mockResolvedValue(PRO_PLAN_SESSION_LIMIT + 1);
+    vi.spyOn(redisService, "getOldestSession").mockResolvedValue("some-old-id");
 
     const socket = createMockSocket(userId, "pro");
 

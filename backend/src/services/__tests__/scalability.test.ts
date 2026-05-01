@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
 import { redisService } from "@services/redis.service";
@@ -34,7 +33,7 @@ describe("Scalability Optimizations", () => {
     // Reset TypingHandler local guard
     (socketService as any).typingHandler.localGuard.clear();
 
-    vi.mocked(Message.create).mockImplementation((data: any) =>
+    vi.spyOn(Message, "create").mockImplementation((data: any) =>
       Promise.resolve({
         ...data,
         _id: new ObjectId("507f1f77bcf86cd799439066"),
@@ -47,8 +46,8 @@ describe("Scalability Optimizations", () => {
         }),
       } as any),
     );
-    vi.mocked(Message.findOne).mockResolvedValue(null);
-    vi.mocked(Chat.findById).mockReturnValue({
+    vi.spyOn(Message, "findOne").mockResolvedValue(null);
+    vi.spyOn(Chat, "findById").mockReturnValue({
       select: vi.fn().mockReturnThis(),
       lean: vi.fn().mockResolvedValue({
         _id: new ObjectId(MOCK_CHAT_ID),
@@ -56,7 +55,7 @@ describe("Scalability Optimizations", () => {
         status: "accepted",
       }),
     } as any);
-    vi.mocked(Chat.findOneAndUpdate).mockResolvedValue({
+    vi.spyOn(Chat, "findOneAndUpdate").mockResolvedValue({
       _id: new ObjectId(MOCK_CHAT_ID),
       participants: [new ObjectId(MOCK_USER_ID), new ObjectId(MOCK_RECEIVER_ID)],
       userA: new ObjectId(MOCK_USER_ID),
@@ -83,7 +82,7 @@ describe("Scalability Optimizations", () => {
 
       // Delay the DB response to simulate concurrency
       let queryCount = 0;
-      vi.mocked(Chat.find).mockImplementation(() => {
+      vi.spyOn(Chat, "find").mockImplementation(() => {
         queryCount++;
         return {
           select: vi.fn().mockReturnThis(),
@@ -91,7 +90,7 @@ describe("Scalability Optimizations", () => {
         } as any;
       });
 
-      vi.mocked(redisService.getCachedPartners).mockResolvedValue(null);
+      vi.spyOn(redisService, "getCachedPartners").mockResolvedValue(null);
 
       // Trigger 5 concurrent requests
       const results = await Promise.all([
@@ -124,13 +123,13 @@ describe("Scalability Optimizations", () => {
         idempotencyKey: "unique-key",
       };
 
-      vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(true);
+      vi.spyOn(redisService, "checkAndSetIdempotency").mockResolvedValue(true);
 
       await socketService.saveAndDeliverMessage(sender, payload);
 
       // Should NOT have called Message.findOne for idempotency
-      expect(Message.findOne).not.toHaveBeenCalledWith({ idempotencyKey: "unique-key" });
-      expect(Message.create).toHaveBeenCalled();
+      expect(vi.spyOn(Message, "findOne")).not.toHaveBeenCalledWith({ idempotencyKey: "unique-key" });
+      expect(vi.spyOn(Message, "create")).toHaveBeenCalled();
     });
 
     it("should hit DB findOne if Redis says the message is a duplicate", async () => {
@@ -142,8 +141,8 @@ describe("Scalability Optimizations", () => {
         idempotencyKey: "dup-key",
       };
 
-      vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(false);
-      vi.mocked(Message.findOne).mockResolvedValue({
+      vi.spyOn(redisService, "checkAndSetIdempotency").mockResolvedValue(false);
+      vi.spyOn(Message, "findOne").mockResolvedValue({
         _id: new ObjectId("507f1f77bcf86cd799439077"),
         chatId: new ObjectId(MOCK_CHAT_ID),
         senderId: new ObjectId(MOCK_USER_ID),
@@ -159,8 +158,8 @@ describe("Scalability Optimizations", () => {
 
       const result = await socketService.saveAndDeliverMessage(sender, payload);
 
-      expect(Message.findOne).toHaveBeenCalledWith({ idempotencyKey: "dup-key" });
-      expect(Message.create).not.toHaveBeenCalled();
+      expect(vi.spyOn(Message, "findOne")).toHaveBeenCalledWith({ idempotencyKey: "dup-key" });
+      expect(vi.spyOn(Message, "create")).not.toHaveBeenCalled();
       expect(result.id.toString()).toBe("507f1f77bcf86cd799439077");
     });
 
@@ -174,9 +173,9 @@ describe("Scalability Optimizations", () => {
       };
 
       // Simulate Redis L1 hit for idempotency (already set)
-      vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(false);
+      vi.spyOn(redisService, "checkAndSetIdempotency").mockResolvedValue(false);
       // Simulate DB hit
-      vi.mocked(Message.findOne).mockResolvedValue({
+      vi.spyOn(Message, "findOne").mockResolvedValue({
         _id: new ObjectId("507f1f77bcf86cd799439077"),
         chatId: new ObjectId(MOCK_CHAT_ID),
         senderId: new ObjectId(MOCK_USER_ID),
@@ -193,7 +192,7 @@ describe("Scalability Optimizations", () => {
       await socketService.saveAndDeliverMessage(sender, payload);
 
       // Verify rate limit was NEVER checked for this duplicate
-      expect(redisService.incrementAndCheckLimit).not.toHaveBeenCalled();
+      expect(vi.spyOn(redisService, "incrementAndCheckLimit")).not.toHaveBeenCalled();
     });
   });
 
@@ -208,18 +207,18 @@ describe("Scalability Optimizations", () => {
 
       // 1. First call hits Redis
       await socketService.handleTyping(sender, payload, true);
-      expect(redisService.incrementAndCheckLimit).toHaveBeenCalledTimes(1);
+      expect(vi.spyOn(redisService, "incrementAndCheckLimit")).toHaveBeenCalledTimes(1);
 
       // 2. Immediate second call should NOT hit Redis (guarded locally)
       await socketService.handleTyping(sender, payload, true);
-      expect(redisService.incrementAndCheckLimit).toHaveBeenCalledTimes(1); // Still 1
+      expect(vi.spyOn(redisService, "incrementAndCheckLimit")).toHaveBeenCalledTimes(1); // Still 1
 
       // 3. Advance time and it should hit Redis again
       vi.useFakeTimers();
       vi.setSystemTime(Date.now() + 3000);
 
       await socketService.handleTyping(sender, payload, true);
-      expect(redisService.incrementAndCheckLimit).toHaveBeenCalledTimes(2);
+      expect(vi.spyOn(redisService, "incrementAndCheckLimit")).toHaveBeenCalledTimes(2);
 
       vi.useRealTimers();
     });

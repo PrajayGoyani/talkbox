@@ -29,11 +29,11 @@ describe("AuthController - Password Reset & Email Verification", () => {
   describe("forgotPassword", () => {
     it("should call authService.forgotPassword and return success", async () => {
       req.body.email = "test@example.com";
-      vi.mocked(authService.forgotPassword).mockResolvedValue();
+      vi.spyOn(authService, "forgotPassword").mockResolvedValue();
 
       await forgotPassword(req, res);
 
-      expect(authService.forgotPassword).toHaveBeenCalledWith("test@example.com");
+      expect(vi.spyOn(authService, "forgotPassword")).toHaveBeenCalledWith("test@example.com");
       expect(res.success).toHaveBeenCalledWith({
         message: "If an account with that email exists, a reset link has been sent.",
       });
@@ -43,11 +43,11 @@ describe("AuthController - Password Reset & Email Verification", () => {
   describe("resetPassword", () => {
     it("should call authService.resetPassword and return success", async () => {
       req.body = { token: "valid-token", password: "newpassword123" };
-      vi.mocked(authService.resetPassword).mockResolvedValue();
+      vi.spyOn(authService, "resetPassword").mockResolvedValue();
 
       await resetPassword(req, res);
 
-      expect(authService.resetPassword).toHaveBeenCalledWith("valid-token", "newpassword123");
+      expect(vi.spyOn(authService, "resetPassword")).toHaveBeenCalledWith("valid-token", "newpassword123");
       expect(res.success).toHaveBeenCalledWith({
         message: "Password has been reset successfully.",
       });
@@ -57,11 +57,11 @@ describe("AuthController - Password Reset & Email Verification", () => {
   describe("verifyEmail", () => {
     it("should verify email with token from query params", async () => {
       req.query.token = "verify-token-123";
-      vi.mocked(authService.verifyEmail).mockResolvedValue();
+      vi.spyOn(authService, "verifyEmail").mockResolvedValue();
 
       await verifyEmail(req, res);
 
-      expect(authService.verifyEmail).toHaveBeenCalledWith("verify-token-123");
+      expect(vi.spyOn(authService, "verifyEmail")).toHaveBeenCalledWith("verify-token-123");
       expect(res.success).toHaveBeenCalledWith({
         message: "Email verified successfully.",
       });
@@ -76,11 +76,11 @@ describe("AuthController - Password Reset & Email Verification", () => {
 
   describe("resendVerification", () => {
     it("should call authService.resendVerificationEmail with user id", async () => {
-      vi.mocked(authService.resendVerificationEmail).mockResolvedValue();
+      vi.spyOn(authService, "resendVerificationEmail").mockResolvedValue();
 
       await resendVerification(req, res);
 
-      expect(authService.resendVerificationEmail).toHaveBeenCalledWith("user123");
+      expect(vi.spyOn(authService, "resendVerificationEmail")).toHaveBeenCalledWith("user123");
       expect(res.success).toHaveBeenCalledWith({
         message: "Verification email sent.",
       });

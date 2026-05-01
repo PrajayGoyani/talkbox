@@ -47,14 +47,14 @@ describe("RedisService (Expanded)", () => {
 
   describe("checkAndSetIdempotency", () => {
     it("should return true if key is new", async () => {
-      vi.mocked(mockRedisInstance.set).mockResolvedValue("OK");
+      vi.spyOn(mockRedisInstance, "set").mockResolvedValue("OK");
       const result = await redisService.checkAndSetIdempotency("key1");
       expect(result).toBe(true);
-      expect(mockRedisInstance.set).toHaveBeenCalledWith("idempotency:key1", "1", "EX", 900, "NX");
+      expect(vi.spyOn(mockRedisInstance, "set")).toHaveBeenCalledWith("idempotency:key1", "1", "EX", 900, "NX");
     });
 
     it("should return false if key exists", async () => {
-      vi.mocked(mockRedisInstance.set).mockResolvedValue(null);
+      vi.spyOn(mockRedisInstance, "set").mockResolvedValue(null);
       const result = await redisService.checkAndSetIdempotency("key1");
       expect(result).toBe(false);
     });
@@ -63,18 +63,18 @@ describe("RedisService (Expanded)", () => {
   describe("Presence Sync Queue", () => {
     it("should queue presence sync properly", async () => {
       await redisService.queuePresenceSync("u1");
-      expect(mockRedisInstance.sadd).toHaveBeenCalledWith("presence_sync_queue", "u1");
+      expect(vi.spyOn(mockRedisInstance, "sadd")).toHaveBeenCalledWith("presence_sync_queue", "u1");
     });
 
     it("should pop from sync queue", async () => {
-      vi.mocked(mockRedisInstance.spop).mockResolvedValue(["u1", "u2"]);
+      vi.spyOn(mockRedisInstance, "spop").mockResolvedValue(["u1", "u2"]);
       const result = await redisService.popSyncQueue(100);
       expect(result).toEqual(["u1", "u2"]);
-      expect(mockRedisInstance.spop).toHaveBeenCalledWith("presence_sync_queue", 100);
+      expect(vi.spyOn(mockRedisInstance, "spop")).toHaveBeenCalledWith("presence_sync_queue", 100);
     });
 
     it("should get queue count", async () => {
-      vi.mocked(mockRedisInstance.scard).mockResolvedValue(50);
+      vi.spyOn(mockRedisInstance, "scard").mockResolvedValue(50);
       const result = await redisService.getSyncQueueCount();
       expect(result).toBe(50);
     });
@@ -82,7 +82,7 @@ describe("RedisService (Expanded)", () => {
 
   describe("Last Seen", () => {
     it("should get batched last seen", async () => {
-      vi.mocked(mockRedisInstance.mget).mockResolvedValue(["2024-01-01T10:00:00Z", null]);
+      vi.spyOn(mockRedisInstance, "mget").mockResolvedValue(["2024-01-01T10:00:00Z", null]);
       const result = await redisService.getLastSeenBatched(["u1", "u2"]);
       expect(result.get("u1")).toBeInstanceOf(Date);
       expect(result.has("u2")).toBe(false);

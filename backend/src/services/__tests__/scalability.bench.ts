@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import Chat from "@models/chat.model";
 import { socketService } from "@services/socket.service";
 import { bench, describe, vi } from "vitest";
@@ -19,7 +18,7 @@ describe("Scalability Benchmarks", () => {
   describe("Thundering Herd Protection (_getPartnerIds)", () => {
     // We'll benchmark the time it takes to resolve 100 concurrent requests
     bench("100 concurrent partner requests with protection", async () => {
-      vi.mocked(Chat.find).mockImplementation(() => {
+      vi.spyOn(Chat, "find").mockImplementation(() => {
         return {
           select: vi.fn().mockReturnThis(),
           lean: vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve([]), 5))),
@@ -35,7 +34,7 @@ describe("Scalability Benchmarks", () => {
 
     bench("100 serial partner requests with L1 cache hits", async () => {
       // Warm up cache
-      vi.mocked(Chat.find).mockResolvedValue([] as any);
+      vi.spyOn(Chat, "find").mockResolvedValue([] as any);
       (socketService as any).partnerCache.set(MOCK_USER_ID, new Set());
 
       for (let i = 0; i < 100; i++) {
