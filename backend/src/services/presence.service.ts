@@ -1,10 +1,13 @@
-import User from "@models/user.model";
 import { redisService } from "@services/redis.service";
+import { UserRepository } from "@repositories/user.repository";
 
 import { TypedIO, TypedSocket } from "@/types/socket.types";
 
 export class PresenceService {
-  constructor(private ioProvider: () => TypedIO | null) {}
+  constructor(
+    private ioProvider: () => TypedIO | null,
+    private userRepo: UserRepository,
+  ) {}
 
   // setupStatusWatchers and cleanupStatusWatchers removed.
   // Watcher state is now managed via Socket.io Rooms for scalability.
@@ -18,10 +21,8 @@ export class PresenceService {
       const missingFromRedisIds = partnerIdsArr.filter((id) => !onlinePartners.has(id) && !lastSeenMap.has(id));
 
       if (missingFromRedisIds.length > 0) {
-        const offlineUsers = await User.find({ _id: { $in: missingFromRedisIds } })
-          .select("lastSeen")
-          .lean();
-        offlineUsers.forEach((u) => {
+        const offlineUsers = await this.userRepo.findByIds(missingFromRedisIds, "lastSeen");
+        offlineUsers.forEach((u: any) => {
           if (u.lastSeen) lastSeenMap.set(u._id.toString(), u.lastSeen);
         });
       }
@@ -41,18 +42,6 @@ export class PresenceService {
     } catch (err) {
       console.error("[PresenceService] Error emitting partners status:", err);
     }
-  }
-
-  async handleGlobalStatusUpdate(userId: string, isOnline: boolean) {
-    const payload = {
-      userId,
-      isOnline,
-      lastSeen: isOnline ? null : new Date(),
-    };
-
-    const io = this.ioProvider();
-    // Use room-based broadcasting for $O(1)$ instance-wide propagation.
-    io?.to(`watching:${userId}`).emit("user_status", payload);
   }
 
   async notifyStatusChange(userId: string, isOnline: boolean) {

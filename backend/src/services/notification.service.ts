@@ -1,6 +1,7 @@
-import Notification, { INotification } from "@models/notification.model";
+import { NotificationRepository, notificationRepository } from "@repositories/notification.repository";
 import { AppError } from "@utils/AppError";
 import { ObjectId } from "mongodb";
+import { INotification } from "@models/notification.model";
 
 interface CreateNotificationDto {
   recipientId: string | ObjectId;
@@ -13,62 +14,45 @@ interface CreateNotificationDto {
 import type { NotificationResponseDto } from "@root/shared/types/notification.dto";
 
 class NotificationService {
+  constructor(private repository: NotificationRepository) {}
+
   /**
    * Create and persist a notification.
    * Returns the populated notification document.
    */
   async create(dto: CreateNotificationDto) {
-    const notification = await Notification.create({
+    return this.repository.create({
       recipientId: dto.recipientId,
       senderId: dto.senderId,
       type: dto.type,
       referenceId: dto.referenceId,
       message: dto.message,
     });
-
-    return notification.populate("senderId", "username email avatar_url");
   }
 
   async getByUser(
     userId: string | ObjectId,
     { limit = 15, cursor = null }: { limit?: number; cursor?: string | null } = {},
   ): Promise<NotificationResponseDto> {
-    const query: any = { recipientId: userId };
-
-    if (cursor) {
-      query._id = { $lt: new ObjectId(cursor) };
-    }
-
-    const notifications = await Notification.find(query)
-      .sort({ _id: -1 })
-      .limit(limit + 1)
-      .populate("senderId", "username email avatar_url")
-      .lean();
+    const notifications = await this.repository.findByUser(userId, limit + 1, cursor);
 
     const hasMore = notifications.length > limit;
-    if (hasMore) {
-      notifications.pop();
-    }
+    const results = hasMore ? notifications.slice(0, limit) : notifications;
 
-    const nextCursor = hasMore ? notifications[notifications.length - 1]._id.toString() : null;
+    const nextCursor = hasMore ? results[results.length - 1]._id.toString() : null;
 
-    const unreadCount = await Notification.countDocuments({
-      recipientId: userId,
-      isRead: false,
-    });
+    const unreadCount = await this.repository.countUnread(userId);
+    
+    const mapped = results.map((n) => this.repository.transformNotification(n));
 
-    return { notifications: notifications as any, unreadCount, nextCursor, hasMore };
+    return { notifications: mapped, unreadCount, nextCursor, hasMore };
   }
 
   /**
    * Mark a single notification as read.
    */
   async markAsRead(notificationId: string | ObjectId, userId: string | ObjectId) {
-    const notification = await Notification.findOneAndUpdate(
-      { _id: notificationId, recipientId: userId },
-      { isRead: true },
-      { returnDocument: "after" },
-    );
+    const notification = await this.repository.markAsRead(notificationId, userId);
     if (!notification) {
       throw AppError.notFound("Notification not found", "NOTIFICATION_NOT_FOUND");
     }
@@ -79,9 +63,9 @@ class NotificationService {
    * Mark all notifications as read for a user.
    */
   async markAllAsRead(userId: string | ObjectId) {
-    await Notification.updateMany({ recipientId: userId, isRead: false }, { isRead: true });
+    await this.repository.markAllAsRead(userId);
     return { message: "All notifications marked as read" };
   }
 }
 
-export const notificationService = new NotificationService();
+export const notificationService = new NotificationService(notificationRepository);

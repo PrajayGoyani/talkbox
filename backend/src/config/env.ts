@@ -47,7 +47,8 @@ export const RATE_LIMIT_AUTH_MAX = Number(process.env.RATE_LIMIT_AUTH_MAX) || 10
 export const RATE_LIMIT_SOCKET_MESSAGE_MAX = Number(process.env.RATE_LIMIT_SOCKET_MESSAGE_MAX) || 20;
 
 // Cookie Configuration Overrides
-export const COOKIE_SAMESITE = process.env.COOKIE_SAMESITE || (NODE_ENV === "production" ? "none" : "lax");
+export const COOKIE_SAMESITE: "strict" | "lax" | "none" =
+  (process.env.COOKIE_SAMESITE as "strict" | "lax" | "none") || (NODE_ENV === "production" ? "none" : "lax");
 export const COOKIE_SECURE = process.env.COOKIE_SECURE === "true" || NODE_ENV === "production";
 
 // Email / SMTP (optional — graceful no-op if not configured)

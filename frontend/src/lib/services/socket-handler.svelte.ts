@@ -1,5 +1,5 @@
 import type { UserDto } from "@root/shared/types/auth.dto";
-import type { MessageDto, MessageAlertDto } from "@root/shared/types/chat.dto";
+import type { MessageAlertDto, MessageDto } from "@root/shared/types/chat.dto";
 import type { NotificationDto } from "@root/shared/types/notification.dto";
 
 import { chatService } from "$services/chat.service";
@@ -45,11 +45,25 @@ export class SocketHandler implements ChatStoreSocket {
     const shouldInc = !isViewing && isOtherUser;
 
     if (isOtherUser) {
-      notificationService.notify({
+      const alertData = {
         chatId: message.chatId,
         senderId: message.senderId,
-        senderUsername: chatListStore.chatsMap?.get(message.chatId)?.otherUser?.username || message.senderId,
+        senderName: message.senderName,
+        senderUsername: message.senderUsername || message.senderId,
+        senderAvatar: message.senderAvatar,
         preview: message.contentBody,
+      };
+
+      notificationService.notify(alertData);
+
+      if (!isViewing && this.onToastCallback) {
+        this.onToastCallback(alertData);
+      }
+    }
+
+    if (isViewing && document.hasFocus()) {
+      void chatService.markChatRead(message.chatId).then(() => {
+        chatListStore.patchChatLocally(message.chatId, { unreadCount: 0 });
       });
     }
 
@@ -68,21 +82,6 @@ export class SocketHandler implements ChatStoreSocket {
       },
       true,
     );
-  }
-
-  handleMessageAlert(data: MessageAlertDto) {
-    const isChatOpen = data.chatId === messageStore.activeChatId;
-    if (isChatOpen && document.hasFocus()) {
-      void chatService.markChatRead(data.chatId).then(() => {
-        chatListStore.patchChatLocally(data.chatId, { unreadCount: 0 });
-      });
-    }
-    if (!document.hasFocus()) {
-      notificationService.showBrowserNotification(data);
-    }
-    if (this.onToastCallback && !isChatOpen) {
-      this.onToastCallback(data);
-    }
   }
 
   handleNotification(notification: NotificationDto) {

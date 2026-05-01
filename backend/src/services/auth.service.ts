@@ -13,6 +13,8 @@ import { generateAccessToken, generateTokens, verifyRefreshToken } from "@utils/
 import crypto from "crypto";
 import { ObjectId } from "mongodb";
 
+import { JWTPayload } from "@/types/socket.types";
+
 // Internal aliases removed - using shared DTOs directly
 
 export class AuthService {
@@ -64,8 +66,8 @@ export class AuthService {
       throw AppError.unauthorized("Refresh token required", "TOKEN_REQUIRED");
     }
 
-    const payload = verifyRefreshToken(refreshToken);
-    const user = await this.userRepository.findById((payload as any).id);
+    const payload = verifyRefreshToken(refreshToken) as JWTPayload;
+    const user = await this.userRepository.findById(payload.id);
     if (!user) throw AppError.unauthorized("Invalid user", "INVALID_USER");
     const accessToken = generateAccessToken({ id: user._id.toString() });
 

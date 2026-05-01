@@ -56,6 +56,29 @@ Fall back to Grep/Glob/Read **only** when the graphs don't cover what you need.
 3. Use `code-review-graph` for detailed structural analysis and review.
 4. Use `query_graph` pattern="tests_for" to check coverage.
 
+### ⛔ CRITICAL: Graph Build/Update — CLI ONLY
+
+**NEVER use the MCP tool `build_or_update_graph_tool` or `run_postprocess_tool`.**
+These MCP tools cause the server to hang indefinitely or crash, corrupting the
+database and wasting hours of compute time.
+
+**ALWAYS use the CLI commands instead:**
+
+```bash
+# Full rebuild (clean slate):
+rm -f .code-review-graph/graph.db .code-review-graph/graph.db-wal .code-review-graph/graph.db-shm
+code-review-graph build --skip-postprocess
+code-review-graph postprocess
+
+# Incremental update:
+code-review-graph update --skip-postprocess
+code-review-graph postprocess
+```
+
+**Read-only MCP tools are safe** (e.g., `list_graph_stats_tool`, `query_graph_tool`,
+`semantic_search_nodes_tool`, `get_architecture_overview_tool`, etc.). Only the
+build/update/postprocess MCP tools are banned.
+
 ## Toolchain: Vite Plus (vp)
 
 **IMPORTANT: This project uses the Vite Plus (`vp`) unified toolchain.**

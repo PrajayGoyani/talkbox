@@ -1,9 +1,4 @@
-import Chat, { IChat, IChatModel } from "@models/chat.model";
-import Message, { IMessageModel } from "@models/message.model";
-import User, { IUserModel } from "@models/user.model";
 import { ChatListingResponseDto, MessageDto } from "@root/shared/types/chat.dto";
-import { Server } from "socket.io";
-
 import { chatActionService } from "./chat/chat-action.service";
 import { chatListingService } from "./chat/chat-listing.service";
 import { messageService } from "./chat/message.service";
@@ -14,21 +9,6 @@ import { messageService } from "./chat/message.service";
  * core logic to specialized domain services.
  */
 class ChatService {
-  public Chat: IChatModel;
-  public Message: IMessageModel;
-  public User: IUserModel;
-  public io: Server | null = null;
-
-  constructor(chatModel: IChatModel, messageModel: IMessageModel, userModel: IUserModel) {
-    this.Chat = chatModel;
-    this.Message = messageModel;
-    this.User = userModel;
-  }
-
-  setIO(io: Server) {
-    this.io = io;
-  }
-
   // --- Listings ---
   async getChatListing(userId: string | any, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto> {
     return chatListingService.getChatListing(userId, limit, cursor);
@@ -48,15 +28,15 @@ class ChatService {
   }
 
   // --- Actions ---
-  async requestChat(senderId: string | any, targetUsername: string): Promise<IChat> {
+  async requestChat(senderId: string | any, targetUsername: string): Promise<any> {
     return chatActionService.requestChat(senderId, targetUsername);
   }
 
-  async acceptChat(chatId: string, userId: string): Promise<IChat> {
+  async acceptChat(chatId: string, userId: string): Promise<any> {
     return chatActionService.acceptChat(chatId, userId);
   }
 
-  async rejectChat(chatId: string | any, userId: string | any): Promise<IChat> {
+  async rejectChat(chatId: string | any, userId: string | any): Promise<any> {
     return chatActionService.rejectChat(chatId, userId);
   }
 
@@ -80,4 +60,4 @@ class ChatService {
   }
 }
 
-export const chatService = new ChatService(Chat, Message, User);
+export const chatService = new ChatService();

@@ -1,8 +1,8 @@
 import { RATE_LIMIT_DEFAULT_WINDOW_MS } from "@config/env";
-import Chat from "@models/chat.model";
 import { TypingIndicatorDto } from "@root/shared/types/chat.dto";
 import { redisService } from "@services/redis.service";
 import { LRUCache } from "lru-cache";
+import { ChatRepository } from "@repositories/chat.repository";
 
 import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
 
@@ -12,14 +12,17 @@ export class TypingHandler {
     ttl: 2000,
   });
 
-  constructor(private ioProvider: () => TypedIO | null) {}
+  constructor(
+    private ioProvider: () => TypedIO | null,
+    private chatRepo: ChatRepository,
+  ) {}
 
   async handleTyping(
     sender: AuthenticatedSocketUser,
     payload: { receiverId: string; chatId: string },
     isTyping: boolean,
-    checkCache: (chatId: string) => Set<string> | null | undefined,
-    updateCache: (chatId: string, participants: Set<string> | null) => void,
+    checkCache: (chatId: string) => Set<string> | undefined,
+    updateCache: (chatId: string, participants: Set<string>) => void,
   ) {
     const senderId = sender.id;
     const { receiverId, chatId } = payload;
@@ -51,9 +54,9 @@ export class TypingHandler {
       participantSet = cached;
     } else {
       try {
-        const chat = await Chat.findById(chatId).select("participants status").lean();
+        const chat = await this.chatRepo.findByIdWithSelect(chatId, "participants status");
         if (!chat || chat.status !== "accepted") {
-          updateCache(chatId, null);
+          updateCache(chatId, new Set());
           return;
         }
 
@@ -61,8 +64,8 @@ export class TypingHandler {
         if (!participantSet.has(senderId)) return;
 
         updateCache(chatId, participantSet);
-      } catch (_e) {
-        updateCache(chatId, null);
+      } catch {
+        updateCache(chatId, new Set());
         return;
       }
     }

@@ -1,7 +1,7 @@
-import User from "@models/user.model";
 import { UserDto } from "@root/shared/types/auth.dto";
 import { redisService } from "@services/redis.service";
 import { LRUCache } from "lru-cache";
+import { UserRepository, userRepository } from "@repositories/user.repository";
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
 const CACHE_MAX_ENTRIES = 50000;
@@ -9,7 +9,7 @@ const CACHE_MAX_ENTRIES = 50000;
 class UserCacheService {
   private cache: LRUCache<string, UserDto>;
 
-  constructor() {
+  constructor(private userRepo: UserRepository) {
     this.cache = new LRUCache({
       max: CACHE_MAX_ENTRIES,
       ttl: CACHE_TTL_MS,
@@ -46,20 +46,10 @@ class UserCacheService {
       return cached;
     }
 
-    const user = await User.findById(userId);
+    const user = await this.userRepo.findById(userId);
     if (!user) return null;
 
-    const sanitized: UserDto = {
-      id: user._id.toString(),
-      username: user.username,
-      name: user.name,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
-      plan: user.plan,
-      subscriptionExpiresAt: user.subscriptionExpiresAt,
-      isEmailVerified: user.isEmailVerified ?? false,
-      bio: user.bio || null,
-    };
+    const sanitized = this.userRepo.transformUser(user);
 
     this.cache.set(userId, sanitized);
 
@@ -75,4 +65,5 @@ class UserCacheService {
   }
 }
 
-export const userCacheService = new UserCacheService();
+export const userCacheService = new UserCacheService(userRepository);
+export { UserCacheService };

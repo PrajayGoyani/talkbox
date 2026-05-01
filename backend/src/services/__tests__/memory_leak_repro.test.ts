@@ -1,3 +1,4 @@
+import Chat from "@models/chat.model";
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
 import { redisService } from "@services/redis.service";
 import { socketService } from "@services/socket.service";
@@ -13,6 +14,7 @@ vi.mock("@services/redis.service", () => ({
     decrementGlobalSession: vi.fn(),
     getGlobalSessionCount: vi.fn(),
     publishSessionTakeover: vi.fn(),
+    getOldestSession: vi.fn().mockResolvedValue(null),
     setUserOnline: vi.fn().mockResolvedValue(null),
     setUserOffline: vi.fn().mockResolvedValue(null),
     getOnlineUsers: vi.fn().mockResolvedValue(new Set()),
@@ -27,7 +29,7 @@ vi.mock("@services/redis.service", () => ({
   },
 }));
 
-const MOCK_PRO_USER_ID = "pro_user_123";
+const MOCK_PRO_USER_ID = "507f1f77bcf86cd799439022";
 
 const createMockSocket = (userId: string, plan: "free" | "pro") =>
   ({
@@ -48,24 +50,30 @@ describe("SocketService Memory Leak Reproduction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (socketService as any).activeConnections.clear();
+    vi.mocked(Chat.find).mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      lean: vi.fn().mockResolvedValue([]),
+    } as any);
   });
 
-  it("should clean up userId from activeConnections when a Pro session is rejected and it was the only local session", async () => {
+  it("should correctly manage userId in activeConnections when a Pro session triggers takeover", async () => {
     const userId = MOCK_PRO_USER_ID;
 
     // Simulate Redis saying this is the (LIMIT + 1)-th session globally
     vi.mocked(redisService.incrementGlobalSession).mockResolvedValue(PRO_PLAN_SESSION_LIMIT + 1);
+    vi.mocked(redisService.getOldestSession).mockResolvedValue("some-old-id");
 
     const socket = createMockSocket(userId, "pro");
 
-    // Handle the connection which should be rejected
+    // Handle the connection
     await socketService.handleConnection(socket);
 
-    // Verify rejection
-    expect(socket.disconnect).toHaveBeenCalled();
+    // Verify it was NOT rejected (Pro users trigger takeover instead)
+    expect(socket.disconnect).not.toHaveBeenCalled();
 
-    // Check for leak
+    // Check that userId is in activeConnections
     const activeConnections = (socketService as any).activeConnections;
-    expect(activeConnections.has(userId)).toBe(false);
+    expect(activeConnections.has(userId)).toBe(true);
+    expect(activeConnections.get(userId).has(socket)).toBe(true);
   });
 });

@@ -63,6 +63,9 @@ export interface MessageDto {
   emojiMetadata?: Record<string, string>;
   isScrubbed?: boolean;
   reactions?: ReactionGroupDto[];
+  senderName?: string | null;
+  senderUsername?: string;
+  senderAvatar?: string | null;
 }
 
 /**

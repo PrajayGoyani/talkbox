@@ -1,5 +1,8 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
-import Chat from "@models/chat.model";
+import { eventBus, USER_EVENTS } from "@utils/event-bus";
+import { ChatRepository, chatRepository } from "@repositories/chat.repository";
+import { MessageRepository, messageRepository } from "@repositories/message.repository";
+import { UserRepository, userRepository } from "@repositories/user.repository";
 import { MessageDto } from "@root/shared/types/chat.dto";
 import { PresenceService } from "@services/presence.service";
 import { redisService } from "@services/redis.service";
@@ -20,7 +23,7 @@ export class SocketService {
   public io: TypedIO | null = null;
   public activeConnections: Map<string, Set<TypedSocket>> = new Map();
 
-  private participantCache: LRUCache<string, any>;
+  private participantCache: LRUCache<string, Set<string>>;
   private partnerCache: LRUCache<string, Set<string>>;
   private partnerRequests: Map<string, Promise<Set<string>>> = new Map();
 
@@ -29,13 +32,17 @@ export class SocketService {
   private reactionHandler: ReactionHandler;
   private typingHandler: TypingHandler;
 
-  constructor() {
+  constructor(
+    private chatRepo: ChatRepository,
+    private messageRepo: MessageRepository,
+    private userRepo: UserRepository,
+  ) {
     const ioProvider = () => this.io;
 
-    this.presenceService = new PresenceService(ioProvider);
-    this.messageHandler = new MessageHandler(ioProvider);
-    this.reactionHandler = new ReactionHandler(ioProvider);
-    this.typingHandler = new TypingHandler(ioProvider);
+    this.presenceService = new PresenceService(ioProvider, userRepo);
+    this.messageHandler = new MessageHandler(ioProvider, chatRepo, messageRepo);
+    this.reactionHandler = new ReactionHandler(ioProvider, chatRepo, messageRepo);
+    this.typingHandler = new TypingHandler(ioProvider, chatRepo);
 
     this.participantCache = new LRUCache({
       max: PARTICIPANT_CACHE_MAX,
@@ -57,7 +64,10 @@ export class SocketService {
           const data = JSON.parse(message);
           switch (channel) {
             case "presence:updates":
-              this.presenceService.handleGlobalStatusUpdate(data.userId, data.isOnline);
+              eventBus.emit(USER_EVENTS.PRESENCE_CHANGED, {
+                userId: data.userId,
+                isOnline: data.isOnline,
+              });
               break;
             case "cache:invalidate":
               this._handleGlobalCacheInvalidation(data.type, data.id);
@@ -104,37 +114,64 @@ export class SocketService {
       }
     });
 
-    if (plan === "free") {
+    if (globalCount > 1 && plan === "free") {
       const victims = await redisService.takeoverFreeSession(userId, socket.id);
-      if (victims.length > 0) {
-        for (const victimId of victims) {
-          await redisService.publishSessionTakeover(userId, victimId);
-          this._handleGlobalTakeover(userId, victimId);
-        }
+      for (const victimId of victims) {
+        await redisService.publishSessionTakeover(userId, victimId);
       }
-    } else if (plan === "pro" && globalCount > PRO_PLAN_SESSION_LIMIT) {
-      userSockets.delete(socket);
-      if (userSockets.size === 0) {
-        this.activeConnections.delete(userId);
-      }
+    }
 
-      await redisService.decrementGlobalSession(userId, socket.id);
-      socket.emit("error", {
-        message: `Pro session limit reached (max ${PRO_PLAN_SESSION_LIMIT} active tabs).`,
-      });
-      socket.disconnect();
-      return;
+    if (globalCount > PRO_PLAN_SESSION_LIMIT && plan === "pro") {
+      const victimId = await redisService.getOldestSession(userId);
+      if (victimId) {
+        await redisService.publishSessionTakeover(userId, victimId);
+      }
     }
 
     if (globalCount === 1) {
       await this.presenceService.notifyStatusChange(userId, true);
     }
 
-    // Watchers & Status: Join rooms for all partners and request initial status
-    const partnerIds = await this._getPartnerIds(userId, true);
-    partnerIds.forEach((pid) => socket.join(`watching:${pid}`));
+    const partnerIds = await this._getPartnerIds(userId);
+    if (partnerIds.size > 0) {
+      partnerIds.forEach((pId) => socket.join(`watching:${pId}`));
+      await this.presenceService.emitPartnersStatus(userId, socket, partnerIds);
+    }
+  }
 
-    await this.presenceService.emitPartnersStatus(userId, socket, await this._getPartnerIds(userId));
+  async notifyProfileUpdate(userId: string, profile: any) {
+    const io = this.io;
+    io?.to(`watching:${userId}`).emit("profile_updated", { userId, ...profile });
+  }
+
+  private _handleGlobalTakeover(userId: string, victimSocketId?: string) {
+    const userSockets = this.activeConnections.get(userId);
+    if (!userSockets) return;
+
+    // Use an array to avoid modification-during-iteration issues if any
+    const socketsToKick = Array.from(userSockets).filter(
+      (s) => !victimSocketId || s.id === victimSocketId,
+    );
+
+    for (const socket of socketsToKick) {
+      socket.emit("error", {
+        message: "You have been logged out because you signed in on another device.",
+        code: "SESSION_TAKEOVER",
+      });
+      socket.disconnect();
+    }
+
+    // If we kicked everyone, we can clear the map entry
+    if (userSockets.size === 0) {
+      this.activeConnections.delete(userId);
+    }
+  }
+
+  private _handleGlobalCacheInvalidation(type: string, id: string) {
+    if (type === "chat") {
+      this.participantCache.delete(id);
+      this.partnerCache.clear(); // Clear all because partners depend on many chats
+    }
   }
 
   // ─── Delegates ─────────────────────────────────────────────────────
@@ -175,17 +212,7 @@ export class SocketService {
     return this.messageHandler.handleEdit(sender, payload.messageId, payload.contentBody);
   }
 
-  /**
-   * Broadcast profile updates (name, avatar, bio, plan) to all partners
-   * who are currently watching this user (i.e., have an active chat).
-   */
-  public async notifyProfileUpdate(userId: string, updates: Partial<AuthenticatedSocketUser>) {
-    if (this.io) {
-      this.io.to(`watching:${userId}`).emit("profile_updated", { userId, ...updates });
-    }
-  }
-
-  // ─── Helpers ────────────────────────────────────────────────────────
+  // ─── Internal Helpers ─────────────────────────────────────────────
 
   private async _getPartnerIds(userId: string, excludeDeleted = false): Promise<Set<string>> {
     const cacheKey = excludeDeleted ? `${userId}:active` : userId;
@@ -204,12 +231,9 @@ export class SocketService {
           return l2Cached;
         }
 
-        const filter: any = { participants: userId, status: "accepted" };
-        if (excludeDeleted) filter.isDeleted = false;
-
-        const chats = await Chat.find(filter).select("participants").lean();
+        const chats = await this.chatRepo.findPartnerChats(userId, excludeDeleted);
         const partners = new Set<string>();
-        for (const chat of chats as any) {
+        for (const chat of chats) {
           for (const p of chat.participants) {
             const pId = p.toString();
             if (pId !== userId) {
@@ -230,44 +254,6 @@ export class SocketService {
     this.partnerRequests.set(cacheKey, fetchPromise);
     return fetchPromise;
   }
-
-  public async invalidatePartnerCache(userId: string): Promise<void> {
-    this.partnerCache.delete(userId);
-    this.partnerCache.delete(`${userId}:active`);
-    await redisService.invalidatePartnerCache(userId);
-    if (redisService.client && redisService.isConnected) {
-      await redisService.client.publish("cache:invalidate", JSON.stringify({ type: "partner", id: userId }));
-    }
-  }
-
-  private _handleGlobalTakeover(userId: string, victimSocketId?: string) {
-    const userSockets = this.activeConnections.get(userId);
-    if (!userSockets) return;
-
-    // Use a copy for safe iteration while deleting
-    // If victimSocketId is provided, we only disconnect that specific socket.
-    // If NOT provided, we kick everyone (fallback/safety).
-    const socketsToDisconnect = Array.from(userSockets).filter((s) => !victimSocketId || s.id === victimSocketId);
-
-    socketsToDisconnect.forEach((s) => {
-      s.emit("session_error", { reason: "takeover", message: "Session opened in another window." });
-      s.disconnect();
-      userSockets.delete(s);
-    });
-
-    if (userSockets.size === 0) {
-      this.activeConnections.delete(userId);
-    }
-  }
-
-  private _handleGlobalCacheInvalidation(type: string, id: string) {
-    if (type === "partner") {
-      this.partnerCache.delete(id);
-      this.partnerCache.delete(`${id}:active`);
-    } else if (type === "chat") {
-      this.participantCache.delete(id);
-    }
-  }
 }
 
-export const socketService = new SocketService();
+export const socketService = new SocketService(chatRepository, messageRepository, userRepository);

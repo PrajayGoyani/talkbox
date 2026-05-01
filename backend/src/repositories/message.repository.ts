@@ -24,8 +24,12 @@ export class MessageRepository {
     return this.messageModel.findOne(query);
   }
 
-  public transformMessage(m: IMessage, plan: "free" | "pro" = "free"): MessageDto {
-    const msg = m.toObject();
+  public transformMessage(
+    m: IMessage,
+    plan: "free" | "pro" = "free",
+    sender?: { name?: string | null; username: string; avatarUrl?: string | null },
+  ): MessageDto {
+    const msg = "toObject" in m && typeof m.toObject === "function" ? m.toObject() : m;
     const scrubCutoff = getScrubCutoff();
     const isOlderThanLimit = m.createdAt < scrubCutoff;
 
@@ -54,6 +58,9 @@ export class MessageRepository {
         slug: r.slug,
         users: (r.users as any[]).map((u) => u.toString()),
       })),
+      senderName: sender?.name,
+      senderUsername: sender?.username,
+      senderAvatar: sender?.avatarUrl,
     } as MessageDto;
   }
 

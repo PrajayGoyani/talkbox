@@ -13,7 +13,7 @@ import { CookieOptions, Request, Response } from "express";
 const REFRESH_TOKEN_COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,
   secure: COOKIE_SECURE,
-  sameSite: COOKIE_SAMESITE as any,
+  sameSite: COOKIE_SAMESITE,
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: "/",
   partitioned: COOKIE_SECURE, // Partitioned requires Secure
@@ -25,23 +25,21 @@ const ACCESS_TOKEN_COOKIE_OPTIONS: CookieOptions = {
 };
 
 export const signup = async (req: SignupRequest, res: Response) => {
-  const result = (await authService.signup(req.body)) as { refreshToken?: string; accessToken?: string };
+  const { refreshToken, accessToken, ...userPayload } = await authService.signup(req.body);
 
-  res.cookie("refresh_token", result.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
-  res.cookie("access_token", result.accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
-  delete result.refreshToken;
+  res.cookie("refresh_token", refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+  res.cookie("access_token", accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
 
-  res.success(result);
+  res.success(userPayload);
 };
 
 export const login = async (req: LoginRequest, res: Response) => {
-  const result = (await authService.login(req.body)) as { refreshToken?: string; accessToken?: string };
+  const { refreshToken, accessToken, ...userPayload } = await authService.login(req.body);
 
-  res.cookie("refresh_token", result.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
-  res.cookie("access_token", result.accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
-  delete result.refreshToken;
+  res.cookie("refresh_token", refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+  res.cookie("access_token", accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
 
-  res.success(result);
+  res.success(userPayload);
 };
 
 export const logout = async (_req: Request, res: Response) => {

@@ -1,5 +1,5 @@
-import { chatService } from "@services/chat.service";
 import { notificationService } from "@services/notification.service";
+import { socketService } from "@services/socket.service";
 import { eventBus, CHAT_EVENTS } from "@utils/event-bus";
 
 /**
@@ -18,8 +18,8 @@ export const initChatEventListeners = () => {
       message: `${senderUsername} sent you a chat request`,
     });
 
-    if (chatService.io) {
-      chatService.io.to(`user:${targetUserId}`).emit("notification", notification);
+    if (socketService.io) {
+      socketService.io.to(`user:${targetUserId}`).emit("notification", notification as any);
     }
   });
 
@@ -33,9 +33,9 @@ export const initChatEventListeners = () => {
       message: `${acceptorUsername || "A user"} accepted your chat request`,
     });
 
-    if (chatService.io) {
-      chatService.io.to(`user:${chat.createdBy}`).emit("notification", notification);
-      chatService.io.to(`user:${chat.createdBy}`).emit("chat_accepted", { chatId: chat._id });
+    if (socketService.io) {
+      socketService.io.to(`user:${chat.createdBy}`).emit("notification", notification as any);
+      socketService.io.to(`user:${chat.createdBy}`).emit("chat_accepted", { chatId: chat._id.toString() });
     }
   });
 
@@ -49,8 +49,8 @@ export const initChatEventListeners = () => {
       message: `${rejectorUsername || "A user"} declined your chat request`,
     });
 
-    if (chatService.io) {
-      chatService.io.to(`user:${chat.createdBy}`).emit("notification", notification);
+    if (socketService.io) {
+      socketService.io.to(`user:${chat.createdBy}`).emit("notification", notification as any);
     }
   });
 

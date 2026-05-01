@@ -1,7 +1,7 @@
 import { UserRepository, userRepository } from "@repositories/user.repository";
 import { redisService } from "@services/redis.service";
-import { socketService } from "@services/socket.service";
 import { AppError } from "@utils/AppError";
+import { eventBus, USER_EVENTS } from "@utils/event-bus";
 
 class UserService {
   constructor(private userRepository: UserRepository) {}
@@ -27,7 +27,10 @@ class UserService {
     await redisService.publishCacheInvalidation("user", userId.toString());
 
     // Broadcast update to all partners in real-time
-    void socketService.notifyProfileUpdate(userId.toString(), { avatarUrl: fileOrUrl });
+    eventBus.emit(USER_EVENTS.PROFILE_UPDATED, {
+      userId: userId.toString(),
+      profile: { avatarUrl: fileOrUrl },
+    });
 
     return user;
   }
@@ -48,10 +51,13 @@ class UserService {
     await redisService.publishCacheInvalidation("user", userId.toString());
 
     // Broadcast update to all partners in real-time
-    void socketService.notifyProfileUpdate(userId.toString(), {
-      name: user.name,
-      bio: user.bio,
-      avatarUrl: user.avatarUrl,
+    eventBus.emit(USER_EVENTS.PROFILE_UPDATED, {
+      userId: userId.toString(),
+      profile: {
+        name: user.name,
+        bio: user.bio,
+        avatarUrl: user.avatarUrl,
+      },
     });
 
     return user;

@@ -90,6 +90,9 @@ class RedisService {
   getGlobalSessionCount(userId: string) {
     return this.session.getGlobalSessionCount(userId);
   }
+  getOldestSession(userId: string) {
+    return this.session.getOldestSession(userId);
+  }
   takeoverFreeSession(userId: string, newSocketId: string) {
     return this.session.takeoverFreeSession(userId, newSocketId);
   }

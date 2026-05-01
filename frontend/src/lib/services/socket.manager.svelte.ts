@@ -5,7 +5,6 @@ import type {
   MessageReactionUpdateDto,
   TypingIndicatorDto,
   UserStatusDto,
-  MessageAlertDto,
 } from "@root/shared/types/chat.dto";
 import type { NotificationDto } from "@root/shared/types/notification.dto";
 import type { Socket } from "socket.io-client";
@@ -33,7 +32,7 @@ export interface ChatStoreSocket {
   typingStatus: SvelteMap<string, SvelteSet<string>>;
   onlineStatus: SvelteMap<string, { isOnline: boolean; lastSeen: Date | null }>;
   handleReceiveMessage(msg: MessageDto): void;
-  handleMessageAlert(data: MessageAlertDto): void;
+
   handleNotification(notification: NotificationDto): void;
   handleChatAccepted(data: { chatId: string }): void;
   handleReactionUpdate(data: MessageReactionUpdateDto): void;
@@ -100,7 +99,8 @@ export class SocketManager {
 
         const upgrade = await confirmStore.show({
           title: "Session Disconnected",
-          message: "Your session was taken over by another window. Free accounts are limited to one active session.",
+          message:
+            "Your session was taken over by another window. Free accounts are limited to one active session.",
           confirmText: "Upgrade to Pro",
           cancelText: "Reconnect",
           variant: "warning",
@@ -158,11 +158,6 @@ export class SocketManager {
       this.store.typingStatus.get(data.chatId)?.delete(data.userId);
     });
 
-    // Listen for message alerts (toast / browser notification)
-    this.socket.on("message_alert", (data: MessageAlertDto) => {
-      this.store.handleMessageAlert(data);
-    });
-
     // When a notification arrives, delegate to notificationStore and refresh chat list
     this.socket.on("notification", (notification: NotificationDto) => {
       notificationStore.addRealTimeNotification(notification);
@@ -177,13 +172,22 @@ export class SocketManager {
       this.store.handleReactionUpdate(data);
     });
 
-    this.socket.on("message_deleted", (data: { messageId: string; chatId: string; isLastMessage?: boolean }) => {
-      this.store.handleMessageDeleted(data);
-    });
+    this.socket.on(
+      "message_deleted",
+      (data: { messageId: string; chatId: string; isLastMessage?: boolean }) => {
+        this.store.handleMessageDeleted(data);
+      },
+    );
 
     this.socket.on(
       "message_updated",
-      (data: { messageId: string; chatId: string; contentBody: string; isEdited: boolean; editedAt: string }) => {
+      (data: {
+        messageId: string;
+        chatId: string;
+        contentBody: string;
+        isEdited: boolean;
+        editedAt: string;
+      }) => {
         this.store.handleMessageUpdated(data);
       },
     );

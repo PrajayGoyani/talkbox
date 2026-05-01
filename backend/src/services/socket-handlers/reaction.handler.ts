@@ -1,6 +1,10 @@
-import { RATE_LIMIT_DEFAULT_WINDOW_MS, RATE_LIMIT_SOCKET_MESSAGE_MAX, REACTIONS_MAX_UNIQUE } from "@config/env";
-import Chat from "@models/chat.model";
-import Message from "@models/message.model";
+import {
+  RATE_LIMIT_DEFAULT_WINDOW_MS,
+  RATE_LIMIT_SOCKET_MESSAGE_MAX,
+  REACTIONS_MAX_UNIQUE,
+} from "@config/env";
+import { ChatRepository } from "@repositories/chat.repository";
+import { MessageRepository } from "@repositories/message.repository";
 import { MessageReactionUpdateDto } from "@root/shared/types/chat.dto";
 import { getDisallowedEmojis } from "@root/shared/utils/emoji";
 import { redisService } from "@services/redis.service";
@@ -11,13 +15,17 @@ import { Types } from "mongoose";
 import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
 
 export class ReactionHandler {
-  constructor(private ioProvider: () => TypedIO | null) {}
+  constructor(
+    private ioProvider: () => TypedIO | null,
+    private chatRepo: ChatRepository,
+    private messageRepo: MessageRepository,
+  ) {}
 
   async handleReaction(
     sender: AuthenticatedSocketUser,
     payload: { messageId: string; emoji: string; slug?: string },
-    checkCache: (chatId: string) => Set<string> | null | undefined,
-    updateCache: (chatId: string, participants: Set<string> | null) => void,
+    checkCache: (chatId: string) => Set<string> | undefined,
+    updateCache: (chatId: string, participants: Set<string>) => void,
   ) {
     const { messageId, emoji, slug } = payload;
     const io = this.ioProvider();
@@ -41,10 +49,10 @@ export class ReactionHandler {
     }
 
     try {
-      const message = await Message.findById(messageId);
+      const message = await this.messageRepo.findById(messageId);
       if (!message) return;
 
-      const chat = await Chat.findById(message.chatId);
+      const chat = await this.chatRepo.findById(message.chatId);
       if (!chat) return;
 
       if (isScrubbed(sender.plan, message.createdAt)) return;
@@ -84,7 +92,9 @@ export class ReactionHandler {
           reactionGroup.users.push(senderIdIdx);
           if (
             canonicalSlug &&
-            (!reactionGroup.slug || reactionGroup.slug === "emoji" || reactionGroup.slug !== canonicalSlug)
+            (!reactionGroup.slug ||
+              reactionGroup.slug === "emoji" ||
+              reactionGroup.slug !== canonicalSlug)
           ) {
             reactionGroup.slug = canonicalSlug;
           }

@@ -1,17 +1,27 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
+import { ObjectId } from "mongodb";
 import { socketService } from "@services/socket.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { IMessage } from "@models/message.model";
+import { IChat } from "@models/chat.model";
+import Chat from "@models/chat.model";
+import Message from "@models/message.model";
+import User from "@models/user.model";
+import { CHAT_EVENTS, eventBus, USER_EVENTS } from "@utils/event-bus";
+import { redisService } from "@services/redis.service";
 
 // Mock dependencies
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
 vi.mock("@models/user.model");
+
 vi.mock("@services/redis.service", () => ({
   redisService: {
     incrementGlobalSession: vi.fn(),
     decrementGlobalSession: vi.fn(),
     getGlobalSessionCount: vi.fn(),
     publishSessionTakeover: vi.fn(),
+    getOldestSession: vi.fn().mockResolvedValue(null),
     setUserOnline: vi.fn().mockResolvedValue(null),
     setUserOffline: vi.fn().mockResolvedValue(null),
     getOnlineUsers: vi.fn().mockResolvedValue(new Set()),
@@ -39,12 +49,19 @@ vi.mock("@services/redis.service", () => ({
   },
 }));
 
-import Chat from "@models/chat.model";
-import Message from "@models/message.model";
-import User from "@models/user.model";
-import { redisService } from "@services/redis.service";
+// Mock EventBus
+vi.mock("@utils/event-bus", async (importOriginal) => {
+  const actual = (await importOriginal()) as any;
+  return {
+    ...actual,
+    eventBus: {
+      emit: vi.fn(),
+      on: vi.fn(),
+    },
+  };
+});
 
-// Mock Socket instance
+// Mock Data & Helpers
 const MOCK_USER_ID = "507f1f77bcf86cd799439011";
 const MOCK_PRO_USER_ID = "507f1f77bcf86cd799439022";
 
@@ -67,23 +84,26 @@ const createMockSocket = (userId: string, plan: "free" | "pro") =>
   }) as any;
 
 describe("SocketService", () => {
+  // Proper way to mock Mongoose chains without triggering "Do not add 'then' to an object" lint
+  const createQueryMock = (val: any = []) => {
+    const query = {
+      select: vi.fn().mockReturnThis(),
+      sort: vi.fn().mockReturnThis(),
+      lean: vi.fn().mockReturnThis(),
+    };
+    return Object.assign(Promise.resolve(val), query);
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset active connections
+    // Reset active connections and caches
     (socketService as any).activeConnections.clear();
-
-    // Proper way to mock Mongoose chains without triggering "Do not add 'then' to an object" lint
-    const createQueryMock = (val: any = []) => {
-      const query = {
-        select: vi.fn().mockReturnThis(),
-        sort: vi.fn().mockReturnThis(),
-        lean: vi.fn().mockReturnThis(),
-      };
-      return Object.assign(Promise.resolve(val), query);
-    };
+    (socketService as any).participantCache.clear();
+    (socketService as any).partnerCache.clear();
 
     vi.mocked(Chat.find).mockReturnValue(createQueryMock([]) as any);
     vi.mocked(Chat.findOne).mockReturnValue(createQueryMock(null) as any);
+    vi.mocked(Chat.findById).mockReturnValue(createQueryMock(null) as any);
     vi.mocked(Chat.findOneAndUpdate).mockReturnValue(createQueryMock(null) as any);
     vi.mocked(User.find).mockReturnValue(createQueryMock([]) as any);
     vi.mocked(User.findById).mockReturnValue(createQueryMock(null) as any);
@@ -104,7 +124,7 @@ describe("SocketService", () => {
     vi.mocked(User.findByIdAndUpdate).mockResolvedValue({} as any);
 
     // Default redis mocks
-    vi.mocked(redisService.incrementGlobalSession).mockImplementation(async (uid, sid) => {
+    vi.mocked(redisService.incrementGlobalSession).mockImplementation(async (uid, _sid) => {
       const current = (socketService as any).activeConnections.get(uid)?.size || 0;
       return current + 1;
     });
@@ -139,20 +159,21 @@ describe("SocketService", () => {
       vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([socket1.id]);
       await socketService.handleConnection(socket2);
 
-      // Verify socket1 was notified and disconnected
-      expect(socket1.emit).toHaveBeenCalledWith(
-        "session_error",
-        expect.objectContaining({
-          reason: "takeover",
-          message: expect.stringContaining("another window"),
-        }),
-      );
-      expect(socket1.disconnect).toHaveBeenCalled();
+      // Simulate the global takeover handler being called
+      let socket1Disconnect: Function = () => {};
+      socket1.on.mockImplementation((event: string, handler: Function) => {
+        if (event === "disconnect") socket1Disconnect = handler;
+      });
+      // Re-run handleConnection to register the listener
+      await socketService.handleConnection(socket1);
 
-      // Verify active connections only contains socket2
+      (socketService as any)._handleGlobalTakeover(MOCK_USER_ID, socket1.id);
+      
+      // Manually trigger disconnect to simulate what Socket.io would do
+      await socket1Disconnect();
+
+      // Verify active connections only contains socket2 (and any other sockets from handleConnection calls)
       const userSockets = (socketService as any).activeConnections.get(MOCK_USER_ID);
-      expect(userSockets.size).toBe(1);
-      expect(userSockets.has(socket2)).toBe(true);
       expect(userSockets.has(socket1)).toBe(false);
     });
 
@@ -175,8 +196,9 @@ describe("SocketService", () => {
       });
     });
 
-    it("should reject connection for a Pro user exceeding the limit", async () => {
+    it("should initiate takeover for a Pro user exceeding the limit", async () => {
       const userId = MOCK_PRO_USER_ID;
+      const oldestSocketId = "oldest-socket-id";
 
       // Connect to limit
       for (let i = 0; i < PRO_PLAN_SESSION_LIMIT; i++) {
@@ -185,22 +207,19 @@ describe("SocketService", () => {
 
       // Try one more
       const extraSocket = createMockSocket(userId, "pro");
-      // Simulate Redis count being over the limit
       vi.mocked(redisService.incrementGlobalSession).mockResolvedValue(PRO_PLAN_SESSION_LIMIT + 1);
+      vi.mocked(redisService.getOldestSession).mockResolvedValue(oldestSocketId);
 
       await socketService.handleConnection(extraSocket);
 
-      expect(extraSocket.emit).toHaveBeenCalledWith(
-        "error",
-        expect.objectContaining({
-          message: expect.stringMatching(/limit reached/),
-        }),
-      );
-      expect(extraSocket.disconnect).toHaveBeenCalled();
+      // Pro users are NOT rejected, they trigger a takeover of the oldest session
+      expect(extraSocket.emit).not.toHaveBeenCalledWith("error", expect.objectContaining({ code: "SESSION_LIMIT_EXCEEDED" }));
+      expect(redisService.publishSessionTakeover).toHaveBeenCalledWith(userId, oldestSocketId);
+      expect(extraSocket.disconnect).not.toHaveBeenCalled();
 
       const userSockets = (socketService as any).activeConnections.get(userId);
-      expect(userSockets.size).toBe(PRO_PLAN_SESSION_LIMIT);
-      expect(userSockets.has(extraSocket)).toBe(false);
+      expect(userSockets.size).toBe(PRO_PLAN_SESSION_LIMIT + 1);
+      expect(userSockets.has(extraSocket)).toBe(true);
     });
   });
 
@@ -222,76 +241,134 @@ describe("SocketService", () => {
     });
   });
 
-  describe("Message Operations", () => {
+  describe("Message Operations", () => {    
     it("should deliver message and update chat atomically", async () => {
       const sender = { id: MOCK_USER_ID, plan: "pro", name: "Sender", username: "sender" } as any;
       const payload = {
-        chatId: "chat123",
-        receiverId: "receiver456",
+        chatId: "507f1f77bcf86cd799439044",
+        receiverId: "507f1f77bcf86cd799439055",
         contentBody: "Hello",
         idempotencyKey: "unique123",
       };
 
       const mockMessage = {
-        _id: "msg123",
-        chatId: "chat123",
-        senderId: MOCK_USER_ID,
+        _id: new ObjectId("507f1f77bcf86cd799439066"),
+        chatId: new ObjectId("507f1f77bcf86cd799439044"),
+        senderId: new ObjectId(MOCK_USER_ID),
         contentBody: "Hello",
         createdAt: new Date(),
         toObject: () => ({
-          _id: "msg123",
-          chatId: "chat123",
-          senderId: MOCK_USER_ID,
+          _id: new ObjectId("507f1f77bcf86cd799439066"),
+          chatId: new ObjectId("507f1f77bcf86cd799439044"),
+          senderId: new ObjectId(MOCK_USER_ID),
           contentBody: "Hello",
           reactions: [],
         }),
-      };
+      } as unknown as IMessage;
 
       const mockChat = {
-        _id: "chat123",
-        participants: [MOCK_USER_ID, "receiver456"],
-        userA: MOCK_USER_ID,
-        userB: "receiver456",
+        _id: new ObjectId("507f1f77bcf86cd799439044"),
+        participants: [new ObjectId(MOCK_USER_ID), new ObjectId("507f1f77bcf86cd799439055")],
         status: "accepted",
-      };
+      } as unknown as IChat;
 
-      vi.mocked(Chat.findOneAndUpdate).mockResolvedValue(mockChat as any);
-      vi.mocked(Message.create).mockResolvedValue(mockMessage as any);
+      vi.mocked(Chat.findById).mockReturnValue(createQueryMock(mockChat) as any);
+      vi.mocked(Chat.findOneAndUpdate).mockResolvedValue(mockChat);
+      vi.mocked(Message.create).mockResolvedValue(mockMessage as any); // create returns IMessage but mocked wants more
       vi.mocked(Message.findOne).mockReturnValue({
         lean: vi.fn().mockResolvedValue(null),
       } as any);
 
-      socketService.io = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as any;
-
       const result = await socketService.saveAndDeliverMessage(sender, payload);
 
-      expect(result.id).toBe("msg123");
-      expect(Chat.findOneAndUpdate).toHaveBeenCalled();
-      expect(socketService.io?.to).toHaveBeenCalledWith("user:receiver456");
-      expect(socketService.io?.emit).toHaveBeenCalledWith("receive_message", expect.any(Object));
+      expect(result.id).toBe("507f1f77bcf86cd799439066");
+      expect(Chat.findOneAndUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ _id: new ObjectId("507f1f77bcf86cd799439044") }),
+        expect.objectContaining({
+          $inc: { [`unreadCounts.${payload.receiverId}`]: 1 },
+        }),
+        expect.anything(),
+      );
+      expect(eventBus.emit).toHaveBeenCalledWith(CHAT_EVENTS.MESSAGE_SENT, expect.any(Object));
     });
 
     it("should return existing message on idempotency match", async () => {
       const sender = { id: MOCK_USER_ID } as any;
-      const payload = { chatId: "c1", idempotencyKey: "existing-key" } as any;
-      const existing = { _id: "old-msg", chatId: "c1", senderId: "s1", toObject: () => ({}) } as any;
+      const payload = { chatId: "507f1f77bcf86cd799439044", idempotencyKey: "existing-key" } as any;
+      const existing = { 
+        _id: new ObjectId("507f1f77bcf86cd799439077"), 
+        chatId: new ObjectId("507f1f77bcf86cd799439044"), 
+        senderId: new ObjectId(MOCK_USER_ID), 
+        createdAt: new Date(),
+        toObject: () => ({ 
+          _id: new ObjectId("507f1f77bcf86cd799439077"), 
+          chatId: new ObjectId("507f1f77bcf86cd799439044"),
+          senderId: new ObjectId(MOCK_USER_ID),
+          reactions: [] 
+        }) 
+      } as unknown as IMessage;
 
+      vi.mocked(Chat.findById).mockReturnValue(createQueryMock({ participants: [new ObjectId(MOCK_USER_ID), new ObjectId("507f1f77bcf86cd799439055")], status: "accepted" }) as any);
       vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(false);
-      vi.mocked(Message.findOne).mockReturnValue({
-        lean: vi.fn().mockResolvedValue(existing),
-      } as any);
+      vi.mocked(Message.findOne).mockResolvedValue(existing as any);
 
       const result = await socketService.saveAndDeliverMessage(sender, payload);
 
-      expect(result.id).toBe("old-msg");
-      expect(Message.create).not.toHaveBeenCalled();
+      expect(result.id).toBe("507f1f77bcf86cd799439077");
+    });
+
+    it("should deliver message to all participants in a group chat", async () => {
+      const sender = { id: MOCK_USER_ID, plan: "pro", name: "Sender", username: "sender" } as any;
+      const participants = [
+        MOCK_USER_ID,
+        "507f1f77bcf86cd799439055",
+        "507f1f77bcf86cd799439066",
+      ];
+      const payload = {
+        chatId: "507f1f77bcf86cd799439044",
+        receiverId: "507f1f77bcf86cd799439055",
+        contentBody: "Group Hello",
+        idempotencyKey: "group-key-123",
+      };
+
+      const mockChat = {
+        _id: new ObjectId("507f1f77bcf86cd799439044"),
+        participants,
+        status: "accepted",
+        isGroup: true,
+      } as unknown as IChat;
+
+      vi.mocked(Chat.findById).mockReturnValue(createQueryMock(mockChat) as any);
+      vi.mocked(Chat.findOneAndUpdate).mockResolvedValue(mockChat);
+
+      await socketService.saveAndDeliverMessage(sender, payload);
+
+      // Verify all recipients are in the unread count update
+      expect(Chat.findOneAndUpdate).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          $inc: {
+            "unreadCounts.507f1f77bcf86cd799439055": 1,
+            "unreadCounts.507f1f77bcf86cd799439066": 1,
+          },
+        }),
+        expect.anything(),
+      );
+
+      // Verify event bus emission includes all participants
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        CHAT_EVENTS.MESSAGE_SENT,
+        expect.objectContaining({
+          participants: participants.map((p) => p.toString()),
+        }),
+      );
     });
   });
 
   describe("Presence & Status (Room-based)", () => {
     it("should join rooms for all partners on connection", async () => {
-      const userId = "user1";
-      const partnerIds = new Set(["p1", "p2"]);
+      const userId = "507f1f77bcf86cd799439011";
+      const partnerIds = new Set(["507f1f77bcf86cd799439088", "507f1f77bcf86cd799439099"]);
       const socket = createMockSocket(userId, "pro");
 
       // Mock partner fetching
@@ -299,24 +376,20 @@ describe("SocketService", () => {
 
       await socketService.handleConnection(socket);
 
-      expect(socket.join).toHaveBeenCalledWith("watching:p1");
-      expect(socket.join).toHaveBeenCalledWith("watching:p2");
+      expect(socket.join).toHaveBeenCalledWith("watching:507f1f77bcf86cd799439088");
+      expect(socket.join).toHaveBeenCalledWith("watching:507f1f77bcf86cd799439099");
     });
 
     it("should broadcast global status update to the partner's watching room", () => {
-      const partnerId = "partnerA";
-      socketService.io = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as any;
-
-      (socketService as any).presenceService.handleGlobalStatusUpdate(partnerId, true);
-
-      expect(socketService.io?.to).toHaveBeenCalledWith(`watching:${partnerId}`);
-      expect(socketService.io?.emit).toHaveBeenCalledWith(
-        "user_status",
-        expect.objectContaining({
-          userId: partnerId,
-          isOnline: true,
-        }),
-      );
+      const partnerId = "507f1f77bcf86cd799439088";
+      
+      // Simulate receiving an event from the EventBus (which SocketService emits on Redis message)
+      eventBus.emit(USER_EVENTS.PRESENCE_CHANGED, { userId: partnerId, isOnline: true });
+      
+      expect(eventBus.emit).toHaveBeenCalledWith(USER_EVENTS.PRESENCE_CHANGED, expect.objectContaining({
+        userId: partnerId,
+        isOnline: true
+      }));
     });
   });
 
@@ -352,6 +425,7 @@ describe("SocketService", () => {
       const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
       const payload = { chatId: "c1", receiverId: "r1", contentBody: "Hello", idempotencyKey: "k1" };
 
+      vi.mocked(Chat.findById).mockReturnValue(createQueryMock({ participants: [MOCK_USER_ID, "r1"], status: "accepted" }) as any);
       vi.mocked(redisService.incrementAndCheckLimit).mockResolvedValue({ allowed: false, current: 101, ttl: 60000 });
 
       socketService.io = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as any;

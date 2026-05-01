@@ -9,6 +9,23 @@ export class ChatRepository {
     return this.chatModel.findById(id);
   }
 
+  public async findByIdWithSelect(id: string | ObjectId, select: string, lean = true) {
+    const query = this.chatModel.findById(id).select(select);
+    return lean ? query.lean() : query;
+  }
+
+  public async findPartnerChats(userId: string | ObjectId, excludeDeleted: boolean) {
+    const filter: Record<string, any> = {
+      participants: new ObjectId(userId),
+      status: "accepted",
+    };
+    if (excludeDeleted) {
+      filter.isDeleted = false;
+    }
+
+    return this.chatModel.find(filter).select("participants").lean();
+  }
+
   public async findOne(query: Record<string, any>) {
     return this.chatModel.findOne(query);
   }
@@ -188,6 +205,36 @@ export class ChatRepository {
       { $set: { [`unreadCounts.${userId.toString()}`]: 0 } },
       { returnDocument: "after" },
     );
+  }
+
+  public async updateLastMessage(
+    chatId: string | ObjectId,
+    senderId: string | ObjectId,
+    contentBody: string,
+    recipients?: string | ObjectId | (string | ObjectId)[],
+  ) {
+    const chatIdObj = new ObjectId(chatId);
+    const update: any = {
+      $set: {
+        lastMessage: {
+          contentBody,
+          senderId: new ObjectId(senderId),
+          sentAt: new Date(),
+        },
+      },
+    };
+
+    if (recipients) {
+      const recipientIds = Array.isArray(recipients) ? recipients : [recipients];
+      if (recipientIds.length > 0) {
+        update.$inc = {};
+        recipientIds.forEach((id) => {
+          update.$inc[`unreadCounts.${id.toString()}`] = 1;
+        });
+      }
+    }
+
+    return this.chatModel.findOneAndUpdate({ _id: chatIdObj }, update, { returnDocument: "after" });
   }
 
   public async findOneAndUpdate(query: Record<string, any>, update: any) {

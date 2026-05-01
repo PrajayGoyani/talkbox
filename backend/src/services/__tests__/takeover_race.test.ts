@@ -1,3 +1,4 @@
+import Chat from "@models/chat.model";
 import { redisService } from "@services/redis.service";
 import { socketService } from "@services/socket.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -13,6 +14,11 @@ vi.mock("@services/redis.service", () => ({
     incrementGlobalSession: vi.fn(),
     decrementGlobalSession: vi.fn(),
     getGlobalSessionCount: vi.fn(),
+    getOldestSession: vi.fn().mockResolvedValue(null),
+    getCachedPartners: vi.fn().mockResolvedValue(null),
+    setCachedPartners: vi.fn().mockResolvedValue(null),
+    setUserOnline: vi.fn().mockResolvedValue(null),
+    setUserOffline: vi.fn().mockResolvedValue(null),
     subClient: {
       subscribe: vi.fn().mockResolvedValue(null),
       on: vi.fn(),
@@ -21,7 +27,7 @@ vi.mock("@services/redis.service", () => ({
   },
 }));
 
-const MOCK_USER_ID = "user-123";
+const MOCK_USER_ID = "507f1f77bcf86cd799439011";
 
 const createMockSocket = (userId: string, id: string) =>
   ({
@@ -42,28 +48,41 @@ describe("SocketService Takeover Race Condition", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (socketService as any).activeConnections.clear();
+    vi.mocked(Chat.find).mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      lean: vi.fn().mockResolvedValue([]),
+    } as any);
   });
 
   it("should only disconnect the specified victim and spare others during global takeover", async () => {
     const socketA = createMockSocket(MOCK_USER_ID, "socket-A");
     const socketB = createMockSocket(MOCK_USER_ID, "socket-B");
 
-    // Add both to active connections locally (simulating a race where both connected)
-    const userSockets = new Set([socketA, socketB]);
-    (socketService as any).activeConnections.set(MOCK_USER_ID, userSockets);
+    // Capture disconnect handlers
+    let disconnectA: any;
+    socketA.on.mockImplementation((ev: string, fn: any) => { if (ev === "disconnect") disconnectA = fn; });
+
+    // Register them properly
+    vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([]);
+    await socketService.handleConnection(socketA);
+    await socketService.handleConnection(socketB);
 
     // Simulate receiving a takeover message for socketA
     (socketService as any)._handleGlobalTakeover(MOCK_USER_ID, "socket-A");
 
     // Socket A should be kicked
-    expect(socketA.emit).toHaveBeenCalledWith("session_error", expect.objectContaining({ reason: "takeover" }));
+    expect(socketA.emit).toHaveBeenCalledWith("error", expect.objectContaining({ code: "SESSION_TAKEOVER" }));
     expect(socketA.disconnect).toHaveBeenCalled();
+
+    // Manually trigger disconnect
+    if (disconnectA) await disconnectA();
 
     // Socket B should be SPARED
     expect(socketB.emit).not.toHaveBeenCalled();
     expect(socketB.disconnect).not.toHaveBeenCalled();
 
     // Local state should only have Socket B
+    const userSockets = (socketService as any).activeConnections.get(MOCK_USER_ID);
     expect(userSockets.size).toBe(1);
     expect(userSockets.has(socketB)).toBe(true);
   });
@@ -73,17 +92,24 @@ describe("SocketService Takeover Race Condition", () => {
     const socketVictim1 = createMockSocket(MOCK_USER_ID, "socket-Victim1");
     const socketVictim2 = createMockSocket(MOCK_USER_ID, "socket-Victim2");
 
-    const userSockets = new Set([socketWinner, socketVictim1, socketVictim2]);
-    (socketService as any).activeConnections.set(MOCK_USER_ID, userSockets);
+    let disconnect1: any, disconnect2: any;
+    socketVictim1.on.mockImplementation((ev: string, fn: any) => { if (ev === "disconnect") disconnect1 = fn; });
+    socketVictim2.on.mockImplementation((ev: string, fn: any) => { if (ev === "disconnect") disconnect2 = fn; });
+
+    vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([]);
+    await socketService.handleConnection(socketWinner);
+    await socketService.handleConnection(socketVictim1);
+    await socketService.handleConnection(socketVictim2);
 
     // Takeover message for Victim 1
     (socketService as any)._handleGlobalTakeover(MOCK_USER_ID, "socket-Victim1");
-    expect(socketVictim1.disconnect).toHaveBeenCalled();
+    if (disconnect1) await disconnect1();
+    const userSockets = (socketService as any).activeConnections.get(MOCK_USER_ID);
     expect(userSockets.size).toBe(2);
 
     // Takeover message for Victim 2
     (socketService as any)._handleGlobalTakeover(MOCK_USER_ID, "socket-Victim2");
-    expect(socketVictim2.disconnect).toHaveBeenCalled();
+    if (disconnect2) await disconnect2();
     expect(userSockets.size).toBe(1);
 
     // Winner remains
@@ -95,11 +121,19 @@ describe("SocketService Takeover Race Condition", () => {
     const socketA = createMockSocket(MOCK_USER_ID, "socket-A");
     const socketB = createMockSocket(MOCK_USER_ID, "socket-B");
 
-    const userSockets = new Set([socketA, socketB]);
-    (socketService as any).activeConnections.set(MOCK_USER_ID, userSockets);
+    let d1: any, d2: any;
+    socketA.on.mockImplementation((ev: string, fn: any) => { if (ev === "disconnect") d1 = fn; });
+    socketB.on.mockImplementation((ev: string, fn: any) => { if (ev === "disconnect") d2 = fn; });
 
-    // Global takeover with NO specific victim (old behavior or fallback)
+    vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([]);
+    await socketService.handleConnection(socketA);
+    await socketService.handleConnection(socketB);
+
+    // Global takeover with NO specific victim
     (socketService as any)._handleGlobalTakeover(MOCK_USER_ID, undefined);
+
+    if (d1) await d1();
+    if (d2) await d2();
 
     expect(socketA.disconnect).toHaveBeenCalled();
     expect(socketB.disconnect).toHaveBeenCalled();

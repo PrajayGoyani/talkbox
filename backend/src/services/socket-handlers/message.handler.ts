@@ -1,28 +1,33 @@
 import { RATE_LIMIT_DEFAULT_WINDOW_MS, RATE_LIMIT_SOCKET_MESSAGE_MAX } from "@config/env";
 import { IChat } from "@models/chat.model";
 import { IMessage } from "@models/message.model";
-import { chatRepository } from "@repositories/chat.repository";
-import { messageRepository } from "@repositories/message.repository";
+import { ChatRepository } from "@repositories/chat.repository";
+import { MessageRepository } from "@repositories/message.repository";
 import { MessageDto } from "@root/shared/types/chat.dto";
 import { chatLockdownService } from "@services/chat-lockdown.service";
 import { redisService } from "@services/redis.service";
 import { AppError } from "@utils/AppError";
+import { eventBus, CHAT_EVENTS } from "@utils/event-bus";
 import { isPastModifyLimit, isScrubbed } from "@utils/date.utils";
 import { ObjectId } from "mongodb";
 
 import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
 
 export class MessageHandler {
-  constructor(private ioProvider: () => TypedIO | null) {}
+  constructor(
+    private ioProvider: () => TypedIO | null,
+    private chatRepo: ChatRepository,
+    private messageRepo: MessageRepository,
+  ) {}
 
   async validateModification(
     sender: AuthenticatedSocketUser,
     messageId: string,
   ): Promise<{ message: IMessage; chat: IChat } | null> {
-    const message = await messageRepository.findOne({ _id: messageId });
+    const message = await this.messageRepo.findById(messageId);
     if (!message || message.isDeleted) return null;
 
-    const chat = await chatRepository.findById(message.chatId);
+    const chat = await this.chatRepo.findById(message.chatId);
     if (!chat || chat.status !== "accepted") return null;
 
     if (isScrubbed(sender.plan, message.createdAt)) return null;
@@ -41,11 +46,11 @@ export class MessageHandler {
   async saveAndDeliver(
     sender: AuthenticatedSocketUser,
     payload: { chatId: string; receiverId: string; contentBody: string; idempotencyKey: string },
-    checkCache: (chatId: string) => Set<string> | null | undefined,
-    updateCache: (chatId: string, participants: Set<string> | null) => void,
+    checkCache: (chatId: string) => Set<string> | undefined,
+    updateCache: (chatId: string, participants: Set<string>) => void,
   ): Promise<MessageDto> {
     const senderId = sender.id;
-    const { chatId, receiverId, contentBody, idempotencyKey } = payload;
+    const { chatId, contentBody, idempotencyKey } = payload;
     const io = this.ioProvider();
 
     // 0, 1. Parallelize Lockdown and Idempotency L1 check
@@ -58,17 +63,32 @@ export class MessageHandler {
       throw AppError.forbidden("Cannot send messages to a deleted chat.");
     }
 
-    // 2. Cache check (keep serial for now as it's local memory)
+    // 2. Cache check & Participant Security
     const cached = checkCache(chatId);
-    if (cached && !cached.has(senderId)) {
-      throw AppError.forbidden("You are not a participant in this chat.");
+    let participantIds: string[];
+
+    if (cached) {
+      if (!cached.has(senderId)) {
+        throw AppError.forbidden("You are not a participant in this chat.");
+      }
+      participantIds = Array.from(cached);
+    } else {
+      const chat = await this.chatRepo.findByIdWithSelect(chatId, "participants status");
+      if (!chat || chat.status !== "accepted") {
+        throw AppError.forbidden("Chat not found or not accepted.");
+      }
+      participantIds = chat.participants.map((p: any) => p.toString());
+      if (!participantIds.includes(senderId)) {
+        throw AppError.forbidden("You are not a participant in this chat.");
+      }
+      updateCache(chatId, new Set(participantIds));
     }
 
     // 3. Deduplication (L2 check)
     if (!isNewToRedis) {
-      const existingMessage = await messageRepository.findOne({ idempotencyKey });
+      const existingMessage = await this.messageRepo.findOne({ idempotencyKey });
       if (existingMessage) {
-        return messageRepository.transformMessage(existingMessage, sender.plan);
+        return this.messageRepo.transformMessage(existingMessage, sender.plan);
       }
     }
 
@@ -87,10 +107,20 @@ export class MessageHandler {
       throw AppError.tooMany("Message sending limit reached.", "RATE_LIMIT_EXCEEDED");
     }
 
+    // 4. Update Chat (Atomic sequence increment)
+    try {
+      // Increment unread counts for all participants except the sender
+      const recipients = participantIds.filter((id) => id !== senderId);
+      await this.chatRepo.updateLastMessage(chatId, senderId, contentBody, recipients);
+    } catch (err) {
+      console.error("[MessageHandler] Error updating chat metadata:", err);
+      // Non-blocking for message delivery, but should be logged
+    }
+
     // 5. Save
     let message: IMessage;
     try {
-      message = await messageRepository.create({
+      message = await this.messageRepo.create({
         chatId: new ObjectId(chatId),
         senderId: new ObjectId(senderId),
         contentBody,
@@ -98,128 +128,61 @@ export class MessageHandler {
       });
     } catch (err: any) {
       if (err.code === 11000) {
-        // Mongo duplicate key error - someone beat us to it
-        const existing = await messageRepository.findOne({ idempotencyKey });
-        if (existing) return messageRepository.transformMessage(existing, sender.plan);
+        // Idempotency Race condition (unlikely with L1 Redis, but good for safety)
+        const raceMessage = await this.messageRepo.findOne({ idempotencyKey });
+        if (raceMessage) return this.messageRepo.transformMessage(raceMessage, sender.plan);
       }
       throw err;
     }
 
-    // 6. Update Chat
-    const chat = await chatRepository.updateById(chatId, {
-      lastMessage: { contentBody, senderId, sentAt: message.createdAt },
-      $inc: { [`unreadCounts.${receiverId}`]: 1 },
+    // 6. Deliver via Event Bus (Decoupled Side-Effect)
+    const dto = this.messageRepo.transformMessage(message, sender.plan, sender);
+    eventBus.emit(CHAT_EVENTS.MESSAGE_SENT, {
+      message,
+      dto,
+      participants: participantIds,
+      senderId,
     });
-
-    if (!chat) {
-      // Manual rollback if chat update fails
-      await messageRepository.updateOne({ _id: message._id }, { $set: { isDeleted: true } });
-      throw AppError.forbidden("Message delivery failed: Chat is invalid or restricted.");
-    }
-
-    if (!cached) {
-      updateCache(chatId, new Set(chat.participants.map((p: any) => p.toString())));
-    }
-
-    const dto = messageRepository.transformMessage(message, sender.plan);
-
-    // 7. Deliver to all participants
-    for (const p of chat.participants) {
-      const pId = p.toString();
-      io?.to(`user:${pId}`).emit("receive_message", dto);
-
-      // If it's the receiver, also send an alert
-      if (pId === receiverId) {
-        try {
-          const preview = contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
-          io?.to(`user:${pId}`).emit("message_alert", {
-            chatId,
-            senderId,
-            senderName: sender.name || null,
-            senderUsername: sender.username,
-            senderAvatar: sender.avatarUrl,
-            preview,
-          });
-        } catch (err) {
-          console.error("[MessageHandler] Alert failed:", err);
-        }
-      }
-    }
 
     return dto;
   }
 
   async handleDelete(sender: AuthenticatedSocketUser, messageId: string) {
-    const result = await this.validateModification(sender, messageId);
-    if (!result) return;
+    const valid = await this.validateModification(sender, messageId);
+    if (!valid) return;
 
-    const { message, chat } = result;
-    const io = this.ioProvider();
+    const { message, chat } = valid;
+    message.isDeleted = true;
+    await message.save();
 
-    await messageRepository.updateOne(
-      { _id: messageId },
-      {
-        $set: {
-          isDeleted: true,
-          deletedAt: new Date(),
-          contentBody: "This message was deleted",
-          attachment: { kind: null, url: null },
-          reactions: [],
-        },
-      },
-    );
-
-    const isLast = this.isLastMessage(chat, message);
-    const updatePayload = {
-      messageId: messageId.toString(),
-      chatId: message.chatId.toString(),
-      isLastMessage: isLast,
-    };
-
-    chat.participants.forEach((p: any) => {
-      io?.to(`user:${p.toString()}`).emit("message_deleted", updatePayload);
+    const payload = { messageId, chatId: chat._id.toString(), isLastMessage: this.isLastMessage(chat, message) };
+    eventBus.emit(CHAT_EVENTS.MESSAGE_DELETED, {
+      ...payload,
+      participants: chat.participants,
     });
-
-    if (isLast) {
-      await chatRepository.updateById(chat._id, {
-        $set: { "lastMessage.contentBody": "Message deleted" },
-      });
-    }
   }
 
   async handleEdit(sender: AuthenticatedSocketUser, messageId: string, contentBody: string) {
-    const result = await this.validateModification(sender, messageId);
-    if (!result) return;
+    const valid = await this.validateModification(sender, messageId);
+    if (!valid) return;
 
-    const { message, chat } = result;
-    const io = this.ioProvider();
+    const { message, chat } = valid;
+    message.contentBody = contentBody;
+    message.isEdited = true;
+    message.editedAt = new Date();
+    await message.save();
 
-    const trimmedContent = contentBody.trim();
-    const updates = {
-      contentBody: trimmedContent,
+    const payload = {
+      messageId,
+      chatId: chat._id.toString(),
+      contentBody,
       isEdited: true,
-      editedAt: new Date(),
+      editedAt: message.editedAt,
     };
 
-    await messageRepository.updateOne({ _id: messageId }, { $set: updates });
-
-    const isLast = this.isLastMessage(chat, message);
-    const updatePayload = {
-      messageId: messageId.toString(),
-      chatId: message.chatId.toString(),
-      contentBody: updates.contentBody,
-      isEdited: updates.isEdited,
-      editedAt: updates.editedAt,
-    };
-
-    chat.participants.forEach((p: any) => {
-      io?.to(`user:${p.toString()}`).emit("message_updated", updatePayload);
+    eventBus.emit(CHAT_EVENTS.MESSAGE_UPDATED, {
+      ...payload,
+      participants: chat.participants,
     });
-
-    if (isLast) {
-      await chatRepository.updateById(chat._id, {
-        $set: { "lastMessage.contentBody": updates.contentBody },
-      });
-    }
   }
 }

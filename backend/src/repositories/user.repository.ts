@@ -29,6 +29,12 @@ export class UserRepository {
     return this.userModel.findByIdAndUpdate(id, update, { returnDocument: "after" });
   }
 
+  public async findByIds(ids: string[] | ObjectId[], select?: string) {
+    const query = this.userModel.find({ _id: { $in: ids } });
+    if (select) query.select(select);
+    return query;
+  }
+
   public transformUser(user: IUser): UserDto {
     const obj = user.toObject ? user.toObject() : (user as any);
     return {

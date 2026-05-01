@@ -1,5 +1,4 @@
 import { ALLOWED_ORIGINS, JWT_SECRET_KEY, NODE_ENV } from "@config/env";
-import { chatService } from "@services/chat.service";
 import { redisService } from "@services/redis.service";
 import { socketService } from "@services/socket.service";
 import { userCacheService } from "@services/user-cache.service";
@@ -8,7 +7,7 @@ import { AppError } from "@utils/AppError";
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 
-import { JWTPayload, TypedIO, TypedSocket } from "@/types/socket.types";
+import { AuthenticatedSocketUser, JWTPayload, TypedIO, TypedSocket } from "@/types/socket.types";
 
 export const configureSocketServer = (server: import("http").Server | import("https").Server): TypedIO => {
   const io: TypedIO = new Server(server, {
@@ -28,7 +27,6 @@ export const configureSocketServer = (server: import("http").Server | import("ht
   }
 
   socketService.init(io);
-  chatService.setIO(io);
 
   // Chat Security Auditor: Authenticate socket connection
   io.use(async (socket: TypedSocket, next) => {
@@ -45,7 +43,16 @@ export const configureSocketServer = (server: import("http").Server | import("ht
         return next(AppError.unauthorized("User not found"));
       }
 
-      socket.data.user = user as any;
+      // Map UserDto → AuthenticatedSocketUser for socket context
+      const socketUser: AuthenticatedSocketUser = {
+        id: user.id,
+        username: user.username,
+        name: user.name ?? null,
+        avatarUrl: user.avatarUrl || "",
+        plan: user.plan,
+        bio: user.bio,
+      };
+      socket.data.user = socketUser;
       next();
     } catch (error) {
       if (NODE_ENV === "development") {
@@ -63,7 +70,7 @@ export const configureSocketServer = (server: import("http").Server | import("ht
         console.log(`[SocketController] send_message received from user ${socket.data.user.id}:`, data);
       }
       try {
-        const message = await socketService.saveAndDeliverMessage(socket.data.user as any, data);
+        const message = await socketService.saveAndDeliverMessage(socket.data.user, data);
         if (ack) ack({ status: "ok", message });
       } catch (err) {
         if (ack) ack({ status: "error", error: (err as Error).message });
@@ -71,15 +78,15 @@ export const configureSocketServer = (server: import("http").Server | import("ht
     });
 
     socket.on("react_message", async (data) => {
-      socketService.handleReaction(socket.data.user as any, data);
+      socketService.handleReaction(socket.data.user, data);
     });
 
     socket.on("delete_message", async (data) => {
-      socketService.handleDeleteMessage(socket.data.user as any, data);
+      socketService.handleDeleteMessage(socket.data.user, data);
     });
 
     socket.on("edit_message", async (data) => {
-      socketService.handleEditMessage(socket.data.user as any, data);
+      socketService.handleEditMessage(socket.data.user, data);
     });
 
     // E2EE Key exchange setup
@@ -90,11 +97,11 @@ export const configureSocketServer = (server: import("http").Server | import("ht
 
     // Typing Indicators
     socket.on("typing_start", (data) => {
-      socketService.handleTyping(socket.data.user as any, data, true);
+      socketService.handleTyping(socket.data.user, data, true);
     });
 
     socket.on("typing_stop", (data) => {
-      socketService.handleTyping(socket.data.user as any, data, false);
+      socketService.handleTyping(socket.data.user, data, false);
     });
   });
 

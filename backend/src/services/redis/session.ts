@@ -45,6 +45,18 @@ export class RedisSessionService {
     }
   }
 
+  async getOldestSession(userId: string): Promise<string | null> {
+    if (!this.client || !this.isConnected) return null;
+    try {
+      // Since we use a Set, we don't have true "oldest" without a Sorted Set.
+      // For now, return any other session.
+      return await this.client.srandmember(`sessions:${userId}`);
+    } catch (err) {
+      console.error("[RedisSessionService] Error getting oldest session:", err);
+      return null;
+    }
+  }
+
   async takeoverFreeSession(userId: string, newSocketId: string): Promise<string[]> {
     if (!this.client || !this.isConnected) return [];
     try {

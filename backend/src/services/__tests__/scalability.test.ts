@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb";
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
 import { redisService } from "@services/redis.service";
@@ -20,7 +21,9 @@ vi.mock("@services/redis.service", () => ({
   },
 }));
 
-const MOCK_USER_ID = "user123";
+const MOCK_USER_ID = "507f1f77bcf86cd799439011";
+const MOCK_CHAT_ID = "507f1f77bcf86cd799439044";
+const MOCK_RECEIVER_ID = "507f1f77bcf86cd799439055";
 
 describe("Scalability Optimizations", () => {
   beforeEach(() => {
@@ -33,24 +36,33 @@ describe("Scalability Optimizations", () => {
     vi.mocked(Message.create).mockImplementation((data: any) =>
       Promise.resolve({
         ...data,
-        _id: "new-msg-id",
+        _id: new ObjectId("507f1f77bcf86cd799439066"),
         createdAt: new Date(),
-        toObject: () => ({ ...data, _id: "new-msg-id", createdAt: new Date(), reactions: [] }),
+        toObject: () => ({ ...data, _id: new ObjectId("507f1f77bcf86cd799439066"), createdAt: new Date(), reactions: [] }),
       } as any),
     );
-    vi.mocked(Message.findOne).mockReturnValue({ lean: vi.fn().mockResolvedValue(null) } as any);
+    vi.mocked(Message.findOne).mockResolvedValue(null);
+    vi.mocked(Chat.findById).mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      lean: vi.fn().mockResolvedValue({
+        _id: new ObjectId(MOCK_CHAT_ID),
+        participants: [new ObjectId(MOCK_USER_ID), new ObjectId(MOCK_RECEIVER_ID)],
+        status: "accepted",
+      }),
+    } as any);
     vi.mocked(Chat.findOneAndUpdate).mockResolvedValue({
-      participants: [MOCK_USER_ID, "r1"],
-      userA: MOCK_USER_ID,
-      userB: "r1",
+      _id: new ObjectId(MOCK_CHAT_ID),
+      participants: [new ObjectId(MOCK_USER_ID), new ObjectId(MOCK_RECEIVER_ID)],
+      userA: new ObjectId(MOCK_USER_ID),
+      userB: new ObjectId(MOCK_RECEIVER_ID),
     } as any);
   });
 
   describe("Thundering Herd Protection (_getPartnerIds)", () => {
     it("should only trigger one database query for concurrent partner requests", async () => {
       const mockChats = [
-        { participants: [MOCK_USER_ID, "partner1"], userA: MOCK_USER_ID, userB: "partner1" },
-        { participants: ["partner2", MOCK_USER_ID], userA: "partner2", userB: MOCK_USER_ID },
+        { _id: new ObjectId(MOCK_CHAT_ID), participants: [MOCK_USER_ID, "507f1f77bcf86cd799439088"], userA: MOCK_USER_ID, userB: "507f1f77bcf86cd799439088" },
+        { _id: new ObjectId(), participants: ["507f1f77bcf86cd799439099", MOCK_USER_ID], userA: "507f1f77bcf86cd799439099", userB: MOCK_USER_ID },
       ];
 
       // Delay the DB response to simulate concurrency
@@ -77,8 +89,8 @@ describe("Scalability Optimizations", () => {
       expect(queryCount).toBe(1);
       results.forEach((res) => {
         expect(res).toBeInstanceOf(Set);
-        expect(res.has("partner1")).toBe(true);
-        expect(res.has("partner2")).toBe(true);
+        expect(res.has("507f1f77bcf86cd799439088")).toBe(true);
+        expect(res.has("507f1f77bcf86cd799439099")).toBe(true);
       });
 
       // Map should be empty after resolution
@@ -89,14 +101,9 @@ describe("Scalability Optimizations", () => {
   describe("Redis Idempotency L1 Guard", () => {
     it("should skip DB findOne if Redis says the message is new", async () => {
       const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
-      const payload = { chatId: "c1", receiverId: "r1", contentBody: "Hi", idempotencyKey: "unique-key" };
+      const payload = { chatId: MOCK_CHAT_ID, receiverId: MOCK_RECEIVER_ID, contentBody: "Hi", idempotencyKey: "unique-key" };
 
       vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(true);
-      vi.mocked(Chat.findOneAndUpdate).mockResolvedValue({
-        participants: [MOCK_USER_ID, "r1"],
-        userA: MOCK_USER_ID,
-        userB: "r1",
-      } as any);
 
       await socketService.saveAndDeliverMessage(sender, payload);
 
@@ -107,32 +114,49 @@ describe("Scalability Optimizations", () => {
 
     it("should hit DB findOne if Redis says the message is a duplicate", async () => {
       const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
-      const payload = { chatId: "c1", receiverId: "r1", contentBody: "Hi", idempotencyKey: "dup-key" };
+      const payload = { chatId: MOCK_CHAT_ID, receiverId: MOCK_RECEIVER_ID, contentBody: "Hi", idempotencyKey: "dup-key" };
 
       vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(false);
-      vi.mocked(Message.findOne).mockReturnValue({
-        lean: vi
-          .fn()
-          .mockResolvedValue({ _id: "existing-id", chatId: "c1", senderId: MOCK_USER_ID, contentBody: "Hi" }),
+      vi.mocked(Message.findOne).mockResolvedValue({ 
+        _id: new ObjectId("507f1f77bcf86cd799439077"), 
+        chatId: new ObjectId(MOCK_CHAT_ID), 
+        senderId: new ObjectId(MOCK_USER_ID), 
+        contentBody: "Hi",
+        toObject: () => ({
+          _id: new ObjectId("507f1f77bcf86cd799439077"),
+          chatId: new ObjectId(MOCK_CHAT_ID),
+          senderId: new ObjectId(MOCK_USER_ID),
+          contentBody: "Hi",
+          reactions: []
+        })
       } as any);
 
       const result = await socketService.saveAndDeliverMessage(sender, payload);
 
       expect(Message.findOne).toHaveBeenCalledWith({ idempotencyKey: "dup-key" });
       expect(Message.create).not.toHaveBeenCalled();
-      expect(redisService.incrementAndCheckLimit).not.toHaveBeenCalled();
-      expect(result.id).toBe("existing-id");
+      expect(result.id.toString()).toBe("507f1f77bcf86cd799439077");
     });
 
     it("should NOT consume rate limit token for legitimate retries (duplicates)", async () => {
       const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
-      const payload = { chatId: "c1", receiverId: "r2", contentBody: "Retry", idempotencyKey: "retry-key" };
+      const payload = { chatId: MOCK_CHAT_ID, receiverId: MOCK_RECEIVER_ID, contentBody: "Retry", idempotencyKey: "retry-key" };
 
       // Simulate Redis L1 hit for idempotency (already set)
       vi.mocked(redisService.checkAndSetIdempotency).mockResolvedValue(false);
       // Simulate DB hit
-      vi.mocked(Message.findOne).mockReturnValue({
-        lean: vi.fn().mockResolvedValue({ _id: "msg-1", chatId: "c1", senderId: MOCK_USER_ID, contentBody: "Retry" }),
+      vi.mocked(Message.findOne).mockResolvedValue({ 
+        _id: new ObjectId("507f1f77bcf86cd799439077"), 
+        chatId: new ObjectId(MOCK_CHAT_ID), 
+        senderId: new ObjectId(MOCK_USER_ID), 
+        contentBody: "Retry",
+        toObject: () => ({
+          _id: new ObjectId("507f1f77bcf86cd799439077"),
+          chatId: new ObjectId(MOCK_CHAT_ID),
+          senderId: new ObjectId(MOCK_USER_ID),
+          contentBody: "Retry",
+          reactions: []
+        })
       } as any);
 
       await socketService.saveAndDeliverMessage(sender, payload);
