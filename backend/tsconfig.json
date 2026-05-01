@@ -12,6 +12,7 @@
     "resolveJsonModule": true,
     "types": ["bun"],
     "outDir": "dist",
+    "sourceMap": true,
     "incremental": true,
     "tsBuildInfoFile": "dist/.tsbuildinfo",
     "rootDir": ".",

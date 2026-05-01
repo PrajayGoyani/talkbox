@@ -1,6 +1,6 @@
 import { ZodError } from "zod";
 
-export const formatZodErrors = (error: ZodError | any) => {
+export const formatZodErrors = (error: ZodError) => {
   if (!error.issues) return [];
   const errors = error.issues.map((issue: any) => {
     let { origin, code, message, path } = issue;

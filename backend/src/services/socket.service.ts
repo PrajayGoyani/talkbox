@@ -97,7 +97,7 @@ export class SocketService {
       this.activeConnections.set(userId, userSockets);
     }
     userSockets.add(socket);
-    socket.join(`user:${userId}`);
+    void socket.join(`user:${userId}`);
 
     // Register disconnect listener EARLIER to prevent leaks on initialization errors
     socket.on("disconnect", async () => {

@@ -9,10 +9,10 @@
   "scripts": {
     "build": "tsgo",
     "dev": "bun --watch --inspect=localhost:9229/talkbox --preload ./src/instrument.ts server.ts",
-    "fmt": "bunx --bun vp fmt",
-    "fmt:check": "bunx --bun vp fmt --check",
+    "fmt": "vp fmt",
+    "fmt:check": "vp fmt --check",
     "start": "bun --preload ./dist/src/instrument.js dist/server.js",
-    "test": "bunx --bun vp test"
+    "test": "vp test"
   },
   "dependencies": {
     "@agendajs/mongo-backend": "^4.0.1",

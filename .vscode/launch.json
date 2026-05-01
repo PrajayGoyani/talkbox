@@ -1,12 +1,22 @@
 {
+  "version": "0.2.0",
   "configurations": [
     {
-      "name": "Attach to process",
+      "name": "Attach to Backend",
       "type": "bun",
       "request": "attach",
-      "url": "ws://localhost:9229/talkbox",
-      "localRoot": "${workspaceFolder}",
-      "remoteRoot": "/src"
+      "url": "ws://127.0.0.1:9229/talkbox",
+      "localRoot": "${workspaceFolder}/backend",
+      "remoteRoot": "${workspaceFolder}/backend"
+    },
+    {
+      "name": "Debug Seed Script",
+      "type": "bun",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/backend",
+      "program": "src/scripts/seed.ts",
+      "args": ["--inspect=127.0.0.1:9230"],
+      "stopOnEntry": false
     }
   ]
 }

@@ -31,7 +31,7 @@ export class AuthService {
     const tokens = generateTokens({ id: userObject._id.toString() });
 
     // Fire-and-forget verification email — don't block signup
-    this._sendVerificationEmail(userObject._id.toString(), email);
+    void this._sendVerificationEmail(userObject._id.toString(), email);
 
     return {
       user: this.userRepository.transformUser(user),

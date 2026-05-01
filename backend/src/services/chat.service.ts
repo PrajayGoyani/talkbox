@@ -11,16 +11,24 @@ import { messageService } from "./chat/message.service";
  */
 class ChatService {
   // --- Listings ---
-  async getChatListing(userId: string | any, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto> {
+  async getChatListing(
+    userId: string,
+    limit?: number,
+    cursor?: string | null,
+  ): Promise<ChatListingResponseDto> {
     return chatListingService.getChatListing(userId, limit, cursor);
   }
 
-  async getChatRequests(userId: string | any, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto> {
+  async getChatRequests(
+    userId: string,
+    limit?: number,
+    cursor?: string | null,
+  ): Promise<ChatListingResponseDto> {
     return chatListingService.getChatRequests(userId, limit, cursor);
   }
 
   async searchChats(
-    userId: string | any,
+    userId: string,
     query: string,
     limit?: number,
     cursor?: string | null,
@@ -29,7 +37,7 @@ class ChatService {
   }
 
   // --- Actions ---
-  async requestChat(senderId: string | any, targetUsername: string): Promise<any> {
+  async requestChat(senderId: string, targetUsername: string): Promise<any> {
     return chatActionService.requestChat(senderId, targetUsername);
   }
 
@@ -37,17 +45,17 @@ class ChatService {
     return chatActionService.acceptChat(chatId, userId);
   }
 
-  async rejectChat(chatId: string | any, userId: string | any): Promise<any> {
+  async rejectChat(chatId: string, userId: string): Promise<any> {
     return chatActionService.rejectChat(chatId, userId);
   }
 
-  async deleteChat(chatId: string | any, userId: string | any): Promise<{ message: string }> {
+  async deleteChat(chatId: string, userId: string): Promise<{ message: string }> {
     return chatActionService.deleteChat(chatId, userId);
   }
 
   // --- Messages ---
   async getChatMessages(
-    chatId: string | any,
+    chatId: string,
     userId: string,
     limit?: number,
     cursor?: string | null,
@@ -56,7 +64,7 @@ class ChatService {
     return messageService.getChatMessages(chatId, userId, limit, cursor, plan);
   }
 
-  async markChatRead(chatId: string | any, userId: string | any): Promise<{ message: string }> {
+  async markChatRead(chatId: string, userId: string): Promise<{ message: string }> {
     return messageService.markChatRead(chatId, userId);
   }
 }

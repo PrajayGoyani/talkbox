@@ -78,15 +78,15 @@ export const configureSocketServer = (server: import("http").Server | import("ht
     });
 
     socket.on("react_message", async (data) => {
-      socketService.handleReaction(socket.data.user, data);
+      void socketService.handleReaction(socket.data.user, data);
     });
 
     socket.on("delete_message", async (data) => {
-      socketService.handleDeleteMessage(socket.data.user, data);
+      void socketService.handleDeleteMessage(socket.data.user, data);
     });
 
     socket.on("edit_message", async (data) => {
-      socketService.handleEditMessage(socket.data.user, data);
+      void socketService.handleEditMessage(socket.data.user, data);
     });
 
     // E2EE Key exchange setup
@@ -97,11 +97,11 @@ export const configureSocketServer = (server: import("http").Server | import("ht
 
     // Typing Indicators
     socket.on("typing_start", (data) => {
-      socketService.handleTyping(socket.data.user, data, true);
+      void socketService.handleTyping(socket.data.user, data, true);
     });
 
     socket.on("typing_stop", (data) => {
-      socketService.handleTyping(socket.data.user, data, false);
+      void socketService.handleTyping(socket.data.user, data, false);
     });
   });
 

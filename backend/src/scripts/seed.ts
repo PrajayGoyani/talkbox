@@ -107,7 +107,7 @@ async function seed() {
             chatId: chat._id,
             senderId: userA._id,
             contentBody: contentA,
-            idempotencyKey: `${chat._id}_${userA._id}_${i}_${Date.now()}_A`,
+            idempotencyKey: `${chat._id.toString()}_${userA._id.toString()}_${i}_${Date.now()}_A`,
           });
 
           // Message from userB
@@ -116,7 +116,7 @@ async function seed() {
             chatId: chat._id,
             senderId: userB._id,
             contentBody: contentB,
-            idempotencyKey: `${chat._id}_${userB._id}_${i}_${Date.now()}_B`,
+            idempotencyKey: `${chat._id.toString()}_${userB._id.toString()}_${i}_${Date.now()}_B`,
           });
 
           // Update chat last message
@@ -127,9 +127,9 @@ async function seed() {
           };
         }
         await chat.save();
-        console.log(`Messages seeded for chat ${chat._id}`);
+        console.log(`Messages seeded for chat ${chat._id.toString()}`);
       } else {
-        console.log(`Messages already exist for chat ${chat._id}`);
+        console.log(`Messages already exist for chat ${chat._id.toString()}`);
       }
     }
 
@@ -141,4 +141,4 @@ async function seed() {
   }
 }
 
-seed();
+void seed();
