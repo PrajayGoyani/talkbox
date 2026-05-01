@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
 import { IChat } from "@models/chat.model";
 import Chat from "@models/chat.model";

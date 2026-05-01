@@ -29,7 +29,7 @@ export class ApiError extends Error {
       message = body.error?.message || body.message || message;
       code = body.error?.code || body.code || null;
       details = body.error?.details || body.details || null;
-    } catch (e) {
+    } catch {
       // Body is not JSON or empty
       message = resp.statusText || message;
     }

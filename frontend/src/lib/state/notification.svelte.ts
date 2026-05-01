@@ -1,7 +1,6 @@
 import type { NotificationDto, NotificationResponseDto } from "@root/shared/types/notification.dto";
 
 import { API_BASE } from "$lib/config";
-import { authStore } from "$state/auth.svelte";
 
 class NotificationStore {
   notifications = $state<NotificationDto[]>([]);

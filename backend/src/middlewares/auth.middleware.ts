@@ -1,6 +1,6 @@
 import { userCacheService } from "@services/user-cache.service";
 import { verifyAccessToken } from "@utils/jwt";
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 
 export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers["authorization"];
@@ -25,7 +25,7 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
 
     req.user = user;
     next();
-  } catch (error) {
+  } catch {
     return res.status(403).json({ message: "Invalid or expired token." });
   }
 }

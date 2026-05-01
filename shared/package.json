@@ -1,33 +1,9 @@
 {
   "name": "@root/shared",
-  "version": "1.0.0",
   "type": "module",
-  "typesVersions": {
-    "*": {
-      "*": [
-        "*"
-      ],
-      "types/*": [
-        "types/*.ts"
-      ],
-      "constants/*": [
-        "constants/*.ts"
-      ],
-      "utils/*": [
-        "utils/*.ts"
-      ]
-    }
-  },
   "exports": {
-    "./types/api.dto": "./types/api.dto.ts",
-    "./types/auth.dto": "./types/auth.dto.ts",
-    "./types/chat.dto": "./types/chat.dto.ts",
-    "./types/notification.dto": "./types/notification.dto.ts",
-    "./types/socket.dto": "./types/socket.dto.ts",
-    "./constants/chat": "./constants/chat.ts",
-    "./constants/validation": "./constants/validation.ts",
-    "./utils/validation": "./utils/validation.ts",
-    "./utils/emoji": "./utils/emoji.ts",
-    "./utils/message": "./utils/message.ts"
+    "./types/*": "./types/*.ts",
+    "./constants/*": "./constants/*.ts",
+    "./utils/*": "./utils/*.ts"
   }
 }

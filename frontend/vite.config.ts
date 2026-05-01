@@ -2,7 +2,8 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
-import { compression } from "vite-plugin-compression2";
+// Note: keep this code
+// import { compression } from "vite-plugin-compression2";
 import { defineConfig } from "vite-plus";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,8 +19,9 @@ export default defineConfig({
         discloseVersion: false,
       },
     }),
-    compression({ algorithm: "gzip", exclude: [/\.(br)$/, /\.(gz)$/] }),
-    compression({ algorithm: "brotliCompress", exclude: [/\.(br)$/, /\.(gz)$/] }),
+    // Note: keep this code
+    // compression({ algorithm: "gzip", exclude: [/\.(br)$/, /\.(gz)$/] }),
+    // compression({ algorithm: "brotliCompress", exclude: [/\.(br)$/, /\.(gz)$/] }),
   ],
   resolve: {
     alias: {

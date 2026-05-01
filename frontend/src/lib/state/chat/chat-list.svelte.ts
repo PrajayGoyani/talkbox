@@ -221,6 +221,7 @@ export class ChatListStore implements IChatListStore {
       return (b._lastUpdateTs || 0) - (a._lastUpdateTs || 0);
     });
 
+    // oxlint-disable-next-line no-self-assign
     this.chats = this.chats;
   }
 }

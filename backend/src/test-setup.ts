@@ -1,5 +1,3 @@
-import { vi } from "vitest";
-
 // Mock environment variables required by @config/env
 process.env.ALLOWED_ORIGINS = "*";
 process.env.JWT_SECRET_KEY = "test_secret";

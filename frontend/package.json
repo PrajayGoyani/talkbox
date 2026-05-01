@@ -4,12 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vp run --cache build-task",
+    "build": "bunx --bun vp run --cache build-task",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsgo -p tsconfig.bun.json",
-    "dev": "vp dev",
-    "fmt": "vp fmt",
-    "fmt:check": "vp fmt --check",
-    "preview": "vp preview"
+    "dev": "bunx --bun vp dev",
+    "fmt": "bunx --bun vp fmt",
+    "fmt:check": "bunx --bun vp fmt --check",
+    "preview": "bunx --bun vp preview",
+    "test": "bunx --bun vp test"
   },
   "dependencies": {
     "@root/shared": "workspace:*",

@@ -1,5 +1,4 @@
-import type { UserDto } from "@root/shared/types/auth.dto";
-import type { ChatDto, MessageDto, MessageAlertDto } from "@root/shared/types/chat.dto";
+import type { ChatDto, MessageAlertDto } from "@root/shared/types/chat.dto";
 
 export type ChatStatus = ChatDto["status"];
 

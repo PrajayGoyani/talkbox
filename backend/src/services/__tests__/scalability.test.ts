@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
 import { redisService } from "@services/redis.service";

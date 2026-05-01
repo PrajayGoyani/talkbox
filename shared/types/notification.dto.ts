@@ -8,10 +8,10 @@ export type NotificationType =
  * Notification Data Transfer Object.
  */
 export interface NotificationDto {
-  _id: string | any;
-  recipientId: string | any;
+  _id: string;
+  recipientId: string;
   senderId: {
-    _id: string | any;
+    _id: string;
     username: string;
     email: string;
     avatar_url: string;

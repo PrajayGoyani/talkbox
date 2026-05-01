@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import Chat from "@models/chat.model";
 import { socketService } from "@services/socket.service";
 import { bench, describe, vi } from "vitest";

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { FREE_PLAN_CHAT_LIMIT, FREE_PLAN_SCRUB_DAYS } from "@config/env";
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";

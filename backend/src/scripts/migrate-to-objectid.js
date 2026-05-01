@@ -27,7 +27,7 @@ async function migrate() {
         try {
           update[field] = new mongoose.Types.ObjectId(doc[field]);
         } catch {
-          console.warn(`Skipping invalid ${field} value: ${doc[field]} in chat ${doc._id}`);
+          console.warn(`Skipping invalid ${field} value: ${doc[field]} in chat ${doc._id.toString()}`);
         }
       }
     }
@@ -43,7 +43,7 @@ async function migrate() {
             participantsChanged = true;
             return new mongoose.Types.ObjectId(p);
           } catch {
-            console.warn(`Skipping invalid participant value: ${p} in chat ${doc._id}`);
+            console.warn(`Skipping invalid participant value: ${p} in chat ${doc._id.toString()}`);
             return p;
           }
         }
@@ -72,7 +72,7 @@ async function migrate() {
           update.userB = sorted[1];
           if (doc.isGroup === undefined) update.isGroup = false;
         } catch (e) {
-          console.warn(`Failed to populate participants for chat ${doc._id}: ${e.message}`);
+          console.warn(`Failed to populate participants for chat ${doc._id.toString()}: ${e.message}`);
         }
       }
     }
@@ -82,7 +82,7 @@ async function migrate() {
       try {
         update["lastMessage.senderId"] = new mongoose.Types.ObjectId(doc.lastMessage.senderId);
       } catch {
-        console.warn(`Skipping invalid lastMessage.senderId in chat ${doc._id}`);
+        console.warn(`Skipping invalid lastMessage.senderId in chat ${doc._id.toString()}`);
       }
     }
 
@@ -106,7 +106,7 @@ async function migrate() {
         try {
           update[field] = new mongoose.Types.ObjectId(doc[field]);
         } catch {
-          console.warn(`Skipping invalid ${field} value: ${doc[field]} in message ${doc._id}`);
+          console.warn(`Skipping invalid ${field} value: ${doc[field]} in message ${doc._id.toString()}`);
         }
       }
     }
