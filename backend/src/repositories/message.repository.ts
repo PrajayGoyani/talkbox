@@ -1,5 +1,5 @@
 import Message, { IMessage, IMessageModel } from "@models/message.model";
-import { MessageDto } from "@root/shared/types/chat.dto";
+import { MessageDto } from "@shared/types/chat.dto";
 import { getScrubCutoff } from "@utils/date.utils";
 import { extractEmojiMetadata } from "@utils/emoji.utils";
 import { ObjectId } from "mongodb";

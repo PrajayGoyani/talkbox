@@ -2,12 +2,12 @@
   import EmojiPicker from "$components/chat/EmojiPicker.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
-  import { isWithinModificationWindow as sharedIsWithinModificationWindow } from "@root/shared/utils/message";
   import { chatStore } from "$state/chat.svelte";
-  import type { MessageDto } from "@root/shared/types/chat.dto";
   import { confirmStore } from "$state/confirm.svelte";
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
+  import type { MessageDto } from "@shared/types/chat.dto";
+  import { isWithinModificationWindow as sharedIsWithinModificationWindow } from "@shared/utils/message";
 
   let {
     msg,

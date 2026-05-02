@@ -1,13 +1,13 @@
 import { RATE_LIMIT_DEFAULT_WINDOW_MS, RATE_LIMIT_SOCKET_MESSAGE_MAX, REACTIONS_MAX_UNIQUE } from "@config/env";
 import { ChatRepository } from "@repositories/chat.repository";
 import { MessageRepository } from "@repositories/message.repository";
-import { MessageReactionUpdateDto } from "@root/shared/types/chat.dto";
-import { getDisallowedEmojis } from "@root/shared/utils/emoji";
 import { messageService } from "@services/chat/message.service";
 import { redisService } from "@services/redis.service";
+import { MessageReactionUpdateDto } from "@shared/types/chat.dto";
+import { getDisallowedEmojis } from "@shared/utils/emoji";
 import { isScrubbed } from "@utils/date.utils";
 import { getCanonicalSlug } from "@utils/emoji.utils";
-import { eventBus, CHAT_EVENTS } from "@utils/event-bus";
+import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
 import { Types } from "mongoose";
 
 import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
@@ -19,10 +19,7 @@ export class ReactionHandler {
     private messageRepo: MessageRepository,
   ) {}
 
-  async handleReaction(
-    sender: AuthenticatedSocketUser,
-    payload: { messageId: string; emoji: string; slug?: string },
-  ) {
+  async handleReaction(sender: AuthenticatedSocketUser, payload: { messageId: string; emoji: string; slug?: string }) {
     const { messageId, emoji, slug } = payload;
     const io = this.ioProvider();
 

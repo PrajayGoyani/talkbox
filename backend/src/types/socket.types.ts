@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-export type { ServerToClientEvents, ClientToServerEvents } from "@root/shared/types/socket.dto";
+export type { ClientToServerEvents, ServerToClientEvents } from "@shared/types/socket.dto";
 
 /**
  * Payload decoded from JWT token during socket connection.
@@ -36,14 +36,14 @@ export interface InterServerEvents {}
  * Fully typed Socket and Server instances.
  */
 export type TypedSocket = Socket<
-  import("@root/shared/types/socket.dto").ClientToServerEvents,
-  import("@root/shared/types/socket.dto").ServerToClientEvents,
+  import("@shared/types/socket.dto").ClientToServerEvents,
+  import("@shared/types/socket.dto").ServerToClientEvents,
   InterServerEvents,
   SocketData
 >;
 export type TypedIO = Server<
-  import("@root/shared/types/socket.dto").ClientToServerEvents,
-  import("@root/shared/types/socket.dto").ServerToClientEvents,
+  import("@shared/types/socket.dto").ClientToServerEvents,
+  import("@shared/types/socket.dto").ServerToClientEvents,
   InterServerEvents,
   SocketData
 >;

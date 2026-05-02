@@ -1,4 +1,4 @@
-import type { MessageAlertDto } from "@root/shared/types/chat.dto";
+import type { MessageAlertDto } from "@shared/types/chat.dto";
 
 import { ASSETS } from "$lib/config";
 import { messageStore } from "$state/active-chat.svelte";

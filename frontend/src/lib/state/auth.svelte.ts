@@ -1,5 +1,5 @@
-import type { ApiResponse } from "@root/shared/types/api.dto";
-import type { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from "@root/shared/types/auth.dto";
+import type { ApiResponse } from "@shared/types/api.dto";
+import type { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from "@shared/types/auth.dto";
 
 import { API_BASE } from "$lib/config";
 import { ApiError } from "$utils/errors";

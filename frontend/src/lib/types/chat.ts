@@ -1,6 +1,6 @@
-import type { ChatDto, MessageDto, MessageAlertDto } from "@root/shared/types/chat.dto";
+import type { ChatDto, MessageAlertDto, MessageDto } from "@shared/types/chat.dto";
 
-export type { ChatDto, MessageDto, MessageAlertDto };
+export type { ChatDto, MessageAlertDto, MessageDto };
 
 export type ChatStatus = ChatDto["status"];
 

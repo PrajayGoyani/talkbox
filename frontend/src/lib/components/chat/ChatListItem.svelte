@@ -5,8 +5,8 @@
   import { cn } from "$lib/utils/cn";
   import { authStore } from "$state/auth.svelte";
   import { chatStore, type Chat, type ChatStatus } from "$state/chat.svelte";
-  import type { UserDto } from "@root/shared/types/auth.dto";
   import { formatListTime } from "$utils/date";
+  import type { UserDto } from "@shared/types/auth.dto";
 
   interface Props {
     chat: Chat;
@@ -32,7 +32,9 @@
     onReject,
   }: Props = $props();
 
-  const displayName = $derived(chat.otherUser?.name || chat.otherUser?.username || "Unknown");
+  const displayName = $derived(
+    chat.otherUser?.name || chat.otherUser?.username || "Unknown",
+  );
   const typingUsers = $derived(chatStore.typingStatus.get(chat.id));
   const isTyping = $derived(
     (typingUsers?.size ?? 0) > 0 && !typingUsers?.has(authStore.user?.id || ""),
@@ -40,7 +42,9 @@
 
   const isActive = $derived(activeChatId === chat.id);
   const isPending = $derived(chat.status === "pending");
-  const isIncomingRequest = $derived(isPending && chat.createdBy !== authStore.user?.id);
+  const isIncomingRequest = $derived(
+    isPending && chat.createdBy !== authStore.user?.id,
+  );
 </script>
 
 <div class="relative group">
@@ -52,8 +56,12 @@
     )}
     role="button"
     tabindex="0"
-    onclick={() => chat.otherUser && onSelect(chat.id, chat.otherUser, chat.status)}
-    onkeydown={(e) => e.key === "Enter" && chat.otherUser && onSelect(chat.id, chat.otherUser, chat.status)}
+    onclick={() =>
+      chat.otherUser && onSelect(chat.id, chat.otherUser, chat.status)}
+    onkeydown={(e) =>
+      e.key === "Enter" &&
+      chat.otherUser &&
+      onSelect(chat.id, chat.otherUser, chat.status)}
     oncontextmenu={(e) => onContextMenu(e, chat)}
   >
     <!-- Pinned Indicator -->
@@ -95,7 +103,9 @@
 
       {#if isPending}
         <span class="text-xs text-amber-500 italic truncate mt-0.5">
-          {chat.createdBy === authStore.user?.id ? "Request sent" : "Incoming request"}
+          {chat.createdBy === authStore.user?.id
+            ? "Request sent"
+            : "Incoming request"}
         </span>
       {:else if isTyping}
         <div class="flex items-center gap-2 mt-0.5">
@@ -120,7 +130,9 @@
           </span>
         </span>
       {:else}
-        <span class="text-xs text-slate-500 truncate mt-0.5">No messages yet</span>
+        <span class="text-xs text-slate-500 truncate mt-0.5"
+          >No messages yet</span
+        >
       {/if}
     </div>
 

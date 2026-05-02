@@ -3,15 +3,11 @@
   import Icon from "$components/ui/Icon.svelte";
   import { authStore } from "$state/auth.svelte";
   import { chatStore } from "$state/chat.svelte";
+  import { USERNAME_ERROR } from "@shared/constants/validation";
+  import { isValidUsername } from "@shared/utils/validation";
   import { onMount } from "svelte";
   import { quintOut } from "svelte/easing";
   import { slide } from "svelte/transition";
-  import {
-    isValidUsername,
-  } from "@root/shared/utils/validation";
-  import {
-    USERNAME_ERROR,
-  } from "@root/shared/constants/validation";
 
   let loading = $state(false);
   let error = $state<string | null>(null);
@@ -170,7 +166,8 @@
         <div class="text-sm text-slate-500 py-2">No incoming requests</div>
       {:else}
         {#each incomingRequests as chat (chat.id)}
-          {@const displayName = chat.otherUser?.name || chat.otherUser?.username || "Unknown"}
+          {@const displayName =
+            chat.otherUser?.name || chat.otherUser?.username || "Unknown"}
           <div transition:slide={{ duration: 300, easing: quintOut }}>
             <div
               class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
@@ -236,7 +233,8 @@
         <div class="text-sm text-slate-500 py-2">No pending sent requests</div>
       {:else}
         {#each outgoingRequests as chat (chat.id)}
-          {@const displayName = chat.otherUser?.name || chat.otherUser?.username || "Unknown"}
+          {@const displayName =
+            chat.otherUser?.name || chat.otherUser?.username || "Unknown"}
           <div transition:slide={{ duration: 300, easing: quintOut }}>
             <div
               class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"

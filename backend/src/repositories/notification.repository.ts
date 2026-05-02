@@ -1,5 +1,5 @@
 import Notification, { INotificationModel } from "@models/notification.model";
-import { NotificationDto } from "@root/shared/types/notification.dto";
+import { NotificationDto } from "@shared/types/notification.dto";
 import { ObjectId } from "mongodb";
 
 export class NotificationRepository {

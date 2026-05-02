@@ -11,7 +11,7 @@ interface CreateNotificationDto {
   message: string;
 }
 
-import type { NotificationResponseDto } from "@root/shared/types/notification.dto";
+import type { NotificationResponseDto } from "@shared/types/notification.dto";
 
 class NotificationService {
   constructor(private repository: NotificationRepository) {}

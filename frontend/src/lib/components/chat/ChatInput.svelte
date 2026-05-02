@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { tick } from "svelte";
   import EmojiPicker from "$components/chat/EmojiPicker.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
-  import { chatStore } from "$state/chat.svelte";
-  import type { UserDto } from "@root/shared/types/auth.dto";
   import { messageStore } from "$state/active-chat.svelte";
+  import { chatStore } from "$state/chat.svelte";
+  import type { UserDto } from "@shared/types/auth.dto";
+  import { tick } from "svelte";
 
   import { uiStore } from "$state/ui.svelte";
   import { getDisallowedEmojis } from "$utils/emoji";
@@ -14,7 +14,7 @@
     chatId,
     otherUser,
     isTouchDevice,
-    onSend
+    onSend,
   }: {
     chatId: string;
     otherUser: UserDto | null;
@@ -31,8 +31,8 @@
   };
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || messageStore.isSendingMessage || !otherUser) return;
-
+    if (!messageInput.trim() || messageStore.isSendingMessage || !otherUser)
+      return;
 
     const found = getDisallowedEmojis(messageInput.trim());
     if (found.length > 0) {
@@ -96,10 +96,11 @@
       });
     }
   });
-
 </script>
 
-<div class="p-2.5 md:p-4 glass-panel border-t flex gap-2 md:gap-3 items-center relative z-40">
+<div
+  class="p-2.5 md:p-4 glass-panel border-t flex gap-2 md:gap-3 items-center relative z-40"
+>
   <Popover bind:isOpen={showEmojiPicker} position="top" align="start">
     {#snippet trigger({ toggle })}
       <button
@@ -133,10 +134,11 @@
     disabled={!messageInput.trim() || messageStore.isSendingMessage}
   >
     {#if messageStore.isSendingMessage}
-      <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+      <span
+        class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+      ></span>
     {:else}
       <Icon name="send" class="w-5 h-5" />
     {/if}
-
   </button>
 </div>

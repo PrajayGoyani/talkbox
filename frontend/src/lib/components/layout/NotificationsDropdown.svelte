@@ -2,8 +2,8 @@
   import NotificationSkeleton from "$components/layout/NotificationSkeleton.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import { notificationStore } from "$state/notification.svelte";
-  import type { NotificationDto } from "@root/shared/types/notification.dto";
   import { formatTimeAgo } from "$utils/date";
+  import type { NotificationDto } from "@shared/types/notification.dto";
   import { onMount, untrack } from "svelte";
   import { quintOut } from "svelte/easing";
   import { fade, fly, slide } from "svelte/transition";

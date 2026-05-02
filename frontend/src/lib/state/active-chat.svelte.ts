@@ -1,7 +1,7 @@
-import type { MessageDto, MessageReactionUpdateDto } from "@root/shared/types/chat.dto";
+import type { MessageDto, MessageReactionUpdateDto } from "@shared/types/chat.dto";
 
 import { chatService } from "$services/chat.service";
-import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
+import { RealtimeEvent, realtimeEvents } from "$services/realtime-events";
 
 const LOADER_AWAIT_MS = 300;
 

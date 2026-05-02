@@ -1,13 +1,12 @@
-import type { UserDto } from "@root/shared/types/auth.dto";
+import type { UserDto } from "@shared/types/auth.dto";
 import type {
   MessageAckDto,
-  MessageAlertDto,
   MessageDto,
   MessageReactionUpdateDto,
   TypingIndicatorDto,
   UserStatusDto,
-} from "@root/shared/types/chat.dto";
-import type { NotificationDto } from "@root/shared/types/notification.dto";
+} from "@shared/types/chat.dto";
+import type { NotificationDto } from "@shared/types/notification.dto";
 import type { Socket } from "socket.io-client";
 
 import { authStore } from "$state/auth.svelte";
@@ -16,12 +15,8 @@ import { routerStore } from "$state/router.svelte";
 import { uiStore } from "$state/ui.svelte";
 import { getDisallowedEmojis } from "$utils/emoji";
 
-import {
-  API_ROOT,
-  MESSAGE_SEND_FALLBACK_TIMEOUT,
-  TYPING_DEBOUNCE_DURATION,
-} from "../config";
-import { realtimeEvents, RealtimeEvent } from "./realtime-events";
+import { API_ROOT, MESSAGE_SEND_FALLBACK_TIMEOUT, TYPING_DEBOUNCE_DURATION } from "../config";
+import { RealtimeEvent, realtimeEvents } from "./realtime-events";
 
 /**
  * Manages the Socket.io connection and translates raw socket events

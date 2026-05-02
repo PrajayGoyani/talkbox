@@ -1,5 +1,5 @@
 import { IChat } from "@models/chat.model";
-import { ChatListingResponseDto, MessageDto } from "@root/shared/types/chat.dto";
+import { ChatListingResponseDto, MessageDto } from "@shared/types/chat.dto";
 import { ObjectId } from "mongodb";
 
 export interface IChatListingService {

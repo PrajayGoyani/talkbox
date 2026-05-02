@@ -4,7 +4,7 @@
   import { Route } from "$lib/utils/routes";
   import { authStore } from "$state/auth.svelte";
   import { routerStore } from "$state/router.svelte";
-  import { USERNAME_ERROR, USERNAME_REGEX } from "@root/shared/constants/validation";
+  import { USERNAME_ERROR, USERNAME_REGEX } from "@shared/constants/validation";
 
   const { toggleLogin } = $props<{ toggleLogin: any }>();
 
@@ -53,7 +53,8 @@
     } else if (password.length < 8) {
       errors.password = "Password must be at least 8 characters";
     } else if (password !== password.trim()) {
-      errors.password = "Leading or trailing spaces are not allowed in password";
+      errors.password =
+        "Leading or trailing spaces are not allowed in password";
     }
 
     if (!confirmPassword)
@@ -88,7 +89,9 @@
 <div class="auth-card">
   <div class="text-center">
     <h1 class="auth-title">
-      {routerStore.params.intent === "pro" ? "Get Started with Pro" : "Create Account"}
+      {routerStore.params.intent === "pro"
+        ? "Get Started with Pro"
+        : "Create Account"}
     </h1>
     <!-- <div class="flex flex-col items-center gap-3 mb-2">
       <img src="/favicon.png" alt="Talkbox Logo" class="w-16 h-16 rounded-2xl shadow-lg ring-4 ring-indigo-600/10" />
@@ -154,9 +157,9 @@
           aria-label={showPassword ? "Hide password" : "Show password"}
         >
           {#if showPassword}
-            <Icon name="eye-off" class="w-[18px] h-[18px]" />
+            <Icon name="eye-off" class="w-4.5 h-4.5" />
           {:else}
-            <Icon name="eye" class="w-[18px] h-[18px]" />
+            <Icon name="eye" class="w-4.5 h-4.5" />
           {/if}
         </button>
       {/snippet}
@@ -179,9 +182,9 @@
           aria-label={showConfirmPassword ? "Hide password" : "Show password"}
         >
           {#if showConfirmPassword}
-            <Icon name="eye-off" class="w-[18px] h-[18px]" />
+            <Icon name="eye-off" class="w-4.5 h-4.5" />
           {:else}
-            <Icon name="eye" class="w-[18px] h-[18px]" />
+            <Icon name="eye" class="w-4.5 h-4.5" />
           {/if}
         </button>
       {/snippet}

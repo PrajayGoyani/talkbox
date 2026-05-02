@@ -1,8 +1,8 @@
 <script lang="ts">
   import Avatar from "$components/ui/Avatar.svelte";
   import Icon from "$components/ui/Icon.svelte";
-  import type { UserDto } from "@root/shared/types/auth.dto";
   import { tooltipStore } from "$state/tooltip.svelte";
+  import type { UserDto } from "@shared/types/auth.dto";
 
   let {
     user,
@@ -29,7 +29,9 @@
 </script>
 
 <div class="h-full flex flex-col bg-white dark:bg-slate-900">
-  <div class="panel-header flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-white/5">
+  <div
+    class="panel-header flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-white/5"
+  >
     <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
       User Info
     </h2>
@@ -55,7 +57,9 @@
           {user?.name || user?.username}
         </h3>
         {#if user?.plan === "pro"}
-          <span class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-linear-to-r from-indigo-600 to-purple-600 text-[10px] font-black text-white rounded uppercase tracking-tighter shadow-sm">
+          <span
+            class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-linear-to-r from-indigo-600 to-purple-600 text-[10px] font-black text-white rounded uppercase tracking-tighter shadow-sm"
+          >
             <Icon name="bolt" class="w-3 h-3" />
             Pro Member
           </span>
@@ -64,13 +68,19 @@
     </div>
 
     <!-- Info List -->
-    <div class="flex flex-col gap-5 pt-4 border-t border-slate-100 dark:border-white/5">
+    <div
+      class="flex flex-col gap-5 pt-4 border-t border-slate-100 dark:border-white/5"
+    >
       <!-- Username -->
       <div class="flex flex-col gap-1.5">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+        <span
+          class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
+        >
           Username
         </span>
-        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+        <div
+          class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5"
+        >
           <span class="font-mono text-sm text-indigo-600 dark:text-indigo-400">
             @{user?.username}
           </span>
@@ -90,10 +100,14 @@
 
       <!-- Bio -->
       <div class="flex flex-col gap-1.5">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+        <span
+          class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
+        >
           Bio
         </span>
-        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">
+        <p
+          class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap"
+        >
           {user?.bio || "This user hasn't added a bio yet."}
         </p>
       </div>

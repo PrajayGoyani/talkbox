@@ -6,11 +6,11 @@
     MESSAGE_SKELETON_HEIGHT,
     SCROLL_THROTTLE_DURATION,
   } from "$lib/config";
-  import { authStore } from "$state/auth.svelte";
-  import { chatStore, type ChatStatus } from "$state/chat.svelte";
-  import type { MessageDto } from "@root/shared/types/chat.dto";
-  import type { UserDto } from "@root/shared/types/auth.dto";
   import { messageStore } from "$state/active-chat.svelte";
+  import { authStore } from "$state/auth.svelte";
+  import { type ChatStatus } from "$state/chat.svelte";
+  import type { UserDto } from "@shared/types/auth.dto";
+  import type { MessageDto } from "@shared/types/chat.dto";
 
   import { getDateLabel } from "$utils/date";
   import { throttle } from "$utils/timing";
@@ -63,7 +63,11 @@
     let lastDateKey = "";
 
     for (const msg of messageStore.messages) {
-      const dateKey = (typeof msg.createdAt === 'string' ? msg.createdAt : msg.createdAt.toISOString()).slice(0, 10);
+      const dateKey = (
+        typeof msg.createdAt === "string"
+          ? msg.createdAt
+          : msg.createdAt.toISOString()
+      ).slice(0, 10);
       if (groups.length === 0 || dateKey !== lastDateKey) {
         groups.push({
           label: getDateLabel(msg.createdAt),
@@ -76,7 +80,6 @@
     }
     return groups;
   });
-
 
   export const scrollToBottom = (instant = false) => {
     if (messagesContainer) {
@@ -129,7 +132,6 @@
             }
           });
         }
-
       },
       {
         root: messagesContainer,
@@ -147,7 +149,6 @@
       scrollToBottom(true);
     }
   });
-
 
   // Use a resize observer to keep skeleton count accurate
   onMount(() => {
@@ -174,7 +175,6 @@
         {/each}
       </div>
     {:else if messageStore.messages.length === 0}
-
       <div
         class="flex flex-col items-center justify-center gap-4 h-full text-slate-500 opacity-60 text-center py-20"
       >
@@ -197,7 +197,6 @@
           <MessageSkeleton sent={true} />
         </div>
       {/if}
-
 
       {#each groupedMessages as group (group.label)}
         <div class="flex flex-col gap-1 mb-4 relative">

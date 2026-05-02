@@ -1,5 +1,5 @@
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
-import { ChatDto, ChatListingResponseDto } from "@root/shared/types/chat.dto";
+import { ChatDto, ChatListingResponseDto } from "@shared/types/chat.dto";
 import { ObjectId } from "mongodb";
 
 import { IChatListingService } from "./types";

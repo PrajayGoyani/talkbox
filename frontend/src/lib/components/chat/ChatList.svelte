@@ -3,15 +3,11 @@
   import ChatListItem from "$components/chat/ChatListItem.svelte";
   import ChatListSkeleton from "$components/chat/ChatListSkeleton.svelte";
   import Icon from "$components/ui/Icon.svelte";
-  import {
-    chatStore,
-    type Chat,
-    type ChatStatus,
-  } from "$state/chat.svelte";
-  import type { UserDto } from "@root/shared/types/auth.dto";
-  import { onMount, untrack } from "svelte";
-  import { debounce } from "$utils/timing";
   import { CHAT_SEARCH_DEBOUNCE } from "$lib/config";
+  import { chatStore, type Chat, type ChatStatus } from "$state/chat.svelte";
+  import { debounce } from "$utils/timing";
+  import type { UserDto } from "@shared/types/auth.dto";
+  import { onMount, untrack } from "svelte";
 
   let {
     activeChatId: _activeChatId = null,
@@ -20,7 +16,11 @@
     searchQuery: _searchQuery = "",
   } = $props<{
     activeChatId?: string | null;
-    onSelectChat: (chatId: string, otherUser: UserDto, status: ChatStatus) => void;
+    onSelectChat: (
+      chatId: string,
+      otherUser: UserDto,
+      status: ChatStatus,
+    ) => void;
     activeTab?: "all" | "unread";
     searchQuery?: string;
   }>();

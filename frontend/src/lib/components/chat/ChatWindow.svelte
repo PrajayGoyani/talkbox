@@ -3,13 +3,12 @@
   import ChatInput from "$components/chat/ChatInput.svelte";
   import MessageList from "$components/chat/MessageList.svelte";
   import Icon from "$components/ui/Icon.svelte";
+  import { messageStore } from "$state/active-chat.svelte";
   import { authStore } from "$state/auth.svelte";
   import { chatStore, type ChatStatus } from "$state/chat.svelte";
-  import type { MessageDto } from "@root/shared/types/chat.dto";
-  import type { UserDto } from "@root/shared/types/auth.dto";
-  import { messageStore } from "$state/active-chat.svelte";
+  import type { UserDto } from "@shared/types/auth.dto";
+  import type { MessageDto } from "@shared/types/chat.dto";
   import { tick } from "svelte";
-
 
   let {
     chatId,
@@ -59,7 +58,6 @@
 
   const saveEditing = async (msgId: string) => {
     const msg = messageStore.messages.find((m: MessageDto) => m.id === msgId);
-
 
     if (!msg || editInputValue.trim() === msg.contentBody) {
       cancelEditing();

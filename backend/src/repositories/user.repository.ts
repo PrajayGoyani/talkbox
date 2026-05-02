@@ -1,5 +1,5 @@
 import User, { IUser, IUserModel } from "@models/user.model";
-import { UserDto } from "@root/shared/types/auth.dto";
+import { UserDto } from "@shared/types/auth.dto";
 import { ObjectId } from "mongodb";
 
 export class UserRepository {

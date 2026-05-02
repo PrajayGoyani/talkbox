@@ -1,4 +1,4 @@
-import { ChatListingResponseDto, MessageDto } from "@root/shared/types/chat.dto";
+import { ChatListingResponseDto, MessageDto } from "@shared/types/chat.dto";
 
 import { chatActionService } from "./chat/chat-action.service";
 import { chatListingService } from "./chat/chat-listing.service";
@@ -11,19 +11,11 @@ import { messageService } from "./chat/message.service";
  */
 class ChatService {
   // --- Listings ---
-  async getChatListing(
-    userId: string,
-    limit?: number,
-    cursor?: string | null,
-  ): Promise<ChatListingResponseDto> {
+  async getChatListing(userId: string, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto> {
     return chatListingService.getChatListing(userId, limit, cursor);
   }
 
-  async getChatRequests(
-    userId: string,
-    limit?: number,
-    cursor?: string | null,
-  ): Promise<ChatListingResponseDto> {
+  async getChatRequests(userId: string, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto> {
     return chatListingService.getChatRequests(userId, limit, cursor);
   }
 

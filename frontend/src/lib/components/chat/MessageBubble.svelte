@@ -10,8 +10,8 @@
     parseMessageContent,
     type MessageSegment,
   } from "$utils/emoji";
-  import type { UserDto } from "@root/shared/types/auth.dto";
-  import type { MessageDto } from "@root/shared/types/chat.dto";
+  import type { UserDto } from "@shared/types/auth.dto";
+  import type { MessageDto } from "@shared/types/chat.dto";
 
   type Props = {
     msg: MessageDto;

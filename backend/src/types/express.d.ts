@@ -1,4 +1,4 @@
-import { UserDto } from "@root/shared/types/auth.dto";
+import { UserDto } from "@shared/types/auth.dto";
 
 declare global {
   namespace Express {

@@ -1,4 +1,4 @@
-import type { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from "@root/shared/types/auth.dto";
+import type { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from "@shared/types/auth.dto";
 
 import { getAgenda } from "@config/agenda";
 import { RESET_TOKEN_TTL, VERIFY_TOKEN_TTL } from "@config/env";

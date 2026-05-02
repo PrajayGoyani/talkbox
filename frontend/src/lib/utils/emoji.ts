@@ -1,4 +1,4 @@
-import { getDisallowedEmojis as sharedGetDisallowedEmojis } from "@root/shared/utils/emoji";
+import { getDisallowedEmojis as sharedGetDisallowedEmojis } from "@shared/utils/emoji";
 
 export interface MessageSegment {
   type: "text" | "emoji" | "link" | "code";

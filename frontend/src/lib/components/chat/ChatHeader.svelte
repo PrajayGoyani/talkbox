@@ -5,7 +5,7 @@
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { formatTimeAgo } from "$utils/date";
-  import type { UserDto } from "@root/shared/types/auth.dto";
+  import type { UserDto } from "@shared/types/auth.dto";
 
   let {
     otherUser,

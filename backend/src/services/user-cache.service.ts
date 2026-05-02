@@ -1,6 +1,6 @@
 import { UserRepository, userRepository } from "@repositories/user.repository";
-import { UserDto } from "@root/shared/types/auth.dto";
 import { redisService } from "@services/redis.service";
+import { UserDto } from "@shared/types/auth.dto";
 import { LRUCache } from "lru-cache";
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache

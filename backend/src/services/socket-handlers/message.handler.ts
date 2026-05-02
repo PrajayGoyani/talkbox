@@ -1,11 +1,10 @@
-import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
-import { MessageDto } from "@root/shared/types/chat.dto";
 import { messageService } from "@services/chat/message.service";
+import { MessageDto } from "@shared/types/chat.dto";
+
+import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
 
 export class MessageHandler {
-  constructor(
-    private ioProvider: () => TypedIO | null,
-  ) {}
+  constructor(private ioProvider: () => TypedIO | null) {}
 
   async saveAndDeliver(
     sender: AuthenticatedSocketUser,

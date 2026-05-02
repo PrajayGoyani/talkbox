@@ -1,4 +1,4 @@
-import type { ChatListingResponseDto, MessageDto } from "@root/shared/types/chat.dto";
+import type { ChatListingResponseDto, MessageDto } from "@shared/types/chat.dto";
 
 import { API_BASE } from "$lib/config";
 import { authStore } from "$state/auth.svelte";

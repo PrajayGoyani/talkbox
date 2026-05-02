@@ -3,8 +3,8 @@ import type {
   LoginRequestDto,
   ResetPasswordRequestDto,
   SignupRequestDto,
-} from "@root/shared/types/auth.dto";
-import type { AcceptChatRequestDto, RejectChatRequestDto } from "@root/shared/types/chat.dto";
+} from "@shared/types/auth.dto";
+import type { AcceptChatRequestDto, RejectChatRequestDto } from "@shared/types/chat.dto";
 
 import { Request } from "express";
 

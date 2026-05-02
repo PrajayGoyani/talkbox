@@ -1,5 +1,5 @@
 import Chat, { IChat, IChatModel } from "@models/chat.model";
-import { ChatDto } from "@root/shared/types/chat.dto";
+import { ChatDto } from "@shared/types/chat.dto";
 import { ObjectId } from "mongodb";
 
 export class ChatRepository {
@@ -246,7 +246,10 @@ export class ChatRepository {
   }
 
   public async updateById(id: string | ObjectId, update: any, options: any = {}): Promise<IChat | null> {
-    return this.chatModel.findByIdAndUpdate(id, update, { ...options, returnDocument: "after" }) as Promise<IChat | null>;
+    return this.chatModel.findByIdAndUpdate(id, update, {
+      ...options,
+      returnDocument: "after",
+    }) as Promise<IChat | null>;
   }
 
   // ─── Partner & Presence Helpers ────────────────────────────────────

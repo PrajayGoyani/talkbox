@@ -1,4 +1,4 @@
-import { USERNAME_ERROR, USERNAME_REGEX } from "@root/shared/constants/validation";
+import { USERNAME_ERROR, USERNAME_REGEX } from "@shared/constants/validation";
 import { z } from "zod";
 
 /**
