@@ -16,7 +16,7 @@
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "emoji-picker-element": "^1.29.1",
-    "shared": "workspace:*",
+    "shared": "*",
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^2.6.1"
   },

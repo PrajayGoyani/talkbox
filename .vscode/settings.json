@@ -18,8 +18,8 @@
   "editor.formatOnSaveMode": "file",
   "oxc.enable.oxfmt": true,
   "oxc.enable.oxlint": true,
-  "oxc.configPath": "./frontend/vite.config.ts",
-  "oxc.fmt.configPath": "./frontend/vite.config.ts",
+  "oxc.configPath": "./workspaces/apps/frontend/vite.config.ts",
+  "oxc.fmt.configPath": "./workspaces/apps/frontend/vite.config.ts",
   "search.exclude": {
     "pnpm-lock.yaml": true
   },

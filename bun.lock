@@ -37,7 +37,7 @@
         "multer-storage-cloudinary": "^4.0.0",
         "node-emoji": "^2.2.0",
         "nodemailer": "^8.0.7",
-        "shared": "workspace:*",
+        "shared": "*",
         "sharp": "^0.33.5",
         "socket.io": "^4.8.3",
         "zod": "^4.4.2",
@@ -59,7 +59,7 @@
         "canvas-confetti": "^1.9.4",
         "clsx": "^2.1.1",
         "emoji-picker-element": "^1.29.1",
-        "shared": "workspace:*",
+        "shared": "*",
         "socket.io-client": "^4.8.3",
         "tailwind-merge": "^2.6.1",
       },
@@ -77,6 +77,9 @@
     "workspaces/packages/shared": {
       "name": "shared",
     },
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
   },
   "packages": {
     "@agendajs/mongo-backend": ["@agendajs/mongo-backend@4.0.1", "", { "dependencies": { "debug": "^4.4.0" }, "peerDependencies": { "agenda": "6.2.4", "mongodb": "^6.0.0 || ^7.0.0" } }, "sha512-detHxM9m2wWzPawaBlGyTJkZe1KNsJYhYjB7iftfCPjubWYo7UCMno2/fRRNnhcodeK8NPXtlqn3aOI+AEBtaA=="],
