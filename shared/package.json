@@ -1,9 +1,0 @@
-{
-  "name": "@root/shared",
-  "type": "module",
-  "exports": {
-    "./types/*": "./types/*.ts",
-    "./constants/*": "./constants/*.ts",
-    "./utils/*": "./utils/*.ts"
-  }
-}

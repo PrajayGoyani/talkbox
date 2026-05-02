@@ -21,8 +21,8 @@ install:
 # Unified build command (incremental)
 build:
 	@echo "Building applications..."
-	cd backend && bun run build
-	cd frontend && bun run build
+	cd workspaces/apps/backend && bun run build
+	cd workspaces/apps/frontend && bun run build
 	@echo "Build complete!"
 
 # Production Mode (Backend: start, Frontend: build + preview)

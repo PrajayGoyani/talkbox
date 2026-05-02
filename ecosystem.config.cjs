@@ -4,7 +4,7 @@ module.exports = {
   apps: [
     {
       name: "chat-app-backend",
-      cwd: "./backend",
+      cwd: "./workspaces/apps/backend",
       script: "bun",
       args: IS_DEV ? "run dev" : "run start",
       // watch: IS_DEV,
@@ -14,7 +14,7 @@ module.exports = {
     },
     {
       name: "chat-app-frontend",
-      cwd: "./frontend",
+      cwd: "./workspaces/apps/frontend",
       script: "bun",
       args: IS_DEV ? "run dev --host" : "run preview",
       env: {
