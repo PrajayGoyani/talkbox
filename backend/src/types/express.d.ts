@@ -1,12 +1,12 @@
-import { SanitizedUser } from "@services/auth.service";
+import { UserDto } from "@root/shared/types/auth.dto";
 
 declare global {
   namespace Express {
     export interface Request {
-      user?: SanitizedUser;
+      user?: UserDto;
     }
     export interface Response {
-      success: (data: any) => void;
+      success(data: any, statusCode?: number): this;
     }
   }
 }

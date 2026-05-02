@@ -22,7 +22,9 @@ describe("ChatController", () => {
       user: { id: "user123", plan: "free" },
     };
     res = {
-      success: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
+      success: vi.fn().mockReturnThis(),
     };
   });
 
@@ -35,7 +37,7 @@ describe("ChatController", () => {
 
       await getChatMessages(req, res);
 
-      expect(vi.spyOn(chatService, "getChatMessages")).toHaveBeenCalledWith("chat123", "user123", 30, "msg-456", "free");
+      expect(chatService.getChatMessages).toHaveBeenCalledWith("chat123", "user123", 30, "msg-456", "free");
       expect(res.success).toHaveBeenCalledWith(mockMessages);
     });
 
@@ -58,7 +60,7 @@ describe("ChatController", () => {
 
       await markChatRead(req, res);
 
-      expect(vi.spyOn(chatService, "markChatRead")).toHaveBeenCalledWith("chat123", "user123");
+      expect(chatService.markChatRead).toHaveBeenCalledWith("chat123", "user123");
       expect(res.success).toHaveBeenCalledWith(mockResult);
     });
   });

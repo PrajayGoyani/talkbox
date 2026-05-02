@@ -64,8 +64,8 @@ export class MessageRepository {
     } as MessageDto;
   }
 
-  public async create(data: Partial<IMessage>) {
-    return this.messageModel.create(data);
+  public async create(data: Partial<IMessage>, options: any = {}): Promise<IMessage> {
+    return new this.messageModel(data).save(options);
   }
 
   public async updateOne(query: Record<string, any>, update: any) {

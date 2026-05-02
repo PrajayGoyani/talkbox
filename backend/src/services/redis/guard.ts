@@ -31,7 +31,10 @@ export class RedisGuardService {
   }
 
   async isChatLocked(chatId: string): Promise<boolean> {
-    if (!this.client || !this.isConnected) return false;
+    if (!this.client || !this.isConnected) {
+      console.warn(`[RedisGuardService] Redis disconnected. Failing open for chat lockdown check: ${chatId}`);
+      return false;
+    }
     try {
       return (await this.client.sismember("lockdown:chats", chatId)) === 1;
     } catch (err) {
@@ -48,8 +51,8 @@ export class RedisGuardService {
     windowMs: number,
   ): Promise<{ allowed: boolean; current: number; ttl: number }> {
     if (!this.client || !this.isConnected) {
-      // Logic for fail-open is handled in the facade/base if needed,
-      // but here we just return safe defaults.
+      // Fail open: if redis is down, we allow the request to proceed to ensure app availability.
+      console.warn(`[RedisGuardService] Redis disconnected. Failing open for rate limit key: ${key}`);
       return { allowed: true, current: 0, ttl: windowMs };
     }
     try {
@@ -71,12 +74,15 @@ export class RedisGuardService {
       };
     } catch (err) {
       console.error("[RedisGuardService] Error incrementing rate limit counter:", err);
+      // Fail open
+      console.warn(`[RedisGuardService] Error occurred. Failing open for rate limit key: ${key}`);
       return { allowed: true, current: 0, ttl: windowMs };
     }
   }
 
   async checkAndSetIdempotency(key: string, ttlSeconds = 900): Promise<boolean> {
     if (!this.client || !this.isConnected) {
+      console.warn(`[RedisGuardService] Redis disconnected. Failing open for idempotency key: ${key}`);
       return true; // Fail open
     }
     try {
@@ -84,6 +90,7 @@ export class RedisGuardService {
       return res === "OK";
     } catch (err) {
       console.error("[RedisGuardService] Error checking idempotency key:", err);
+      console.warn(`[RedisGuardService] Error occurred. Failing open for idempotency key: ${key}`);
       return true; // Fail open
     }
   }

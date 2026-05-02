@@ -3,21 +3,24 @@ import { RedisGuardService } from "./redis/guard";
 import { RedisPresenceService } from "./redis/presence";
 import { RedisSessionService } from "./redis/session";
 
+const baseService = new RedisBaseService();
+export const redisPresenceService = new RedisPresenceService(baseService);
+export const redisSessionService = new RedisSessionService(baseService);
+export const redisGuardService = new RedisGuardService(baseService);
+
 /**
+ * @deprecated Use individual service exports instead (redisPresenceService, redisSessionService, redisGuardService).
  * Facade for decomposed Redis services.
  * Maintains backward compatibility with the existing API.
  */
 class RedisService {
-  private base: RedisBaseService;
-  private presence: RedisPresenceService;
-  private session: RedisSessionService;
-  private guard: RedisGuardService;
+  private base: RedisBaseService = baseService;
+  private presence: RedisPresenceService = redisPresenceService;
+  private session: RedisSessionService = redisSessionService;
+  private guard: RedisGuardService = redisGuardService;
 
   constructor() {
-    this.base = new RedisBaseService();
-    this.presence = new RedisPresenceService(this.base);
-    this.session = new RedisSessionService(this.base);
-    this.guard = new RedisGuardService(this.base);
+    // Shared via module instances
   }
 
   // Getters and setters for core properties (backward compatibility/tests)

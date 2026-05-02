@@ -29,6 +29,7 @@
       "@routes/*": ["./src/routes/*"],
       "@jobs/*": ["./src/jobs/*"],
       "@repositories/*": ["./src/repositories/*"],
+      "@constants/*": ["./src/constants/*"],
       "@shared/*": ["../shared/*"]
     }
   },

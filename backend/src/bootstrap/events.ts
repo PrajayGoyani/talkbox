@@ -1,5 +1,6 @@
 import { initChatEventListeners } from "./chat-events";
 import { initMessageEventListeners } from "./message-events";
+import { initSocketEventListeners } from "./socket-events";
 import { initUserEventListeners } from "./user-events";
 
 /**
@@ -9,5 +10,6 @@ import { initUserEventListeners } from "./user-events";
 export const initAllEventListeners = () => {
   initChatEventListeners();
   initMessageEventListeners();
+  initSocketEventListeners();
   initUserEventListeners();
 };

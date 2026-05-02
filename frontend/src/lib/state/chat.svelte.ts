@@ -2,7 +2,7 @@ import type { MessageAlertDto } from "@root/shared/types/chat.dto";
 import type { Socket } from "socket.io-client";
 
 import { chatService } from "$services/chat.service";
-import { SocketHandler } from "$services/socket-handler.svelte";
+import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
 import { SocketManager } from "$services/socket.manager.svelte";
 import { messageStore } from "$state/active-chat.svelte";
 
@@ -14,7 +14,7 @@ export * from "$lib/types/chat";
 /**
  * Facade for Chat-related state and actions.
  * Orchestrates multiple domain stores (messageStore, chatListStore, presenceStore)
- * and delegates socket management to SocketManager via SocketHandler.
+ * and coordinates with the SocketManager.
  */
 class ChatStore {
   // --- Delegated State ---
@@ -28,10 +28,10 @@ class ChatStore {
     return messageStore.isLoadingMessages;
   }
   get isSendingMessage() {
-    return this.socketHandler.isSendingMessage;
+    return this.socketManager.isSendingMessage;
   }
   set isSendingMessage(val: boolean) {
-    this.socketHandler.isSendingMessage = val;
+    this.socketManager.isSendingMessage = val;
   }
   get activeChatId() {
     return messageStore.activeChatId;
@@ -76,18 +76,16 @@ class ChatStore {
   lastError: string | null = $state(null);
 
   get isConnected() {
-    return this.socketHandler.isConnected;
+    return this.socketManager.isConnected;
   }
   set isConnected(val: boolean) {
-    this.socketHandler.isConnected = val;
+    this.socketManager.isConnected = val;
   }
 
   private socketManager: SocketManager;
-  private socketHandler: SocketHandler;
 
   constructor() {
-    this.socketHandler = new SocketHandler();
-    this.socketManager = new SocketManager(this.socketHandler);
+    this.socketManager = new SocketManager();
   }
 
   get socket(): Socket | null {
@@ -95,11 +93,25 @@ class ChatStore {
   }
 
   onRefreshChats(cb: () => void) {
-    this.socketHandler.setCallbacks({ onRefresh: cb });
+    realtimeEvents.on(RealtimeEvent.CHAT_ACCEPTED, cb);
+    realtimeEvents.on(RealtimeEvent.NOTIFICATION_RECEIVED, cb);
   }
 
   onToast(cb: (data: MessageAlertDto) => void) {
-    this.socketHandler.setCallbacks({ onToast: cb });
+    realtimeEvents.on(RealtimeEvent.MESSAGE_ALERT, (data) => {
+      const isChatOpen = data.chatId === messageStore.activeChatId;
+      if (!isChatOpen) cb(data);
+    });
+
+    realtimeEvents.on(RealtimeEvent.NOTIFICATION_RECEIVED, (notification) => {
+      if (notification.type === "chat_request") {
+        cb({
+          chatId: notification.referenceId,
+          senderUsername: "System",
+          preview: notification.message,
+        } as any);
+      }
+    });
   }
 
   // --- Connection ---
@@ -174,7 +186,6 @@ class ChatStore {
 
   // --- Socket Operations ---
   async sendMessage(chatId: string, receiverId: string, contentBody: string) {
-    this.socketHandler.isSendingMessage = true;
     this.socketManager.sendMessage(chatId, receiverId, contentBody);
   }
 

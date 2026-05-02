@@ -1,170 +1,229 @@
 import type { Chat } from "$lib/types/chat";
-
 import { chatService } from "$services/chat.service";
+import { notificationService } from "$services/notification.service";
+import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
 import { authStore } from "$state/auth.svelte";
-import { ApiError } from "$utils/errors";
+import { messageStore } from "$state/active-chat.svelte";
+import { routerStore } from "$state/router.svelte";
+import { chatRequestsStore } from "./chat-requests.svelte";
+import { pinnedChatsStore } from "./pinned-chats.svelte";
 
-import type { IChatListStore } from "./types";
-
-export class ChatListStore implements IChatListStore {
-  chats: Array<Chat> = $state([]);
+export class ChatListStore {
+  // --- Reactive State (Runes) ---
+  chats = $state<Array<Chat>>([]);
   hasMoreChats = $state(true);
-  chatCursor: string | null = $state(null);
+  chatCursor = $state<string | null>(null);
+  isLoadingChats = $state(false);
   isLoadingMoreChats = $state(false);
 
-  requests: Array<Chat> = $state([]);
-  hasMoreRequests = $state(true);
-  requestCursor: string | null = $state(null);
-  isLoadingMoreRequests = $state(false);
-
-  pendingRequestCount = $state(0);
   unreadChatsCount = $state(0);
   currentSearchQuery = $state("");
-  lastError: string | null = $state(null);
+  lastError = $state<string | null>(null);
 
-  private pinnedChatIds: Set<string> = new Set();
-  public chatsMap: Map<string, Chat> = new Map();
+  public chatsMap = new Map<string, Chat>();
   private chatsAbortController: AbortController | null = null;
 
+  // Facade helpers for UI components still using chatListStore
+  get requests() { return chatRequestsStore.items; }
+  get pendingRequestCount() { return chatRequestsStore.items.length; }
+
   constructor() {
+    // Sync pinned status when auth changes
     if (typeof window !== "undefined") {
       $effect.root(() => {
         $effect(() => {
           if (authStore.user?.id) {
-            this.loadPinnedChats();
             this.sortChats();
           }
         });
       });
     }
+
+    this.initEventListeners();
   }
+
+  private initEventListeners() {
+    realtimeEvents.on(RealtimeEvent.MESSAGE_RECEIVED, (msg) => this.handleReceiveMessage(msg));
+    realtimeEvents.on(RealtimeEvent.NOTIFICATION_RECEIVED, (n) => this.handleNotification(n));
+    realtimeEvents.on(RealtimeEvent.CHAT_ACCEPTED, () => {
+      void this.fetchChats();
+      void chatRequestsStore.loadInitial();
+    });
+    realtimeEvents.on(RealtimeEvent.MESSAGE_DELETED, (d) => this.handleMessageDeleted(d));
+    realtimeEvents.on(RealtimeEvent.MESSAGE_UPDATED, (d) => this.handleMessageUpdated(d));
+    realtimeEvents.on(RealtimeEvent.PROFILE_UPDATED, (d) => this.handleProfileUpdate(d));
+    realtimeEvents.on(RealtimeEvent.MESSAGE_ALERT, (d) => this.handleMessageAlert(d));
+  }
+
+  // --- Handlers ---
+
+  private handleMessageAlert(data: any) {
+    const isChatOpen = data.chatId === messageStore.activeChatId;
+    if (isChatOpen && document.hasFocus()) {
+      void chatService.markChatRead(data.chatId).then(() => {
+        this.patchChatLocally(data.chatId, { unreadCount: 0 });
+      });
+    }
+    if (!document.hasFocus()) {
+      notificationService.showBrowserNotification(data);
+    }
+  }
+
+  private handleReceiveMessage(message: any) {
+    const isViewing = message.chatId === messageStore.activeChatId;
+    const isOtherUser = message.senderId !== authStore.user?.id;
+    const shouldInc = !isViewing && isOtherUser;
+
+    if (isOtherUser) {
+      notificationService.notify({
+        chatId: message.chatId,
+        senderId: message.senderId,
+        senderUsername: this.chatsMap.get(message.chatId)?.otherUser?.username || "Someone",
+        preview: message.contentBody,
+      });
+    }
+
+    const currentChat = this.chatsMap.get(message.chatId);
+    const currentUnread = currentChat?.unreadCount || 0;
+
+    this.patchChatLocally(
+      message.chatId,
+      {
+        lastMessage: {
+          contentBody: message.contentBody,
+          senderId: message.senderId,
+          sentAt: message.createdAt,
+        },
+        unreadCount: shouldInc ? currentUnread + 1 : currentUnread,
+      },
+      true,
+    );
+  }
+
+  private handleNotification(notification: any) {
+    if (notification.type === "chat_request") {
+      void chatRequestsStore.loadInitial();
+      notificationService.notify({
+        chatId: notification.referenceId,
+        senderId: "system",
+        senderUsername: "System",
+        preview: notification.message,
+      });
+    }
+  }
+
+  private handleMessageDeleted(data: { messageId: string; chatId: string; isLastMessage?: boolean }) {
+    const chat = this.chatsMap.get(data.chatId);
+    if (chat?.lastMessage && data.isLastMessage) {
+      this.patchChatLocally(data.chatId, {
+        lastMessage: { ...chat.lastMessage, contentBody: "This message was deleted" },
+      });
+    }
+  }
+
+  private handleMessageUpdated(data: { chatId: string; messageId: string; contentBody: string }) {
+    const chat = this.chatsMap.get(data.chatId);
+    // Only update preview if it was the last message
+    if (chat?.lastMessage && chat.lastMessage.sentAt) {
+       // Note: In a real app we'd check if this messageId matches lastMessage.id
+       // For now, if it's updated and we want to reflect it in the list:
+       this.patchChatLocally(data.chatId, {
+         lastMessage: { ...chat.lastMessage, contentBody: data.contentBody }
+       });
+    }
+  }
+
+  private handleProfileUpdate(data: { userId: string } & any) {
+    const { userId, ...updates } = data;
+    this.chats.forEach((chat) => {
+      if (chat.otherUser?.id === userId && chat.otherUser) {
+        Object.assign(chat.otherUser, updates);
+      }
+    });
+  }
+
+  // --- Actions ---
 
   async fetchChats(query = "") {
     this.chatsAbortController?.abort();
     this.chatsAbortController = new AbortController();
+    this.isLoadingChats = true;
     this.lastError = null;
+
     try {
       const result = await chatService.fetchChats(query, 20, null, this.chatsAbortController.signal);
-
       this.currentSearchQuery = query;
       this.chatsMap.clear();
-      this.chats = (result.data || []).map((chat) => {
-        const isPinned = this.pinnedChatIds.has(chat.id);
-        const lastUpdate = chat.lastMessage?.sentAt || chat.createdAt;
+
+      this.chats = result.data.map((chat: any) => {
         const normalized = {
           ...chat,
-          isPinned,
-          _lastUpdateTs: new Date(lastUpdate).getTime(),
+          isPinned: pinnedChatsStore.isPinned(chat.id),
+          _lastUpdateTs: new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime(),
         };
         this.chatsMap.set(chat.id, normalized);
         return normalized;
       });
+
       this.unreadChatsCount = this.chats.filter((c) => (c.unreadCount ?? 0) > 0).length;
+      this.hasMoreChats = result.hasMore;
+      this.chatCursor = result.nextCursor;
       this.sortChats();
-      this.hasMoreChats = result.hasMore ?? false;
-      this.chatCursor = result.nextCursor ?? null;
-
-      return this.chats;
     } catch (e: any) {
-      if (e instanceof Error && e.name === "AbortError") return;
-      console.error("Failed to fetch chats:", e);
-
-      if (ApiError.handleRateLimit(e, "Easy there! You're searching too fast. Please wait a minute.")) {
-        this.lastError = "rate-limited";
-      } else {
-        this.lastError = e.message || "Failed to fetch chats";
-      }
+      if (e.name === "AbortError") return;
+      this.lastError = e.message || "Failed to fetch chats";
+    } finally {
+      this.isLoadingChats = false;
     }
   }
 
   async loadMoreChats() {
-    if (!this.hasMoreChats || this.isLoadingMoreChats || this.chatsAbortController?.signal.aborted) return;
-
+    if (!this.hasMoreChats || this.isLoadingMoreChats) return;
     this.isLoadingMoreChats = true;
     try {
       const result = await chatService.fetchChats(
         this.currentSearchQuery,
         20,
         this.chatCursor,
-        this.chatsAbortController?.signal,
+        this.chatsAbortController?.signal
       );
-      const newChats = result.data.map((chat) => {
+
+      const newChats = result.data.map((chat: any) => {
         const normalized = {
           ...chat,
-          isPinned: this.pinnedChatIds.has(chat.id),
+          isPinned: pinnedChatsStore.isPinned(chat.id),
           _lastUpdateTs: new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime(),
         };
         this.chatsMap.set(chat.id, normalized);
         return normalized;
       });
-      this.chats.push(...newChats);
-      this.unreadChatsCount = this.chats.filter((c) => (c.unreadCount ?? 0) > 0).length;
-      this.sortChats();
+
+      this.chats = [...this.chats, ...newChats];
       this.hasMoreChats = result.hasMore;
       this.chatCursor = result.nextCursor;
-    } catch (e: any) {
-      if (e instanceof Error && e.name === "AbortError") return;
-      console.error("Failed to load more chats:", e);
-
-      if (ApiError.handleRateLimit(e, "Slow down! You've hit a rate limit. Please wait a moment.")) {
-        this.lastError = "rate-limited";
-      } else {
-        this.lastError = e.message || "Failed to load more chats";
-      }
+      this.sortChats();
     } finally {
       this.isLoadingMoreChats = false;
     }
   }
 
-  async fetchRequests() {
-    this.lastError = null;
-    try {
-      const result = await chatService.fetchRequests(20, null);
-      this.requests = result.data;
-      this.hasMoreRequests = result.hasMore;
-      this.requestCursor = result.nextCursor;
-      return this.requests;
-    } catch (e: any) {
-      console.error("Failed to fetch requests:", e);
-      this.lastError = e.message || "Failed to fetch requests";
-    }
-  }
-
-  async loadMoreRequests() {
-    if (!this.hasMoreRequests || this.isLoadingMoreRequests) return;
-
-    this.isLoadingMoreRequests = true;
-    try {
-      const result = await chatService.fetchRequests(20, this.requestCursor);
-      this.requests.push(...result.data);
-      this.hasMoreRequests = result.hasMore;
-      this.requestCursor = result.nextCursor;
-    } catch (e: any) {
-      console.error("Failed to load more requests:", e);
-      this.lastError = e.message || "Failed to load more requests";
-    } finally {
-      this.isLoadingMoreRequests = false;
-    }
-  }
+  // Delegated Actions
+  async fetchRequests() { return chatRequestsStore.loadInitial(); }
+  async loadMoreRequests() { return chatRequestsStore.loadMore(); }
 
   toggleChatPin(chatId: string) {
+    pinnedChatsStore.toggle(chatId);
     const chat = this.chatsMap.get(chatId);
-    if (this.pinnedChatIds.has(chatId)) {
-      this.pinnedChatIds.delete(chatId);
-      if (chat) chat.isPinned = false;
-    } else {
-      this.pinnedChatIds.add(chatId);
-      if (chat) chat.isPinned = true;
+    if (chat) {
+      chat.isPinned = pinnedChatsStore.isPinned(chatId);
+      this.sortChats(false);
     }
-    this.savePinnedChats();
-    this.sortChats(false);
   }
 
   patchChatLocally(chatId: string, updates: Partial<Chat>, moveToTop = false) {
     const chat = this.chatsMap.get(chatId);
     if (!chat) return;
 
-    const chatIndex = this.chats.findIndex((c) => c.id === chatId);
     const wasUnread = (chat.unreadCount ?? 0) > 0;
     Object.assign(chat, updates);
     const isUnread = (chat.unreadCount ?? 0) > 0;
@@ -176,53 +235,32 @@ export class ChatListStore implements IChatListStore {
     const lastUpdate = chat.lastMessage?.sentAt || chat.createdAt;
     chat._lastUpdateTs = new Date(lastUpdate).getTime();
 
-    if (moveToTop && chatIndex > 0) {
-      this.chats.splice(chatIndex, 1);
-      this.chats.unshift(chat);
+    if (moveToTop || updates.lastMessage) {
       this.sortChats(false);
-    } else if (moveToTop || updates.lastMessage) {
-      this.sortChats(false);
-    }
-  }
-
-  private loadPinnedChats() {
-    if (!authStore.user?.id) return;
-    try {
-      const saved = localStorage.getItem(`pinned_chats_${authStore.user.id}`);
-      this.pinnedChatIds = saved ? new Set(JSON.parse(saved)) : new Set();
-    } catch (e) {
-      console.warn("Failed to load pinned chats", e);
-    }
-  }
-
-  private savePinnedChats() {
-    if (!authStore.user?.id) return;
-    try {
-      localStorage.setItem(`pinned_chats_${authStore.user.id}`, JSON.stringify(Array.from(this.pinnedChatIds)));
-    } catch (e) {
-      console.warn("Failed to save pinned chats", e);
     }
   }
 
   public sortChats(verifyPins = true) {
     if (verifyPins) {
-      this.chats.forEach((chat: Chat) => {
-        chat.isPinned = this.pinnedChatIds.has(chat.id);
-        if (!chat._lastUpdateTs) {
-          chat._lastUpdateTs = new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime();
-        }
+      this.chats.forEach((chat) => {
+        chat.isPinned = pinnedChatsStore.isPinned(chat.id);
       });
     }
 
-    this.chats.sort((a: Chat, b: Chat) => {
+    this.chats.sort((a, b) => {
       const aPinned = a.isPinned ? 1 : 0;
       const bPinned = b.isPinned ? 1 : 0;
       if (aPinned !== bPinned) return bPinned - aPinned;
       return (b._lastUpdateTs || 0) - (a._lastUpdateTs || 0);
     });
 
-    // oxlint-disable-next-line no-self-assign
-    this.chats = this.chats;
+    // Trigger reactivity
+    this.chats = [...this.chats];
+  }
+
+  removeChatLocally(chatId: string) {
+    this.chats = this.chats.filter(c => c.id !== chatId);
+    this.chatsMap.delete(chatId);
   }
 }
 

@@ -77,9 +77,10 @@ export function initializeErrorHandlers() {
   });
 }
 
+
 export function initializeExtensions() {
   // Extend express response prototype
-  app.response.success = function (data, statusCode = 200) {
+  (app.response as any).success = function (data: any, statusCode = 200) {
     return this.status(statusCode).json(success(data));
   };
 }

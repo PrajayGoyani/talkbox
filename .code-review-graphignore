@@ -1,0 +1,15 @@
+node_modules/
+**/node_modules/**
+dist/
+**/dist/**
+build/
+**/build/**
+.git/
+.agent/
+.agents/
+.claude/
+.vscode/
+.zed/
+graphify-out/
+*.log
+tmp/

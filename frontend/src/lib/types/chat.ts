@@ -1,4 +1,6 @@
-import type { ChatDto, MessageAlertDto } from "@root/shared/types/chat.dto";
+import type { ChatDto, MessageDto, MessageAlertDto } from "@root/shared/types/chat.dto";
+
+export type { ChatDto, MessageDto, MessageAlertDto };
 
 export type ChatStatus = ChatDto["status"];
 
@@ -10,5 +12,3 @@ export interface Chat extends ChatDto {
   /** Internal field for efficient sorting — not from API */
   _lastUpdateTs?: number;
 }
-
-export type { MessageAlertDto };

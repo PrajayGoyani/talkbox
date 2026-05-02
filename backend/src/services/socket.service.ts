@@ -1,8 +1,8 @@
-import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { MessageRepository, messageRepository } from "@repositories/message.repository";
 import { UserRepository, userRepository } from "@repositories/user.repository";
-import { MessageDto } from "@root/shared/types/chat.dto";
+import { messageService } from "@services/chat/message.service";
+import { policyService } from "@services/policy.service";
 import { PresenceService } from "@services/presence.service";
 import { redisService } from "@services/redis.service";
 import { MessageHandler } from "@services/socket-handlers/message.handler";
@@ -13,11 +13,10 @@ import { LRUCache } from "lru-cache";
 
 import { AuthenticatedSocketUser, TypedIO, TypedSocket } from "@/types/socket.types";
 
-const PARTICIPANT_CACHE_TTL_MS = 10 * 60 * 1000;
-const PARTICIPANT_CACHE_MAX = 10000;
-
-const PARTNER_CACHE_TTL_MS = 15 * 60 * 1000;
-const PARTNER_CACHE_MAX = 10000;
+const PARTICIPANT_CACHE_TTL_MS = 1000 * 60 * 5; // 5 minutes
+const PARTICIPANT_CACHE_MAX = 500;
+const PARTNER_CACHE_TTL_MS = 1000 * 60 * 5;
+const PARTNER_CACHE_MAX = 1000;
 
 export class SocketService {
   public io: TypedIO | null = null;
@@ -39,11 +38,12 @@ export class SocketService {
   ) {
     const ioProvider = () => this.io;
 
-    this.presenceService = new PresenceService(ioProvider, userRepo);
-    this.messageHandler = new MessageHandler(ioProvider, chatRepo, messageRepo);
-    this.reactionHandler = new ReactionHandler(ioProvider, chatRepo, messageRepo);
-    this.typingHandler = new TypingHandler(ioProvider, chatRepo);
+    this.presenceService = new PresenceService(ioProvider, this.userRepo);
+    this.messageHandler = new MessageHandler(ioProvider);
+    this.reactionHandler = new ReactionHandler(ioProvider, this.chatRepo, this.messageRepo);
+    this.typingHandler = new TypingHandler(ioProvider, this.chatRepo);
 
+    // decalre constant and use
     this.participantCache = new LRUCache({
       max: PARTICIPANT_CACHE_MAX,
       ttl: PARTICIPANT_CACHE_TTL_MS,
@@ -99,7 +99,6 @@ export class SocketService {
     userSockets.add(socket);
     void socket.join(`user:${userId}`);
 
-    // Register disconnect listener EARLIER to prevent leaks on initialization errors
     socket.on("disconnect", async () => {
       userSockets?.delete(socket);
       await redisService.decrementGlobalSession(userId, socket.id);
@@ -118,13 +117,13 @@ export class SocketService {
       const victims = await redisService.takeoverFreeSession(userId, socket.id);
       for (const victimId of victims) {
         await redisService.publishSessionTakeover(userId, victimId);
+        this._handleGlobalTakeover(userId, victimId);
       }
-    }
-
-    if (globalCount > PRO_PLAN_SESSION_LIMIT && plan === "pro") {
+    } else if (policyService.isSessionLimitReached(plan, globalCount)) {
       const victimId = await redisService.getOldestSession(userId);
       if (victimId) {
         await redisService.publishSessionTakeover(userId, victimId);
+        this._handleGlobalTakeover(userId, victimId);
       }
     }
 
@@ -137,6 +136,9 @@ export class SocketService {
       partnerIds.forEach((pId) => socket.join(`watching:${pId}`));
       await this.presenceService.emitPartnersStatus(userId, socket, partnerIds);
     }
+    // Join rooms for all accepted chats to receive transient events like typing
+    const chats = await this.chatRepo.findPartnerChats(userId, true);
+    chats.forEach((c) => socket.join(`watching:${c._id.toString()}`));
   }
 
   async notifyProfileUpdate(userId: string, profile: any) {
@@ -148,68 +150,62 @@ export class SocketService {
     const userSockets = this.activeConnections.get(userId);
     if (!userSockets) return;
 
-    // Use an array to avoid modification-during-iteration issues if any
+    // Use an array to avoid modification-during-iteration issues
     const socketsToKick = Array.from(userSockets).filter((s) => !victimSocketId || s.id === victimSocketId);
 
     for (const socket of socketsToKick) {
-      socket.emit("error", {
+      socket.emit("session_error", {
+        reason: "takeover",
         message: "You have been logged out because you signed in on another device.",
-        code: "SESSION_TAKEOVER",
       });
       socket.disconnect();
+      userSockets.delete(socket);
     }
 
-    // If we kicked everyone, we can clear the map entry
     if (userSockets.size === 0) {
       this.activeConnections.delete(userId);
     }
   }
 
-  private _handleGlobalCacheInvalidation(type: string, id: string) {
-    if (type === "chat") {
-      this.participantCache.delete(id);
-      this.partnerCache.clear(); // Clear all because partners depend on many chats
-    }
+  // ─── Message Operations ──────────────────────────────────────────
+
+  async saveAndDeliverMessage(
+    sender: AuthenticatedSocketUser,
+    payload: { chatId: string; receiverId: string; contentBody: string; idempotencyKey: string },
+  ) {
+    return this.messageHandler.saveAndDeliver(sender, payload);
   }
 
-  // ─── Delegates ─────────────────────────────────────────────────────
-
-  async handleTyping(sender: AuthenticatedSocketUser, payload: any, isTyping: boolean) {
-    return this.typingHandler.handleTyping(
-      sender,
-      payload,
-      isTyping,
-      (id) => this.participantCache.get(id),
-      (id, p) => this.participantCache.set(id, p),
-    );
+  async handleReaction(sender: AuthenticatedSocketUser, payload: { messageId: string; emoji: string; slug?: string }) {
+    return this.reactionHandler.handleReaction(sender, payload);
   }
 
-  async handleReaction(sender: AuthenticatedSocketUser, payload: any) {
-    return this.reactionHandler.handleReaction(
-      sender,
-      payload,
-      (id) => this.participantCache.get(id),
-      (id, p) => this.participantCache.set(id, p),
-    );
-  }
-
-  async saveAndDeliverMessage(sender: AuthenticatedSocketUser, payload: any): Promise<MessageDto> {
-    return this.messageHandler.saveAndDeliver(
-      sender,
-      payload,
-      (id) => this.participantCache.get(id),
-      (id, p) => this.participantCache.set(id, p),
-    );
-  }
-
-  async handleDeleteMessage(sender: AuthenticatedSocketUser, payload: any) {
+  async handleDeleteMessage(sender: AuthenticatedSocketUser, payload: { messageId: string }) {
     return this.messageHandler.handleDelete(sender, payload.messageId);
   }
 
-  async handleEditMessage(sender: AuthenticatedSocketUser, payload: any) {
+  async handleEditMessage(sender: AuthenticatedSocketUser, payload: { messageId: string; contentBody: string }) {
     return this.messageHandler.handleEdit(sender, payload.messageId, payload.contentBody);
   }
 
+  async handleTyping(
+    sender: AuthenticatedSocketUser,
+    payload: { receiverId: string; chatId: string },
+    isTyping: boolean,
+  ) {
+    return this.typingHandler.handleTyping(sender, payload, isTyping);
+  }
+
+  private _handleGlobalCacheInvalidation(type: string, id: string) {
+    if (type === "chat") {
+      this.participantCache.delete(id);
+      this.partnerCache.clear();
+      messageService.invalidateCache(id);
+    } else if (type === "partner") {
+      this.partnerCache.delete(id);
+      chatRepository.invalidatePartnerCache(id);
+    }
+  }
   // ─── Internal Helpers ─────────────────────────────────────────────
 
   private async _getPartnerIds(userId: string, excludeDeleted = false): Promise<Set<string>> {

@@ -3,9 +3,11 @@ import { ChatRepository } from "@repositories/chat.repository";
 import { MessageRepository } from "@repositories/message.repository";
 import { MessageReactionUpdateDto } from "@root/shared/types/chat.dto";
 import { getDisallowedEmojis } from "@root/shared/utils/emoji";
+import { messageService } from "@services/chat/message.service";
 import { redisService } from "@services/redis.service";
 import { isScrubbed } from "@utils/date.utils";
 import { getCanonicalSlug } from "@utils/emoji.utils";
+import { eventBus, CHAT_EVENTS } from "@utils/event-bus";
 import { Types } from "mongoose";
 
 import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
@@ -20,8 +22,6 @@ export class ReactionHandler {
   async handleReaction(
     sender: AuthenticatedSocketUser,
     payload: { messageId: string; emoji: string; slug?: string },
-    checkCache: (chatId: string) => Set<string> | undefined,
-    updateCache: (chatId: string, participants: Set<string>) => void,
   ) {
     const { messageId, emoji, slug } = payload;
     const io = this.ioProvider();
@@ -55,17 +55,9 @@ export class ReactionHandler {
 
       const senderIdStr = sender.id;
       const chatIdStr = message.chatId.toString();
-      const cached = checkCache(chatIdStr);
-      let isParticipant = false;
 
-      if (cached) {
-        isParticipant = cached.has(senderIdStr);
-      } else {
-        isParticipant = chat.participants.some((p: any) => p.toString() === senderIdStr);
-        updateCache(chatIdStr, new Set(chat.participants.map((p: any) => p.toString())));
-      }
-
-      if (!isParticipant) return;
+      // Use shared participant cache from messageService
+      await messageService.ensureParticipant(chatIdStr, senderIdStr);
 
       const senderIdIdx = new Types.ObjectId(sender.id);
       const reactionIndex = message.reactions.findIndex((r) => r.emoji === emoji);
@@ -107,15 +99,9 @@ export class ReactionHandler {
       message.markModified("reactions");
       await message.save();
 
-      // const savedMessage = message.toObject();
       const updatePayload: MessageReactionUpdateDto = {
         messageId: messageId.toString(),
         chatId: chatIdStr,
-        // reactions: savedMessage.reactions.map((r: any) => ({
-        //   emoji: r.emoji,
-        //   slug: r.slug,
-        //   users: r.users.map((u: any) => u.toString()),
-        // })),
         reaction: {
           action: action as "added" | "removed",
           emoji,
@@ -124,8 +110,9 @@ export class ReactionHandler {
         },
       };
 
-      chat.participants.forEach((p: any) => {
-        io?.to(`user:${p.toString()}`).emit("message_reaction_update", updatePayload);
+      eventBus.emit(CHAT_EVENTS.REACTION_UPDATED, {
+        payload: updatePayload,
+        participants: chat.participants.map((p: any) => p.toString()),
       });
     } catch (err) {
       console.error("[ReactionHandler] Error:", err);

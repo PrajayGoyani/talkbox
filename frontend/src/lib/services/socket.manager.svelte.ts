@@ -1,6 +1,7 @@
 import type { UserDto } from "@root/shared/types/auth.dto";
 import type {
   MessageAckDto,
+  MessageAlertDto,
   MessageDto,
   MessageReactionUpdateDto,
   TypingIndicatorDto,
@@ -11,51 +12,30 @@ import type { Socket } from "socket.io-client";
 
 import { authStore } from "$state/auth.svelte";
 import { confirmStore } from "$state/confirm.svelte";
-import { notificationStore } from "$state/notification.svelte";
 import { routerStore } from "$state/router.svelte";
 import { uiStore } from "$state/ui.svelte";
 import { getDisallowedEmojis } from "$utils/emoji";
-import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import {
   API_ROOT,
   MESSAGE_SEND_FALLBACK_TIMEOUT,
   TYPING_DEBOUNCE_DURATION,
-  TYPING_INDICATOR_DURATION,
 } from "../config";
+import { realtimeEvents, RealtimeEvent } from "./realtime-events";
 
-/** Contract for the ChatStore properties/methods that SocketManager needs. */
-export interface ChatStoreSocket {
-  isConnected: boolean;
-  isSendingMessage: boolean;
-  activeChatId: string | null;
-  typingStatus: SvelteMap<string, SvelteSet<string>>;
-  onlineStatus: SvelteMap<string, { isOnline: boolean; lastSeen: Date | null }>;
-  handleReceiveMessage(msg: MessageDto): void;
-
-  handleNotification(notification: NotificationDto): void;
-  handleChatAccepted(data: { chatId: string }): void;
-  handleReactionUpdate(data: MessageReactionUpdateDto): void;
-  handleMessageDeleted(data: { messageId: string; chatId: string; isLastMessage?: boolean }): void;
-  handleMessageSentAck(chatId: string, msg: MessageDto): void;
-  handleMessageUpdated(data: {
-    messageId: string;
-    chatId: string;
-    contentBody: string;
-    isEdited: boolean;
-    editedAt: string;
-  }): void;
-  handleProfileUpdate(data: { userId: string } & Partial<UserDto>): void;
-}
-
+/**
+ * Manages the Socket.io connection and translates raw socket events
+ * into domain-specific RealtimeEvents.
+ */
 export class SocketManager {
   socket: Socket | null = $state(null);
-  private store: ChatStoreSocket;
-  private typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+  isConnected = $state(false);
+  isSendingMessage = $state(false);
+
   private myTypingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
-  constructor(store: ChatStoreSocket) {
-    this.store = store;
+  constructor() {
+    // No longer coupled to a specific store
   }
 
   async connect() {
@@ -69,11 +49,11 @@ export class SocketManager {
     });
 
     this.socket.on("connect", () => {
-      this.store.isConnected = true;
+      this.isConnected = true;
     });
 
     this.socket.on("disconnect", () => {
-      this.store.isConnected = false;
+      this.isConnected = false;
     });
 
     this.socket.on("connect_error", (err) => {
@@ -113,76 +93,56 @@ export class SocketManager {
       }
     });
 
-    // Listen for incoming messages
+    // --- Domain Event Mapping ---
+
     this.socket.on("receive_message", (message: MessageDto) => {
-      this.store.handleReceiveMessage(message);
+      realtimeEvents.emit(RealtimeEvent.MESSAGE_RECEIVED, message);
     });
 
-    // Listen for User Presence changes
     this.socket.on("user_status", (data: UserStatusDto) => {
-      this.store.onlineStatus.set(data.userId, {
-        isOnline: data.isOnline,
-        lastSeen: data.lastSeen ? new Date(data.lastSeen) : null,
-      });
+      realtimeEvents.emit(RealtimeEvent.USER_STATUS_UPDATED, data);
     });
 
     this.socket.on("user_status_batch", (batch: UserStatusDto[]) => {
-      batch.forEach((data) => {
-        this.store.onlineStatus.set(data.userId, {
-          isOnline: data.isOnline,
-          lastSeen: data.lastSeen ? new Date(data.lastSeen) : null,
-        });
-      });
+      realtimeEvents.emit(RealtimeEvent.USER_STATUS_BATCH, batch);
     });
 
-    // Listen for Typing Indicators
     this.socket.on("typing_start", (data: TypingIndicatorDto) => {
-      if (!this.store.typingStatus.has(data.chatId)) {
-        this.store.typingStatus.set(data.chatId, new SvelteSet());
-      }
-      this.store.typingStatus.get(data.chatId)?.add(data.userId);
-
-      const key = `${data.chatId}-${data.userId}`;
-      if (this.typingTimeouts.has(key)) clearTimeout(this.typingTimeouts.get(key));
-
-      this.typingTimeouts.set(
-        key,
-        setTimeout(() => {
-          this.store.typingStatus.get(data.chatId)?.delete(data.userId);
-        }, TYPING_INDICATOR_DURATION),
-      );
+      realtimeEvents.emit(RealtimeEvent.TYPING_STARTED, data);
     });
 
     this.socket.on("typing_stop", (data: TypingIndicatorDto) => {
-      this.store.typingStatus.get(data.chatId)?.delete(data.userId);
+      realtimeEvents.emit(RealtimeEvent.TYPING_STOPPED, data);
     });
 
-    // When a notification arrives, delegate to notificationStore and refresh chat list
+    this.socket.on("message_alert", (data: MessageAlertDto) => {
+      realtimeEvents.emit(RealtimeEvent.MESSAGE_ALERT, data);
+    });
     this.socket.on("notification", (notification: NotificationDto) => {
-      notificationStore.addRealTimeNotification(notification);
-      this.store.handleNotification(notification);
+      realtimeEvents.emit(RealtimeEvent.NOTIFICATION_RECEIVED, notification);
     });
 
     this.socket.on("chat_accepted", (data: { chatId: string }) => {
-      this.store.handleChatAccepted(data);
+      realtimeEvents.emit(RealtimeEvent.CHAT_ACCEPTED, data);
     });
 
     this.socket.on("message_reaction_update", (data: MessageReactionUpdateDto) => {
-      this.store.handleReactionUpdate(data);
+      realtimeEvents.emit(RealtimeEvent.REACTION_UPDATED, data);
     });
 
     this.socket.on("message_deleted", (data: { messageId: string; chatId: string; isLastMessage?: boolean }) => {
-      this.store.handleMessageDeleted(data);
+      realtimeEvents.emit(RealtimeEvent.MESSAGE_DELETED, data);
     });
 
     this.socket.on(
       "message_updated",
       (data: { messageId: string; chatId: string; contentBody: string; isEdited: boolean; editedAt: string }) => {
-        this.store.handleMessageUpdated(data);
+        realtimeEvents.emit(RealtimeEvent.MESSAGE_UPDATED, data);
       },
     );
+
     this.socket.on("profile_updated", (data: { userId: string } & Partial<UserDto>) => {
-      this.store.handleProfileUpdate(data);
+      realtimeEvents.emit(RealtimeEvent.PROFILE_UPDATED, data);
     });
   }
 
@@ -190,26 +150,24 @@ export class SocketManager {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
-      this.store.isConnected = false;
+      this.isConnected = false;
 
       // Cleanup local timeouts
-      this.typingTimeouts.forEach(clearTimeout);
-      this.typingTimeouts.clear();
       this.myTypingTimeouts.forEach(clearTimeout);
       this.myTypingTimeouts.clear();
     }
   }
 
   sendMessage(chatId: string, receiverId: string, contentBody: string) {
-    if (!this.socket || !this.store.isConnected || !contentBody.trim()) return;
+    if (!this.socket || !this.isConnected || !contentBody.trim()) return;
 
-    this.store.isSendingMessage = true;
+    this.isSendingMessage = true;
     this.emitTyping(chatId, receiverId, false);
 
     const idempotencyKey = crypto.randomUUID();
 
     const timeout = setTimeout(() => {
-      this.store.isSendingMessage = false;
+      this.isSendingMessage = false;
     }, MESSAGE_SEND_FALLBACK_TIMEOUT);
 
     this.socket.emit(
@@ -222,16 +180,16 @@ export class SocketManager {
       },
       (ack: MessageAckDto) => {
         clearTimeout(timeout);
-        this.store.isSendingMessage = false;
+        this.isSendingMessage = false;
         if (ack?.status === "ok" && ack.message) {
-          this.store.handleMessageSentAck(chatId, ack.message);
+          realtimeEvents.emit(RealtimeEvent.MESSAGE_SENT_ACK, { chatId, message: ack.message });
         }
       },
     );
   }
 
   emitTyping(chatId: string, receiverId: string, isTyping: boolean) {
-    if (!this.socket || !this.store.isConnected) return;
+    if (!this.socket || !this.isConnected) return;
 
     if (!isTyping) {
       this.socket.emit("typing_stop", { chatId, receiverId });
@@ -255,7 +213,7 @@ export class SocketManager {
   }
 
   reactToMessage(messageId: string, emoji: string, slug?: string) {
-    if (!this.socket || !this.store.isConnected || !this.store.activeChatId) return;
+    if (!this.socket || !this.isConnected) return;
 
     const found = getDisallowedEmojis(emoji);
     if (found.length > 0) {
@@ -271,7 +229,7 @@ export class SocketManager {
   }
 
   deleteMessage(messageId: string) {
-    if (!this.socket || !this.store.isConnected || !this.store.activeChatId) return;
+    if (!this.socket || !this.isConnected) return;
 
     this.socket.emit("delete_message", {
       messageId,
@@ -279,7 +237,7 @@ export class SocketManager {
   }
 
   editMessage(messageId: string, contentBody: string) {
-    if (!this.socket || !this.store.isConnected || !this.store.activeChatId) return;
+    if (!this.socket || !this.isConnected) return;
 
     this.socket.emit("edit_message", {
       messageId,

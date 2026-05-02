@@ -1,3 +1,5 @@
+import { Response } from "express";
+
 /**
  * Standardised response envelope for all API responses.
  *
@@ -27,3 +29,10 @@ export const error = (code: string, message: string, details?: any) => ({
     ...(details !== undefined && { details }),
   },
 });
+
+/**
+ * Send a standardized success response.
+ */
+export const sendSuccess = (res: Response, data: any, statusCode = 200) => {
+  return res.status(statusCode).json(success(data));
+};

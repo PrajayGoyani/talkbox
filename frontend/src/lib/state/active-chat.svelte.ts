@@ -1,6 +1,7 @@
 import type { MessageDto, MessageReactionUpdateDto } from "@root/shared/types/chat.dto";
 
 import { chatService } from "$services/chat.service";
+import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
 
 const LOADER_AWAIT_MS = 300;
 
@@ -12,6 +13,14 @@ class MessageStore {
   isSendingMessage = $state(false);
 
   private messagesAbortController: AbortController | null = null;
+
+  constructor() {
+    realtimeEvents.on(RealtimeEvent.MESSAGE_RECEIVED, (msg) => this.handleReceiveMessage(msg));
+    realtimeEvents.on(RealtimeEvent.MESSAGE_SENT_ACK, (data) => this.handleMessageSentAck(data.chatId, data.message));
+    realtimeEvents.on(RealtimeEvent.MESSAGE_DELETED, (data) => this.handleMessageDeleted(data));
+    realtimeEvents.on(RealtimeEvent.MESSAGE_UPDATED, (data) => this.handleMessageUpdated(data));
+    realtimeEvents.on(RealtimeEvent.REACTION_UPDATED, (data) => this.handleReactionUpdate(data));
+  }
 
   async initialize(chatId: string) {
     if (this.activeChatId === chatId) return;

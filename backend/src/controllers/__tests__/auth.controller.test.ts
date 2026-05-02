@@ -23,7 +23,11 @@ describe("AuthController - Password Reset & Email Verification", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     req = { body: {}, query: {}, user: { id: "user123" } };
-    res = { success: vi.fn() };
+    res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
+      success: vi.fn().mockReturnThis(),
+    };
   });
 
   describe("forgotPassword", () => {
@@ -33,7 +37,7 @@ describe("AuthController - Password Reset & Email Verification", () => {
 
       await forgotPassword(req, res);
 
-      expect(vi.spyOn(authService, "forgotPassword")).toHaveBeenCalledWith("test@example.com");
+      expect(authService.forgotPassword).toHaveBeenCalledWith("test@example.com");
       expect(res.success).toHaveBeenCalledWith({
         message: "If an account with that email exists, a reset link has been sent.",
       });
@@ -47,7 +51,7 @@ describe("AuthController - Password Reset & Email Verification", () => {
 
       await resetPassword(req, res);
 
-      expect(vi.spyOn(authService, "resetPassword")).toHaveBeenCalledWith("valid-token", "newpassword123");
+      expect(authService.resetPassword).toHaveBeenCalledWith("valid-token", "newpassword123");
       expect(res.success).toHaveBeenCalledWith({
         message: "Password has been reset successfully.",
       });
@@ -61,7 +65,7 @@ describe("AuthController - Password Reset & Email Verification", () => {
 
       await verifyEmail(req, res);
 
-      expect(vi.spyOn(authService, "verifyEmail")).toHaveBeenCalledWith("verify-token-123");
+      expect(authService.verifyEmail).toHaveBeenCalledWith("verify-token-123");
       expect(res.success).toHaveBeenCalledWith({
         message: "Email verified successfully.",
       });
@@ -80,7 +84,7 @@ describe("AuthController - Password Reset & Email Verification", () => {
 
       await resendVerification(req, res);
 
-      expect(vi.spyOn(authService, "resendVerificationEmail")).toHaveBeenCalledWith("user123");
+      expect(authService.resendVerificationEmail).toHaveBeenCalledWith("user123");
       expect(res.success).toHaveBeenCalledWith({
         message: "Verification email sent.",
       });

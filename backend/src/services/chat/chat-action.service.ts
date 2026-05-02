@@ -3,6 +3,7 @@ import { IChat } from "@models/chat.model";
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { UserRepository, userRepository } from "@repositories/user.repository";
 import { chatLockdownService } from "@services/chat-lockdown.service";
+import { redisService } from "@services/redis.service";
 import { AppError } from "@utils/AppError";
 import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
 import { ObjectId } from "mongodb";
@@ -100,6 +101,11 @@ export class ChatActionService implements IChatActionService {
     if (!updatedChat) throw AppError.notFound("Chat");
 
     const acceptor = await this.userRepository.findById(userId);
+    
+    // Invalidate partner cache for both participants globally
+    await Promise.all(
+      updatedChat.participants.map((p: any) => redisService.publishCacheInvalidation("partner", p.toString())),
+    );
 
     // Emit event for real-time updates and notifications
     eventBus.emit(CHAT_EVENTS.ACCEPTED, {
@@ -160,6 +166,12 @@ export class ChatActionService implements IChatActionService {
 
     // Invalidate lockdown cache immediately
     await chatLockdownService.lockdownChat(chatId.toString());
+
+    // Invalidate partner cache for both participants and chat cache globally
+    await Promise.all([
+      ...chat.participants.map((p: any) => redisService.publishCacheInvalidation("partner", p.toString())),
+      redisService.publishCacheInvalidation("chat", chatId.toString()),
+    ]);
 
     // Emit event for side-effects
     eventBus.emit(CHAT_EVENTS.DELETED, { chatId, userId });

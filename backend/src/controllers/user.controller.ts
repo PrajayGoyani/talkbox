@@ -46,7 +46,6 @@ export const uploadAvatar = async (req: Request, res: Response) => {
 };
 
 export const updateProfile = async (req: Request, res: Response) => {
-  // TODO: Add logic to update user profile along with avatar image
   const result = await userService.updateProfile(req.user!.id, req.body);
   res.success(result);
 };
