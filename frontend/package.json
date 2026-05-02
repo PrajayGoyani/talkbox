@@ -13,7 +13,6 @@
     "test": "vp test"
   },
   "dependencies": {
-    "@root/shared": "workspace:*",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "emoji-picker-element": "^1.29.1",
