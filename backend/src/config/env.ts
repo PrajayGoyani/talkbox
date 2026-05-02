@@ -1,5 +1,3 @@
-import "dotenv/config";
-
 if (!process.env.ALLOWED_ORIGINS) {
   console.warn("Warning: ALLOWED_ORIGINS environment variable is missing. Using default local origins.");
 }
@@ -12,6 +10,8 @@ export const JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION as stri
 export const MONGO_URI = process.env.MONGO_URI as string;
 export const REDIS_URL = process.env.REDIS_URL as string;
 export const NODE_ENV = process.env.NODE_ENV as string;
+export const DB_RETRY_ATTEMPTS = Number(process.env.DB_RETRY_ATTEMPTS) || 5;
+export const DB_RETRY_DELAY_MS = Number(process.env.DB_RETRY_DELAY_MS) || 1000;
 export const SENTRY_DSN = process.env.SENTRY_DSN as string;
 export const BCRYPT_SALT = Number(process.env.BCRYPT_SALT) || 12;
 export const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;

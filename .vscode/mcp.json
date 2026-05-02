@@ -1,0 +1,17 @@
+{
+  "servers": {
+    "code-review-graph": {
+      "command": "uvx",
+      "args": ["code-review-graph", "serve"],
+      "type": "stdio"
+    },
+    "dev.svelte/mcp": {
+      "type": "stdio",
+      "command": "bunx",
+      "args": ["@sveltejs/mcp@0.1.22"],
+      "gallery": "https://api.mcp.github.com",
+      "version": "0.1.22"
+    }
+  },
+  "inputs": []
+}

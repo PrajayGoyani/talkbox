@@ -2,7 +2,6 @@
  * One-time migration: Convert String fields to ObjectId in Chat and Message collections.
  * Run with: node migrate-to-objectid.js
  */
-import "dotenv/config";
 import mongoose from "mongoose";
 
 const MONGO_URI = process.env.MONGO_URI;

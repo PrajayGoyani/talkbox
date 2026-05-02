@@ -2,7 +2,6 @@ import { connectDB } from "@config/db";
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
 import User from "@models/user.model";
-import "dotenv/config";
 import { Types } from "mongoose";
 
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "password123";
