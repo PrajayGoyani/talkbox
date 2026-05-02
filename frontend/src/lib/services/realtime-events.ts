@@ -49,7 +49,6 @@ class RealtimeEvents {
   static readonly TYPING_STOPPED = "TYPING_STOPPED";
   static readonly NOTIFICATION_RECEIVED = "NOTIFICATION_RECEIVED";
   static readonly CHAT_ACCEPTED = "CHAT_ACCEPTED";
-  static readonly MESSAGE_ALERT = "MESSAGE_ALERT";
   static readonly PROFILE_UPDATED = "PROFILE_UPDATED";
 }
 

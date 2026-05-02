@@ -115,9 +115,6 @@ export class SocketManager {
       realtimeEvents.emit(RealtimeEvent.TYPING_STOPPED, data);
     });
 
-    this.socket.on("message_alert", (data: MessageAlertDto) => {
-      realtimeEvents.emit(RealtimeEvent.MESSAGE_ALERT, data);
-    });
     this.socket.on("notification", (notification: NotificationDto) => {
       realtimeEvents.emit(RealtimeEvent.NOTIFICATION_RECEIVED, notification);
     });

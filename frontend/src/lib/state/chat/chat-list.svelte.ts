@@ -4,7 +4,6 @@ import { notificationService } from "$services/notification.service";
 import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
 import { authStore } from "$state/auth.svelte";
 import { messageStore } from "$state/active-chat.svelte";
-import { routerStore } from "$state/router.svelte";
 import { chatRequestsStore } from "./chat-requests.svelte";
 import { pinnedChatsStore } from "./pinned-chats.svelte";
 
@@ -52,22 +51,9 @@ export class ChatListStore {
     realtimeEvents.on(RealtimeEvent.MESSAGE_DELETED, (d) => this.handleMessageDeleted(d));
     realtimeEvents.on(RealtimeEvent.MESSAGE_UPDATED, (d) => this.handleMessageUpdated(d));
     realtimeEvents.on(RealtimeEvent.PROFILE_UPDATED, (d) => this.handleProfileUpdate(d));
-    realtimeEvents.on(RealtimeEvent.MESSAGE_ALERT, (d) => this.handleMessageAlert(d));
   }
 
   // --- Handlers ---
-
-  private handleMessageAlert(data: any) {
-    const isChatOpen = data.chatId === messageStore.activeChatId;
-    if (isChatOpen && document.hasFocus()) {
-      void chatService.markChatRead(data.chatId).then(() => {
-        this.patchChatLocally(data.chatId, { unreadCount: 0 });
-      });
-    }
-    if (!document.hasFocus()) {
-      notificationService.showBrowserNotification(data);
-    }
-  }
 
   private handleReceiveMessage(message: any) {
     const isViewing = message.chatId === messageStore.activeChatId;
@@ -75,11 +61,24 @@ export class ChatListStore {
     const shouldInc = !isViewing && isOtherUser;
 
     if (isOtherUser) {
+      // 1. Mark as read immediately if viewing and focused (replaces old message_alert logic)
+      if (isViewing && typeof document !== "undefined" && document.hasFocus()) {
+        void chatService.markChatRead(message.chatId).then(() => {
+          this.patchChatLocally(message.chatId, { unreadCount: 0 });
+        });
+      }
+
+      const contentBody = message.contentBody || "";
+      const preview = contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
+
+      // 2. Trigger notification (sound/browser)
       notificationService.notify({
         chatId: message.chatId,
         senderId: message.senderId,
-        senderUsername: this.chatsMap.get(message.chatId)?.otherUser?.username || "Someone",
-        preview: message.contentBody,
+        senderName: message.senderName || "Someone",
+        senderUsername: message.senderUsername || "Someone",
+        senderAvatar: message.senderAvatar,
+        preview,
       });
     }
 
@@ -133,7 +132,7 @@ export class ChatListStore {
     }
   }
 
-  private handleProfileUpdate(data: { userId: string } & any) {
+  private handleProfileUpdate(data: { userId: string } & Record<string, any>) {
     const { userId, ...updates } = data;
     this.chats.forEach((chat) => {
       if (chat.otherUser?.id === userId && chat.otherUser) {

@@ -12,25 +12,12 @@ export const initSocketEventListeners = () => {
 
     for (const p of chat.participants) {
       const pId = p.toString();
-      socketService.io.to(`user:${pId}`).emit("receive_message", message);
-
-      // If it's the receiver, also send an alert
-      if (pId === receiverId) {
-        try {
-          const contentBody = message.contentBody || "";
-          const preview = contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
-          socketService.io.to(`user:${pId}`).emit("message_alert", {
-            chatId: message.chatId,
-            senderId: sender.id,
-            senderName: sender.name || null,
-            senderUsername: sender.username,
-            senderAvatar: sender.avatarUrl,
-            preview,
-          });
-        } catch (err) {
-          console.error("[SocketEvents] Alert failed:", err);
-        }
-      }
+      socketService.io.to(`user:${pId}`).emit("receive_message", {
+        ...message,
+        senderName: sender.name || null,
+        senderUsername: sender.username,
+        senderAvatar: sender.avatarUrl,
+      });
     }
   });
 

@@ -1,11 +1,11 @@
-import type { MessageAlertDto } from "@root/shared/types/chat.dto";
 import type { Socket } from "socket.io-client";
 
 import { chatService } from "$services/chat.service";
-import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
+import { RealtimeEvent, realtimeEvents } from "$services/realtime-events";
 import { SocketManager } from "$services/socket.manager.svelte";
 import { messageStore } from "$state/active-chat.svelte";
 
+import { authStore } from "./auth.svelte";
 import { chatListStore } from "./chat/chat-list.svelte";
 import { presenceStore } from "./chat/presence.svelte";
 
@@ -55,9 +55,6 @@ class ChatStore {
   get pendingRequestCount() {
     return chatListStore.pendingRequestCount;
   }
-  set pendingRequestCount(val: number) {
-    chatListStore.pendingRequestCount = val;
-  }
 
   get currentSearchQuery() {
     return chatListStore.currentSearchQuery;
@@ -97,10 +94,24 @@ class ChatStore {
     realtimeEvents.on(RealtimeEvent.NOTIFICATION_RECEIVED, cb);
   }
 
-  onToast(cb: (data: MessageAlertDto) => void) {
-    realtimeEvents.on(RealtimeEvent.MESSAGE_ALERT, (data) => {
+  onToast(cb: (data: any) => void) {
+    realtimeEvents.on(RealtimeEvent.MESSAGE_RECEIVED, (data) => {
       const isChatOpen = data.chatId === messageStore.activeChatId;
-      if (!isChatOpen) cb(data);
+      const isOtherUser = data.senderId !== authStore.user?.id;
+
+      if (!isChatOpen && isOtherUser) {
+        const contentBody = data.contentBody || "";
+        const preview = contentBody.length > 60 ? contentBody.substring(0, 60) + "..." : contentBody;
+
+        cb({
+          chatId: data.chatId,
+          senderId: data.senderId,
+          senderName: data.senderName,
+          senderUsername: data.senderUsername,
+          senderAvatar: data.senderAvatar,
+          preview,
+        });
+      }
     });
 
     realtimeEvents.on(RealtimeEvent.NOTIFICATION_RECEIVED, (notification) => {
