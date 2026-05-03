@@ -1,0 +1,3 @@
+fix (frontend): duplicate group label in message list
+
+Around UTC midnight, it was possible for messages with different UTC dates to both resolve to the same local label (e.g., "Today")

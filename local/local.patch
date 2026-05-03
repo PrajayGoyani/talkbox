@@ -1,0 +1,190 @@
+diff --git a/workspaces/apps/backend/src/bootstrap/message-events.ts b/workspaces/apps/backend/src/bootstrap/message-events.ts
+index 41047cb..4306b62 100644
+--- a/workspaces/apps/backend/src/bootstrap/message-events.ts
++++ b/workspaces/apps/backend/src/bootstrap/message-events.ts
+@@ -1,40 +1,15 @@
+-import { socketService } from "@services/socket.service";
+ import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
+ 
+ /**
+  * Initialize event listeners for Message actions.
+- * Handles side-effects like real-time delivery and push notifications.
++ * Currently, most message-related socket delivery is handled in socket-events.ts.
++ * This file is reserved for non-socket side-effects (e.g., analytics, email notifications).
+  */
+ export const initMessageEventListeners = () => {
+-  eventBus.on(CHAT_EVENTS.MESSAGE_SENT, ({ dto, participants }) => {
+-    const io = socketService.io;
+-    if (!io) return;
+-
+-    // Real-time delivery to all participants
+-    participants.forEach((pId: string) => {
+-      io.to(`user:${pId}`).emit("receive_message", dto);
+-    });
+-  });
+-
+   eventBus.on(CHAT_EVENTS.MESSAGE_READ, ({ _chatId, _userId }) => {
+-    // Logic for updating read receipts across devices if needed
+-  });
+-
+-  eventBus.on(CHAT_EVENTS.MESSAGE_DELETED, ({ participants, ...payload }) => {
+-    const io = socketService.io;
+-    if (!io) return;
+-
+-    participants.forEach((p: any) => {
+-      io.to(`user:${p.toString()}`).emit("message_deleted", payload);
+-    });
++    // Placeholder for future read-receipt logic (e.g. updating DB or analytics)
+   });
+ 
+-  eventBus.on(CHAT_EVENTS.MESSAGE_UPDATED, ({ participants, ...payload }) => {
+-    const io = socketService.io;
+-    if (!io) return;
+-
+-    participants.forEach((p: any) => {
+-      io.to(`user:${p.toString()}`).emit("message_updated", payload);
+-    });
+-  });
++  // MESSAGE_SENT, MESSAGE_DELETED, and MESSAGE_UPDATED are handled in socket-events.ts
++  // to avoid duplication and ensure consistent real-time delivery.
+ };
+diff --git a/workspaces/apps/frontend/src/lib/components/chat/ChatInput.svelte b/workspaces/apps/frontend/src/lib/components/chat/ChatInput.svelte
+index a441788..8e22938 100644
+--- a/workspaces/apps/frontend/src/lib/components/chat/ChatInput.svelte
++++ b/workspaces/apps/frontend/src/lib/components/chat/ChatInput.svelte
+@@ -31,7 +31,7 @@
+   };
+ 
+   const handleSendMessage = () => {
+-    if (!messageInput.trim() || messageStore.isSendingMessage || !otherUser)
++    if (!messageInput.trim() || chatStore.isSendingMessage || !otherUser)
+       return;
+ 
+     const found = getDisallowedEmojis(messageInput.trim());
+@@ -90,7 +90,7 @@
+   };
+ 
+   $effect(() => {
+-    if (!messageStore.isSendingMessage && textareaElement && chatId) {
++    if (!chatStore.isSendingMessage && textareaElement && chatId) {
+       tick().then(() => {
+         textareaElement?.focus();
+       });
+@@ -125,15 +125,16 @@
+     onkeydown={handleKeydown}
+     oninput={handleInput}
+     rows="1"
++    name="msg_input"
+   ></textarea>
+ 
+   <button
+-    class="bg-indigo-600 hover:bg-indigo-700 text-white w-9 h-9 md:w-[42px] md:h-[42px] rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
++    class="bg-indigo-600 hover:bg-indigo-700 text-white w-9 h-9 md:w-10.5 md:h-10.5 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
+     aria-label="Send message"
+     onclick={handleSendMessage}
+-    disabled={!messageInput.trim() || messageStore.isSendingMessage}
++    disabled={!messageInput.trim() || chatStore.isSendingMessage}
+   >
+-    {#if messageStore.isSendingMessage}
++    {#if chatStore.isSendingMessage}
+       <span
+         class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+       ></span>
+diff --git a/workspaces/apps/frontend/src/lib/services/socket.manager.svelte.ts b/workspaces/apps/frontend/src/lib/services/socket.manager.svelte.ts
+index 03fe441..f344d9a 100644
+--- a/workspaces/apps/frontend/src/lib/services/socket.manager.svelte.ts
++++ b/workspaces/apps/frontend/src/lib/services/socket.manager.svelte.ts
+@@ -171,10 +171,19 @@ export class SocketManager {
+         idempotencyKey,
+       },
+       (ack: MessageAckDto) => {
++        console.log("[SocketManager] Send message ACK received from server:", ack);
+         clearTimeout(timeout);
+         this.isSendingMessage = false;
++
+         if (ack?.status === "ok" && ack.message) {
++          console.log("[SocketManager] Emitting MESSAGE_SENT_ACK to bus", { 
++            chatId, 
++            msgId: ack.message.id,
++            idempotencyKey: ack.message.idempotencyKey 
++          });
+           realtimeEvents.emit(RealtimeEvent.MESSAGE_SENT_ACK, { chatId, message: ack.message });
++        } else if (ack?.status === "error") {
++          console.error("[SocketManager] Server returned error in ACK:", ack.error);
+         }
+       },
+     );
+diff --git a/workspaces/apps/frontend/src/lib/state/active-chat.svelte.ts b/workspaces/apps/frontend/src/lib/state/active-chat.svelte.ts
+index a2d08c2..63d0ced 100644
+--- a/workspaces/apps/frontend/src/lib/state/active-chat.svelte.ts
++++ b/workspaces/apps/frontend/src/lib/state/active-chat.svelte.ts
+@@ -10,7 +10,6 @@ class MessageStore {
+   messages: Array<MessageDto> = $state([]);
+   hasMoreMessages = $state(true);
+   isLoadingMessages = $state(false);
+-  isSendingMessage = $state(false);
+ 
+   private messagesAbortController: AbortController | null = null;
+ 
+@@ -96,7 +95,14 @@ class MessageStore {
+ 
+   handleReceiveMessage(message: MessageDto) {
+     if (message.chatId === this.activeChatId) {
+-      this.messages.push(message);
++      const exists = this.messages.some(
++        (m) =>
++          (m.id && m.id === message.id) ||
++          (m.idempotencyKey && m.idempotencyKey === message.idempotencyKey),
++      );
++      if (!exists) {
++        this.messages.push(message);
++      }
+     }
+   }
+ 
+@@ -160,10 +166,27 @@ class MessageStore {
+   }
+ 
+   handleMessageSentAck(chatId: string, message: MessageDto) {
+-    if (chatId === this.activeChatId) {
+-      const exists = this.messages.some((m) => m.idempotencyKey === message.idempotencyKey);
+-      if (!exists) {
++    const isMatch = chatId === this.activeChatId;
++    console.log("[MessageStore] handleMessageSentAck arrived", {
++      incomingChatId: chatId,
++      activeChatId: this.activeChatId,
++      isMatch,
++      msgKey: message.idempotencyKey
++    });
++
++    if (isMatch) {
++      const idx = this.messages.findIndex((m) => m.idempotencyKey === message.idempotencyKey);
++      
++      if (idx === -1) {
++        console.log("[MessageStore] ACK adding new message to array");
+         this.messages.push(message);
++        // Explicitly trigger reactivity for the array
++        this.messages = this.messages;
++      } else {
++        console.log("[MessageStore] ACK patching existing message", message.id);
++        // Ensure we have the server-side ID and any other metadata
++        this.messages[idx] = { ...this.messages[idx], ...message };
++        this.messages = this.messages;
+       }
+     }
+   }
+diff --git a/workspaces/apps/frontend/vite.config.ts b/workspaces/apps/frontend/vite.config.ts
+index deca13f..439a04d 100644
+--- a/workspaces/apps/frontend/vite.config.ts
++++ b/workspaces/apps/frontend/vite.config.ts
+@@ -10,9 +10,7 @@ export default defineConfig({
+   plugins: [
+     tailwindcss(),
+     svelte({
+-      compilerOptions: {
+-        discloseVersion: false,
+-      },
++      inspector: true,
+     }),
+     // Note: keep this code
+     // compression({ algorithm: "gzip", exclude: [/\.(br)$/, /\.(gz)$/] }),
