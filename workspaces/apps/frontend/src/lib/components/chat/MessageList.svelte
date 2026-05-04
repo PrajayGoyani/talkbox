@@ -60,20 +60,16 @@
   // Group messages for better sticky header handling
   const groupedMessages = $derived.by(() => {
     const groups: { label: string; messages: MessageDto[] }[] = [];
-    let lastDateKey = "";
+    let lastLabel = "";
 
     for (const msg of messageStore.messages) {
-      const dateKey = (
-        typeof msg.createdAt === "string"
-          ? msg.createdAt
-          : msg.createdAt.toISOString()
-      ).slice(0, 10);
-      if (groups.length === 0 || dateKey !== lastDateKey) {
+      const label = getDateLabel(msg.createdAt);
+      if (groups.length === 0 || label !== lastLabel) {
         groups.push({
-          label: getDateLabel(msg.createdAt),
+          label,
           messages: [msg],
         });
-        lastDateKey = dateKey;
+        lastLabel = label;
       } else {
         groups[groups.length - 1].messages.push(msg);
       }

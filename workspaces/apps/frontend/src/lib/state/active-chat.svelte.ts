@@ -95,12 +95,7 @@ class MessageStore {
 
   handleReceiveMessage(message: MessageDto) {
     if (message.chatId === this.activeChatId) {
-      const exists = this.messages.some(
-        (m) => (m.id && m.id === message.id) || (m.idempotencyKey && m.idempotencyKey === message.idempotencyKey),
-      );
-      if (!exists) {
-        this.messages.push(message);
-      }
+      this.messages.push(message);
     }
   }
 
@@ -164,27 +159,10 @@ class MessageStore {
   }
 
   handleMessageSentAck(chatId: string, message: MessageDto) {
-    const isMatch = chatId === this.activeChatId;
-    // console.log("[MessageStore] handleMessageSentAck arrived", {
-    //   incomingChatId: chatId,
-    //   activeChatId: this.activeChatId,
-    //   isMatch,
-    //   msgKey: message.idempotencyKey
-    // });
-
-    if (isMatch) {
+    if (chatId === this.activeChatId) {
       const idx = this.messages.findIndex((m) => m.idempotencyKey === message.idempotencyKey);
-
       if (idx === -1) {
-        // console.log("[MessageStore] ACK adding new message to array");
         this.messages.push(message);
-        // Explicitly trigger reactivity for the array
-        this.messages = this.messages;
-      } else {
-        // console.log("[MessageStore] ACK patching existing message", message.id);
-        // Ensure we have the server-side ID and any other metadata
-        this.messages[idx] = { ...this.messages[idx], ...message };
-        this.messages = this.messages;
       }
     }
   }
