@@ -13,6 +13,7 @@ export default defineConfig({
       compilerOptions: {
         discloseVersion: false,
       },
+      // inspector: true,
     }),
     // Note: keep this code
     // compression({ algorithm: "gzip", exclude: [/\.(br)$/, /\.(gz)$/] }),

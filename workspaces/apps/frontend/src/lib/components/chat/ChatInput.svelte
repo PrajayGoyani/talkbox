@@ -31,7 +31,7 @@
   };
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || messageStore.isSendingMessage || !otherUser)
+    if (!messageInput.trim() || chatStore.isSendingMessage || !otherUser)
       return;
 
     const found = getDisallowedEmojis(messageInput.trim());
@@ -90,7 +90,7 @@
   };
 
   $effect(() => {
-    if (!messageStore.isSendingMessage && textareaElement && chatId) {
+    if (!chatStore.isSendingMessage && textareaElement && chatId) {
       tick().then(() => {
         textareaElement?.focus();
       });
@@ -125,15 +125,16 @@
     onkeydown={handleKeydown}
     oninput={handleInput}
     rows="1"
+    name="msg_input"
   ></textarea>
 
   <button
-    class="bg-indigo-600 hover:bg-indigo-700 text-white w-9 h-9 md:w-[42px] md:h-[42px] rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
+    class="bg-indigo-600 hover:bg-indigo-700 text-white w-9 h-9 md:w-10.5 md:h-10.5 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
     aria-label="Send message"
     onclick={handleSendMessage}
-    disabled={!messageInput.trim() || messageStore.isSendingMessage}
+    disabled={!messageInput.trim() || chatStore.isSendingMessage}
   >
-    {#if messageStore.isSendingMessage}
+    {#if chatStore.isSendingMessage}
       <span
         class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
       ></span>

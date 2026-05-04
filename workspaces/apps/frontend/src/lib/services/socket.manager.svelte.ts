@@ -171,10 +171,19 @@ export class SocketManager {
         idempotencyKey,
       },
       (ack: MessageAckDto) => {
+        // console.log("[SocketManager] Send message ACK received from server:", ack);
         clearTimeout(timeout);
         this.isSendingMessage = false;
+
         if (ack?.status === "ok" && ack.message) {
+          // console.log("[SocketManager] Emitting MESSAGE_SENT_ACK to bus", {
+          //   chatId,
+          //   msgId: ack.message.id,
+          //   idempotencyKey: ack.message.idempotencyKey
+          // });
           realtimeEvents.emit(RealtimeEvent.MESSAGE_SENT_ACK, { chatId, message: ack.message });
+        } else if (ack?.status === "error") {
+          // console.error("[SocketManager] Server returned error in ACK:", ack.error);
         }
       },
     );
