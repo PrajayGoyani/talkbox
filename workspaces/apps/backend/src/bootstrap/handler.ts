@@ -77,7 +77,6 @@ export function initializeErrorHandlers() {
   });
 }
 
-
 export function initializeExtensions() {
   // Extend express response prototype
   (app.response as any).success = function (data: any, statusCode = 200) {
@@ -90,6 +89,12 @@ export function initializeExtensions() {
 // Graceful shutdown
 const shutdown = async (signal: string) => {
   console.log(`\n${signal} received. Shutting down gracefully...`);
+
+  // Force shutdown after 10s if graceful shutdown hangs
+  setTimeout(() => {
+    console.warn("Graceful shutdown timed out. Forcing shutdown.");
+    process.exit(1);
+  }, 10000).unref();
 
   try {
     // 1. Stop background jobs
