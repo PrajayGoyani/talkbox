@@ -35,5 +35,6 @@
   },
   "[jsonc]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
-  }
+  },
+  "typescript.native-preview.tsdk": "/home/dev/Documents/work/other/projects/user-chat/node_modules/@typescript/native-preview"
 }
