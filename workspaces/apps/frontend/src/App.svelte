@@ -63,7 +63,6 @@
     if (chatId && authStore.user) {
       untrack(() => {
         chatStore.loadMessages(chatId);
-        chatStore.markChatRead(chatId);
       });
     }
   });

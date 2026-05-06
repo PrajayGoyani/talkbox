@@ -37,19 +37,19 @@ describe("ChatController", () => {
 
       await getChatMessages(req, res);
 
-      expect(chatService.getChatMessages).toHaveBeenCalledWith("chat123", "user123", 30, "msg-456", "free");
+      expect(chatService.getChatMessages).toHaveBeenCalledWith("chat123", "user123", 30, "msg-456", "free", false);
       expect(res.success).toHaveBeenCalledWith(mockMessages);
     });
 
     it("should use defaults if limit/cursor are missing", async () => {
       await getChatMessages(req, res);
-      expect(vi.spyOn(chatService, "getChatMessages")).toHaveBeenCalledWith("chat123", "user123", 50, null, "free");
+      expect(vi.spyOn(chatService, "getChatMessages")).toHaveBeenCalledWith("chat123", "user123", 50, null, "free", false);
     });
 
     it("should prioritize headers for limit/cursor if query is missing", async () => {
       req.headers = { "x-limit": "10", "x-cursor": "msg-789" };
       await getChatMessages(req, res);
-      expect(vi.spyOn(chatService, "getChatMessages")).toHaveBeenCalledWith("chat123", "user123", 10, "msg-789", "free");
+      expect(vi.spyOn(chatService, "getChatMessages")).toHaveBeenCalledWith("chat123", "user123", 10, "msg-789", "free", false);
     });
   });
 

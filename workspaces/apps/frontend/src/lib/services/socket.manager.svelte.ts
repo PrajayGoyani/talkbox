@@ -239,4 +239,14 @@ export class SocketManager {
       contentBody,
     });
   }
+
+  markChatRead(chatId: string) {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit("read_chat", { chatId });
+  }
+
+  setActiveChat(chatId: string | null) {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit("active_chat", { chatId });
+  }
 }

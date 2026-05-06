@@ -82,6 +82,12 @@ class RedisService {
   popSyncQueue(limit: number) {
     return this.presence.popSyncQueue(limit);
   }
+  setActiveChat(userId: string, chatId: string | null) {
+    return this.presence.setActiveChat(userId, chatId);
+  }
+  getActiveChat(userId: string) {
+    return this.presence.getActiveChat(userId);
+  }
 
   // ─── Sessions & Tokens ─────────────────────────────────────────────
   incrementGlobalSession(userId: string, socketId: string) {

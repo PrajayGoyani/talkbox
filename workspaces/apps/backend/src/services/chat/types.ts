@@ -27,6 +27,7 @@ export interface IMessageService {
     limit?: number,
     cursor?: string | null,
     plan?: "free" | "pro",
+    markAsRead?: boolean,
   ): Promise<MessageDto[]>;
   markChatRead(chatId: string | ObjectId, userId: string | ObjectId): Promise<{ message: string }>;
 }

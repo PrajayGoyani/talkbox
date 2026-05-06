@@ -158,7 +158,7 @@ class ChatStore {
 
   async markChatRead(chatId: string) {
     try {
-      await chatService.markChatRead(chatId);
+      this.socketManager.markChatRead(chatId);
       chatListStore.patchChatLocally(chatId, { unreadCount: 0 });
     } catch (e) {
       console.error("Failed to mark chat as read:", e);

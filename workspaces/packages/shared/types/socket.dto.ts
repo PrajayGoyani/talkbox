@@ -46,4 +46,6 @@ export interface ClientToServerEvents {
   ) => void;
   typing_start: (data: { receiverId: string; chatId: string }) => void;
   typing_stop: (data: { receiverId: string; chatId: string }) => void;
+  read_chat: (data: { chatId: string }) => void;
+  active_chat: (data: { chatId: string | null }) => void;
 }

@@ -151,4 +151,30 @@ export class RedisPresenceService {
       return [];
     }
   }
+
+  // ─── Active Chat Tracking ──────────────────────────────────────────
+
+  async setActiveChat(userId: string, chatId: string | null): Promise<void> {
+    if (!this.client || !this.isConnected) return;
+    const key = `user:active_chat:${userId}`;
+    try {
+      if (chatId) {
+        await this.client.set(key, chatId, "EX", 3600); // Expire after 1 hour of inactivity
+      } else {
+        await this.client.del(key);
+      }
+    } catch (err) {
+      console.error("[RedisPresenceService] Error setting active chat:", err);
+    }
+  }
+
+  async getActiveChat(userId: string): Promise<string | null> {
+    if (!this.client || !this.isConnected) return null;
+    try {
+      return await this.client.get(`user:active_chat:${userId}`);
+    } catch (err) {
+      console.error("[RedisPresenceService] Error getting active chat:", err);
+      return null;
+    }
+  }
 }

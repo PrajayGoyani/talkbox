@@ -1,6 +1,7 @@
 import type { MessageDto, MessageReactionUpdateDto } from "shared/types/chat.dto";
 
 import { chatService } from "$services/chat.service";
+import { socketManager } from "$services/socket.manager.svelte";
 import { RealtimeEvent, realtimeEvents } from "$services/realtime-events";
 
 const LOADER_AWAIT_MS = 300;
@@ -32,9 +33,11 @@ class MessageStore {
     this.hasMoreMessages = true;
     this.isLoadingMessages = true;
 
+    socketManager.setActiveChat(chatId);
+
     const startTime = Date.now();
     try {
-      const loadedMessages = await chatService.loadMessages(chatId, this.messagesAbortController.signal);
+      const loadedMessages = await chatService.loadMessages(chatId, this.messagesAbortController.signal, true);
 
       if (this.activeChatId !== chatId) return;
 
@@ -91,6 +94,7 @@ class MessageStore {
     this.messages = [];
     this.hasMoreMessages = true;
     this.isLoadingMessages = false;
+    socketManager.setActiveChat(null);
   }
 
   handleReceiveMessage(message: MessageDto) {

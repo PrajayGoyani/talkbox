@@ -6,8 +6,14 @@ import { ApiError } from "$utils/errors";
 
 export class ChatService {
   /** Load messages for a chat via REST */
-  async loadMessages(chatId: string, signal?: AbortSignal): Promise<MessageDto[]> {
-    const resp = await fetch(`${API_BASE}/chat/${chatId}/messages?limit=50`, {
+  async loadMessages(chatId: string, signal?: AbortSignal, markAsRead?: boolean): Promise<MessageDto[]> {
+    const url = new URL(`${API_BASE}/chat/${chatId}/messages`, window.location.origin);
+    url.searchParams.set("limit", "50");
+    if (markAsRead) {
+      url.searchParams.set("read", "true");
+    }
+
+    const resp = await fetch(url.toString(), {
       credentials: "include",
       signal,
     });

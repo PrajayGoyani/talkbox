@@ -195,6 +195,9 @@ export class SocketService {
   ) {
     return this.typingHandler.handleTyping(sender, payload, isTyping);
   }
+  async handleMarkAsRead(userId: string, chatId: string) {
+    return messageService.markChatRead(chatId, userId);
+  }
 
   private _handleGlobalCacheInvalidation(type: string, id: string) {
     if (type === "chat") {

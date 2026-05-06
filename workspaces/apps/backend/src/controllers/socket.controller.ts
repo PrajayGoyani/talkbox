@@ -103,6 +103,30 @@ export const configureSocketServer = (server: import("http").Server | import("ht
     socket.on("typing_stop", (data) => {
       void socketService.handleTyping(socket.data.user, data, false);
     });
+
+    socket.on("read_chat", async (data) => {
+      try {
+        await socketService.handleMarkAsRead(socket.data.user.id, data.chatId);
+      } catch (err) {
+        console.error(`[SocketController] Error marking chat as read for user ${socket.data.user.id}:`, err);
+      }
+    });
+
+    socket.on("active_chat", async (data) => {
+      try {
+        await redisService.setActiveChat(socket.data.user.id, data.chatId);
+      } catch (err) {
+        console.error(`[SocketController] Error setting active chat for user ${socket.data.user.id}:`, err);
+      }
+    });
+
+    socket.on("disconnect", async () => {
+      try {
+        await redisService.setActiveChat(socket.data.user.id, null);
+      } catch (err) {
+        console.error(`[SocketController] Error clearing active chat on disconnect:`, err);
+      }
+    });
   });
 
   return io;

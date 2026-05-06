@@ -38,7 +38,11 @@ export class MessageService implements IMessageService {
     limit: number = 50,
     cursor: string | null = null,
     plan: "free" | "pro" = "free",
+    markAsRead: boolean = false,
   ): Promise<MessageDto[]> {
+    if (markAsRead) {
+      await this.markChatRead(chatId, userId);
+    }
     const chat = await this.chatRepo.findById(chatId);
     if (!chat) {
       throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
@@ -122,12 +126,16 @@ export class MessageService implements IMessageService {
     // 4. Atomic Persistence
     let persistenceResult: { message: IMessage; chat: IChat };
     try {
+      const activeChatId = await redisService.getActiveChat(receiverId);
+      const skipUnreadIncrement = activeChatId === chatId;
+
       persistenceResult = await this.persistMessageAndNotifyChat(
         chatId,
         sender.id,
         receiverId,
         contentBody,
         idempotencyKey,
+        skipUnreadIncrement,
       );
     } catch (err: any) {
       if (err.code === 11000) {
@@ -201,6 +209,7 @@ export class MessageService implements IMessageService {
     receiverId: string,
     contentBody: string,
     idempotencyKey: string,
+    skipUnreadIncrement: boolean = false,
   ): Promise<{ message: IMessage; chat: IChat }> {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -216,14 +225,15 @@ export class MessageService implements IMessageService {
         { session },
       );
 
-      const chat = await this.chatRepo.updateById(
-        chatId,
-        {
-          lastMessage: { contentBody, senderId, sentAt: message.createdAt },
-          $inc: { [`unreadCounts.${receiverId}`]: 1 },
-        },
-        { session },
-      );
+      const updateData: any = {
+        lastMessage: { contentBody, senderId, sentAt: message.createdAt },
+      };
+
+      if (!skipUnreadIncrement) {
+        updateData.$inc = { [`unreadCounts.${receiverId}`]: 1 };
+      }
+
+      const chat = await this.chatRepo.updateById(chatId, updateData, { session });
 
       if (!chat) {
         throw AppError.forbidden(CHAT_MESSAGES.DELIVERY_FAILED);

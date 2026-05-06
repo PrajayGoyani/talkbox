@@ -52,8 +52,9 @@ class ChatService {
     limit?: number,
     cursor?: string | null,
     plan?: "free" | "pro",
+    markAsRead?: boolean,
   ): Promise<MessageDto[]> {
-    return messageService.getChatMessages(chatId, userId, limit, cursor, plan);
+    return messageService.getChatMessages(chatId, userId, limit, cursor, plan, markAsRead);
   }
 
   async markChatRead(chatId: string, userId: string): Promise<{ message: string }> {
