@@ -24,7 +24,6 @@
     loading = true;
     try {
       await chatStore.fetchRequests();
-      chatStore.pendingRequestCount = 0; // Reset count when viewed/refreshed
     } catch (e) {
       error = (e as Error).message;
     } finally {

@@ -2,7 +2,7 @@ import type { Socket } from "socket.io-client";
 
 import { chatService } from "$services/chat.service";
 import { RealtimeEvent, realtimeEvents } from "$services/realtime-events";
-import { SocketManager } from "$services/socket.manager.svelte";
+import { socketManager } from "$services/socket.manager.svelte";
 import { messageStore } from "$state/active-chat.svelte";
 
 import { authStore } from "./auth.svelte";
@@ -79,10 +79,11 @@ class ChatStore {
     this.socketManager.isConnected = val;
   }
 
-  private socketManager: SocketManager;
+  private socketManager = socketManager;
 
   constructor() {
-    this.socketManager = new SocketManager();
+    // this.socketManager = new SocketManager();
+    // No longer instantiates - uses singleton
   }
 
   get socket(): Socket | null {

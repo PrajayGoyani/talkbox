@@ -250,3 +250,5 @@ export class SocketManager {
     this.socket.emit("active_chat", { chatId });
   }
 }
+
+export const socketManager = new SocketManager();
