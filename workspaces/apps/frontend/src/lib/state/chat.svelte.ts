@@ -139,7 +139,8 @@ class ChatStore {
 
   // --- Actions ---
   async loadMessages(chatId: string) {
-    return messageStore.initialize(chatId);
+    await messageStore.initialize(chatId);
+    chatListStore.patchChatLocally(chatId, { unreadCount: 0 });
   }
   async loadOlderMessages() {
     return messageStore.loadOlderMessages();
