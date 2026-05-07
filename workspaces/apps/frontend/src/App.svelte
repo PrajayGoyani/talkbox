@@ -96,7 +96,7 @@
       chatStore.fetchRequests();
 
       // Register toast callback
-      chatStore.onToast((data) => {
+      const cleanupToast = chatStore.onToast((data) => {
         if (toastContainer) {
           toastContainer.addToast(data);
         }
@@ -108,6 +108,10 @@
       Views.SettingsPanel();
       Views.ChatWindow();
       Views.ChatPartnerProfile();
+
+      return () => {
+        cleanupToast();
+      };
     } else if (!authStore.user && !authStore.isCheckingAuth) {
       chatStore.disconnect();
     }

@@ -159,7 +159,7 @@
 
   // Initial load + register for socket-driven refreshes
   onMount(() => {
-    chatStore.onRefreshChats(() => refreshChats());
+    return chatStore.onRefreshChats(() => refreshChats());
   });
 </script>
 

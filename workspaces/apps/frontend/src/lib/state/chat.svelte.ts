@@ -91,12 +91,16 @@ class ChatStore {
   }
 
   onRefreshChats(cb: () => void) {
-    realtimeEvents.on(RealtimeEvent.CHAT_ACCEPTED, cb);
-    realtimeEvents.on(RealtimeEvent.NOTIFICATION_RECEIVED, cb);
+    const u1 = realtimeEvents.on(RealtimeEvent.CHAT_ACCEPTED, cb);
+    const u2 = realtimeEvents.on(RealtimeEvent.NOTIFICATION_RECEIVED, cb);
+    return () => {
+      u1();
+      u2();
+    };
   }
 
   onToast(cb: (data: any) => void) {
-    realtimeEvents.on(RealtimeEvent.MESSAGE_RECEIVED, (data) => {
+    const u1 = realtimeEvents.on(RealtimeEvent.MESSAGE_RECEIVED, (data) => {
       const isChatOpen = data.chatId === messageStore.activeChatId;
       const isOtherUser = data.senderId !== authStore.user?.id;
 
@@ -115,7 +119,7 @@ class ChatStore {
       }
     });
 
-    realtimeEvents.on(RealtimeEvent.NOTIFICATION_RECEIVED, (notification) => {
+    const u2 = realtimeEvents.on(RealtimeEvent.NOTIFICATION_RECEIVED, (notification) => {
       if (notification.type === "chat_request") {
         cb({
           chatId: notification.referenceId,
@@ -124,6 +128,11 @@ class ChatStore {
         } as any);
       }
     });
+
+    return () => {
+      u1();
+      u2();
+    };
   }
 
   // --- Connection ---
