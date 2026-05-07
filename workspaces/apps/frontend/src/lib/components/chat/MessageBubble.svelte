@@ -136,28 +136,37 @@
   >
     <div class="relative">
       {#if messageEditingId === msg.id}
-        <div class="flex flex-col gap-2 min-w-[200px] py-1">
-          <textarea
-            bind:value={editInputValue}
-            bind:this={editTextareaElement}
-            class="w-full bg-transparent border-none focus:ring-0 outline-none resize-none text-sm leading-relaxed p-0 scrollbar-none shadow-none"
-            onkeydown={(e) => handleEditKeydown(e, msg.id)}
-            oninput={handleEditInput}
-            rows="1"
-          ></textarea>
-          <div class="flex justify-end gap-3 mt-1">
-            <button
-              onclick={cancelEditing}
-              class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-white/40 dark:hover:text-white/70 dark:hover:bg-white/5 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onclick={() => saveEditing(msg.id)}
-              class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:text-indigo-300 dark:hover:bg-indigo-500/10 transition-colors"
-            >
-              Save Changes
-            </button>
+        <div class="grid w-full py-1">
+          <!-- Invisible mirror for width/height preservation -->
+          <div
+            class="invisible pointer-events-none row-start-1 col-start-1 m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap py-0"
+            aria-hidden="true"
+          >
+            {editInputValue}<span class="inline-block w-11"></span>
+          </div>
+          <div class="row-start-1 col-start-1 flex flex-col gap-2 w-full">
+            <textarea
+              bind:value={editInputValue}
+              bind:this={editTextareaElement}
+              class="w-full bg-transparent border-none focus:ring-0 outline-none resize-none text-sm leading-relaxed p-0 scrollbar-none shadow-none"
+              onkeydown={(e) => handleEditKeydown(e, msg.id)}
+              oninput={handleEditInput}
+              rows="1"
+            ></textarea>
+            <div class="flex justify-end gap-3 mt-1">
+              <button
+                onclick={cancelEditing}
+                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-white/40 dark:hover:text-white/70 dark:hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onclick={() => saveEditing(msg.id)}
+                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:text-indigo-300 dark:hover:bg-indigo-500/10 transition-colors"
+              >
+                Save
+              </button>
+            </div>
           </div>
         </div>
       {:else}
