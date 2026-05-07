@@ -35,7 +35,7 @@
   };
 </script>
 
-<div class="panel-header glass-panel z-50">
+<div class="panel-header glass-panel z-50 px-2.5!">
   <div class="flex items-center gap-3 w-full">
     <!-- Mobile Back Button -->
     <button
