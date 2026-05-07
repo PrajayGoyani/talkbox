@@ -35,8 +35,8 @@
   };
 </script>
 
-<div class="glass-panel p-2.5 md:p-4 border-b shrink-0 z-50">
-  <div class="flex items-center gap-3">
+<div class="panel-header glass-panel z-50">
+  <div class="flex items-center gap-3 w-full">
     <!-- Mobile Back Button -->
     <button
       class="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/10 transition-all mr-2 active:scale-90"

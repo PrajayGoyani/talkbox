@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-01 | Files scanned: 2 | Token estimate: ~500 -->
+<!-- Generated: 2026-05-08 | Files scanned: 5 | Token estimate: ~600 -->
 # Project Dependencies (v1.7.0)
 
 ## Backend

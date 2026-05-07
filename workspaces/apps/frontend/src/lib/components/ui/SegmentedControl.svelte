@@ -35,7 +35,8 @@
         "relative flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold transition-colors z-10",
         {
           "text-indigo-600 dark:text-white": value === option.value,
-          "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300": value !== option.value,
+          "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300":
+            value !== option.value,
         },
       )}
       onclick={() => (value = option.value)}
@@ -44,10 +45,12 @@
       {#if option.badge}
         <span
           class={cn(
-            "flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[9px] font-black transition-colors",
+            "flex items-center justify-center min-w-4 h-4 px-1 rounded-full text-[9px] font-black transition-colors",
             {
-              "bg-indigo-600 text-white dark:bg-white dark:text-indigo-600": value === option.value,
-              "bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400": value !== option.value,
+              "bg-indigo-600 text-white dark:bg-white dark:text-indigo-600":
+                value === option.value,
+              "bg-slate-200 text-slate-600 dark:bg-white/10 dark:text-slate-400":
+                value !== option.value,
             },
           )}
         >

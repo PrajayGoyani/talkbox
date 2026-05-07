@@ -1,47 +1,51 @@
-<!-- Generated: 2026-05-01 | Files scanned: ~150 | Token estimate: ~800 -->
+<!-- Generated: 2026-05-08 | Files scanned: ~160 | Token estimate: ~850 -->
 # Frontend Architecture
 
 ## Page Tree
-- **Guest Access**
-  - `/login`: User authentication.
-  - `/signup`: User registration.
-  - `/forgot-password`, `/reset-password`: Account recovery.
-  - `/verify-email`: Registration completion.
-- **Authenticated Access (`/chat`)**
-  - `/chat/conversations`: Main chat listing.
-  - `/chat/requests`: Pending chat invitations.
-  - `/chat/profile`: Profile management and bio update.
-  - `/chat/pricing`: Account upgrade (Free -> Pro).
-  - `/chat/settings`: App preferences.
+- **Guest Layout (`GuestApp`)**
+  - `/`: Landing page (Welcome).
+  - `/login`, `/signup`: Auth entry points.
+  - `/forgot-password`, `/reset-password`: Recovery flows.
+  - `/verify-email`: Email confirmation.
+  - `/pricing`: Subscription plans (Free/Pro).
+  - `/terms`, `/privacy`, `/faq`: Support & Legal docs.
+- **Authenticated Layout (`AuthenticatedApp` - `/chat`)**
+  - `/chat/conversations`: Active chat history.
+  - `/chat/requests`: Incoming/Outgoing chat invitations.
+  - `/chat/profile`: User account management.
+  - `/chat/settings`: Theme and app preferences.
 
 ## Component Hierarchy (`App.svelte`)
-1. **Layout Shell**
-   - `IconRail`: Navigation, notifications badge, logout.
-   - `Sidebar` (`aside`): Dynamic panels (`ConversationsPanel`, `ProfilePanel`, `RequestsPanel`, `SettingsPanel`).
+1. **Authenticated Shell**
+   - `IconRail`: Persistent sidebar navigation, notification badges, and logout.
+   - `Sidebar` (`aside`): Contextual panels (`ConversationsPanel`, `ProfilePanel`, `RequestsPanel`, `SettingsPanel`).
    - `Main Content` (`section`):
-     - `ChatWindow`: Active conversation view.
-     - `Pricing`: Pro plan landing page.
-     - `Home`: Default welcome view.
-2. **Global Overlays**
-   - `NotificationsDropdown`: Historical alerts.
-   - `ToastContainer`: Real-time toast alerts.
-   - `GlobalTooltip`: Shared tooltip system.
-   - `ConfirmationDialog`: Atomic confirm/cancel flows.
+     - `ChatWindow`: Messaging interface for the active conversation.
+     - `WelcomeDashboard`: Default view when no chat is selected.
+   - `Chat Partner Profile`: Sliding drawer for partner details and actions.
+2. **Guest Shell**
+   - `Header`: Shared navigation for non-app pages (Logo, Nav links, Auth buttons).
+   - `Dynamic Content`: Renders `Login`, `Signup`, `Pricing`, etc.
+3. **Global Overlays**
+   - `NotificationsDropdown`: Historical alert management.
+   - `ToastContainer`: Real-time system feedback.
+   - `GlobalTooltip` / `ReactionTooltip`: UI helpers.
+   - `ConfirmationDialog`: Transactional user confirmation flows.
 
 ## State Management (Svelte 5 Runes)
-- **`authStore`**: User session, profile updates, and plan status ($state).
+- **`authStore`**: Session state, profile persistence, and auth guards ($state).
 - **`chatStore`**:
-  - `chats`: Array of active conversations with local pinning logic.
-  - `messages`: Reactive array of messages for the active chat.
-  - `socketManager`: Delegated WebSocket lifecycle and event handling.
-  - `onlineStatus`: SvelteMap tracking partner presence.
-  - `typingStatus`: SvelteMap tracking throttled typing events.
-- **`uiStore`**: Global UI flags (sidebar, notifications, alerts).
-- **`routerStore`**: Hash-based routing with segment parsing.
+  - `chats` / `requests`: Reactive collections of domain data.
+  - `socketManager`: Encapsulated WebSocket lifecycle and event multiplexing.
+  - `onlineStatus` / `typingStatus`: Reactive maps for real-time presence/typing.
+- **`uiStore`**: Global UI flags (sidebar, modals) and centralized navigation logic (`uiStore.navigate`).
+- **`notificationStore`**: Centralized unread tracking and historical alert management.
+- **`routerStore`**: Hash-based router with segment parsing and auth-aware guards.
 
 ## Logic & Patterns
-- **Virtual List**: `MessageList` uses `overflow-anchor` for stable scrolling.
-- **Pinning**: Local-first pinning using `localStorage`.
-- **Abort Controllers**: Prevent race conditions during concurrent REST requests.
-- **Browser Notifications**: Integrated via the browser `Notification` API.
+- **Facade Delegation**: Services mirror backend facades to maintain consistent API boundaries.
+- **Virtual Scrolling**: `MessageList` utilizes `overflow-anchor` for high-performance history rendering.
+- **Pinning**: Local-first persistence for conversation order.
+- **Lazy Loading**: Code-splitting for panels and views to optimize initial bundle size.
+
 

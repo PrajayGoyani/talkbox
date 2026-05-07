@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-01 | Files scanned: ~150 | Token estimate: ~800 -->
+<!-- Generated: 2026-05-08 | Files scanned: ~160 | Token estimate: ~850 -->
 # Backend Architecture
 
 ## API Routes
@@ -31,16 +31,22 @@
 - `PATCH /profile` -> `user.controller.updateProfile`
 - `GET  /search` -> `user.controller.searchByUsername`
 
+### Notifications (`/api/notifications`)
+- `GET  /` -> `notification.controller.getNotifications`
+- `PUT  /read-all` -> `notification.controller.markAllAsRead`
+- `PUT  /:id/read` -> `notification.controller.markAsRead`
+
 ## Middleware Chain
 1. `authenticateToken`: Validates JWT.
 2. `rateLimiter`: Distributed (Redis) with L1 local block fallback ("Fail-through protection").
-3. `validate(schema)`: Zod schema validation.
+3. `validate(schema)` / `validateQuery(schema)`: Zod schema validation for body/query params.
 
 ## Key Services
-- `ChatService`: Business logic for chat orchestration and message history.
+- `ChatService`: Facade for chat orchestration, listing, and message history.
 - `SocketService`: High-performance WebSocket management with L1/L2 participant/partner caching.
 - `PresenceService`: Real-time status broadcasting via Redis pub/sub.
 - `RedisService`: Centralized Redis operations (Idempotency, Presence Sync Queue, Session Management).
+- `NotificationService`: Core logic for alert persistence and dispatch.
 
 ## Sockets
 - Authenticated via JWT handshake.
@@ -48,7 +54,8 @@
   - Free users: One active session (deterministic takeover).
   - Pro users: Up to 5 active sessions.
 - **Handlers**:
-  - `MessageHandler`: Save and deliver with idempotency checks.
+  - `MessageHandler`: CRUD operations for messages (Save, Deliver, Edit, Delete) with idempotency.
   - `ReactionHandler`: Manage emoji reactions with slug normalization.
   - `TypingHandler`: Throttled typing indicators.
+
 

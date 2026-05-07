@@ -13,8 +13,10 @@ import { LRUCache } from "lru-cache";
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 import { MessageDto } from "shared/types/chat.dto";
-
 import { IMessageService } from "./types";
+import { AuthenticatedSocketUser } from "@/types/socket.types";
+
+export type MessageSender = Omit<AuthenticatedSocketUser, "bio">;
 
 const PARTICIPANT_CACHE_TTL_MS = 10 * 60 * 1000;
 const PARTICIPANT_CACHE_MAX = 10000;
@@ -106,7 +108,7 @@ export class MessageService implements IMessageService {
   }
 
   async saveAndDeliver(
-    sender: { id: string; plan: "free" | "pro"; name?: string | null; username: string; avatarUrl?: string },
+    sender: MessageSender,
     payload: { chatId: string; receiverId: string; contentBody: string; idempotencyKey: string },
   ): Promise<MessageDto> {
     const { chatId, receiverId, contentBody, idempotencyKey } = payload;
@@ -243,22 +245,13 @@ export class MessageService implements IMessageService {
       return { message, chat };
     } catch (err: any) {
       await session.abortTransaction();
-      // Handle race condition where idempotency check passed but DB write collided
-      if (err.code === 11000) {
-        const existing = await this.messageRepo.findOne({ idempotencyKey });
-        if (existing) {
-          // This should be handled by the caller or we could throw a specific error
-          // For now, we'll re-throw or handle it if we can access the plan
-          throw err; // Caller should handle transformation if needed
-        }
-      }
       throw err;
     } finally {
       await session.endSession();
     }
   }
 
-  async deleteMessage(sender: { id: string; plan: "free" | "pro" }, messageId: string) {
+  async deleteMessage(sender: MessageSender, messageId: string) {
     const { message, chat } = await this.validateModification(sender.id, sender.plan, messageId);
 
     await this.messageRepo.updateOne(
@@ -289,7 +282,7 @@ export class MessageService implements IMessageService {
     });
   }
 
-  async editMessage(sender: { id: string; plan: "free" | "pro" }, messageId: string, contentBody: string) {
+  async editMessage(sender: MessageSender, messageId: string, contentBody: string) {
     const { message, chat } = await this.validateModification(sender.id, sender.plan, messageId);
 
     const trimmedContent = contentBody.trim();

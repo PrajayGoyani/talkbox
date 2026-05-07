@@ -29,9 +29,7 @@
 </script>
 
 <div class="h-full flex flex-col bg-white dark:bg-slate-900">
-  <div
-    class="panel-header flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-white/5"
-  >
+  <div class="panel-header">
     <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
       User Info
     </h2>

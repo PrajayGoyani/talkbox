@@ -83,7 +83,7 @@ body {
 
 /* Panels & Lists */
 .panel-header {
-  @apply shrink-0 border-b border-slate-200 p-5 dark:border-white/10;
+  @apply h-15 md:h-18 shrink-0 border-b border-slate-200 dark:border-white/10 flex items-center justify-between px-5;
 }
 
 .chat-item {
