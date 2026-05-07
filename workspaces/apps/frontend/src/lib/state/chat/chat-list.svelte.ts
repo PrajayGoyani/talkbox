@@ -19,8 +19,10 @@ export class ChatListStore {
   currentSearchQuery = $state("");
   lastError = $state<string | null>(null);
 
-  public chatsMap = new Map<string, Chat>();
+  public chatsMap = $state(new Map<string, Chat>());
+  private userIdToChatIds = new Map<string, Set<string>>();
   private chatsAbortController: AbortController | null = null;
+  private listenerCleanups: Array<() => void> = [];
 
   // Facade helpers for UI components still using chatListStore
   get requests() { return chatRequestsStore.items; }
@@ -32,7 +34,10 @@ export class ChatListStore {
       $effect.root(() => {
         $effect(() => {
           if (authStore.user?.id) {
+            this.initEventListeners();
             this.sortChats();
+          } else {
+            this.clear();
           }
         });
       });
@@ -42,15 +47,24 @@ export class ChatListStore {
   }
 
   private initEventListeners() {
-    realtimeEvents.on(RealtimeEvent.MESSAGE_RECEIVED, (msg) => this.handleReceiveMessage(msg));
-    realtimeEvents.on(RealtimeEvent.NOTIFICATION_RECEIVED, (n) => this.handleNotification(n));
-    realtimeEvents.on(RealtimeEvent.CHAT_ACCEPTED, () => {
-      void this.fetchChats();
-      void chatRequestsStore.loadInitial();
-    });
-    realtimeEvents.on(RealtimeEvent.MESSAGE_DELETED, (d) => this.handleMessageDeleted(d));
-    realtimeEvents.on(RealtimeEvent.MESSAGE_UPDATED, (d) => this.handleMessageUpdated(d));
-    realtimeEvents.on(RealtimeEvent.PROFILE_UPDATED, (d) => this.handleProfileUpdate(d));
+    this.cleanupSocketListeners();
+
+    this.listenerCleanups = [
+      realtimeEvents.on(RealtimeEvent.MESSAGE_RECEIVED, (msg) => this.handleReceiveMessage(msg)),
+      realtimeEvents.on(RealtimeEvent.NOTIFICATION_RECEIVED, (n) => this.handleNotification(n)),
+      realtimeEvents.on(RealtimeEvent.CHAT_ACCEPTED, () => {
+        void this.fetchChats();
+        void chatRequestsStore.loadInitial();
+      }),
+      realtimeEvents.on(RealtimeEvent.MESSAGE_DELETED, (d) => this.handleMessageDeleted(d)),
+      realtimeEvents.on(RealtimeEvent.MESSAGE_UPDATED, (d) => this.handleMessageUpdated(d)),
+      realtimeEvents.on(RealtimeEvent.PROFILE_UPDATED, (d) => this.handleProfileUpdate(d)),
+    ];
+  }
+
+  public cleanupSocketListeners() {
+    this.listenerCleanups.forEach((cleanup) => cleanup());
+    this.listenerCleanups = [];
   }
 
   // --- Handlers ---
@@ -134,11 +148,23 @@ export class ChatListStore {
 
   private handleProfileUpdate(data: { userId: string } & Record<string, any>) {
     const { userId, ...updates } = data;
-    this.chats.forEach((chat) => {
-      if (chat.otherUser?.id === userId && chat.otherUser) {
+    const chatIds = this.userIdToChatIds.get(userId);
+    if (!chatIds) return;
+
+    chatIds.forEach((chatId) => {
+      const chat = this.chatsMap.get(chatId);
+      if (chat?.otherUser) {
         Object.assign(chat.otherUser, updates);
       }
     });
+  }
+
+  private updateUserIdMap(chat: Chat) {
+    if (!chat.otherUser?.id) return;
+    if (!this.userIdToChatIds.has(chat.otherUser.id)) {
+      this.userIdToChatIds.set(chat.otherUser.id, new Set());
+    }
+    this.userIdToChatIds.get(chat.otherUser.id)?.add(chat.id);
   }
 
   // --- Actions ---
@@ -154,20 +180,23 @@ export class ChatListStore {
       this.currentSearchQuery = query;
       this.chatsMap.clear();
 
-      this.chats = result.data.map((chat: any) => {
-        const normalized = {
-          ...chat,
-          isPinned: pinnedChatsStore.isPinned(chat.id),
-          _lastUpdateTs: new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime(),
-        };
-        this.chatsMap.set(chat.id, normalized);
-        return normalized;
+      this.chats = result.data.map((chat: any) => ({
+        ...chat,
+        isPinned: pinnedChatsStore.isPinned(chat.id),
+        _lastUpdateTs: new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime(),
+      }));
+
+      // Populate reactive map and user map
+      this.userIdToChatIds.clear();
+      this.chats.forEach(c => {
+        this.chatsMap.set(c.id, c);
+        this.updateUserIdMap(c);
       });
 
       this.unreadChatsCount = this.chats.filter((c) => (c.unreadCount ?? 0) > 0).length;
       this.hasMoreChats = result.hasMore;
       this.chatCursor = result.nextCursor;
-      this.sortChats();
+      this.sortChats(false); // Pins already set during map
     } catch (e: any) {
       if (e.name === "AbortError") return;
       this.lastError = e.message || "Failed to fetch chats";
@@ -187,20 +216,26 @@ export class ChatListStore {
         this.chatsAbortController?.signal
       );
 
-      const newChats = result.data.map((chat: any) => {
-        const normalized = {
-          ...chat,
-          isPinned: pinnedChatsStore.isPinned(chat.id),
-          _lastUpdateTs: new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime(),
-        };
-        this.chatsMap.set(chat.id, normalized);
-        return normalized;
-      });
+      const newChats = result.data.map((chat: any) => ({
+        ...chat,
+        isPinned: pinnedChatsStore.isPinned(chat.id),
+        _lastUpdateTs: new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime(),
+      }));
 
+      const oldLength = this.chats.length;
       this.chats = [...this.chats, ...newChats];
+      
+      // Update map with new proxied items using O(1) indexed lookup
+      newChats.forEach((_, i) => {
+        const proxied = this.chats[oldLength + i];
+        if (proxied) {
+          this.chatsMap.set(proxied.id, proxied);
+          this.updateUserIdMap(proxied);
+        }
+      });
       this.hasMoreChats = result.hasMore;
       this.chatCursor = result.nextCursor;
-      this.sortChats();
+      this.sortChats(false); // Pins already set during map
     } finally {
       this.isLoadingMoreChats = false;
     }
@@ -247,19 +282,37 @@ export class ChatListStore {
     }
 
     this.chats.sort((a, b) => {
-      const aPinned = a.isPinned ? 1 : 0;
-      const bPinned = b.isPinned ? 1 : 0;
-      if (aPinned !== bPinned) return bPinned - aPinned;
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
       return (b._lastUpdateTs || 0) - (a._lastUpdateTs || 0);
     });
-
-    // Trigger reactivity
-    this.chats = [...this.chats];
   }
 
   removeChatLocally(chatId: string) {
+    const chat = this.chatsMap.get(chatId);
+    if (chat?.otherUser?.id) {
+      const chatIds = this.userIdToChatIds.get(chat.otherUser.id);
+      if (chatIds) {
+        chatIds.delete(chatId);
+        if (chatIds.size === 0) {
+          this.userIdToChatIds.delete(chat.otherUser.id);
+        }
+      }
+    }
     this.chats = this.chats.filter(c => c.id !== chatId);
     this.chatsMap.delete(chatId);
+  }
+
+  public clear() {
+    this.chats = [];
+    this.chatsMap.clear();
+    this.userIdToChatIds.clear();
+    this.unreadChatsCount = 0;
+    this.chatCursor = null;
+    this.hasMoreChats = true;
+    this.lastError = null;
+    this.isLoadingChats = false;
+    this.isLoadingMoreChats = false;
+    this.cleanupSocketListeners();
   }
 }
 

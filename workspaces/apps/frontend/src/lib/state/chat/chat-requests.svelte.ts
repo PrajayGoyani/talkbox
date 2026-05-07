@@ -1,11 +1,24 @@
 import { chatService } from "$lib/services/chat.service";
 import type { ChatDto } from "$lib/types/chat";
+import { authStore } from "$state/auth.svelte";
 
 export class ChatRequestsStore {
   items = $state<ChatDto[]>([]);
   hasMore = $state(true);
   isLoading = $state(false);
   cursor = $state<string | null>(null);
+
+  constructor() {
+    if (typeof window !== "undefined") {
+      $effect.root(() => {
+        $effect(() => {
+          if (!authStore.user?.id) {
+            this.clear();
+          }
+        });
+      });
+    }
+  }
 
   async loadInitial() {
     this.isLoading = true;
@@ -20,6 +33,7 @@ export class ChatRequestsStore {
       this.isLoading = false;
     }
   }
+// ... rest of the file
 
   async loadMore() {
     if (!this.hasMore || this.isLoading) return;
