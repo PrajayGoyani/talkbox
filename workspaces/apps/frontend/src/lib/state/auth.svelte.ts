@@ -73,7 +73,7 @@ class AuthStore {
       const response = await fetch(`${API_BASE}/auth/refresh`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: this.getHeaders(true),
       });
 
       if (!response.ok) return false;
@@ -137,7 +137,7 @@ class AuthStore {
     try {
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: this.getHeaders(true),
         credentials: "include",
         body: JSON.stringify(credentials),
       });
@@ -173,7 +173,7 @@ class AuthStore {
     try {
       const response = await fetch(`${API_BASE}/auth/signup`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: this.getHeaders(true),
         credentials: "include",
         body: JSON.stringify(data),
       });
@@ -232,10 +232,7 @@ class AuthStore {
     try {
       const resp = await fetch(`${API_BASE}/user/profile`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.accessToken}`,
-        },
+        headers: this.getHeaders(true),
         credentials: "include",
         body: JSON.stringify(data),
       });
@@ -272,7 +269,7 @@ class AuthStore {
       formData.append("avatar", file);
       const resp = await fetch(`${API_BASE}/user/avatar`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${this.accessToken}` },
+        headers: this.getHeaders(),
         credentials: "include",
         body: formData,
       });
@@ -295,7 +292,7 @@ class AuthStore {
     try {
       const resp = await fetch(`${API_BASE}/auth/upgrade-pro`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${this.accessToken}` },
+        headers: this.getHeaders(),
         credentials: "include",
       });
 
@@ -327,7 +324,7 @@ class AuthStore {
     try {
       const response = await fetch(`${API_BASE}/auth/forgot-password`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: this.getHeaders(true),
         credentials: "include",
         body: JSON.stringify({ email }),
       });
@@ -357,7 +354,7 @@ class AuthStore {
     try {
       const response = await fetch(`${API_BASE}/auth/reset-password`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: this.getHeaders(true),
         credentials: "include",
         body: JSON.stringify({ token, password }),
       });
@@ -417,7 +414,7 @@ class AuthStore {
     try {
       const response = await fetch(`${API_BASE}/auth/resend-verification`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${this.accessToken}` },
+        headers: this.getHeaders(),
         credentials: "include",
       });
 
@@ -431,6 +428,14 @@ class AuthStore {
       console.error("Resend verification error", e);
       return false;
     }
+  }
+  /** Helper to get headers with optional JSON content-type and auth token */
+  private getHeaders(json = false): Record<string, string> {
+    const headers: Record<string, string> = json ? { "Content-Type": "application/json" } : {};
+    if (this.accessToken) {
+      headers["Authorization"] = `Bearer ${this.accessToken}`;
+    }
+    return headers;
   }
 }
 

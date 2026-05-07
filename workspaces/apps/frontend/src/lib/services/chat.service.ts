@@ -93,7 +93,7 @@ export class ChatService {
   async markChatRead(chatId: string) {
     const resp = await fetch(`${API_BASE}/chat/${chatId}/read`, {
       method: "PUT",
-      headers: { Authorization: `Bearer ${authStore.accessToken}` },
+      headers: this.getHeaders(),
       credentials: "include",
     });
     if (!resp.ok) {
@@ -105,7 +105,7 @@ export class ChatService {
   async acceptChat(chatId: string) {
     const resp = await fetch(`${API_BASE}/chat/${chatId}/accept`, {
       method: "PUT",
-      headers: { Authorization: `Bearer ${authStore.accessToken}` },
+      headers: this.getHeaders(),
       credentials: "include",
     });
     if (!resp.ok) {
@@ -118,7 +118,7 @@ export class ChatService {
   async rejectChat(chatId: string) {
     const resp = await fetch(`${API_BASE}/chat/${chatId}/reject`, {
       method: "PUT",
-      headers: { Authorization: `Bearer ${authStore.accessToken}` },
+      headers: this.getHeaders(),
       credentials: "include",
     });
     if (!resp.ok) {
@@ -131,10 +131,7 @@ export class ChatService {
   async sendChatRequest(username: string) {
     const resp = await fetch(`${API_BASE}/chat/request`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${authStore.accessToken}`,
-      },
+      headers: this.getHeaders(true),
       credentials: "include",
       body: JSON.stringify({ username: username.trim() }),
     });
@@ -142,6 +139,15 @@ export class ChatService {
       throw await ApiError.fromResponse(resp);
     }
     return await resp.json();
+  }
+
+  /** Helper to get headers with optional JSON content-type and auth token */
+  private getHeaders(json = false): Record<string, string> {
+    const headers: Record<string, string> = json ? { "Content-Type": "application/json" } : {};
+    if (authStore.accessToken) {
+      headers["Authorization"] = `Bearer ${authStore.accessToken}`;
+    }
+    return headers;
   }
 }
 

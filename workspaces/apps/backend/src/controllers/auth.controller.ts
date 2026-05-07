@@ -25,21 +25,21 @@ const ACCESS_TOKEN_COOKIE_OPTIONS: CookieOptions = {
 };
 
 export const signup = async (req: SignupRequest, res: Response) => {
-  const { refreshToken, accessToken, ...userPayload } = await authService.signup(req.body);
+  const result = await authService.signup(req.body);
 
-  res.cookie("refresh_token", refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
-  res.cookie("access_token", accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+  res.cookie("refresh_token", result.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+  res.cookie("access_token", result.accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
 
-  res.success(userPayload);
+  res.success(result);
 };
 
 export const login = async (req: LoginRequest, res: Response) => {
-  const { refreshToken, accessToken, ...userPayload } = await authService.login(req.body);
+  const result = await authService.login(req.body);
 
-  res.cookie("refresh_token", refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
-  res.cookie("access_token", accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+  res.cookie("refresh_token", result.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+  res.cookie("access_token", result.accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
 
-  res.success(userPayload);
+  res.success(result);
 };
 
 export const logout = async (_req: Request, res: Response) => {
