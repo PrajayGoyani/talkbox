@@ -116,33 +116,76 @@ export function tooltip(
   let variant = typeof options === "object" ? options.variant || "default" : "default";
 
   let touchTimeout: ReturnType<typeof setTimeout> | undefined;
+  let startX = 0;
+  let startY = 0;
+  const MOVE_THRESHOLD = 12; // px
+  const LONG_PRESS_DURATION = 500; // ms
+
+  const isTouchDevice = () => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
 
   const handleMouseEnter = () => {
-    if (touchTimeout) clearTimeout(touchTimeout);
+    if (isTouchDevice()) return;
     tooltipStore.show(text, node, position, variant);
   };
 
   const handleMouseLeave = () => {
+    if (isTouchDevice()) return;
     tooltipStore.hide();
   };
 
-  const handleTouchStart = (_e: TouchEvent) => {
-    // Prevent mouse events from firing after touch
-    // e.preventDefault(); // Might break scrolling if not careful
+  const handleTouchStart = (e: TouchEvent) => {
+    const touch = e.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
 
     if (touchTimeout) clearTimeout(touchTimeout);
 
-    tooltipStore.show(text, node, position, variant);
-
-    // Auto-hide after 2.5 seconds on mobile
     touchTimeout = setTimeout(() => {
+      tooltipStore.show(text, node, position, variant);
+      if (window.navigator.vibrate) {
+        window.navigator.vibrate(40);
+      }
+      // Add global listener for light dismiss
+      window.addEventListener("touchstart", handleGlobalTouch, { capture: true });
+    }, LONG_PRESS_DURATION);
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    const touch = e.touches[0];
+    const diffX = Math.abs(touch.clientX - startX);
+    const diffY = Math.abs(touch.clientY - startY);
+
+    if (diffX > MOVE_THRESHOLD || diffY > MOVE_THRESHOLD) {
+      if (touchTimeout) clearTimeout(touchTimeout);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimeout) clearTimeout(touchTimeout);
+  };
+
+  const handleGlobalTouch = (e: TouchEvent) => {
+    const target = e.target as HTMLElement;
+    // If tapping outside the node, hide the tooltip
+    if (!node.contains(target)) {
       tooltipStore.hide();
-    }, 2500);
+      window.removeEventListener("touchstart", handleGlobalTouch, { capture: true });
+    }
+  };
+
+  const handleContextMenu = (e: MouseEvent) => {
+    // Prevent system context menu if we're showing a tooltip via long-press
+    if (isTouchDevice() && tooltipStore.visible && tooltipStore.text === text) {
+      e.preventDefault();
+    }
   };
 
   node.addEventListener("mouseenter", handleMouseEnter);
   node.addEventListener("mouseleave", handleMouseLeave);
   node.addEventListener("touchstart", handleTouchStart, { passive: true });
+  node.addEventListener("touchmove", handleTouchMove, { passive: true });
+  node.addEventListener("touchend", handleTouchEnd);
+  node.addEventListener("contextmenu", handleContextMenu);
 
   return {
     update(
@@ -159,16 +202,19 @@ export function tooltip(
       position = typeof newOptions === "object" ? newOptions.position || "bottom" : "bottom";
       variant = typeof newOptions === "object" ? newOptions.variant || "default" : "default";
 
-      // Reactive update: if the tooltip is already visible and text changed, refresh it immediately
       if (tooltipStore.visible && tooltipStore.text === oldText && text !== oldText) {
         tooltipStore.show(text, node, position, variant);
       }
     },
     destroy() {
       if (touchTimeout) clearTimeout(touchTimeout);
+      window.removeEventListener("touchstart", handleGlobalTouch, { capture: true });
       node.removeEventListener("mouseenter", handleMouseEnter);
       node.removeEventListener("mouseleave", handleMouseLeave);
       node.removeEventListener("touchstart", handleTouchStart);
+      node.removeEventListener("touchmove", handleTouchMove);
+      node.removeEventListener("touchend", handleTouchEnd);
+      node.removeEventListener("contextmenu", handleContextMenu);
       tooltipStore.hide();
     },
   };
