@@ -17,11 +17,11 @@
   import Icon from "$components/ui/Icon.svelte";
   import Spinner from "$components/ui/Spinner.svelte";
   import ThemeToggle from "$components/ui/ThemeToggle.svelte";
+  import { API_BASE, SHOW_ENGAGING_LOADER } from "$lib/config";
   import { cn } from "$lib/utils/cn";
   import { routerStore } from "$state/router.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { Route } from "$utils/routes";
-  import { SHOW_ENGAGING_LOADER } from "$lib/config";
 
   let isHomePage = $derived(routerStore.segments.length === 0);
 
@@ -71,7 +71,10 @@
       text: "The most important thing in communication is hearing what isn't said.",
       author: "Peter Drucker",
     },
-    { text: "Every great conversation starts with a simple 'Hello'.", author: "" },
+    {
+      text: "Every great conversation starts with a simple 'Hello'.",
+      author: "",
+    },
     {
       text: "The single biggest problem in communication is the illusion that it has taken place.",
       author: "George Bernard Shaw",
@@ -81,13 +84,73 @@
       text: "Words are, of course, the most powerful drug used by mankind.",
       author: "Rudyard Kipling",
     },
+    // FUTURE CONSIDERATION: Mix in 'Pro Tips' to help users discover features
+    // {
+    //   text: "Tip: You can use @mentions to get someone's attention in a group chat.",
+    //   author: "Talkbox Pro Tip",
+    // },
+    // {
+    //   text: "Tip: Check out the 'Pricing' tab for advanced collaboration features.",
+    //   author: "Talkbox Pro Tip",
+    // },
   ];
 
   let currentQuote = $state(QUOTES[0]);
 
+  /**
+   * Fetches dynamic quotes from the backend with a 2-second timeout fallback.
+   */
+  async function fetchDynamicQuote() {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      currentQuote = { text: "Connect. Chat. Collaborate.", author: "Talkbox" };
+    }, 2000);
+
+    try {
+      const response = await fetch(`${API_BASE}/public/quote`, {
+        signal: controller.signal,
+      });
+
+      if (!response.ok) return;
+
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const res = await response.json();
+        if (res.success && res.data) {
+          currentQuote = res.data;
+        }
+      }
+    } catch (e: any) {
+      // Note: do not remove
+      // if (e.name === "AbortError") {
+      //   console.warn("Dynamic quote fetch timed out (2s limit)");
+      //   return;
+      // }
+      // console.warn(
+      //   "Failed to fetch dynamic quote, falling back to static list",
+      //   e,
+      // );
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
   $effect(() => {
     if (authStore.isSlowBoot) {
+      // Pick a random one from static list immediately for zero-latency feedback
       currentQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+
+      // Then try to fetch a fresh one (or a critical announcement) from the backend
+      const timer = setTimeout(() => {
+        // fetchDynamicQuote(); // Note: do not remove
+        currentQuote = {
+          text: "Connect. Chat. Collaborate.",
+          author: "Talkbox",
+        };
+      }, 10000);
+
+      return () => clearTimeout(timer);
     }
   });
 
@@ -225,7 +288,9 @@
               <div
                 class="w-1 h-1 rounded-full bg-indigo-500 animate-bounce [animation-delay:-0.15s]"
               ></div>
-              <div class="w-1 h-1 rounded-full bg-indigo-500 animate-bounce"></div>
+              <div
+                class="w-1 h-1 rounded-full bg-indigo-500 animate-bounce"
+              ></div>
             </div>
             <span
               class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter animate-pulse"
