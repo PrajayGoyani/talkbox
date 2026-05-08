@@ -21,6 +21,7 @@
   import { routerStore } from "$state/router.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { Route } from "$utils/routes";
+  import { SHOW_ENGAGING_LOADER } from "$lib/config";
 
   let isHomePage = $derived(routerStore.segments.length === 0);
 
@@ -56,6 +57,39 @@
     pricing: { component: Views.Pricing },
     faq: { component: Views.FAQ },
   };
+
+  const QUOTES = [
+    {
+      text: "Good words are worth much, and cost little.",
+      author: "George Herbert",
+    },
+    {
+      text: "The art of communication is the language of leadership.",
+      author: "James Humes",
+    },
+    {
+      text: "The most important thing in communication is hearing what isn't said.",
+      author: "Peter Drucker",
+    },
+    { text: "Every great conversation starts with a simple 'Hello'.", author: "" },
+    {
+      text: "The single biggest problem in communication is the illusion that it has taken place.",
+      author: "George Bernard Shaw",
+    },
+    { text: "Connect. Chat. Collaborate.", author: "Talkbox" },
+    {
+      text: "Words are, of course, the most powerful drug used by mankind.",
+      author: "Rudyard Kipling",
+    },
+  ];
+
+  let currentQuote = $state(QUOTES[0]);
+
+  $effect(() => {
+    if (authStore.isSlowBoot) {
+      currentQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+    }
+  });
 
   // Sync current chat messages when URL param changes (including on mount/refresh)
   $effect(() => {
@@ -166,12 +200,48 @@
     </div>
 
     {#if authStore.isSlowBoot}
-      <p
-        class="text-slate-500 dark:text-slate-400 text-sm animate-pulse font-medium"
-        transition:fade
-      >
-        Please wait, server is booting up.
-      </p>
+      {#if SHOW_ENGAGING_LOADER}
+        <div
+          class="flex flex-col items-center gap-2 max-w-sm px-6 text-center"
+          transition:fade={{ duration: 400 }}
+        >
+          <p
+            class="text-slate-600 dark:text-slate-300 text-sm italic font-medium leading-relaxed"
+          >
+            "{currentQuote.text}"
+          </p>
+          {#if currentQuote.author}
+            <span
+              class="text-[10px] uppercase tracking-widest text-slate-400 font-bold"
+            >
+              — {currentQuote.author}
+            </span>
+          {/if}
+          <div class="mt-4 flex items-center gap-2">
+            <div class="flex gap-1">
+              <div
+                class="w-1 h-1 rounded-full bg-indigo-500 animate-bounce [animation-delay:-0.3s]"
+              ></div>
+              <div
+                class="w-1 h-1 rounded-full bg-indigo-500 animate-bounce [animation-delay:-0.15s]"
+              ></div>
+              <div class="w-1 h-1 rounded-full bg-indigo-500 animate-bounce"></div>
+            </div>
+            <span
+              class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter animate-pulse"
+            >
+              Booting Server
+            </span>
+          </div>
+        </div>
+      {:else}
+        <p
+          class="text-slate-500 dark:text-slate-400 text-sm animate-pulse font-medium"
+          transition:fade
+        >
+          Please wait, server is booting up.
+        </p>
+      {/if}
     {/if}
   </div>
 {/snippet}

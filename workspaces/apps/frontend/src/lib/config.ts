@@ -46,6 +46,9 @@ export const API_BASE = API_ROOT ? `${API_ROOT}/api` : "/api";
 /** Set to false in .env to disable the Pro upgrade process across the platform */
 export const ALLOW_UPGRADES = getBoolEnv("VITE_ALLOW_UPGRADES", false);
 
+/** Whether to show engaging quotes and animations during slow boot */
+export const SHOW_ENGAGING_LOADER = getBoolEnv("VITE_SHOW_ENGAGING_LOADER", true);
+
 // --- Shared Constants ---
 
 /** Duration for typing indicators to show before auto-clearing (ms) */
