@@ -8,7 +8,7 @@
   } from "$lib/config";
   import { messageStore } from "$state/active-chat.svelte";
   import { authStore } from "$state/auth.svelte";
-  import { type ChatStatus } from "$state/chat.svelte";
+  import type { ChatStatus } from "$lib/types/chat";
   import type { UserDto } from "shared/types/auth.dto";
   import type { MessageDto } from "shared/types/chat.dto";
 

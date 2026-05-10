@@ -207,7 +207,7 @@ import { socketManager } from "$services/socket.manager.svelte";
 {#snippet reactionList(
   msg: MessageDto,
   isSent: boolean,
-  otherUser: UserDto | null: any,
+  otherUser: UserDto | null,
   authStore: any,
 )}
   {#if msg.reactions && msg.reactions.length > 0}

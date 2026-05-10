@@ -3,7 +3,7 @@ import { chatListStore } from "$state/chat/chat-list.svelte";
 import { chatActions } from "$state/chat/chat-actions.svelte";
 
   import Icon from "$components/ui/Icon.svelte";
-  import { type Chat } from "$state/chat.svelte";
+  import type { Chat } from "$lib/types/chat";
   import { cn } from "$utils/cn";
   import { scale } from "svelte/transition";
 

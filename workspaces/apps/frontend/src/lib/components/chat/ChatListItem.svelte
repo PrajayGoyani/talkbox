@@ -6,7 +6,7 @@ import { presenceStore } from "$state/chat/presence.svelte";
   import TypingIndicator from "$components/ui/TypingIndicator.svelte";
   import { cn } from "$lib/utils/cn";
   import { authStore } from "$state/auth.svelte";
-  import { type Chat, type ChatStatus } from "$state/chat.svelte";
+  import type { Chat, ChatStatus } from "$lib/types/chat";
   import { formatListTime } from "$utils/date";
   import type { UserDto } from "shared/types/auth.dto";
 

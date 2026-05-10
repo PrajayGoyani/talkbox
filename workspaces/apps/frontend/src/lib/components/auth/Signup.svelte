@@ -193,7 +193,7 @@
     <p class="text-[13px] text-slate-500 dark:text-slate-400 text-center px-4">
       By signing up you agree to our
       <a
-        href={"/#/" + Route.TERMS}
+        href={"/#" + Route.TERMS}
         target="_blank"
         rel="noopener noreferrer"
         class="text-indigo-600 hover:text-indigo-500 font-semibold"
@@ -201,7 +201,7 @@
       >
       and
       <a
-        href={"/#/" + Route.PRIVACY}
+        href={"/#" + Route.PRIVACY}
         target="_blank"
         rel="noopener noreferrer"
         class="text-indigo-600 hover:text-indigo-500 font-semibold"

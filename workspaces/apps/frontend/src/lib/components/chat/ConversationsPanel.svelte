@@ -5,7 +5,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
   import ChatList from "$components/chat/ChatList.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import SegmentedControl from "$components/ui/SegmentedControl.svelte";
-  import { type ChatStatus } from "$state/chat.svelte";
+  import type { ChatStatus } from "$lib/types/chat";
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { USERNAME_ERROR } from "shared/constants/validation";

@@ -7,7 +7,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
   import ChatListSkeleton from "$components/chat/ChatListSkeleton.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import { CHAT_SEARCH_DEBOUNCE } from "$lib/config";
-  import { type Chat, type ChatStatus } from "$state/chat.svelte";
+  import type { Chat, ChatStatus } from "$lib/types/chat";
   import { debounce } from "$utils/timing";
   import type { UserDto } from "shared/types/auth.dto";
   import { onMount, untrack } from "svelte";
