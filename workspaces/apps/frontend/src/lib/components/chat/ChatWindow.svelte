@@ -76,7 +76,7 @@ import { socketManager } from "$services/socket.manager.svelte";
   };
 
   const handleEditKeydown = (e: KeyboardEvent, msgId: string) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !isTouchDevice) {
       e.preventDefault();
       saveEditing(msgId);
     } else if (e.key === "Escape") {

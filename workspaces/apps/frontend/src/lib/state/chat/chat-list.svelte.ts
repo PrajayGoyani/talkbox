@@ -93,6 +93,7 @@ export class ChatListStore {
         senderUsername: message.senderUsername || "Someone",
         senderAvatar: message.senderAvatar,
         preview,
+        type: "new_message",
       });
     }
 
@@ -121,6 +122,7 @@ export class ChatListStore {
         senderId: "system",
         senderUsername: "System",
         preview: notification.message,
+        type: "chat_request",
       });
     }
   }

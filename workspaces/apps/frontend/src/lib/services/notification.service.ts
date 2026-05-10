@@ -2,7 +2,9 @@ import type { MessageAlertDto } from "shared/types/chat.dto";
 
 import { ASSETS } from "$lib/config";
 import { messageStore } from "$state/active-chat.svelte";
+import { uiStore } from "$state/ui.svelte";
 import { playNotificationSound } from "$utils/audio";
+import { Route } from "$utils/routes";
 
 export class NotificationService {
   /**
@@ -42,6 +44,11 @@ export class NotificationService {
 
     notification.onclick = () => {
       window.focus();
+      if (data.type === "chat_request") {
+        uiStore.navigate(Route.REQUESTS);
+      } else if (data.chatId) {
+        uiStore.navigate(`${Route.CHAT}/${data.chatId}`);
+      }
       notification.close();
     };
   }

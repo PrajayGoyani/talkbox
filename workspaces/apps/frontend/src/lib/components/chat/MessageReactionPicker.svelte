@@ -14,10 +14,12 @@ import { socketManager } from "$services/socket.manager.svelte";
   let {
     msg,
     isSent,
+    isTouchDevice,
     onEdit,
   }: {
     msg: MessageDto;
     isSent: boolean;
+    isTouchDevice: boolean;
     onEdit?: () => void;
   } = $props();
 
@@ -68,7 +70,9 @@ import { socketManager } from "$services/socket.manager.svelte";
     isOpen
       ? "opacity-100 scale-100"
       : "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100",
-    isSent ? "-left-2 -translate-x-full" : "-right-2 translate-x-full",
+    isTouchDevice
+      ? (isSent ? "right-0" : "left-0")
+      : (isSent ? "-left-2 -translate-x-full" : "-right-2 translate-x-full"),
   )}
 >
   <Popover bind:isOpen position="top" align={isSent ? "end" : "start"}>

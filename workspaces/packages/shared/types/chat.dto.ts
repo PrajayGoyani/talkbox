@@ -143,6 +143,7 @@ export interface MessageAlertDto {
   senderUsername: string;
   senderAvatar?: string | null;
   preview: string;
+  type?: "new_message" | "chat_request";
 }
 /**
  * Profile update event data.

@@ -1,9 +1,9 @@
 <script lang="ts">
-import { socketManager } from "$services/socket.manager.svelte";
+  import { socketManager } from "$services/socket.manager.svelte";
 
   import MessageReactionPicker from "$components/chat/MessageReactionPicker.svelte";
   import { authStore } from "$state/auth.svelte";
-  
+
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
   import { formatSimpleTime } from "$utils/date";
@@ -89,7 +89,7 @@ import { socketManager } from "$services/socket.manager.svelte";
       )}
     >
       {#if !msg.isDeleted && !msg.isScrubbed}
-        <MessageReactionPicker {msg} {isSent} />
+        <MessageReactionPicker {msg} {isSent} {isTouchDevice} />
       {/if}
       {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
         {#if segment.type === "emoji"}
@@ -141,7 +141,7 @@ import { socketManager } from "$services/socket.manager.svelte";
         <div class="grid w-full py-1">
           <!-- Invisible mirror for width/height preservation -->
           <div
-            class="invisible pointer-events-none row-start-1 col-start-1 m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap py-0"
+            class="invisible pointer-events-none row-start-1 col-start-1 m-0 text-sm leading-relaxed break-words whitespace-pre-wrap py-0"
             aria-hidden="true"
           >
             {editInputValue}<span class="inline-block w-11"></span>
@@ -155,16 +155,16 @@ import { socketManager } from "$services/socket.manager.svelte";
               oninput={handleEditInput}
               rows="1"
             ></textarea>
-            <div class="flex justify-end gap-3 mt-1">
+            <div class="flex justify-end gap-2 mt-2">
               <button
                 onclick={cancelEditing}
-                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-white/40 dark:hover:text-white/70 dark:hover:bg-white/5 transition-colors"
+                class="px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-white/50 dark:hover:text-white/80 dark:hover:bg-white/10 transition-all active:scale-95"
               >
                 Cancel
               </button>
               <button
                 onclick={() => saveEditing(msg.id)}
-                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:text-indigo-300 dark:hover:bg-indigo-500/10 transition-colors"
+                class="px-4 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
               >
                 Save
               </button>
@@ -181,7 +181,10 @@ import { socketManager } from "$services/socket.manager.svelte";
           {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
             {@render renderSegment(segment)}
           {/each}<span
-            class={["inline-block h-0", msg.isEdited ? "w-21" : "w-11"]}
+            class={[
+              "inline-block h-0",
+              msg.isEdited && !msg.isDeleted ? "w-21" : "w-11",
+            ]}
           ></span>
         </p>
         <span
@@ -195,7 +198,12 @@ import { socketManager } from "$services/socket.manager.svelte";
       {/if}
     </div>
     {#if !msg.isDeleted && !msg.isScrubbed}
-      <MessageReactionPicker {msg} {isSent} onEdit={() => startEditing(msg)} />
+      <MessageReactionPicker
+        {msg}
+        {isSent}
+        {isTouchDevice}
+        onEdit={() => startEditing(msg)}
+      />
     {/if}
     <!-- Reaction list for normal -->
     <div class="flex flex-col gap-1 items-start">
