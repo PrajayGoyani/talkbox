@@ -65,6 +65,9 @@ export class ChatActionService implements IChatActionService {
       createdBy: senderObjectId,
     });
 
+    // Invalidate partner cache for the target user so their socket re-syncs to watch the requester
+    await redisSessionService.publishCacheInvalidation("partner", targetId.toString());
+    
     // Emit event for side-effects (notifications, etc)
     eventBus.emit(CHAT_EVENTS.REQUESTED, {
       chat,

@@ -8,7 +8,7 @@ export class ChatQueryRepository {
   public async findPartnerChats(userId: string | ObjectId, excludeDeleted: boolean) {
     const filter: Record<string, any> = {
       participants: new ObjectId(userId),
-      status: "accepted",
+      status: { $in: ["accepted", "pending"] },
     };
     if (excludeDeleted) {
       filter.isDeleted = false;

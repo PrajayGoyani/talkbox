@@ -14,34 +14,45 @@ export class PresenceService {
 
   async emitPartnersStatus(userId: string, socket: TypedSocket, partnerIds: Set<string>) {
     try {
-      const partnerIdsArr = Array.from(partnerIds);
-      const onlinePartners = await redisPresenceService.getOnlineUsers(partnerIdsArr);
-      const lastSeenMap = await redisPresenceService.getLastSeenBatched(partnerIdsArr);
-
-      const missingFromRedisIds = partnerIdsArr.filter((id) => !onlinePartners.has(id) && !lastSeenMap.has(id));
-
-      if (missingFromRedisIds.length > 0) {
-        const offlineUsers = await this.userRepo.findByIds(missingFromRedisIds, "lastSeen");
-        offlineUsers.forEach((u: any) => {
-          if (u.lastSeen) lastSeenMap.set(u._id.toString(), u.lastSeen);
-        });
-      }
-
-      const batch = partnerIdsArr.map((partnerId) => {
-        const isOnline = onlinePartners.has(partnerId);
-        return {
-          userId: partnerId,
-          isOnline,
-          lastSeen: isOnline ? null : lastSeenMap.get(partnerId) || null,
-        };
-      });
-
+      const batch = await this.getPartnersStatusBatch(userId, partnerIds);
       if (batch.length > 0) {
         socket.emit("user_status_batch", batch);
       }
     } catch (err) {
       console.error("[PresenceService] Error emitting partners status:", err);
     }
+  }
+
+  /**
+   * Fetches the presence status batch for a set of partners.
+   * Optimized to minimize Redis and DB hits.
+   */
+  async getPartnersStatusBatch(userId: string, partnerIds: Set<string>): Promise<any[]> {
+    const partnerIdsArr = Array.from(partnerIds);
+    if (partnerIdsArr.length === 0) return [];
+
+    const [onlinePartners, lastSeenMap] = await Promise.all([
+      redisPresenceService.getOnlineUsers(partnerIdsArr),
+      redisPresenceService.getLastSeenBatched(partnerIdsArr),
+    ]);
+
+    const missingFromRedisIds = partnerIdsArr.filter((id) => !onlinePartners.has(id) && !lastSeenMap.has(id));
+
+    if (missingFromRedisIds.length > 0) {
+      const offlineUsers = await this.userRepo.findByIds(missingFromRedisIds, "lastSeen");
+      offlineUsers.forEach((u: any) => {
+        if (u.lastSeen) lastSeenMap.set(u._id.toString(), u.lastSeen);
+      });
+    }
+
+    return partnerIdsArr.map((partnerId) => {
+      const isOnline = onlinePartners.has(partnerId);
+      return {
+        userId: partnerId,
+        isOnline,
+        lastSeen: isOnline ? null : lastSeenMap.get(partnerId) || null,
+      };
+    });
   }
 
   async notifyStatusChange(userId: string, isOnline: boolean) {

@@ -133,14 +133,8 @@ export class SocketService {
       await this.presenceService.notifyStatusChange(userId, true);
     }
 
-    const partnerIds = await this._getPartnerIds(userId);
-    if (partnerIds.size > 0) {
-      partnerIds.forEach((pId) => socket.join(`watching:${pId}`));
-      await this.presenceService.emitPartnersStatus(userId, socket, partnerIds);
-    }
-    // Join rooms for all accepted chats to receive transient events like typing
-    const chats = await chatQueryRepository.findPartnerChats(userId, true);
-    chats.forEach((c) => socket.join(`watching:${c._id.toString()}`));
+    // Synchronize watching rooms for partners and chats
+    await this._syncWatchingRooms(userId, userSockets);
   }
 
   async notifyProfileUpdate(userId: string, profile: any) {
@@ -201,17 +195,45 @@ export class SocketService {
     return messageService.markChatRead(chatId, userId);
   }
 
-  private _handleGlobalCacheInvalidation(type: string, id: string) {
+  private async _handleGlobalCacheInvalidation(type: string, id: string) {
     if (type === "chat") {
       this.participantCache.delete(id);
-      this.partnerCache.clear();
       messageService.invalidateCache(id);
     } else if (type === "partner") {
       this.partnerCache.delete(id);
+      this.partnerCache.delete(`${id}:active`);
       partnerRepository.invalidatePartnerCache(id);
+
+      const sockets = this.activeConnections.get(id);
+      if (sockets && sockets.size > 0) {
+        await this._syncWatchingRooms(id, sockets);
+      }
     }
   }
   // ─── Internal Helpers ─────────────────────────────────────────────
+
+  private async _syncWatchingRooms(userId: string, sockets?: Set<TypedSocket>) {
+    if (!sockets || sockets.size === 0) return;
+    try {
+      const partnerIds = await this._getPartnerIds(userId);
+      const chats = await chatQueryRepository.findPartnerChats(userId, true);
+      for (const socket of sockets) {
+        if (partnerIds.size > 0) {
+          partnerIds.forEach((pId) => socket.join(`watching:${pId}`));
+        }
+        chats.forEach((c) => socket.join(`watching:${c._id.toString()}`));
+      }
+      // 4. Emit current status batch for all partners to all sockets at once
+      if (partnerIds.size > 0) {
+        const batch = await this.presenceService.getPartnersStatusBatch(userId, partnerIds);
+        if (batch.length > 0) {
+          this.io?.to(`user:${userId}`).emit("user_status_batch", batch);
+        }
+      }
+    } catch (err) {
+      console.error(`[SocketService] Error syncing watching rooms for ${userId}:`, err);
+    }
+  }
 
   private async _getPartnerIds(userId: string, excludeDeleted = false): Promise<Set<string>> {
     const cacheKey = excludeDeleted ? `${userId}:active` : userId;
