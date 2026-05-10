@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { socketManager } from "$services/socket.manager.svelte";
+import { socketManager } from "$services/socket.manager.svelte";
 
   import MessageReactionPicker from "$components/chat/MessageReactionPicker.svelte";
   import { authStore } from "$state/auth.svelte";
-
+  
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
   import { formatSimpleTime } from "$utils/date";
@@ -138,19 +138,19 @@
   >
     <div class="relative">
       {#if messageEditingId === msg.id}
-        <div class="grid w-full py-1">
+        <div class="grid w-full py-1 min-w-0">
           <!-- Invisible mirror for width/height preservation -->
           <div
-            class="invisible pointer-events-none row-start-1 col-start-1 m-0 text-sm leading-relaxed break-words whitespace-pre-wrap py-0"
+            class="invisible pointer-events-none row-start-1 col-start-1 m-0 text-sm leading-relaxed break-words whitespace-pre-wrap py-0 min-w-0"
             aria-hidden="true"
           >
             {editInputValue}<span class="inline-block w-11"></span>
           </div>
-          <div class="row-start-1 col-start-1 flex flex-col gap-2 w-full">
+          <div class="row-start-1 col-start-1 flex flex-col gap-2 w-full min-w-0">
             <textarea
               bind:value={editInputValue}
               bind:this={editTextareaElement}
-              class="w-full bg-transparent border-none focus:ring-0 outline-none resize-none text-sm leading-relaxed p-0 scrollbar-none shadow-none"
+              class="w-full bg-transparent border-none focus:ring-0 outline-none resize-none text-sm leading-relaxed p-0 scrollbar-none shadow-none break-words"
               onkeydown={(e) => handleEditKeydown(e, msg.id)}
               oninput={handleEditInput}
               rows="1"
@@ -174,17 +174,14 @@
       {:else}
         <p
           class={cn(
-            "m-0 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap",
+            "m-0 text-sm leading-relaxed break-words whitespace-pre-wrap",
             (msg.isDeleted || msg.isScrubbed) && "italic opacity-80",
           )}
         >
           {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
             {@render renderSegment(segment)}
           {/each}<span
-            class={[
-              "inline-block h-0",
-              msg.isEdited && !msg.isDeleted ? "w-21" : "w-11",
-            ]}
+            class={["inline-block h-0", msg.isEdited && !msg.isDeleted ? "w-21" : "w-11"]}
           ></span>
         </p>
         <span
@@ -198,12 +195,7 @@
       {/if}
     </div>
     {#if !msg.isDeleted && !msg.isScrubbed}
-      <MessageReactionPicker
-        {msg}
-        {isSent}
-        {isTouchDevice}
-        onEdit={() => startEditing(msg)}
-      />
+      <MessageReactionPicker {msg} {isSent} {isTouchDevice} onEdit={() => startEditing(msg)} />
     {/if}
     <!-- Reaction list for normal -->
     <div class="flex flex-col gap-1 items-start">
