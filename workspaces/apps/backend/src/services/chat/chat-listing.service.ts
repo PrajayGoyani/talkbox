@@ -1,11 +1,15 @@
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
+import { ChatQueryRepository, chatQueryRepository } from "@repositories/chat-query.repository";
 import { ObjectId } from "mongodb";
 import { ChatDto, ChatListingResponseDto } from "shared/types/chat.dto";
 
 import { IChatListingService } from "./types";
 
 export class ChatListingService implements IChatListingService {
-  constructor(private repository: ChatRepository) {}
+  constructor(
+    private repository: ChatRepository,
+    private queryRepository: ChatQueryRepository,
+  ) {}
 
   async getChatListing(
     userId: string | ObjectId,
@@ -34,7 +38,7 @@ export class ChatListingService implements IChatListingService {
       }
     }
 
-    const chats = await this.repository.findAcceptedChatsByUser(userId, query, limit + 1);
+    const chats = await this.queryRepository.findAcceptedChatsByUser(userId, query, limit + 1);
 
     const hasMore = chats.length > limit;
     const results = hasMore ? chats.slice(0, limit) : chats;
@@ -46,7 +50,7 @@ export class ChatListingService implements IChatListingService {
     }
 
     return {
-      data: results.map((chat: any) => this.repository.transformChat(chat, userId)),
+      data: results.map((chat: any) => this.queryRepository.transformChat(chat, userId)),
       nextCursor,
       hasMore,
     };
@@ -79,7 +83,7 @@ export class ChatListingService implements IChatListingService {
       }
     }
 
-    const chats = await this.repository.findPendingRequestsByUser(userId, query, limit + 1);
+    const chats = await this.queryRepository.findPendingRequestsByUser(userId, query, limit + 1);
 
     const hasMore = chats.length > limit;
     const results = hasMore ? chats.slice(0, limit) : chats;
@@ -91,7 +95,7 @@ export class ChatListingService implements IChatListingService {
     }
 
     return {
-      data: results.map((chat: any) => this.repository.transformChat(chat, userId)),
+      data: results.map((chat: any) => this.queryRepository.transformChat(chat, userId)),
       nextCursor,
       hasMore,
     };
@@ -106,7 +110,7 @@ export class ChatListingService implements IChatListingService {
     const uid = new ObjectId(userId);
     const cursorObj = cursor ? this.repository.decodeCursor(cursor) : null;
 
-    const chats = await this.repository.searchChats(uid, query, limit, cursorObj);
+    const chats = await this.queryRepository.searchChats(uid, query, limit, cursorObj);
 
     let hasMore = false;
     let nextCursor: string | null = null;
@@ -135,4 +139,5 @@ export class ChatListingService implements IChatListingService {
   }
 }
 
-export const chatListingService = new ChatListingService(chatRepository);
+export const chatListingService = new ChatListingService(chatRepository, chatQueryRepository);
+
