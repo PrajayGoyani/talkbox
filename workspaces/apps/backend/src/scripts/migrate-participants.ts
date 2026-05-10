@@ -27,15 +27,15 @@ async function migrate() {
     for (const chat of chats) {
       // Handle legacy chats where userA/userB might be the only source of truth
       // OR handle cases where they were partially migrated but missing shadow fields
-      const uidA = chat.userA;
-      const uidB = chat.userB;
+      const uidA = (chat as any).userA;
+      const uidB = (chat as any).userB;
 
       if (uidA && uidB) {
         // Ensure deterministic ordering (alphabetical by ID string)
         const participants = [uidA, uidB].sort((a, b) => a.toString().localeCompare(b.toString()));
 
-        chat.userA = participants[0];
-        chat.userB = participants[1];
+        (chat as any).userA = participants[0];
+        (chat as any).userB = participants[1];
         chat.participants = participants;
         chat.isGroup = false; // Legacy chats are all 1-to-1
 

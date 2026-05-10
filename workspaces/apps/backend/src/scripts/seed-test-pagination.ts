@@ -18,10 +18,7 @@ async function cleanup() {
   if (testUser) {
     // Delete chats involving test user and dummies
     await Chat.deleteMany({
-      $or: [
-        { userA: testUser._id, userB: { $in: dummyUserIds } },
-        { userB: testUser._id, userA: { $in: dummyUserIds } },
-      ],
+      participants: testUser._id,
     });
   }
 
@@ -81,12 +78,11 @@ async function seed() {
       const sentAt = new Date(startTimestamp - i * 3600000);
 
       await Chat.create({
-        userA: uA,
-        userB: uB,
         participants,
         createdBy: bId, // Created by dummy
         status: "accepted",
         lastMessage: {
+          messageId: null, // message doesn't exist yet in this seeder
           contentBody: `Hello from Dummy ${i}! This is a test message.`,
           senderId: bId,
           sentAt: sentAt,

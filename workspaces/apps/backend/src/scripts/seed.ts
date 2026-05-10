@@ -77,11 +77,9 @@ async function seed() {
 
       const [uidA, uidB] = participants;
 
-      let chat = await Chat.findOne({ userA: uidA, userB: uidB, isGroup: false });
+      let chat = await Chat.findOne({ participants: { $all: [uidA, uidB] }, isGroup: false });
       if (!chat) {
         chat = await Chat.create({
-          userA: uidA,
-          userB: uidB,
           participants,
           isGroup: false,
           createdBy: uidA, // Arbitrary
@@ -111,7 +109,7 @@ async function seed() {
 
           // Message from userB
           const contentB = genericMessages[Math.floor(Math.random() * genericMessages.length)];
-          await Message.create({
+          const msgB = await Message.create({
             chatId: chat._id,
             senderId: userB._id,
             contentBody: contentB,
@@ -120,9 +118,10 @@ async function seed() {
 
           // Update chat last message
           chat.lastMessage = {
+            messageId: msgB._id as any,
             contentBody: contentB,
             senderId: userB._id,
-            sentAt: msgA.createdAt, // approximation
+            sentAt: msgB.createdAt, 
           };
         }
         await chat.save();
