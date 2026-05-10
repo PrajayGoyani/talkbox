@@ -1,4 +1,4 @@
-import { socketService } from "@services/socket.service";
+import { socketService } from "@services/chat/socket.service";
 import { eventBus, CHAT_EVENTS } from "@utils/event-bus";
 
 /**

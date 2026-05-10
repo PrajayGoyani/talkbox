@@ -29,4 +29,7 @@ export const USER_EVENTS = {
 export const AUTH_EVENTS = {
   LOGIN_SUCCESS: "auth.login_success",
   LOGOUT: "auth.logout",
+  VERIFICATION_REQUIRED: "auth.verification_required",
+  PASSWORD_RESET_REQUESTED: "auth.password_reset_requested",
+  UPGRADED: "auth.upgraded",
 } as const;

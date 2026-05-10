@@ -1,14 +1,11 @@
 import type { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from "shared/types/auth.dto";
 
-import { getAgenda } from "@config/agenda";
 import { RESET_TOKEN_TTL, VERIFY_TOKEN_TTL } from "@config/env";
-import { JOBS } from "@jobs/agenda-jobs";
 import { IUser } from "@models/user.model";
 import { UserRepository, userRepository } from "@repositories/user.repository";
-import { emailService } from "@services/email.service";
-import { redisService } from "@services/redis.service";
-import { socketService } from "@services/socket.service";
+import { redisService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
+import { AUTH_EVENTS, eventBus } from "@utils/event-bus";
 import { generateAccessToken, generateTokens, verifyRefreshToken } from "@utils/jwt";
 import crypto from "crypto";
 import { ObjectId } from "mongodb";
@@ -92,7 +89,8 @@ export class AuthService {
 
     const token = crypto.randomBytes(32).toString("hex");
     await redisService.storeToken("reset", token, user._id.toString(), RESET_TOKEN_TTL);
-    await emailService.sendResetEmail(email, token);
+    
+    eventBus.emit(AUTH_EVENTS.PASSWORD_RESET_REQUESTED, { email, token });
   }
 
   /**
@@ -142,9 +140,10 @@ export class AuthService {
     try {
       const token = crypto.randomBytes(32).toString("hex");
       await redisService.storeToken("verify", token, userId, VERIFY_TOKEN_TTL);
-      await emailService.sendVerificationEmail(email, token);
+      
+      eventBus.emit(AUTH_EVENTS.VERIFICATION_REQUIRED, { email, token });
     } catch (err) {
-      console.error("[AuthService] Failed to send verification email:", err);
+      console.error("[AuthService] Failed to generate verification token:", err);
     }
   }
 
@@ -163,21 +162,12 @@ export class AuthService {
 
     await user.save();
 
-    // Defer chat-flag re-evaluation to background job (Performance Optimization)
-    // Only trigger if actually moving from Free to Pro to avoid duplicate work.
-    if (oldPlan === "free") {
-      const agenda = getAgenda();
-      await agenda.now(JOBS.USER_UPGRADE_CHAT_SYNC, {
-        userId: userId.toString(),
-        timestamp: Date.now(), // Helpful for audit trail
-      });
-    }
-
-    // Invalidate caches across all server instances
-    await redisService.publishCacheInvalidation("user", userId.toString());
-
-    // Broadcast plan update to partners
-    void socketService.notifyProfileUpdate(userId.toString(), { plan: "pro" });
+    // Emit event for side-effects (background sync, socket broadcast)
+    eventBus.emit(AUTH_EVENTS.UPGRADED, {
+      userId: userId.toString(),
+      oldPlan,
+      newPlan: "pro",
+    });
 
     return this.userRepository.transformUser(user);
   }

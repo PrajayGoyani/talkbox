@@ -54,9 +54,7 @@
 </script>
 
 {#if isLoading && showLoading}
-  <div
-    class="flex items-center justify-center p-12 w-full h-full min-h-[100px]"
-  >
+  <div class="flex items-center justify-center p-12 w-full h-full min-h-25">
     <div class="flex flex-col items-center gap-3">
       <Spinner class="w-8 h-8 text-indigo-500 animate-spin" />
       <span class="text-xs font-medium text-slate-400 animate-pulse"
@@ -66,7 +64,7 @@
   </div>
 {:else if isLoading}
   <!-- Content is loading but we are within the delay grace period - render nothing -->
-  <div class="w-full h-full min-h-[100px]"></div>
+  <div class="w-full h-full min-h-25"></div>
 {:else if error}
   <div
     class="p-8 flex flex-col items-center justify-center text-center gap-4 h-full"

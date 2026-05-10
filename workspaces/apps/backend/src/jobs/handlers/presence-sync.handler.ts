@@ -1,6 +1,6 @@
 import User from "@models/user.model";
 import * as Sentry from "@sentry/bun";
-import { redisService } from "@services/redis.service";
+import { redisService } from "@services/infra/redis.service";
 
 /**
  * Syncs user presence (lastSeen) from Redis queue to MongoDB.

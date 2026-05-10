@@ -6,7 +6,7 @@ import {
   ResetPasswordRequest,
   SignupRequest,
 } from "@controllers/types";
-import { authService } from "@services/auth.service";
+import { authService } from "@services/auth/auth.service";
 import { AppError } from "@utils/AppError";
 import { CookieOptions, Request, Response } from "express";
 

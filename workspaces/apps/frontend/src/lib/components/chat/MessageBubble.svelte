@@ -179,11 +179,11 @@
           {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
             {@render renderSegment(segment)}
           {/each}<span
-            class={["inline-block h-0", msg.isEdited ? "w-[84px]" : "w-11"]}
+            class={["inline-block h-0", msg.isEdited ? "w-21" : "w-11"]}
           ></span>
         </p>
         <span
-          class="absolute bottom-0 right-[-4px] text-[9px] opacity-60 leading-none pb-0.5 whitespace-nowrap flex items-center"
+          class="absolute bottom-0 -right-1 text-[9px] opacity-60 leading-none pb-0.5 whitespace-nowrap flex items-center"
         >
           {formatSimpleTime(msg.createdAt)}
           {#if msg.isEdited && !msg.isDeleted}

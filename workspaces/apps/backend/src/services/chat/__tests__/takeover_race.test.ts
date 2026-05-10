@@ -1,13 +1,13 @@
 import Chat from "@models/chat.model";
-import { redisService } from "@services/redis.service";
-import { socketService } from "@services/socket.service";
+import { redisService } from "@services/infra/redis.service";
+import { socketService } from "@services/chat/socket.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
 vi.mock("@models/user.model");
-vi.mock("@services/redis.service", () => ({
+vi.mock("@services/infra/redis.service", () => ({
   redisService: {
     takeoverFreeSession: vi.fn(),
     publishSessionTakeover: vi.fn(),
@@ -73,7 +73,10 @@ describe("SocketService Takeover Race Condition", () => {
     (socketService as any)._handleGlobalTakeover(MOCK_USER_ID, "socket-A");
 
     // Socket A should be kicked
-    expect(socketA.emit).toHaveBeenCalledWith("error", expect.objectContaining({ code: "SESSION_TAKEOVER" }));
+    expect(socketA.emit).toHaveBeenCalledWith("session_error", {
+      reason: "takeover",
+      message: expect.any(String),
+    });
     expect(socketA.disconnect).toHaveBeenCalled();
 
     // Manually trigger disconnect

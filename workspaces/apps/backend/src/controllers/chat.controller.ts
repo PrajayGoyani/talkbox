@@ -1,5 +1,5 @@
 import { AcceptChatRequest, RejectChatRequest } from "@controllers/types";
-import { chatService } from "@services/chat.service";
+import { chatService } from "@services/chat/chat.service";
 import { Request, Response } from "express";
 
 export const getChatListing = async (req: Request, res: Response) => {

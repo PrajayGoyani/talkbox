@@ -2,7 +2,7 @@ import { RATE_LIMIT_DEFAULT_WINDOW_MS, RATE_LIMIT_SOCKET_MESSAGE_MAX, REACTIONS_
 import { ChatRepository } from "@repositories/chat.repository";
 import { MessageRepository } from "@repositories/message.repository";
 import { messageService } from "@services/chat/message.service";
-import { redisService } from "@services/redis.service";
+import { redisService } from "@services/infra/redis.service";
 import { isScrubbed } from "@utils/date.utils";
 import { getCanonicalSlug } from "@utils/emoji.utils";
 import { CHAT_EVENTS, eventBus } from "@utils/event-bus";

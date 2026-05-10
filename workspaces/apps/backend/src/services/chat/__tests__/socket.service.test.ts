@@ -1,10 +1,11 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
-import { redisService } from "@services/redis.service";
-import { socketService } from "@services/socket.service";
-import { CHAT_EVENTS, eventBus, USER_EVENTS } from "@utils/event-bus";
+import { redisService } from "@services/infra/redis.service";
+import { socketService } from "@services/chat/socket.service";
+import { eventBus, USER_EVENTS } from "@utils/event-bus";
 import { ObjectId } from "mongodb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { chatRepository } from "@repositories/chat.repository";
+import { userRepository } from "@repositories/user.repository";
 import { messageService } from "@services/chat/message.service";
 import { CHAT_MESSAGES } from "@constants/messages";
 
@@ -13,9 +14,10 @@ vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
 vi.mock("@models/user.model");
 vi.mock("@repositories/chat.repository");
+vi.mock("@repositories/user.repository");
 vi.mock("@services/chat/message.service");
 
-vi.mock("@services/redis.service", () => ({
+vi.mock("@services/infra/redis.service", () => ({
   redisService: {
     incrementGlobalSession: vi.fn(),
     decrementGlobalSession: vi.fn(),
@@ -93,6 +95,7 @@ describe("SocketService", () => {
     // Default repository and service mocks
     vi.mocked(chatRepository.getPartnerIds).mockResolvedValue(new Set());
     vi.mocked(chatRepository.findPartnerChats).mockResolvedValue([]);
+    vi.mocked(userRepository.findByIds).mockReturnValue(createQueryMock([]));
     
     vi.mocked(redisService.incrementGlobalSession).mockImplementation(async (uid, _sid) => {
       const current = (socketService as any).activeConnections.get(uid)?.size || 0;

@@ -1,4 +1,4 @@
-import { initAllEventListeners } from "@bootstrap/events";
+import { initEventListeners } from "@bootstrap/events";
 import {
   initializeErrorHandlers,
   initializeExtensions,
@@ -6,6 +6,7 @@ import {
   initializeStatic,
 } from "@bootstrap/handler";
 import { PORT } from "@config/env";
+import { initSocketIO } from "@bootstrap/socket";
 import { configureSocketServer } from "@controllers/socket.controller";
 import { registerRoutes } from "@routes/routes";
 import express from "express";
@@ -15,13 +16,14 @@ export const app = express();
 export const server = http.createServer(app);
 
 export async function configureSocket() {
-  configureSocketServer(server);
+  const io = initSocketIO(server);
+  configureSocketServer(io);
 }
 
 export function startServer() {
   // Note: the order must be: extensions -> static -> middlewares -> routes -> error handlers
   initializeExtensions();
-  initAllEventListeners();
+  initEventListeners();
   initializeStatic();
   initializeMiddlewares();
   registerRoutes();

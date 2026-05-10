@@ -1,8 +1,8 @@
 import { ChatListingResponseDto, MessageDto } from "shared/types/chat.dto";
 
-import { chatActionService } from "./chat/chat-action.service";
-import { chatListingService } from "./chat/chat-listing.service";
-import { messageService } from "./chat/message.service";
+import { chatActionService } from "./chat-action.service";
+import { chatListingService } from "./chat-listing.service";
+import { messageService } from "./message.service";
 
 /**
  * Facade for Chat-related services.

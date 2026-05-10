@@ -4,10 +4,11 @@ import { IChat } from "@models/chat.model";
 import { IMessage } from "@models/message.model";
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { MessageRepository, messageRepository } from "@repositories/message.repository";
-import { chatLockdownService } from "@services/chat-lockdown.service";
-import { redisService } from "@services/redis.service";
+import { chatLockdownService } from "@services/chat/chat-lockdown.service";
+import { redisService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
 import { isPastModifyLimit, isScrubbed } from "@utils/date.utils";
+import { extractEmojiMetadata } from "@utils/emoji.utils";
 import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
 import { LRUCache } from "lru-cache";
 import { ObjectId } from "mongodb";
@@ -60,7 +61,7 @@ export class MessageService implements IMessageService {
 
     const messages = await this.messageRepo.findByChatId(chatId, limit, cursor);
 
-    const transformed = messages.map((m) => this.messageRepo.transformMessage(m, plan));
+    const transformed = messages.map((m) => this.transformAndScrubMessage(m, plan));
 
     return transformed.reverse();
   }
@@ -154,7 +155,7 @@ export class MessageService implements IMessageService {
       this.participantCache.set(chatId, participants);
     }
 
-    const dto = this.messageRepo.transformMessage(message, sender.plan);
+    const dto = this.transformAndScrubMessage(message, sender.plan);
 
     // 6. Side Effects (Events)
     eventBus.emit(CHAT_EVENTS.MESSAGE_SENT, {
@@ -168,9 +169,14 @@ export class MessageService implements IMessageService {
   }
 
   private async applySecurityGuards(senderId: string, chatId: string, idempotencyKey: string): Promise<boolean> {
-    const [isLocked, isNewToRedis, rlStatus] = await Promise.all([
+    // 1. Check Idempotency FIRST (L1 check)
+    // If Redis already has this key, it's a retry; skip further security costs.
+    const isNewToRedis = await redisService.checkAndSetIdempotency(idempotencyKey, 900);
+    if (!isNewToRedis) return false;
+
+    // 2. Heavy Checks (Lockdown & Rate Limit) only for NEW messages
+    const [isLocked, rlStatus] = await Promise.all([
       chatLockdownService.isChatDeleted(chatId),
-      redisService.checkAndSetIdempotency(idempotencyKey, 900),
       redisService.incrementAndCheckLimit(
         `rl:socket:message:${senderId}`,
         RATE_LIMIT_SOCKET_MESSAGE_MAX,
@@ -186,7 +192,7 @@ export class MessageService implements IMessageService {
       throw AppError.tooMany(CHAT_MESSAGES.RATE_LIMIT_EXCEEDED, "RATE_LIMIT_EXCEEDED");
     }
 
-    return isNewToRedis;
+    return true;
   }
 
   private async verifyParticipation(chatId: string, senderId: string): Promise<Set<string> | undefined> {
@@ -200,7 +206,7 @@ export class MessageService implements IMessageService {
   private async handleDeduplication(idempotencyKey: string, plan: "free" | "pro"): Promise<MessageDto | null> {
     const existingMessage = await this.messageRepo.findOne({ idempotencyKey });
     if (existingMessage) {
-      return this.messageRepo.transformMessage(existingMessage, plan);
+      return this.transformAndScrubMessage(existingMessage, plan);
     }
     return null;
   }
@@ -343,6 +349,35 @@ export class MessageService implements IMessageService {
 
     this.participantCache.set(chatId, participants);
     return participants;
+  }
+
+  /**
+   * Transforms a message model to a DTO and applies plan-based scrubbing logic.
+   * This logic was moved from the Repository layer to the Service layer to fix architectural leakage.
+   */
+  private transformAndScrubMessage(
+    m: IMessage,
+    plan: "free" | "pro" = "free",
+    sender?: { name?: string | null; username: string; avatarUrl?: string | null },
+  ): MessageDto {
+    const dto = this.messageRepo.transformMessage(m, sender);
+    const isMessageScrubbed = isScrubbed(plan, m.createdAt);
+
+    if (m.isDeleted) {
+      dto.contentBody = CHAT_MESSAGES.MESSAGE_DELETED;
+      dto.reactions = [];
+      dto.attachment = { kind: null, url: null };
+    } else if (isMessageScrubbed) {
+      dto.contentBody = "Message unavailable on Free plan.";
+      dto.reactions = [];
+      dto.attachment = { kind: null, url: null };
+      dto.isScrubbed = true;
+    }
+
+    const skipEmojiMetadata: boolean = m.isDeleted || isMessageScrubbed;
+    dto.emojiMetadata = skipEmojiMetadata ? undefined : extractEmojiMetadata(dto.contentBody);
+
+    return dto;
   }
 }
 

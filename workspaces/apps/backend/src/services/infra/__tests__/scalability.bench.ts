@@ -1,9 +1,9 @@
 import Chat from "@models/chat.model";
-import { socketService } from "@services/socket.service";
+import { socketService } from "@services/chat/socket.service";
 import { bench, describe, vi } from "vitest";
 
 vi.mock("@models/chat.model");
-vi.mock("@services/redis.service", () => ({
+vi.mock("@services/infra/redis.service", () => ({
   redisService: {
     incrementAndCheckLimit: vi.fn().mockResolvedValue(true),
     getCachedPartners: vi.fn().mockResolvedValue(null),

@@ -367,7 +367,7 @@
           "glass-panel flex-col z-10 min-h-0 md:flex-none transition-all duration-300",
           uiStore.isSidebarCollapsed
             ? "w-0 opacity-0 border-none overflow-hidden hidden md:flex"
-            : "w-full md:w-[280px] lg:w-[350px] md:min-w-[280px] lg:min-w-[350px] border-r",
+            : "w-full md:w-70 lg:w-87.5 md:min-w-70 lg:min-w-87.5 border-r",
           selectedChatId ? "hidden md:flex" : "flex flex-1 md:flex-initial",
         ]}
       >
@@ -430,7 +430,7 @@
           "glass-panel flex-col z-50 transition-all duration-300 border-l shrink-0",
           "fixed inset-y-0 right-0 md:relative",
           uiStore.chatInfoOpen && selectedChatId
-            ? "w-full md:w-[300px] lg:w-[350px] opacity-100 translate-y-0 md:translate-x-0"
+            ? "w-full md:w-75 lg:w-87.5 opacity-100 translate-y-0 md:translate-x-0"
             : "w-full md:w-0 opacity-0 border-none overflow-hidden translate-y-full md:translate-y-0 md:translate-x-0 hidden md:flex",
         ]}
       >

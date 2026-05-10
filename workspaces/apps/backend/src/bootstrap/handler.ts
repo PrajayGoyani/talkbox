@@ -11,7 +11,7 @@ import path from "path";
 // import helmet from 'helmet';
 import { app, server } from "@/app";
 import { stopAgenda } from "@/config/agenda";
-import { redisService } from "@/services/redis.service";
+import { redisService } from "@services/infra/redis.service";
 
 // ____________________ Bootstrap Handlers ____________________
 

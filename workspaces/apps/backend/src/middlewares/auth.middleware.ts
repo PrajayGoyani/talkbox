@@ -1,4 +1,4 @@
-import { userCacheService } from "@services/user-cache.service";
+import { userCacheService } from "@services/auth/user-cache.service";
 import { verifyAccessToken } from "@utils/jwt";
 import { NextFunction, Request, Response } from "express";
 

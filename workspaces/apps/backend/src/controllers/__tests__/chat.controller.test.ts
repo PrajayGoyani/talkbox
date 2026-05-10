@@ -1,8 +1,8 @@
 import { getChatMessages, markChatRead } from "@controllers/chat.controller";
-import { chatService } from "@services/chat.service";
+import { chatService } from "@services/chat/chat.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@services/chat.service", () => ({
+vi.mock("@services/chat/chat.service", () => ({
   chatService: {
     getChatMessages: vi.fn(),
     markChatRead: vi.fn(),

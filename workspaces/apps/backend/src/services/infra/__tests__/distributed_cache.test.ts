@@ -2,11 +2,11 @@ import { chatRepository } from "@repositories/chat.repository";
 import { userRepository } from "@repositories/user.repository";
 import { chatActionService } from "@services/chat/chat-action.service";
 import { messageService } from "@services/chat/message.service";
-import { redisService } from "@services/redis.service";
+import { redisService } from "@services/infra/redis.service";
 import { ObjectId } from "mongodb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@services/redis.service", () => ({
+vi.mock("@services/infra/redis.service", () => ({
   redisService: {
     publishCacheInvalidation: vi.fn().mockResolvedValue(null),
     isConnected: true,
@@ -15,7 +15,7 @@ vi.mock("@services/redis.service", () => ({
 
 vi.mock("@repositories/chat.repository");
 vi.mock("@repositories/user.repository");
-vi.mock("@services/chat-lockdown.service");
+vi.mock("@services/chat/chat-lockdown.service");
 vi.mock("@services/chat/message.service", () => ({
   messageService: {
     invalidateCache: vi.fn(),
@@ -78,7 +78,7 @@ describe("Distributed Cache Invalidation", () => {
 
   describe("SocketService Invalidation Handling", () => {
     it("should call chatRepository.invalidatePartnerCache when receiving partner invalidation", async () => {
-      const { socketService } = await import("@services/socket.service");
+      const { socketService } = await import("@services/chat/socket.service");
       const userId = "user123";
 
       // Access private method for testing
@@ -88,7 +88,7 @@ describe("Distributed Cache Invalidation", () => {
     });
 
     it("should call messageService.invalidateCache when receiving chat invalidation", async () => {
-      const { socketService } = await import("@services/socket.service");
+      const { socketService } = await import("@services/chat/socket.service");
       const chatId = "chat123";
 
       (socketService as any)._handleGlobalCacheInvalidation("chat", chatId);

@@ -1,7 +1,7 @@
 import { RATE_LIMIT_DEFAULT_WINDOW_MS } from "@config/env";
 import { ChatRepository } from "@repositories/chat.repository";
 import { messageService } from "@services/chat/message.service";
-import { redisService } from "@services/redis.service";
+import { redisService } from "@services/infra/redis.service";
 import { LRUCache } from "lru-cache";
 import { TypingIndicatorDto } from "shared/types/chat.dto";
 

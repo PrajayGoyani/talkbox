@@ -1,5 +1,5 @@
 import { RATE_LIMIT_DEFAULT_MAX, RATE_LIMIT_DEFAULT_WINDOW_MS } from "@config/env";
-import { redisService } from "@services/redis.service";
+import { redisService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
 import { NextFunction, Request, Response } from "express";
 import { LRUCache } from "lru-cache";

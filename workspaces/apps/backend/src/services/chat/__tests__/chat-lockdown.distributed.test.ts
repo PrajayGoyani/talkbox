@@ -1,9 +1,9 @@
-import { chatLockdownService } from "@services/chat-lockdown.service";
-import { redisService } from "@services/redis.service";
+import { chatLockdownService } from "@services/chat/chat-lockdown.service";
+import { redisService } from "@services/infra/redis.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@models/chat.model");
-vi.mock("@services/redis.service", () => ({
+vi.mock("@services/infra/redis.service", () => ({
   redisService: {
     lockChat: vi.fn().mockResolvedValue(null),
     unlockChat: vi.fn().mockResolvedValue(null),

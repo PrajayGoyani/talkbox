@@ -25,7 +25,7 @@ vi.mock("@config/agenda", () => ({
   stopAgenda: vi.fn(),
 }));
 
-vi.mock("@services/redis.service", () => ({
+vi.mock("@services/infra/redis.service", () => ({
   redisService: {
     close: vi.fn(),
   },

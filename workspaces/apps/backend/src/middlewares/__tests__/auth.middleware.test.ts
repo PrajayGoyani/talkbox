@@ -1,9 +1,9 @@
 import { authenticateToken } from "@middlewares/auth.middleware";
-import { userCacheService } from "@services/user-cache.service";
+import { userCacheService } from "@services/auth/user-cache.service";
 import { verifyAccessToken } from "@utils/jwt";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@services/user-cache.service", () => ({
+vi.mock("@services/auth/user-cache.service", () => ({
   userCacheService: {
     getUser: vi.fn(),
   },

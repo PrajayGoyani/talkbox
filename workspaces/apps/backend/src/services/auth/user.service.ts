@@ -1,5 +1,5 @@
 import { UserRepository, userRepository } from "@repositories/user.repository";
-import { redisService } from "@services/redis.service";
+import { redisService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
 import { eventBus, USER_EVENTS } from "@utils/event-bus";
 

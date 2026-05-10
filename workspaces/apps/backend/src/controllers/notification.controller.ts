@@ -1,4 +1,4 @@
-import { notificationService } from "@services/notification.service";
+import { notificationService } from "@services/notification/notification.service";
 import { Request, Response } from "express";
 
 export const getNotifications = async (req: Request, res: Response) => {

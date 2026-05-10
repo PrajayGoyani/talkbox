@@ -4,7 +4,7 @@ import { setServers } from "node:dns/promises";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export async function connectDB() {
+export async function connectDB(retryAttempts: number = DB_RETRY_ATTEMPTS) {
   // windows specific hack
   if (process.platform === "win32") {
     try {
@@ -15,7 +15,7 @@ export async function connectDB() {
   }
 
   let attempt = 0;
-  while (attempt < DB_RETRY_ATTEMPTS) {
+  while (attempt < retryAttempts) {
     try {
       await mongoose.connect(MONGO_URI);
       console.log("Connected to MongoDB");
@@ -24,7 +24,7 @@ export async function connectDB() {
       attempt++;
       const errorMessage = error instanceof Error ? error.message : String(error);
 
-      if (attempt >= DB_RETRY_ATTEMPTS) {
+      if (attempt >= retryAttempts) {
         console.error(`Fatal: Could not connect to MongoDB after ${attempt} attempts:`, errorMessage);
         process.exit(1);
       }

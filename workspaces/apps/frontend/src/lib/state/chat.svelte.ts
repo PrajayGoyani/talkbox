@@ -15,6 +15,10 @@ export * from "$lib/types/chat";
  * Facade for Chat-related state and actions.
  * Orchestrates multiple domain stores (messageStore, chatListStore, presenceStore)
  * and coordinates with the SocketManager.
+ *
+ * @tip Refactoring Opportunity: ChatStore is currently a 38-edge hub.
+ * Consider further decomposing it if adding new features (e.g., file transfers or group calls)
+ * to avoid a "Mega-Store" pattern.
  */
 class ChatStore {
   // --- Delegated State ---

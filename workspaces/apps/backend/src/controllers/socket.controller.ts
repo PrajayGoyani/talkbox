@@ -1,32 +1,15 @@
-import { ALLOWED_ORIGINS, JWT_SECRET_KEY, NODE_ENV } from "@config/env";
-import { redisService } from "@services/redis.service";
-import { socketService } from "@services/socket.service";
-import { userCacheService } from "@services/user-cache.service";
-import { createAdapter } from "@socket.io/redis-adapter";
+import { JWT_SECRET_KEY, NODE_ENV } from "@config/env";
+import { redisService } from "@services/infra/redis.service";
+import { socketService } from "@services/chat/socket.service";
+import { userCacheService } from "@services/auth/user-cache.service";
 import { AppError } from "@utils/AppError";
 import jwt from "jsonwebtoken";
-import { Server } from "socket.io";
 
 import { AuthenticatedSocketUser, JWTPayload, TypedIO, TypedSocket } from "@/types/socket.types";
 
-export const configureSocketServer = (server: import("http").Server | import("https").Server): TypedIO => {
-  const io: TypedIO = new Server(server, {
-    cors: {
-      origin: ALLOWED_ORIGINS,
-      methods: ["GET", "POST"],
-      credentials: true,
-    },
-  });
-
-  // Enable multi-instance support via Redis Adapter
-  if (redisService.client && redisService.subClient) {
-    const pubClient = redisService.client;
-    const subClient = redisService.subClient;
-    io.adapter(createAdapter(pubClient, subClient));
-    console.log("[SocketController] Redis adapter configured for distributed events.");
-  }
-
+export const configureSocketServer = (io: TypedIO): void => {
   socketService.init(io);
+
 
   // Chat Security Auditor: Authenticate socket connection
   io.use(async (socket: TypedSocket, next) => {
@@ -128,6 +111,4 @@ export const configureSocketServer = (server: import("http").Server | import("ht
       }
     });
   });
-
-  return io;
 };

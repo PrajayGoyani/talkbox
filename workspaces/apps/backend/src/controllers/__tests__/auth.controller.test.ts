@@ -1,8 +1,8 @@
 import { forgotPassword, resendVerification, resetPassword, verifyEmail } from "@controllers/auth.controller";
-import { authService } from "@services/auth.service";
+import { authService } from "@services/auth/auth.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@services/auth.service", () => ({
+vi.mock("@services/auth/auth.service", () => ({
   authService: {
     forgotPassword: vi.fn(),
     resetPassword: vi.fn(),

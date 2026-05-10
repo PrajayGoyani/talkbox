@@ -1,5 +1,5 @@
-import { imageService } from "@services/image.service";
-import { userService } from "@services/user.service";
+import { imageService } from "@services/infra/image.service";
+import { userService } from "@services/auth/user.service";
 import { AppError } from "@utils/AppError";
 import { v2 as cloudinary } from "cloudinary";
 import { Request, Response } from "express";

@@ -1,5 +1,5 @@
 import { UserRepository, userRepository } from "@repositories/user.repository";
-import { redisService } from "@services/redis.service";
+import { redisService } from "@services/infra/redis.service";
 import { LRUCache } from "lru-cache";
 import { UserDto } from "shared/types/auth.dto";
 

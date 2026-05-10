@@ -1,13 +1,16 @@
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
-import { redisService } from "@services/redis.service";
-import { socketService } from "@services/socket.service";
+import { redisService } from "@services/infra/redis.service";
+import { socketService } from "@services/chat/socket.service";
+import { messageRepository } from "@repositories/message.repository";
+import { chatRepository } from "@repositories/chat.repository";
 import { ObjectId } from "mongodb";
+import mongoose from "mongoose";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
-vi.mock("@services/redis.service", () => ({
+vi.mock("@services/infra/redis.service", () => ({
   redisService: {
     incrementAndCheckLimit: vi.fn().mockResolvedValue({ allowed: true, current: 1, ttl: 60000 }),
     checkAndSetIdempotency: vi.fn().mockResolvedValue(true),
@@ -18,6 +21,7 @@ vi.mock("@services/redis.service", () => ({
     client: { publish: vi.fn() },
     subClient: { subscribe: vi.fn(), on: vi.fn() },
     publishCacheInvalidation: vi.fn().mockResolvedValue(null),
+    getActiveChat: vi.fn().mockResolvedValue(null),
   },
 }));
 
@@ -33,33 +37,33 @@ describe("Scalability Optimizations", () => {
     // Reset TypingHandler local guard
     (socketService as any).typingHandler.localGuard.clear();
 
-    vi.spyOn(Message, "create").mockImplementation((data: any) =>
-      Promise.resolve({
-        ...data,
-        _id: new ObjectId("507f1f77bcf86cd799439066"),
-        createdAt: new Date(),
-        toObject: () => ({
-          ...data,
-          _id: new ObjectId("507f1f77bcf86cd799439066"),
-          createdAt: new Date(),
-          reactions: [],
-        }),
-      } as any),
-    );
-    vi.spyOn(Message, "findOne").mockResolvedValue(null);
-    vi.spyOn(Chat, "findById").mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      lean: vi.fn().mockResolvedValue({
-        _id: new ObjectId(MOCK_CHAT_ID),
-        participants: [new ObjectId(MOCK_USER_ID), new ObjectId(MOCK_RECEIVER_ID)],
-        status: "accepted",
-      }),
+    vi.spyOn(mongoose, "startSession").mockResolvedValue({
+      startTransaction: vi.fn(),
+      commitTransaction: vi.fn(),
+      abortTransaction: vi.fn(),
+      endSession: vi.fn(),
     } as any);
-    vi.spyOn(Chat, "findOneAndUpdate").mockResolvedValue({
+
+    const mockMessage = {
+      _id: new ObjectId("507f1f77bcf86cd799439066"),
+      chatId: new ObjectId(MOCK_CHAT_ID),
+      senderId: new ObjectId(MOCK_USER_ID),
+      contentBody: "Hi",
+      createdAt: new Date(),
+      toObject: function() { return this; },
+      reactions: [],
+    };
+
+    vi.spyOn(messageRepository, "create").mockResolvedValue(mockMessage as any);
+    vi.spyOn(messageRepository, "findOne").mockResolvedValue(null);
+    vi.spyOn(chatRepository, "findById").mockResolvedValue({
       _id: new ObjectId(MOCK_CHAT_ID),
       participants: [new ObjectId(MOCK_USER_ID), new ObjectId(MOCK_RECEIVER_ID)],
-      userA: new ObjectId(MOCK_USER_ID),
-      userB: new ObjectId(MOCK_RECEIVER_ID),
+      status: "accepted",
+    } as any);
+    vi.spyOn(chatRepository, "updateById").mockResolvedValue({
+      _id: new ObjectId(MOCK_CHAT_ID),
+      participants: [new ObjectId(MOCK_USER_ID), new ObjectId(MOCK_RECEIVER_ID)],
     } as any);
   });
 
@@ -82,12 +86,10 @@ describe("Scalability Optimizations", () => {
 
       // Delay the DB response to simulate concurrency
       let queryCount = 0;
-      vi.spyOn(Chat, "find").mockImplementation(() => {
+      vi.spyOn(chatRepository, "findPartnerChats").mockImplementation(async () => {
         queryCount++;
-        return {
-          select: vi.fn().mockReturnThis(),
-          lean: vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(mockChats), 50))),
-        } as any;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        return mockChats as any;
       });
 
       vi.spyOn(redisService, "getCachedPartners").mockResolvedValue(null);
@@ -127,9 +129,9 @@ describe("Scalability Optimizations", () => {
 
       await socketService.saveAndDeliverMessage(sender, payload);
 
-      // Should NOT have called Message.findOne for idempotency
-      expect(vi.spyOn(Message, "findOne")).not.toHaveBeenCalledWith({ idempotencyKey: "unique-key" });
-      expect(vi.spyOn(Message, "create")).toHaveBeenCalled();
+      // Should NOT have called messageRepo.findOne for idempotency
+      expect(messageRepository.findOne).not.toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: "unique-key" }));
+      expect(messageRepository.create).toHaveBeenCalled();
     });
 
     it("should hit DB findOne if Redis says the message is a duplicate", async () => {
@@ -142,24 +144,27 @@ describe("Scalability Optimizations", () => {
       };
 
       vi.spyOn(redisService, "checkAndSetIdempotency").mockResolvedValue(false);
-      vi.spyOn(Message, "findOne").mockResolvedValue({
+      const mockResult = {
         _id: new ObjectId("507f1f77bcf86cd799439077"),
         chatId: new ObjectId(MOCK_CHAT_ID),
         senderId: new ObjectId(MOCK_USER_ID),
         contentBody: "Hi",
+        createdAt: new Date(),
         toObject: () => ({
           _id: new ObjectId("507f1f77bcf86cd799439077"),
           chatId: new ObjectId(MOCK_CHAT_ID),
           senderId: new ObjectId(MOCK_USER_ID),
           contentBody: "Hi",
+          createdAt: new Date(),
           reactions: [],
         }),
-      } as any);
+      };
+      vi.spyOn(messageRepository, "findOne").mockResolvedValue(mockResult as any);
 
       const result = await socketService.saveAndDeliverMessage(sender, payload);
 
-      expect(vi.spyOn(Message, "findOne")).toHaveBeenCalledWith({ idempotencyKey: "dup-key" });
-      expect(vi.spyOn(Message, "create")).not.toHaveBeenCalled();
+      expect(messageRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: "dup-key" }));
+      expect(messageRepository.create).not.toHaveBeenCalled();
       expect(result.id.toString()).toBe("507f1f77bcf86cd799439077");
     });
 
@@ -175,19 +180,22 @@ describe("Scalability Optimizations", () => {
       // Simulate Redis L1 hit for idempotency (already set)
       vi.spyOn(redisService, "checkAndSetIdempotency").mockResolvedValue(false);
       // Simulate DB hit
-      vi.spyOn(Message, "findOne").mockResolvedValue({
+      const mockResult = {
         _id: new ObjectId("507f1f77bcf86cd799439077"),
         chatId: new ObjectId(MOCK_CHAT_ID),
         senderId: new ObjectId(MOCK_USER_ID),
         contentBody: "Retry",
+        createdAt: new Date(),
         toObject: () => ({
           _id: new ObjectId("507f1f77bcf86cd799439077"),
           chatId: new ObjectId(MOCK_CHAT_ID),
           senderId: new ObjectId(MOCK_USER_ID),
           contentBody: "Retry",
+          createdAt: new Date(),
           reactions: [],
         }),
-      } as any);
+      };
+      vi.spyOn(messageRepository, "findOne").mockResolvedValue(mockResult as any);
 
       await socketService.saveAndDeliverMessage(sender, payload);
 

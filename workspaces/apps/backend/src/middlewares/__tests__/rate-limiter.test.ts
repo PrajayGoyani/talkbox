@@ -1,9 +1,9 @@
 import { createRateLimiter } from "@middlewares/rate-limiter.middleware";
-import { redisService } from "@services/redis.service";
+import { redisService } from "@services/infra/redis.service";
 import { Request, Response } from "express";
 import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 
-vi.mock("@services/redis.service", () => ({
+vi.mock("@services/infra/redis.service", () => ({
   redisService: {
     incrementAndCheckLimit: vi.fn(),
     client: {},

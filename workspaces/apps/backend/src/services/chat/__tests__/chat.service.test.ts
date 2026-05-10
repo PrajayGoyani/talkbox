@@ -3,7 +3,7 @@ import Chat from "@models/chat.model";
 import Message from "@models/message.model";
 import Notification from "@models/notification.model";
 import User from "@models/user.model";
-import { chatService } from "@services/chat.service";
+import { chatService } from "@services/chat/chat.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@models/chat.model");

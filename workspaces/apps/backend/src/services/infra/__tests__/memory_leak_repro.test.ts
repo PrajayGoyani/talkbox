@@ -1,14 +1,14 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
 import Chat from "@models/chat.model";
-import { redisService } from "@services/redis.service";
-import { socketService } from "@services/socket.service";
+import { redisService } from "@services/infra/redis.service";
+import { socketService } from "@services/chat/socket.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
 vi.mock("@models/user.model");
-vi.mock("@services/redis.service", () => ({
+vi.mock("@services/infra/redis.service", () => ({
   redisService: {
     incrementGlobalSession: vi.fn(),
     decrementGlobalSession: vi.fn(),

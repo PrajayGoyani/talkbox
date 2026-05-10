@@ -60,6 +60,10 @@ export interface MessageDto {
   editedAt?: string | Date | null;
   isDeleted?: boolean;
   deletedAt?: string | Date | null;
+  attachment?: {
+    kind: "image" | "audio" | "video" | null;
+    url: string | null;
+  };
   emojiMetadata?: Record<string, string>;
   isScrubbed?: boolean;
   reactions?: ReactionGroupDto[];

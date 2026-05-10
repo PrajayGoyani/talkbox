@@ -1,4 +1,4 @@
-import { redisService } from "@services/redis.service";
+import { redisService } from "@services/infra/redis.service";
 
 /**
  * Distributed lockdown logic for deleted chats.

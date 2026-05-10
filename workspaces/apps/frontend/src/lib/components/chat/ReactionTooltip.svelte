@@ -46,7 +46,7 @@
              px-4 py-2.5 rounded-2xl text-[13px] font-semibold shadow-2xl
              backdrop-blur-xl border border-white/10 dark:border-black/5
              whitespace-pre-line tracking-tight leading-relaxed
-             w-max max-w-[280px] text-center flex flex-col items-center gap-1"
+             w-max max-w-70 text-center flex flex-col items-center gap-1"
     >
       {#each lines as line, i}
         {#if i === 0}

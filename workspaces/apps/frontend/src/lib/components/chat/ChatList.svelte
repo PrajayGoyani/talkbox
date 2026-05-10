@@ -193,7 +193,7 @@
         <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
           Slow Down a Bit
         </h3>
-        <p class="text-xs text-slate-500 max-w-[200px] leading-relaxed">
+        <p class="text-xs text-slate-500 max-w-50 leading-relaxed">
           You've sent too many requests. Please wait a minute before trying
           again.
         </p>
@@ -220,7 +220,7 @@
           ? "You're All Caught Up"
           : "No Conversations Yet"}
       </h3>
-      <p class="text-sm text-slate-500 max-w-[200px] leading-relaxed">
+      <p class="text-sm text-slate-500 max-w-50 leading-relaxed">
         {activeTab === "unread"
           ? "You've read all your messages. Great job!"
           : "Connect with others by sending a magic chat request."}
