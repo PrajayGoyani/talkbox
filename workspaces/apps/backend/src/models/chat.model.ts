@@ -1,20 +1,18 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IChat extends Document {
-  /** @deprecated Use participants instead */
-  userA: mongoose.Types.ObjectId;
-  /** @deprecated Use participants instead */
-  userB: mongoose.Types.ObjectId;
   participants: mongoose.Types.ObjectId[];
   isGroup: boolean;
   createdBy: mongoose.Types.ObjectId;
   status: "pending" | "accepted" | "rejected";
   lastMessage: {
+    messageId: mongoose.Types.ObjectId | null;
     contentBody: string | null;
     senderId: mongoose.Types.ObjectId | null;
     sentAt: Date | null;
   };
   unreadCounts: Map<string, number>;
+  acceptedAt: Date | null;
   createdAt: Date;
   isDeleted: boolean;
   deletedAt: Date | null;
@@ -25,8 +23,6 @@ export interface IChat extends Document {
 export interface IChatModel extends Model<IChat> {}
 
 const chatSchema = new Schema<IChat>({
-  userA: { type: Schema.Types.ObjectId, ref: "User" },
-  userB: { type: Schema.Types.ObjectId, ref: "User" },
   participants: {
     type: [{ type: Schema.Types.ObjectId, ref: "User" }],
     required: true,
@@ -39,6 +35,7 @@ const chatSchema = new Schema<IChat>({
     default: "pending",
   },
   lastMessage: {
+    messageId: { type: Schema.Types.ObjectId, ref: "Message", default: null },
     contentBody: { type: String, default: null },
     senderId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     sentAt: { type: Date, default: null },
@@ -48,6 +45,7 @@ const chatSchema = new Schema<IChat>({
     of: Number,
     default: {},
   },
+  acceptedAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
   isDeleted: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null },

@@ -29,10 +29,20 @@ export class MessageRepository {
     const msg = "toObject" in m && typeof m.toObject === "function" ? m.toObject() : m;
 
     return {
-      ...msg,
       id: msg._id.toString(),
       chatId: msg.chatId.toString(),
       senderId: msg.senderId.toString(),
+      contentBody: msg.contentBody,
+      attachment: msg.attachment ? {
+        kind: msg.attachment.kind,
+        url: msg.attachment.url,
+      } : undefined,
+      isDeleted: msg.isDeleted,
+      deletedAt: msg.deletedAt,
+      isEdited: msg.isEdited,
+      editedAt: msg.editedAt,
+      createdAt: msg.createdAt,
+      idempotencyKey: msg.idempotencyKey,
       reactions: (msg.reactions as any[])?.map((r) => ({
         emoji: r.emoji,
         slug: r.slug,
@@ -41,9 +51,8 @@ export class MessageRepository {
       senderName: sender?.name,
       senderUsername: sender?.username,
       senderAvatar: sender?.avatarUrl,
-    } as MessageDto;
+    };
   }
-
 
   public async create(data: Partial<IMessage>, options: any = {}): Promise<IMessage> {
     return new this.messageModel(data).save(options);

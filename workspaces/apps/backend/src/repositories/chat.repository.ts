@@ -46,36 +46,6 @@ export class ChatRepository {
     );
   }
 
-  public async updateLastMessage(
-    chatId: string | ObjectId,
-    senderId: string | ObjectId,
-    contentBody: string,
-    recipients?: string | ObjectId | (string | ObjectId)[],
-  ) {
-    const chatIdObj = new ObjectId(chatId);
-    const update: any = {
-      $set: {
-        lastMessage: {
-          contentBody,
-          senderId: new ObjectId(senderId),
-          sentAt: new Date(),
-        },
-      },
-    };
-
-    if (recipients) {
-      const recipientIds = Array.isArray(recipients) ? recipients : [recipients];
-      if (recipientIds.length > 0) {
-        update.$inc = {};
-        recipientIds.forEach((id) => {
-          update.$inc[`unreadCounts.${id.toString()}`] = 1;
-        });
-      }
-    }
-
-    return this.chatModel.findOneAndUpdate({ _id: chatIdObj }, update, { returnDocument: "after" });
-  }
-
   public async findOneAndUpdate(query: Record<string, any>, update: any) {
     return this.chatModel.findOneAndUpdate(query, update, { returnDocument: "after" });
   }

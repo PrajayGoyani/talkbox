@@ -10,22 +10,15 @@ import { baseService, redisSessionService, redisPresenceService } from "@service
 import { MessageHandler } from "@services/socket-handlers/message.handler";
 import { ReactionHandler } from "@services/socket-handlers/reaction.handler";
 import { TypingHandler } from "@services/socket-handlers/typing.handler";
+import { chatCacheService } from "@services/chat/chat-cache.service";
 import { eventBus, USER_EVENTS } from "@utils/event-bus";
-import { LRUCache } from "lru-cache";
 
 import { AuthenticatedSocketUser, TypedIO, TypedSocket } from "@/types/socket.types";
-
-const PARTICIPANT_CACHE_TTL_MS = 1000 * 60 * 5; // 5 minutes
-const PARTICIPANT_CACHE_MAX = 500;
-const PARTNER_CACHE_TTL_MS = 1000 * 60 * 5;
-const PARTNER_CACHE_MAX = 1000;
 
 export class SocketService {
   public io: TypedIO | null = null;
   public activeConnections: Map<string, Set<TypedSocket>> = new Map();
 
-  private participantCache: LRUCache<string, Set<string>>;
-  private partnerCache: LRUCache<string, Set<string>>;
   private partnerRequests: Map<string, Promise<Set<string>>> = new Map();
 
   private presenceService: PresenceService;
@@ -44,16 +37,6 @@ export class SocketService {
     this.messageHandler = new MessageHandler(ioProvider);
     this.reactionHandler = new ReactionHandler(ioProvider, this.chatRepo, this.messageRepo);
     this.typingHandler = new TypingHandler(ioProvider, this.chatRepo);
-
-    // decalre constant and use
-    this.participantCache = new LRUCache({
-      max: PARTICIPANT_CACHE_MAX,
-      ttl: PARTICIPANT_CACHE_TTL_MS,
-    });
-    this.partnerCache = new LRUCache({
-      max: PARTNER_CACHE_MAX,
-      ttl: PARTNER_CACHE_TTL_MS,
-    });
   }
 
   init(io: TypedIO) {
@@ -197,11 +180,10 @@ export class SocketService {
 
   private async _handleGlobalCacheInvalidation(type: string, id: string) {
     if (type === "chat") {
-      this.participantCache.delete(id);
+      chatCacheService.invalidateParticipants(id);
       messageService.invalidateCache(id);
     } else if (type === "partner") {
-      this.partnerCache.delete(id);
-      this.partnerCache.delete(`${id}:active`);
+      chatCacheService.invalidatePartners(id);
       partnerRepository.invalidatePartnerCache(id);
 
       const sockets = this.activeConnections.get(id);
@@ -237,7 +219,7 @@ export class SocketService {
 
   private async _getPartnerIds(userId: string, excludeDeleted = false): Promise<Set<string>> {
     const cacheKey = excludeDeleted ? `${userId}:active` : userId;
-    const l1Cached = this.partnerCache.get(cacheKey);
+    const l1Cached = chatCacheService.getPartners(userId, excludeDeleted);
     if (l1Cached) return l1Cached;
 
     // Thundering Herd Protection: check if a request for this key is already in flight
@@ -248,7 +230,7 @@ export class SocketService {
       try {
         const l2Cached = await redisPresenceService.getCachedPartners(userId, excludeDeleted);
         if (l2Cached) {
-          this.partnerCache.set(cacheKey, l2Cached);
+          chatCacheService.setPartners(userId, l2Cached, excludeDeleted);
           return l2Cached;
         }
 
@@ -263,9 +245,12 @@ export class SocketService {
           }
         }
 
-        this.partnerCache.set(cacheKey, partners);
+        chatCacheService.setPartners(userId, partners, excludeDeleted);
         await redisPresenceService.setCachedPartners(userId, Array.from(partners), excludeDeleted);
         return partners;
+      } catch (err) {
+        console.error(`[SocketService] Failed to fetch partners for ${userId}:`, err);
+        throw err;
       } finally {
         // Always clear the in-flight promise when done
         this.partnerRequests.delete(cacheKey);

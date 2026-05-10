@@ -9,6 +9,7 @@ import { partnerRepository } from "@repositories/partner.repository";
 import { chatQueryRepository } from "@repositories/chat-query.repository";
 import { userRepository } from "@repositories/user.repository";
 import { messageService } from "@services/chat/message.service";
+import { chatCacheService } from "@services/chat/chat-cache.service";
 import { CHAT_MESSAGES } from "@constants/messages";
 
 // Mock dependencies
@@ -114,8 +115,7 @@ describe("SocketService", () => {
     vi.clearAllMocks();
     // Reset active connections and caches
     (socketService as any).activeConnections.clear();
-    (socketService as any).participantCache.clear();
-    (socketService as any).partnerCache.clear();
+    chatCacheService.clear();
 
     // Default repository and service mocks
     vi.mocked(partnerRepository.getPartnerIds).mockResolvedValue(new Set());
@@ -253,20 +253,20 @@ describe("SocketService", () => {
       const chatId = "hot-chat-123";
       const participants = new Set(["u1", "u2"]);
 
-      (socketService as any).participantCache.set(chatId, participants);
+      chatCacheService.setParticipants(chatId, participants);
       (socketService as any)._handleGlobalCacheInvalidation("chat", chatId);
 
-      expect((socketService as any).participantCache.get(chatId)).toBeUndefined();
+      expect(chatCacheService.getParticipants(chatId)).toBeUndefined();
     });
 
     it("should ignore unknown invalidation types", () => {
       const chatId = "chat-123";
       const participants = new Set(["u1", "u2"]);
-      (socketService as any).participantCache.set(chatId, participants);
+      chatCacheService.setParticipants(chatId, participants);
 
       (socketService as any)._handleGlobalCacheInvalidation("unknown-type", chatId);
 
-      expect((socketService as any).participantCache.get(chatId)).toBe(participants);
+      expect(chatCacheService.getParticipants(chatId)).toBe(participants);
     });
   });
 

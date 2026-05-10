@@ -10,7 +10,7 @@ import { AppError } from "@utils/AppError";
 import { isPastModifyLimit, isScrubbed } from "@utils/date.utils";
 import { extractEmojiMetadata } from "@utils/emoji.utils";
 import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
-import { LRUCache } from "lru-cache";
+import { chatCacheService } from "./chat-cache.service";
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 import { MessageDto } from "shared/types/chat.dto";
@@ -19,21 +19,11 @@ import { AuthenticatedSocketUser } from "@/types/socket.types";
 
 export type MessageSender = Omit<AuthenticatedSocketUser, "bio">;
 
-const PARTICIPANT_CACHE_TTL_MS = 10 * 60 * 1000;
-const PARTICIPANT_CACHE_MAX = 10000;
-
 export class MessageService implements IMessageService {
-  private participantCache: LRUCache<string, Set<string>>;
-
   constructor(
     private chatRepo: ChatRepository,
     private messageRepo: MessageRepository,
-  ) {
-    this.participantCache = new LRUCache({
-      max: PARTICIPANT_CACHE_MAX,
-      ttl: PARTICIPANT_CACHE_TTL_MS,
-    });
-  }
+  ) {}
 
   async getChatMessages(
     chatId: string | ObjectId,
@@ -152,7 +142,7 @@ export class MessageService implements IMessageService {
     // 5. Post-persistence (Cache Update & Transformation)
     if (!cachedParticipants) {
       const participants = new Set(chat.participants.map((p: any) => p.toString()));
-      this.participantCache.set(chatId, participants);
+      chatCacheService.setParticipants(chatId, participants);
     }
 
     const dto = this.transformAndScrubMessage(message, sender.plan);
@@ -196,11 +186,16 @@ export class MessageService implements IMessageService {
   }
 
   private async verifyParticipation(chatId: string, senderId: string): Promise<Set<string> | undefined> {
-    const cachedParticipants = this.participantCache.get(chatId);
-    if (cachedParticipants && !cachedParticipants.has(senderId)) {
-      throw AppError.forbidden(CHAT_MESSAGES.NOT_PARTICIPANT);
+    const cachedParticipants = chatCacheService.getParticipants(chatId);
+    if (cachedParticipants) {
+      if (!cachedParticipants.has(senderId)) {
+        throw AppError.forbidden(CHAT_MESSAGES.NOT_PARTICIPANT);
+      }
+      return cachedParticipants;
     }
-    return cachedParticipants;
+
+    // fallback to DB if cache miss to guarantee validation
+    return (await this.ensureParticipant(chatId, senderId));
   }
 
   private async handleDeduplication(idempotencyKey: string, plan: "free" | "pro"): Promise<MessageDto | null> {
@@ -234,7 +229,12 @@ export class MessageService implements IMessageService {
       );
 
       const updateData: any = {
-        lastMessage: { contentBody, senderId, sentAt: message.createdAt },
+        lastMessage: { 
+          messageId: message._id,
+          contentBody, 
+          senderId, 
+          sentAt: message.createdAt 
+        },
       };
 
       if (!skipUnreadIncrement) {
@@ -266,9 +266,8 @@ export class MessageService implements IMessageService {
         $set: {
           isDeleted: true,
           deletedAt: new Date(),
-          contentBody: CHAT_MESSAGES.MESSAGE_DELETED,
-          attachment: { kind: null, url: null },
-          reactions: [],
+          // Data preserved for auditing/recovery.
+          // Masking is handled by transformAndScrubMessage during DTO creation.
         },
       },
     );
@@ -318,17 +317,27 @@ export class MessageService implements IMessageService {
   }
 
   private isLastMessage(chat: IChat, message: IMessage): boolean {
+    if (!chat.lastMessage) return false;
+
+    // Primary: Message ID comparison (Robust against high-concurrency collisions)
+    if (chat.lastMessage.messageId) {
+      return chat.lastMessage.messageId.toString() === message._id.toString();
+    }
+
+    // Fallback: Timestamp equality (for legacy chats without messageId)
     return Boolean(
-      chat.lastMessage && chat.lastMessage.sentAt && chat.lastMessage.sentAt.getTime() === message.createdAt.getTime(),
+      chat.lastMessage.sentAt && 
+      chat.lastMessage.sentAt.getTime() === message.createdAt.getTime() &&
+      chat.lastMessage.senderId?.toString() === message.senderId.toString()
     );
   }
 
   public invalidateCache(chatId: string) {
-    this.participantCache.delete(chatId);
+    chatCacheService.invalidateParticipants(chatId);
   }
 
   public async ensureParticipant(chatId: string, userId: string): Promise<Set<string>> {
-    const cached = this.participantCache.get(chatId);
+    const cached = chatCacheService.getParticipants(chatId);
     if (cached) {
       if (!cached.has(userId)) {
         throw AppError.forbidden(CHAT_MESSAGES.NOT_PARTICIPANT);
@@ -342,12 +351,12 @@ export class MessageService implements IMessageService {
     }
 
     const participants = new Set(chat.participants.map((p: any) => p.toString()));
+    chatCacheService.setParticipants(chatId, participants);
+    
     if (!participants.has(userId)) {
-      this.participantCache.set(chatId, participants); // Negative cache? No, only positive for now.
       throw AppError.forbidden(CHAT_MESSAGES.NOT_PARTICIPANT);
     }
 
-    this.participantCache.set(chatId, participants);
     return participants;
   }
 

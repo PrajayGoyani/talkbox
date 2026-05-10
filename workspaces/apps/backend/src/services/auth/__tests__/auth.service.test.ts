@@ -10,31 +10,23 @@ vi.mock("@config/env", () => ({
 }));
 
 vi.mock("@services/infra/redis.service", () => ({
-  redisService:  {
+  redisSessionService: {
     storeToken: vi.fn(),
     getToken: vi.fn(),
     deleteToken: vi.fn(),
-    publishCacheInvalidation: vi.fn(),
-  }, redisPresenceService:  {
-    storeToken: vi.fn(),
-    getToken: vi.fn(),
-    deleteToken: vi.fn(),
-    publishCacheInvalidation: vi.fn(),
-  }, redisSessionService:  {
-    storeToken: vi.fn(),
-    getToken: vi.fn(),
-    deleteToken: vi.fn(),
-    publishCacheInvalidation: vi.fn(),
-  }, redisGuardService:  {
-    storeToken: vi.fn(),
-    getToken: vi.fn(),
-    deleteToken: vi.fn(),
-    publishCacheInvalidation: vi.fn(),
-  }, baseService:  {
-    storeToken: vi.fn(),
-    getToken: vi.fn(),
-    deleteToken: vi.fn(),
-    publishCacheInvalidation: vi.fn(),
+  },
+  redisPresenceService: {
+    setUserOnline: vi.fn(),
+    setUserOffline: vi.fn(),
+  },
+  redisGuardService: {
+    incrementAndCheckLimit: vi.fn(),
+    checkAndSetIdempotency: vi.fn(),
+  },
+  baseService: {
+    isConnected: true,
+    client: {},
+    subClient: {},
   },
 }));
 
