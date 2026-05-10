@@ -1,7 +1,9 @@
 <script lang="ts">
+import { socketManager } from "$services/socket.manager.svelte";
+
   import MessageReactionPicker from "$components/chat/MessageReactionPicker.svelte";
   import { authStore } from "$state/auth.svelte";
-  import { chatStore } from "$state/chat.svelte";
+  
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
   import { formatSimpleTime } from "$utils/date";
@@ -103,7 +105,7 @@
 
     <!-- Reactions rendering for jumbo -->
     <div class="flex flex-col gap-1 items-start">
-      {@render reactionList(msg, isSent, otherUser, chatStore, authStore)}
+      {@render reactionList(msg, isSent, otherUser, authStore)}
     </div>
   </div>
 {:else}
@@ -197,7 +199,7 @@
     {/if}
     <!-- Reaction list for normal -->
     <div class="flex flex-col gap-1 items-start">
-      {@render reactionList(msg, isSent, otherUser, chatStore, authStore)}
+      {@render reactionList(msg, isSent, otherUser, authStore)}
     </div>
   </div>
 {/if}
@@ -205,8 +207,7 @@
 {#snippet reactionList(
   msg: MessageDto,
   isSent: boolean,
-  otherUser: UserDto | null,
-  chatStore: any,
+  otherUser: UserDto | null: any,
   authStore: any,
 )}
   {#if msg.reactions && msg.reactions.length > 0}
@@ -232,7 +233,7 @@
         <button
           onclick={() => {
             if (msg.isScrubbed) return;
-            chatStore.reactToMessage(msg.id, reaction.emoji, reaction.slug);
+            socketManager.reactToMessage(msg.id, reaction.emoji, reaction.slug);
           }}
           use:tooltip={{
             text: msg.isScrubbed ? "Upgrade to Pro to react" : tooltipContent,

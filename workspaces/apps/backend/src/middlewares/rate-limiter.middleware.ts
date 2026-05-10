@@ -1,5 +1,5 @@
 import { RATE_LIMIT_DEFAULT_MAX, RATE_LIMIT_DEFAULT_WINDOW_MS } from "@config/env";
-import { redisService } from "@services/infra/redis.service";
+import { baseService, redisGuardService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
 import { NextFunction, Request, Response } from "express";
 import { LRUCache } from "lru-cache";
@@ -88,9 +88,9 @@ export const createRateLimiter = (
     }
 
     // 4. Check L2: Global Redis Counter
-    if (redisService.client && redisService.isConnected) {
+    if (baseService.client && baseService.isConnected) {
       try {
-        const rl = await redisService.incrementAndCheckLimit(redisKey, maxRequests, windowMs);
+        const rl = await redisGuardService.incrementAndCheckLimit(redisKey, maxRequests, windowMs);
 
         // Sync local state with Redis "truth"
         state.count = rl.current;

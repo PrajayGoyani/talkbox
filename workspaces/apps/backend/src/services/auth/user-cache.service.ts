@@ -1,5 +1,5 @@
 import { UserRepository, userRepository } from "@repositories/user.repository";
-import { redisService } from "@services/infra/redis.service";
+import { baseService } from "@services/infra/redis.service";
 import { LRUCache } from "lru-cache";
 import { UserDto } from "shared/types/auth.dto";
 
@@ -19,13 +19,13 @@ class UserCacheService {
   }
 
   private initRedisSubscription() {
-    if (redisService.subClient) {
+    if (baseService.subClient) {
       // Subscribe to global cache invalidation
-      redisService.subClient.subscribe("cache:invalidate").catch((err) => {
+      baseService.subClient.subscribe("cache:invalidate").catch((err) => {
         console.error("[UserCacheService] Failed to subscribe to Redis invalidation:", err);
       });
 
-      redisService.subClient.on("message", (channel, message) => {
+      baseService.subClient.on("message", (channel, message) => {
         if (channel === "cache:invalidate") {
           try {
             const { type, id } = JSON.parse(message);

@@ -1,6 +1,6 @@
 import User from "@models/user.model";
 import * as Sentry from "@sentry/bun";
-import { redisService } from "@services/infra/redis.service";
+import { redisPresenceService } from "@services/infra/redis.service";
 
 /**
  * Syncs user presence (lastSeen) from Redis queue to MongoDB.
@@ -16,13 +16,13 @@ export const presenceSyncHandler = async () => {
     let userIds: string[] = [];
 
     try {
-      userIds = await redisService.popSyncQueue(BATCH_SIZE);
+      userIds = await redisPresenceService.popSyncQueue(BATCH_SIZE);
 
       if (!userIds || userIds.length === 0) {
         break;
       }
 
-      const lastSeenMap = await redisService.getLastSeenBatched(userIds);
+      const lastSeenMap = await redisPresenceService.getLastSeenBatched(userIds);
 
       const bulkOps = Array.from(lastSeenMap.entries()).map(([userId, lastSeen]) => ({
         updateOne: {
@@ -48,7 +48,7 @@ export const presenceSyncHandler = async () => {
       // Re-queue user IDs that failed to sync to ensure eventual consistency
       if (userIds && userIds.length > 0) {
         try {
-          await redisService.queuePresenceSyncBatched(userIds);
+          await redisPresenceService.queuePresenceSyncBatched(userIds);
         } catch (inner) {
           console.error("[PresenceSync] Crit: Re-queue failed", inner);
           Sentry.captureException(inner, { extra: { userIds, originalError: err } });
@@ -66,7 +66,7 @@ export const presenceSyncHandler = async () => {
 
   // Monitor queue health for alerts
   try {
-    const remaining = await redisService.getSyncQueueCount();
+    const remaining = await redisPresenceService.getSyncQueueCount();
     if (remaining > 50000) {
       Sentry.captureMessage("[PresenceSync] queue growing too fast", {
         level: "warning",

@@ -1,6 +1,6 @@
 import { TypedIO } from "@/types/socket.types";
 import { ALLOWED_ORIGINS } from "@config/env";
-import { redisService } from "@services/infra/redis.service";
+import { baseService } from "@services/infra/redis.service";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { Server } from "socket.io";
 
@@ -17,9 +17,9 @@ export const initSocketIO = (server: import("http").Server | import("https").Ser
   });
 
   // Enable multi-instance support via Redis Adapter
-  if (redisService.client && redisService.subClient) {
-    const pubClient = redisService.client;
-    const subClient = redisService.subClient;
+  if (baseService.client && baseService.subClient) {
+    const pubClient = baseService.client;
+    const subClient = baseService.subClient;
     io.adapter(createAdapter(pubClient, subClient));
     console.log("[SocketBootstrap] Redis adapter configured for distributed events.");
   }

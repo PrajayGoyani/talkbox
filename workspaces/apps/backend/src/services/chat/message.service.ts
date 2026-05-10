@@ -5,7 +5,7 @@ import { IMessage } from "@models/message.model";
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { MessageRepository, messageRepository } from "@repositories/message.repository";
 import { chatLockdownService } from "@services/chat/chat-lockdown.service";
-import { redisService } from "@services/infra/redis.service";
+import { redisPresenceService, redisGuardService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
 import { isPastModifyLimit, isScrubbed } from "@utils/date.utils";
 import { extractEmojiMetadata } from "@utils/emoji.utils";
@@ -129,7 +129,7 @@ export class MessageService implements IMessageService {
     // 4. Atomic Persistence
     let persistenceResult: { message: IMessage; chat: IChat };
     try {
-      const activeChatId = await redisService.getActiveChat(receiverId);
+      const activeChatId = await redisPresenceService.getActiveChat(receiverId);
       const skipUnreadIncrement = activeChatId === chatId;
 
       persistenceResult = await this.persistMessageAndNotifyChat(
@@ -171,13 +171,13 @@ export class MessageService implements IMessageService {
   private async applySecurityGuards(senderId: string, chatId: string, idempotencyKey: string): Promise<boolean> {
     // 1. Check Idempotency FIRST (L1 check)
     // If Redis already has this key, it's a retry; skip further security costs.
-    const isNewToRedis = await redisService.checkAndSetIdempotency(idempotencyKey, 900);
+    const isNewToRedis = await redisGuardService.checkAndSetIdempotency(idempotencyKey, 900);
     if (!isNewToRedis) return false;
 
     // 2. Heavy Checks (Lockdown & Rate Limit) only for NEW messages
     const [isLocked, rlStatus] = await Promise.all([
       chatLockdownService.isChatDeleted(chatId),
-      redisService.incrementAndCheckLimit(
+      redisGuardService.incrementAndCheckLimit(
         `rl:socket:message:${senderId}`,
         RATE_LIMIT_SOCKET_MESSAGE_MAX,
         RATE_LIMIT_DEFAULT_WINDOW_MS,

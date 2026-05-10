@@ -1,8 +1,10 @@
 <script lang="ts">
+import { socketManager } from "$services/socket.manager.svelte";
+
   import EmojiPicker from "$components/chat/EmojiPicker.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
-  import { chatStore } from "$state/chat.svelte";
+  
   import { confirmStore } from "$state/confirm.svelte";
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
@@ -30,7 +32,7 @@
   // ---------------------------------------
 
   const handleSelect = ({ emoji, slug }: { emoji: string; slug?: string }) => {
-    chatStore.reactToMessage(msg.id, emoji, slug);
+    socketManager.reactToMessage(msg.id, emoji, slug);
     isOpen = false;
   };
 
@@ -55,7 +57,7 @@
       variant: "danger",
     });
     if (confirmed) {
-      chatStore.deleteMessage(msg.id);
+      socketManager.deleteMessage(msg.id);
     }
   };
 </script>

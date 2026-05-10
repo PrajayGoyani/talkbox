@@ -1,5 +1,5 @@
 import { JWT_SECRET_KEY, NODE_ENV } from "@config/env";
-import { redisService } from "@services/infra/redis.service";
+import { redisPresenceService } from "@services/infra/redis.service";
 import { socketService } from "@services/chat/socket.service";
 import { userCacheService } from "@services/auth/user-cache.service";
 import { AppError } from "@utils/AppError";
@@ -97,7 +97,7 @@ export const configureSocketServer = (io: TypedIO): void => {
 
     socket.on("active_chat", async (data) => {
       try {
-        await redisService.setActiveChat(socket.data.user.id, data.chatId);
+        await redisPresenceService.setActiveChat(socket.data.user.id, data.chatId);
       } catch (err) {
         console.error(`[SocketController] Error setting active chat for user ${socket.data.user.id}:`, err);
       }
@@ -105,7 +105,7 @@ export const configureSocketServer = (io: TypedIO): void => {
 
     socket.on("disconnect", async () => {
       try {
-        await redisService.setActiveChat(socket.data.user.id, null);
+        await redisPresenceService.setActiveChat(socket.data.user.id, null);
       } catch (err) {
         console.error(`[SocketController] Error clearing active chat on disconnect:`, err);
       }

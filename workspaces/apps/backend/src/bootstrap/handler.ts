@@ -11,7 +11,7 @@ import path from "path";
 // import helmet from 'helmet';
 import { app, server } from "@/app";
 import { stopAgenda } from "@/config/agenda";
-import { redisService } from "@services/infra/redis.service";
+import { baseService } from "@services/infra/redis.service";
 
 // ____________________ Bootstrap Handlers ____________________
 
@@ -110,7 +110,7 @@ const shutdown = async (signal: string) => {
     });
 
     // 3. Close Redis (used by socket disconnect handlers)
-    await redisService.close();
+    await baseService.close();
 
     // 4. Close MongoDB
     await mongoose.connection.close();

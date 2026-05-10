@@ -1,7 +1,7 @@
 import { RATE_LIMIT_DEFAULT_WINDOW_MS } from "@config/env";
 import { ChatRepository } from "@repositories/chat.repository";
 import { messageService } from "@services/chat/message.service";
-import { redisService } from "@services/infra/redis.service";
+import { redisGuardService } from "@services/infra/redis.service";
 import { LRUCache } from "lru-cache";
 import { TypingIndicatorDto } from "shared/types/chat.dto";
 
@@ -33,7 +33,7 @@ export class TypingHandler {
     const shouldHitRedis = now - lastCheck > 2000;
 
     if (shouldHitRedis) {
-      const rlStatus = await redisService.incrementAndCheckLimit(
+      const rlStatus = await redisGuardService.incrementAndCheckLimit(
         `rl:socket:typing:${senderId}`,
         60,
         RATE_LIMIT_DEFAULT_WINDOW_MS,

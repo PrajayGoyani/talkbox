@@ -1,10 +1,12 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
-import { redisService } from "@services/infra/redis.service";
+import { redisSessionService, redisPresenceService, redisGuardService, baseService } from "@services/infra/redis.service";
 import { socketService } from "@services/chat/socket.service";
 import { eventBus, USER_EVENTS } from "@utils/event-bus";
 import { ObjectId } from "mongodb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { chatRepository } from "@repositories/chat.repository";
+import { partnerRepository } from "@repositories/partner.repository";
+import { chatQueryRepository } from "@repositories/chat-query.repository";
 import { userRepository } from "@repositories/user.repository";
 import { messageService } from "@services/chat/message.service";
 import { CHAT_MESSAGES } from "@constants/messages";
@@ -14,31 +16,53 @@ vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
 vi.mock("@models/user.model");
 vi.mock("@repositories/chat.repository");
+vi.mock("@repositories/partner.repository", () => ({
+  partnerRepository: {
+    getPartnerIds: vi.fn(),
+    invalidatePartnerCache: vi.fn(),
+  },
+}));
+vi.mock("@repositories/chat-query.repository", () => ({
+  chatQueryRepository: {
+    findPartnerChats: vi.fn(),
+    searchChats: vi.fn(),
+    findAcceptedChatsByUser: vi.fn(),
+    findPendingRequestsByUser: vi.fn(),
+    transformChat: vi.fn(),
+  },
+}));
 vi.mock("@repositories/user.repository");
 vi.mock("@services/chat/message.service");
 
 vi.mock("@services/infra/redis.service", () => ({
-  redisService: {
-    incrementGlobalSession: vi.fn(),
-    decrementGlobalSession: vi.fn(),
-    getGlobalSessionCount: vi.fn(),
-    publishSessionTakeover: vi.fn(),
-    getOldestSession: vi.fn().mockResolvedValue(null),
+  redisPresenceService: {
     setUserOnline: vi.fn().mockResolvedValue(null),
     setUserOffline: vi.fn().mockResolvedValue(null),
     getOnlineUsers: vi.fn().mockResolvedValue(new Set()),
     getCachedPartners: vi.fn().mockResolvedValue(null),
     setCachedPartners: vi.fn().mockResolvedValue(null),
+    queuePresenceSync: vi.fn().mockResolvedValue(null),
+    getLastSeenBatched: vi.fn().mockResolvedValue(new Map()),
+  },
+  redisSessionService: {
+    incrementGlobalSession: vi.fn(),
+    decrementGlobalSession: vi.fn(),
+    getGlobalSessionCount: vi.fn(),
+    getOldestSession: vi.fn().mockResolvedValue(null),
+    publishSessionTakeover: vi.fn(),
+    takeoverFreeSession: vi.fn(),
+    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
+  },
+  redisGuardService: {
+    incrementAndCheckLimit: vi.fn().mockResolvedValue({ allowed: true, current: 1, ttl: 60000 }),
+    checkAndSetIdempotency: vi.fn().mockResolvedValue(true),
+  },
+  baseService: {
+    isConnected: true,
     subClient: {
       subscribe: vi.fn().mockResolvedValue(null),
       on: vi.fn(),
     },
-    isConnected: true,
-    incrementAndCheckLimit: vi.fn().mockResolvedValue({ allowed: true, current: 1, ttl: 60000 }),
-    checkAndSetIdempotency: vi.fn().mockResolvedValue(true),
-    queuePresenceSync: vi.fn().mockResolvedValue(null),
-    getLastSeenBatched: vi.fn().mockResolvedValue(new Map()),
-    takeoverFreeSession: vi.fn(),
   },
 }));
 
@@ -53,6 +77,7 @@ vi.mock("@utils/event-bus", async (importOriginal) => {
     },
   };
 });
+
 const MOCK_USER_ID = "507f1f77bcf86cd799439011";
 const MOCK_PRO_USER_ID = "507f1f77bcf86cd799439022";
 
@@ -93,18 +118,18 @@ describe("SocketService", () => {
     (socketService as any).partnerCache.clear();
 
     // Default repository and service mocks
-    vi.mocked(chatRepository.getPartnerIds).mockResolvedValue(new Set());
-    vi.mocked(chatRepository.findPartnerChats).mockResolvedValue([]);
+    vi.mocked(partnerRepository.getPartnerIds).mockResolvedValue(new Set());
+    vi.mocked(chatQueryRepository.findPartnerChats).mockResolvedValue([]);
     vi.mocked(userRepository.findByIds).mockReturnValue(createQueryMock([]));
-    
-    vi.mocked(redisService.incrementGlobalSession).mockImplementation(async (uid, _sid) => {
+
+    vi.mocked(redisSessionService.incrementGlobalSession).mockImplementation(async (uid, _sid) => {
       const current = (socketService as any).activeConnections.get(uid)?.size || 0;
       return current + 1;
     });
-    vi.spyOn(redisService, "getGlobalSessionCount").mockImplementation(async (uid) => {
+    vi.spyOn(redisSessionService, "getGlobalSessionCount").mockImplementation(async (uid) => {
       return (socketService as any).activeConnections.get(uid)?.size || 0;
     });
-    vi.spyOn(redisService, "takeoverFreeSession").mockResolvedValue([]);
+    vi.spyOn(redisSessionService, "takeoverFreeSession").mockResolvedValue([]);
   });
 
   describe("handleConnection", () => {
@@ -122,10 +147,10 @@ describe("SocketService", () => {
       const socket1 = createMockSocket(MOCK_USER_ID, "free");
       const socket2 = createMockSocket(MOCK_USER_ID, "free");
 
-      vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([]);
+      vi.mocked(redisSessionService.takeoverFreeSession).mockResolvedValue([]);
       await socketService.handleConnection(socket1);
-      
-      vi.mocked(redisService.takeoverFreeSession).mockResolvedValue([socket1.id]);
+
+      vi.mocked(redisSessionService.takeoverFreeSession).mockResolvedValue([socket1.id]);
       await socketService.handleConnection(socket2);
 
       expect(socket1.emit).toHaveBeenCalledWith("session_error", expect.any(Object));
@@ -138,9 +163,9 @@ describe("SocketService", () => {
 
     it("should initiate takeover for a Pro user exceeding the limit", async () => {
       const userId = MOCK_PRO_USER_ID;
-      vi.mocked(redisService.incrementGlobalSession).mockResolvedValue(PRO_PLAN_SESSION_LIMIT + 1);
+      vi.mocked(redisSessionService.incrementGlobalSession).mockResolvedValue(PRO_PLAN_SESSION_LIMIT + 1);
       const oldestSocketId = "oldest-socket-id";
-      vi.mocked(redisService.getOldestSession).mockResolvedValue(oldestSocketId);
+      vi.mocked(redisSessionService.getOldestSession).mockResolvedValue(oldestSocketId);
 
       const extraSocket = createMockSocket(userId, "pro");
       await socketService.handleConnection(extraSocket);
@@ -150,7 +175,7 @@ describe("SocketService", () => {
         "error",
         expect.objectContaining({ code: "SESSION_LIMIT_EXCEEDED" }),
       );
-      expect(vi.mocked(redisService.publishSessionTakeover)).toHaveBeenCalledWith(userId, oldestSocketId);
+      expect(vi.mocked(redisSessionService.publishSessionTakeover)).toHaveBeenCalledWith(userId, oldestSocketId);
       expect(extraSocket.disconnect).not.toHaveBeenCalled();
 
       const userSockets = (socketService as any).activeConnections.get(userId);
@@ -181,7 +206,7 @@ describe("SocketService", () => {
     it("should delegate saveAndDeliver to MessageService", async () => {
       const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
       const payload = { chatId: "c1", receiverId: "r1", contentBody: "Hi", idempotencyKey: "k1" };
-      
+
       await socketService.saveAndDeliverMessage(sender, payload);
 
       expect(vi.mocked(messageService.saveAndDeliver)).toHaveBeenCalledWith(
@@ -201,7 +226,7 @@ describe("SocketService", () => {
         { _id: new ObjectId(), participants: [userId, "507f1f77bcf86cd799439088"] },
         { _id: new ObjectId(), participants: [userId, "507f1f77bcf86cd799439099"] },
       ];
-      vi.mocked(chatRepository.findPartnerChats).mockResolvedValue(chats as any);
+      vi.mocked(chatQueryRepository.findPartnerChats).mockResolvedValue(chats as any);
 
       await socketService.handleConnection(socket);
 

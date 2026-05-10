@@ -1,9 +1,11 @@
 <script lang="ts">
+import { socketManager } from "$services/socket.manager.svelte";
+
   import EmojiPicker from "$components/chat/EmojiPicker.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
   import { messageStore } from "$state/active-chat.svelte";
-  import { chatStore } from "$state/chat.svelte";
+  
   import type { UserDto } from "shared/types/auth.dto";
   import { tick } from "svelte";
 
@@ -31,7 +33,7 @@
   };
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || chatStore.isSendingMessage || !otherUser)
+    if (!messageInput.trim() || socketManager.isSendingMessage || !otherUser)
       return;
 
     const found = getDisallowedEmojis(messageInput.trim());
@@ -43,7 +45,7 @@
       return;
     }
 
-    chatStore.sendMessage(chatId, otherUser.id, messageInput);
+    socketManager.sendMessage(chatId, otherUser.id, messageInput);
     messageInput = "";
     if (textareaElement) {
       textareaElement.style.height = "auto";
@@ -67,7 +69,7 @@
     target.style.overflowY = target.scrollHeight > 128 ? "auto" : "hidden";
 
     if (chatId && otherUser?.id) {
-      chatStore.emitTyping(chatId, otherUser.id, true);
+      socketManager.emitTyping(chatId, otherUser.id, true);
     }
   };
 
@@ -90,7 +92,7 @@
   };
 
   $effect(() => {
-    if (!chatStore.isSendingMessage && textareaElement && chatId) {
+    if (!socketManager.isSendingMessage && textareaElement && chatId) {
       tick().then(() => {
         textareaElement?.focus();
       });
@@ -132,9 +134,9 @@
     class="bg-indigo-600 hover:bg-indigo-700 text-white w-9 h-9 md:w-10.5 md:h-10.5 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
     aria-label="Send message"
     onclick={handleSendMessage}
-    disabled={!messageInput.trim() || chatStore.isSendingMessage}
+    disabled={!messageInput.trim() || socketManager.isSendingMessage}
   >
-    {#if chatStore.isSendingMessage}
+    {#if socketManager.isSendingMessage}
       <span
         class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
       ></span>

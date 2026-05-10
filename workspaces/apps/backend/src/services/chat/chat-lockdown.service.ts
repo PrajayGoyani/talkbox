@@ -1,4 +1,4 @@
-import { redisService } from "@services/infra/redis.service";
+import { redisGuardService, redisSessionService } from "@services/infra/redis.service";
 
 /**
  * Distributed lockdown logic for deleted chats.
@@ -8,18 +8,18 @@ import { redisService } from "@services/infra/redis.service";
 class ChatLockdownService {
   async lockdownChat(chatId: string | import("mongodb").ObjectId) {
     const id = chatId.toString();
-    await redisService.lockChat(id);
-    await redisService.publishCacheInvalidation("chat", id);
+    await redisGuardService.lockChat(id);
+    await redisSessionService.publishCacheInvalidation("chat", id);
   }
 
   async isChatDeleted(chatId: string | import("mongodb").ObjectId): Promise<boolean> {
-    return await redisService.isChatLocked(chatId.toString());
+    return await redisGuardService.isChatLocked(chatId.toString());
   }
 
   async unlockChat(chatId: string | import("mongodb").ObjectId) {
     const id = chatId.toString();
-    await redisService.unlockChat(id);
-    await redisService.publishCacheInvalidation("chat", id);
+    await redisGuardService.unlockChat(id);
+    await redisSessionService.publishCacheInvalidation("chat", id);
   }
 }
 

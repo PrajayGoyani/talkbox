@@ -1,13 +1,17 @@
 import { createRateLimiter } from "@middlewares/rate-limiter.middleware";
-import { redisService } from "@services/infra/redis.service";
+import { redisGuardService, baseService } from "@services/infra/redis.service";
 import { Request, Response } from "express";
 import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 
 vi.mock("@services/infra/redis.service", () => ({
-  redisService: {
+  redisPresenceService: {},
+  redisSessionService: {},
+  redisGuardService: {
     incrementAndCheckLimit: vi.fn(),
-    client: {},
+  },
+  baseService: {
     isConnected: true,
+    client: {},
   },
 }));
 
@@ -26,7 +30,7 @@ describe("RateLimiter Middleware", () => {
   });
 
   it("should allow request if under limit and set headers", async () => {
-    vi.spyOn(redisService, "incrementAndCheckLimit").mockResolvedValue({
+    vi.spyOn(redisGuardService, "incrementAndCheckLimit").mockResolvedValue({
       allowed: true,
       current: 2,
       ttl: 55000,
@@ -42,7 +46,7 @@ describe("RateLimiter Middleware", () => {
   });
 
   it("should block request and trigger L1 local block if over limit", async () => {
-    vi.spyOn(redisService, "incrementAndCheckLimit").mockResolvedValue({
+    vi.spyOn(redisGuardService, "incrementAndCheckLimit").mockResolvedValue({
       allowed: false,
       current: 6,
       ttl: 50000,
@@ -56,10 +60,10 @@ describe("RateLimiter Middleware", () => {
 
     // Second call: should hit L1 cache and NOT call Redis
     next.mockClear();
-    vi.spyOn(redisService, "incrementAndCheckLimit").mockClear();
+    vi.spyOn(redisGuardService, "incrementAndCheckLimit").mockClear();
 
     await middleware(req as Request, res as Response, next);
-    expect(vi.spyOn(redisService, "incrementAndCheckLimit")).not.toHaveBeenCalled();
+    expect(vi.spyOn(redisGuardService, "incrementAndCheckLimit")).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalledWith(
       expect.objectContaining({
         message: expect.stringContaining("(L1)"),
@@ -69,7 +73,7 @@ describe("RateLimiter Middleware", () => {
 
   it("should enforce local limit even when Redis is connected (Fail-through protection)", async () => {
     let redisCount = 0;
-    vi.spyOn(redisService, "incrementAndCheckLimit").mockImplementation(async () => {
+    vi.spyOn(redisGuardService, "incrementAndCheckLimit").mockImplementation(async () => {
       redisCount++;
       return {
         allowed: redisCount <= 2,
@@ -98,7 +102,7 @@ describe("RateLimiter Middleware", () => {
   });
 
   it("should use local fallback if Redis is disconnected", async () => {
-    (redisService as any).isConnected = false;
+    (baseService as any).isConnected = false;
 
     const middleware = createRateLimiter(2, 60000, "test-fallback");
 

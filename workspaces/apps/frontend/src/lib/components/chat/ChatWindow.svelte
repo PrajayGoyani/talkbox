@@ -1,11 +1,14 @@
 <script lang="ts">
+import { presenceStore } from "$state/chat/presence.svelte";
+import { socketManager } from "$services/socket.manager.svelte";
+
   import ChatHeader from "$components/chat/ChatHeader.svelte";
   import ChatInput from "$components/chat/ChatInput.svelte";
   import MessageList from "$components/chat/MessageList.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import { messageStore } from "$state/active-chat.svelte";
   import { authStore } from "$state/auth.svelte";
-  import { chatStore, type ChatStatus } from "$state/chat.svelte";
+  import { type ChatStatus } from "$state/chat.svelte";
   import type { UserDto } from "shared/types/auth.dto";
   import type { MessageDto } from "shared/types/chat.dto";
   import { tick } from "svelte";
@@ -30,9 +33,9 @@
   let messageList: any = $state();
 
   const partnerStatus = $derived(
-    chatStore.onlineStatus.get(otherUser?.id || ""),
+    presenceStore.onlineStatus.get(otherUser?.id || ""),
   );
-  const chatTypingUsers = $derived(chatStore.typingStatus.get(chatId));
+  const chatTypingUsers = $derived(presenceStore.typingStatus.get(chatId));
 
   const handleEditInput = (e: Event) => {
     const target = e.target as HTMLTextAreaElement;
@@ -65,7 +68,7 @@
     }
 
     try {
-      await chatStore.editMessage(msgId, editInputValue.trim());
+      await socketManager.editMessage(msgId, editInputValue.trim());
       cancelEditing();
     } catch (err) {
       console.error("Failed to edit message:", err);

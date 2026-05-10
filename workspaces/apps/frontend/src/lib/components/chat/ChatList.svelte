@@ -1,10 +1,13 @@
 <script lang="ts">
+import { chatListStore } from "$state/chat/chat-list.svelte";
+import { chatActions } from "$state/chat/chat-actions.svelte";
+
   import ChatContextMenu from "$components/chat/ChatContextMenu.svelte";
   import ChatListItem from "$components/chat/ChatListItem.svelte";
   import ChatListSkeleton from "$components/chat/ChatListSkeleton.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import { CHAT_SEARCH_DEBOUNCE } from "$lib/config";
-  import { chatStore, type Chat, type ChatStatus } from "$state/chat.svelte";
+  import { type Chat, type ChatStatus } from "$state/chat.svelte";
   import { debounce } from "$utils/timing";
   import type { UserDto } from "shared/types/auth.dto";
   import { onMount, untrack } from "svelte";
@@ -66,9 +69,9 @@
   export const refreshChats = async () => {
     loading = true;
     try {
-      await chatStore.fetchChats(searchQuery);
+      await chatListStore.fetchChats(searchQuery);
     } catch (e) {
-      error = chatStore.lastError;
+      error = chatActions.lastError;
     } finally {
       loading = false;
     }
@@ -80,7 +83,7 @@
     const query = searchQuery; // track
     untrack(() => {
       // Avoid redundant refresh if query matches store state
-      if (query.trim() === (chatStore.currentSearchQuery || "")) {
+      if (query.trim() === (chatListStore.currentSearchQuery || "")) {
         return;
       }
       debouncedRefresh();
@@ -91,7 +94,7 @@
     if (processingStates[chatId]) return;
     processingStates[chatId] = "accepting";
     try {
-      await chatStore.acceptChat(chatId);
+      await chatActions.acceptChat(chatId);
     } catch (e) {
       console.error(e);
     } finally {
@@ -103,7 +106,7 @@
     if (processingStates[chatId]) return;
     processingStates[chatId] = "rejecting";
     try {
-      await chatStore.rejectChat(chatId);
+      await chatActions.rejectChat(chatId);
     } catch (e) {
       console.error(e);
     } finally {
@@ -113,7 +116,7 @@
 
   // Filter chats based on active tab
   const filteredChats = $derived.by(() => {
-    const list = (chatStore.chats || []).filter((chat) => {
+    const list = (chatListStore.chats || []).filter((chat) => {
       if (!chat) return false;
       if (activeTab === "all") return chat.status === "accepted";
       if (activeTab === "unread")
@@ -136,10 +139,10 @@
       if (entries[0].isIntersecting) {
         if (
           (activeTab === "all" || activeTab === "unread") &&
-          chatStore.hasMoreChats &&
-          !chatStore.isLoadingMoreChats
+          chatListStore.hasMoreChats &&
+          !chatListStore.isLoadingMoreChats
         ) {
-          chatStore.loadMoreChats();
+          chatListStore.loadMoreChats();
         }
       }
     };
@@ -159,7 +162,7 @@
 
   // Initial load + register for socket-driven refreshes
   onMount(() => {
-    return chatStore.onRefreshChats(() => refreshChats());
+    return chatActions.onRefreshChats(() => refreshChats());
   });
 </script>
 
@@ -180,8 +183,8 @@
         </div>
       {/each}
     </div>
-  {:else if error || chatStore.lastError}
-    {#if error === "rate-limited" || chatStore.lastError === "rate-limited"}
+  {:else if error || chatActions.lastError}
+    {#if error === "rate-limited" || chatActions.lastError === "rate-limited"}
       <div
         class="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in-95"
       >
@@ -200,7 +203,7 @@
       </div>
     {:else}
       <div class="text-center py-10 text-rose-500 text-sm">
-        {error || chatStore.lastError}
+        {error || chatActions.lastError}
       </div>
     {/if}
   {:else if filteredChats.length === 0}
@@ -247,7 +250,7 @@
         bind:this={sentinel}
         class="h-10 w-full flex items-center justify-center py-4"
       >
-        {#if (activeTab === "all" || activeTab === "unread") && chatStore.isLoadingMoreChats}
+        {#if (activeTab === "all" || activeTab === "unread") && chatListStore.isLoadingMoreChats}
           <div class="flex items-center gap-2 text-slate-400 text-xs">
             <span
               class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"

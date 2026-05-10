@@ -1,5 +1,5 @@
 import { UserRepository } from "@repositories/user.repository";
-import { redisService } from "@services/infra/redis.service";
+import { redisPresenceService } from "@services/infra/redis.service";
 
 import { TypedIO, TypedSocket } from "@/types/socket.types";
 
@@ -15,8 +15,8 @@ export class PresenceService {
   async emitPartnersStatus(userId: string, socket: TypedSocket, partnerIds: Set<string>) {
     try {
       const partnerIdsArr = Array.from(partnerIds);
-      const onlinePartners = await redisService.getOnlineUsers(partnerIdsArr);
-      const lastSeenMap = await redisService.getLastSeenBatched(partnerIdsArr);
+      const onlinePartners = await redisPresenceService.getOnlineUsers(partnerIdsArr);
+      const lastSeenMap = await redisPresenceService.getLastSeenBatched(partnerIdsArr);
 
       const missingFromRedisIds = partnerIdsArr.filter((id) => !onlinePartners.has(id) && !lastSeenMap.has(id));
 
@@ -47,11 +47,11 @@ export class PresenceService {
   async notifyStatusChange(userId: string, isOnline: boolean) {
     try {
       if (isOnline) {
-        await redisService.setUserOnline(userId);
+        await redisPresenceService.setUserOnline(userId);
       } else {
         const lastSeen = new Date();
-        await redisService.setUserOffline(userId, lastSeen);
-        await redisService.queuePresenceSync(userId);
+        await redisPresenceService.setUserOffline(userId, lastSeen);
+        await redisPresenceService.queuePresenceSync(userId);
         // NOTE: findByIdAndUpdate(userId, { lastSeen }) removed for scalability.
         // Persistence to DB is now handled via periodic background sync.
         // Cold storage in MongoDB might be slightly stale if Redis is cleared.

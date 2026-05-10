@@ -1,8 +1,11 @@
 <script lang="ts">
+import { chatListStore } from "$state/chat/chat-list.svelte";
+import { chatActions } from "$state/chat/chat-actions.svelte";
+
   import ChatList from "$components/chat/ChatList.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import SegmentedControl from "$components/ui/SegmentedControl.svelte";
-  import { chatStore, type ChatStatus } from "$state/chat.svelte";
+  import { type ChatStatus } from "$state/chat.svelte";
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { USERNAME_ERROR } from "shared/constants/validation";
@@ -30,7 +33,7 @@
   let searchQuery = $state("");
   let activeTab: "all" | "unread" = $state("all");
 
-  const unreadCountForTab = $derived(chatStore.unreadChatsCount);
+  const unreadCountForTab = $derived(chatListStore.unreadChatsCount);
 
   // New chat request state
   let showRequestInput = $state(false);
@@ -52,7 +55,7 @@
     requestError = null;
     requestSuccess = null;
     try {
-      await chatStore.sendChatRequest(requestUsername);
+      await chatActions.sendChatRequest(requestUsername);
       requestSuccess = `Request sent to ${requestUsername}!`;
       requestUsername = "";
       // Keep input open for a moment to show success, then close

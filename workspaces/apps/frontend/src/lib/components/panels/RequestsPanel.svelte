@@ -1,8 +1,11 @@
 <script lang="ts">
+import { chatListStore } from "$state/chat/chat-list.svelte";
+import { chatActions } from "$state/chat/chat-actions.svelte";
+
   import Avatar from "$components/ui/Avatar.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import { authStore } from "$state/auth.svelte";
-  import { chatStore } from "$state/chat.svelte";
+  
   import { USERNAME_ERROR } from "shared/constants/validation";
   import { isValidUsername } from "shared/utils/validation";
   import { onMount } from "svelte";
@@ -23,7 +26,7 @@
   export const refreshRequests = async () => {
     loading = true;
     try {
-      await chatStore.fetchRequests();
+      await chatListStore.fetchRequests();
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -42,7 +45,7 @@
     requestError = null;
     requestSuccess = null;
     try {
-      await chatStore.sendChatRequest(requestUsername);
+      await chatActions.sendChatRequest(requestUsername);
       requestSuccess = `Request sent to ${requestUsername}!`;
       requestUsername = "";
     } catch (e) {
@@ -56,7 +59,7 @@
     if (processingStates[chatId]) return;
     processingStates[chatId] = "accepting";
     try {
-      await chatStore.acceptChat(chatId);
+      await chatActions.acceptChat(chatId);
     } catch (e) {
       console.error(e);
     } finally {
@@ -68,7 +71,7 @@
     if (processingStates[chatId]) return;
     processingStates[chatId] = "rejecting";
     try {
-      await chatStore.rejectChat(chatId);
+      await chatActions.rejectChat(chatId);
     } catch (e) {
       console.error(e);
     } finally {
@@ -77,15 +80,15 @@
   };
 
   const incomingRequests = $derived(
-    chatStore.requests.filter((c) => c.createdBy !== authStore.user?.id),
+    chatListStore.requests.filter((c) => c.createdBy !== authStore.user?.id),
   );
   const outgoingRequests = $derived(
-    chatStore.requests.filter((c) => c.createdBy === authStore.user?.id),
+    chatListStore.requests.filter((c) => c.createdBy === authStore.user?.id),
   );
 
   onMount(() => {
     refreshRequests();
-    chatStore.onRefreshChats(() => refreshRequests());
+    chatActions.onRefreshChats(() => refreshRequests());
   });
 </script>
 

@@ -3,7 +3,7 @@ import type { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from
 import { RESET_TOKEN_TTL, VERIFY_TOKEN_TTL } from "@config/env";
 import { IUser } from "@models/user.model";
 import { UserRepository, userRepository } from "@repositories/user.repository";
-import { redisService } from "@services/infra/redis.service";
+import { redisSessionService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
 import { AUTH_EVENTS, eventBus } from "@utils/event-bus";
 import { generateAccessToken, generateTokens, verifyRefreshToken } from "@utils/jwt";
@@ -88,7 +88,7 @@ export class AuthService {
     if (!user) return; // Silently ignore — prevent email enumeration
 
     const token = crypto.randomBytes(32).toString("hex");
-    await redisService.storeToken("reset", token, user._id.toString(), RESET_TOKEN_TTL);
+    await redisSessionService.storeToken("reset", token, user._id.toString(), RESET_TOKEN_TTL);
     
     eventBus.emit(AUTH_EVENTS.PASSWORD_RESET_REQUESTED, { email, token });
   }
@@ -97,7 +97,7 @@ export class AuthService {
    * Complete password reset: verify token, update password, delete token.
    */
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    const userId = await redisService.getToken("reset", token);
+    const userId = await redisSessionService.getToken("reset", token);
     if (!userId) throw AppError.badRequest("Invalid or expired reset token", "INVALID_RESET_TOKEN");
 
     const user = await this.userRepository.findById(userId);
@@ -105,7 +105,7 @@ export class AuthService {
 
     user.password = newPassword; // pre-save hook hashes it
     await user.save();
-    await redisService.deleteToken("reset", token);
+    await redisSessionService.deleteToken("reset", token);
   }
 
   // ─── Email Verification ────────────────────────────────────────────
@@ -114,11 +114,11 @@ export class AuthService {
    * Verify a user's email using the token from the verification link.
    */
   async verifyEmail(token: string): Promise<void> {
-    const userId = await redisService.getToken("verify", token);
+    const userId = await redisSessionService.getToken("verify", token);
     if (!userId) throw AppError.badRequest("Invalid or expired verification token", "INVALID_VERIFY_TOKEN");
 
     await this.userRepository.updateById(userId, { isEmailVerified: true });
-    await redisService.deleteToken("verify", token);
+    await redisSessionService.deleteToken("verify", token);
   }
 
   /**
@@ -139,7 +139,7 @@ export class AuthService {
   private async _sendVerificationEmail(userId: string, email: string): Promise<void> {
     try {
       const token = crypto.randomBytes(32).toString("hex");
-      await redisService.storeToken("verify", token, userId, VERIFY_TOKEN_TTL);
+      await redisSessionService.storeToken("verify", token, userId, VERIFY_TOKEN_TTL);
       
       eventBus.emit(AUTH_EVENTS.VERIFICATION_REQUIRED, { email, token });
     } catch (err) {

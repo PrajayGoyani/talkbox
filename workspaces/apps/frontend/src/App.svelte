@@ -1,10 +1,14 @@
 <script lang="ts">
+import { chatListStore } from "$state/chat/chat-list.svelte";
+import { chatActions } from "$state/chat/chat-actions.svelte";
+import { socketManager } from "$services/socket.manager.svelte";
+
   import NotificationsDropdown from "$components/layout/NotificationsDropdown.svelte";
   import ToastContainer from "$components/layout/ToastContainer.svelte";
   import Lazy from "$components/ui/Lazy.svelte";
   import { Views } from "$lib/views";
   import { authStore } from "$state/auth.svelte";
-  import { chatStore } from "$state/chat.svelte";
+  
   import { notificationStore } from "$state/notification.svelte";
   import { themeStore } from "$state/theme.svelte";
   import { untrack } from "svelte";
@@ -30,7 +34,7 @@
   // State
   // Derived state for current chat
   const selectedChat = $derived(
-    chatStore.chats.find((c) => c.id === selectedChatId) || null,
+    chatListStore.chats.find((c) => c.id === selectedChatId) || null,
   );
   let selectedOtherUser = $derived(selectedChat?.otherUser || null);
   let selectedChatStatus = $derived(selectedChat?.status || "");
@@ -159,7 +163,7 @@
     const chatId = selectedChatId;
     if (chatId && authStore.user) {
       untrack(() => {
-        chatStore.loadMessages(chatId);
+        chatActions.loadMessages(chatId);
       });
     }
   });
@@ -187,13 +191,13 @@
   // Sync with auth state and connect socket when authenticated
   $effect(() => {
     if (authStore.user) {
-      chatStore.connect();
+      socketManager.connect();
       // Ensure chats and requests are fetched on mount/re-auth
-      chatStore.fetchChats();
-      chatStore.fetchRequests();
+      chatListStore.fetchChats();
+      chatListStore.fetchRequests();
 
       // Register toast callback
-      const cleanupToast = chatStore.onToast((data) => {
+      const cleanupToast = chatActions.onToast((data) => {
         if (toastContainer) {
           toastContainer.addToast(data);
         }
@@ -210,7 +214,7 @@
         cleanupToast();
       };
     } else if (!authStore.user && !authStore.isCheckingAuth) {
-      chatStore.disconnect();
+      socketManager.disconnect();
     }
   });
 
@@ -220,7 +224,7 @@
   };
 
   const handleLogout = async () => {
-    chatStore.disconnect();
+    socketManager.disconnect();
     await authStore.logout();
     routerStore.navigate(Route.LOGIN);
   };
@@ -236,8 +240,8 @@
 
   const handleToastClick = (chatId: string) => {
     routerStore.navigate(`${Route.CONVERSATIONS}/${chatId}`);
-    chatStore.loadMessages(chatId);
-    chatStore.markChatRead(chatId);
+    chatActions.loadMessages(chatId);
+    chatActions.markChatRead(chatId);
   };
 </script>
 
@@ -357,7 +361,7 @@
         }}
         onNotificationToggle={() => uiStore.toggleNotifications()}
         notificationCount={notificationStore.unreadCount}
-        requestsCount={chatStore.pendingRequestCount}
+        requestsCount={chatListStore.pendingRequestCount}
         onLogout={handleLogout}
         hideOnMobile={!!selectedChatId}
       />

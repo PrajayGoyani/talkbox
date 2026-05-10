@@ -1,19 +1,38 @@
 import { chatRepository } from "@repositories/chat.repository";
+import { partnerRepository } from "@repositories/partner.repository";
 import { userRepository } from "@repositories/user.repository";
 import { chatActionService } from "@services/chat/chat-action.service";
 import { messageService } from "@services/chat/message.service";
-import { redisService } from "@services/infra/redis.service";
+import { redisSessionService, redisPresenceService, redisGuardService, baseService } from "@services/infra/redis.service";
 import { ObjectId } from "mongodb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@services/infra/redis.service", () => ({
-  redisService: {
+  redisService:  {
+    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
+    isConnected: true,
+  }, redisPresenceService:  {
+    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
+    isConnected: true,
+  }, redisSessionService:  {
+    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
+    isConnected: true,
+  }, redisGuardService:  {
+    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
+    isConnected: true,
+  }, baseService:  {
     publishCacheInvalidation: vi.fn().mockResolvedValue(null),
     isConnected: true,
   },
 }));
 
 vi.mock("@repositories/chat.repository");
+vi.mock("@repositories/partner.repository", () => ({
+  partnerRepository: {
+    getPartnerIds: vi.fn(),
+    invalidatePartnerCache: vi.fn(),
+  },
+}));
 vi.mock("@repositories/user.repository");
 vi.mock("@services/chat/chat-lockdown.service");
 vi.mock("@services/chat/message.service", () => ({
@@ -49,8 +68,8 @@ describe("Distributed Cache Invalidation", () => {
 
       await chatActionService.acceptChat(mockChatId, mockTargetId);
 
-      expect(redisService.publishCacheInvalidation).toHaveBeenCalledWith("partner", mockUserId.toString());
-      expect(redisService.publishCacheInvalidation).toHaveBeenCalledWith("partner", mockTargetId.toString());
+      expect(redisSessionService.publishCacheInvalidation).toHaveBeenCalledWith("partner", mockUserId.toString());
+      expect(redisSessionService.publishCacheInvalidation).toHaveBeenCalledWith("partner", mockTargetId.toString());
     });
   });
 
@@ -70,21 +89,21 @@ describe("Distributed Cache Invalidation", () => {
 
       await chatActionService.deleteChat(mockChatId, mockUserId);
 
-      expect(vi.mocked(redisService).publishCacheInvalidation).toHaveBeenCalledWith("partner", mockUserId.toString());
-      expect(vi.mocked(redisService).publishCacheInvalidation).toHaveBeenCalledWith("partner", mockTargetId.toString());
-      expect(vi.mocked(redisService).publishCacheInvalidation).toHaveBeenCalledWith("chat", mockChatId.toString());
+      expect(vi.mocked(redisSessionService).publishCacheInvalidation).toHaveBeenCalledWith("partner", mockUserId.toString());
+      expect(vi.mocked(redisSessionService).publishCacheInvalidation).toHaveBeenCalledWith("partner", mockTargetId.toString());
+      expect(vi.mocked(redisSessionService).publishCacheInvalidation).toHaveBeenCalledWith("chat", mockChatId.toString());
     });
   });
 
   describe("SocketService Invalidation Handling", () => {
-    it("should call chatRepository.invalidatePartnerCache when receiving partner invalidation", async () => {
+    it("should call partnerRepository.invalidatePartnerCache when receiving partner invalidation", async () => {
       const { socketService } = await import("@services/chat/socket.service");
       const userId = "user123";
 
       // Access private method for testing
       (socketService as any)._handleGlobalCacheInvalidation("partner", userId);
 
-      expect(vi.mocked(chatRepository).invalidatePartnerCache).toHaveBeenCalledWith(userId);
+      expect(vi.mocked(partnerRepository).invalidatePartnerCache).toHaveBeenCalledWith(userId);
     });
 
     it("should call messageService.invalidateCache when receiving chat invalidation", async () => {

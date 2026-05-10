@@ -1,5 +1,5 @@
 import Chat from "@models/chat.model";
-import { redisService } from "@services/infra/redis.service";
+import { redisPresenceService, redisSessionService, redisGuardService, baseService } from "@services/infra/redis.service";
 import { socketService } from "@services/chat/socket.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,23 +7,52 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
 vi.mock("@models/user.model");
+vi.mock("@repositories/partner.repository", () => ({
+  partnerRepository: {
+    getPartnerIds: vi.fn(),
+    invalidatePartnerCache: vi.fn(),
+  },
+}));
+vi.mock("@repositories/chat-query.repository", () => ({
+  chatQueryRepository: {
+    findPartnerChats: vi.fn().mockResolvedValue([]),
+    searchChats: vi.fn(),
+    findAcceptedChatsByUser: vi.fn(),
+    findPendingRequestsByUser: vi.fn(),
+    transformChat: vi.fn(),
+  },
+}));
+
 vi.mock("@services/infra/redis.service", () => ({
-  redisService: {
-    takeoverFreeSession: vi.fn(),
-    publishSessionTakeover: vi.fn(),
+  redisPresenceService: {
+    setUserOnline: vi.fn().mockResolvedValue(null),
+    setUserOffline: vi.fn().mockResolvedValue(null),
+    getCachedPartners: vi.fn().mockResolvedValue(null),
+    setCachedPartners: vi.fn().mockResolvedValue(null),
+    invalidatePartnerCache: vi.fn().mockResolvedValue(null),
+    getOnlineUsers: vi.fn().mockResolvedValue(new Set()),
+    queuePresenceSync: vi.fn().mockResolvedValue(null),
+    getLastSeenBatched: vi.fn().mockResolvedValue(new Map()),
+  },
+  redisSessionService: {
     incrementGlobalSession: vi.fn(),
     decrementGlobalSession: vi.fn(),
     getGlobalSessionCount: vi.fn(),
     getOldestSession: vi.fn().mockResolvedValue(null),
-    getCachedPartners: vi.fn().mockResolvedValue(null),
-    setCachedPartners: vi.fn().mockResolvedValue(null),
-    setUserOnline: vi.fn().mockResolvedValue(null),
-    setUserOffline: vi.fn().mockResolvedValue(null),
+    publishSessionTakeover: vi.fn(),
+    takeoverFreeSession: vi.fn(),
+    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
+  },
+  redisGuardService: {
+    incrementAndCheckLimit: vi.fn().mockResolvedValue({ allowed: true, current: 1, ttl: 60000 }),
+    checkAndSetIdempotency: vi.fn().mockResolvedValue(true),
+  },
+  baseService: {
+    isConnected: true,
     subClient: {
       subscribe: vi.fn().mockResolvedValue(null),
       on: vi.fn(),
     },
-    isConnected: true,
   },
 }));
 
@@ -65,7 +94,7 @@ describe("SocketService Takeover Race Condition", () => {
     });
 
     // Register them properly
-    vi.spyOn(redisService, "takeoverFreeSession").mockResolvedValue([]);
+    vi.spyOn(redisSessionService, "takeoverFreeSession").mockResolvedValue([]);
     await socketService.handleConnection(socketA);
     await socketService.handleConnection(socketB);
 
@@ -105,7 +134,7 @@ describe("SocketService Takeover Race Condition", () => {
       if (ev === "disconnect") disconnect2 = fn;
     });
 
-    vi.spyOn(redisService, "takeoverFreeSession").mockResolvedValue([]);
+    vi.spyOn(redisSessionService, "takeoverFreeSession").mockResolvedValue([]);
     await socketService.handleConnection(socketWinner);
     await socketService.handleConnection(socketVictim1);
     await socketService.handleConnection(socketVictim2);
@@ -138,7 +167,7 @@ describe("SocketService Takeover Race Condition", () => {
       if (ev === "disconnect") d2 = fn;
     });
 
-    vi.spyOn(redisService, "takeoverFreeSession").mockResolvedValue([]);
+    vi.spyOn(redisSessionService, "takeoverFreeSession").mockResolvedValue([]);
     await socketService.handleConnection(socketA);
     await socketService.handleConnection(socketB);
 

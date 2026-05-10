@@ -1,10 +1,12 @@
 <script lang="ts">
+import { presenceStore } from "$state/chat/presence.svelte";
+
   import Avatar from "$components/ui/Avatar.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import TypingIndicator from "$components/ui/TypingIndicator.svelte";
   import { cn } from "$lib/utils/cn";
   import { authStore } from "$state/auth.svelte";
-  import { chatStore, type Chat, type ChatStatus } from "$state/chat.svelte";
+  import { type Chat, type ChatStatus } from "$state/chat.svelte";
   import { formatListTime } from "$utils/date";
   import type { UserDto } from "shared/types/auth.dto";
 
@@ -35,7 +37,7 @@
   const displayName = $derived(
     chat.otherUser?.name || chat.otherUser?.username || "Unknown",
   );
-  const typingUsers = $derived(chatStore.typingStatus.get(chat.id));
+  const typingUsers = $derived(presenceStore.typingStatus.get(chat.id));
   const isTyping = $derived(
     (typingUsers?.size ?? 0) > 0 && !typingUsers?.has(authStore.user?.id || ""),
   );
@@ -77,7 +79,7 @@
         showBadge={true}
         class="w-11 h-11 bg-slate-200 dark:bg-slate-800 text-lg text-slate-600 dark:text-slate-300"
       />
-      {#if chat.otherUser && chatStore.onlineStatus.get(chat.otherUser.id)?.isOnline}
+      {#if chat.otherUser && presenceStore.onlineStatus.get(chat.otherUser.id)?.isOnline}
         <div
           class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-sm"
         ></div>

@@ -3,7 +3,7 @@ import { IChat } from "@models/chat.model";
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { UserRepository, userRepository } from "@repositories/user.repository";
 import { chatLockdownService } from "@services/chat/chat-lockdown.service";
-import { redisService } from "@services/infra/redis.service";
+import { redisSessionService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
 import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
 import { ObjectId } from "mongodb";
@@ -104,7 +104,7 @@ export class ChatActionService implements IChatActionService {
     
     // Invalidate partner cache for both participants globally
     await Promise.all(
-      updatedChat.participants.map((p: any) => redisService.publishCacheInvalidation("partner", p.toString())),
+      updatedChat.participants.map((p: any) => redisSessionService.publishCacheInvalidation("partner", p.toString())),
     );
 
     // Emit event for real-time updates and notifications
@@ -169,8 +169,8 @@ export class ChatActionService implements IChatActionService {
 
     // Invalidate partner cache for both participants and chat cache globally
     await Promise.all([
-      ...chat.participants.map((p: any) => redisService.publishCacheInvalidation("partner", p.toString())),
-      redisService.publishCacheInvalidation("chat", chatId.toString()),
+      ...chat.participants.map((p: any) => redisSessionService.publishCacheInvalidation("partner", p.toString())),
+      redisSessionService.publishCacheInvalidation("chat", chatId.toString()),
     ]);
 
     // Emit event for side-effects

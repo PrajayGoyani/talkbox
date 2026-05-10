@@ -1,6 +1,9 @@
 <script lang="ts">
+import { chatListStore } from "$state/chat/chat-list.svelte";
+import { chatActions } from "$state/chat/chat-actions.svelte";
+
   import Icon from "$components/ui/Icon.svelte";
-  import { chatStore, type Chat } from "$state/chat.svelte";
+  import { type Chat } from "$state/chat.svelte";
   import { cn } from "$utils/cn";
   import { scale } from "svelte/transition";
 
@@ -22,14 +25,14 @@
 
   const handlePin = () => {
     if (chat) {
-      chatStore.toggleChatPin(chat.id);
+      chatListStore.toggleChatPin(chat.id);
     }
     close();
   };
 
   const handleMarkRead = () => {
     if (chat) {
-      chatStore.markChatRead(chat.id);
+      chatActions.markChatRead(chat.id);
     }
     close();
   };

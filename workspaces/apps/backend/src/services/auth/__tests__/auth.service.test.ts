@@ -10,7 +10,27 @@ vi.mock("@config/env", () => ({
 }));
 
 vi.mock("@services/infra/redis.service", () => ({
-  redisService: {
+  redisService:  {
+    storeToken: vi.fn(),
+    getToken: vi.fn(),
+    deleteToken: vi.fn(),
+    publishCacheInvalidation: vi.fn(),
+  }, redisPresenceService:  {
+    storeToken: vi.fn(),
+    getToken: vi.fn(),
+    deleteToken: vi.fn(),
+    publishCacheInvalidation: vi.fn(),
+  }, redisSessionService:  {
+    storeToken: vi.fn(),
+    getToken: vi.fn(),
+    deleteToken: vi.fn(),
+    publishCacheInvalidation: vi.fn(),
+  }, redisGuardService:  {
+    storeToken: vi.fn(),
+    getToken: vi.fn(),
+    deleteToken: vi.fn(),
+    publishCacheInvalidation: vi.fn(),
+  }, baseService:  {
     storeToken: vi.fn(),
     getToken: vi.fn(),
     deleteToken: vi.fn(),
@@ -83,7 +103,7 @@ const mockUserModel: any = {
 import { UserRepository } from "@repositories/user.repository";
 import { AuthService } from "@services/auth/auth.service";
 import { AUTH_EVENTS, eventBus } from "@utils/event-bus";
-import { redisService } from "@services/infra/redis.service";
+import { redisSessionService, redisPresenceService, redisGuardService, baseService } from "@services/infra/redis.service";
 import { verifyRefreshToken } from "@utils/jwt";
 
 const mockUserRepository = new UserRepository(mockUserModel);
@@ -114,7 +134,7 @@ describe("AuthService - Complete Suite", () => {
       expect(result.user.email).toBe("test@example.com");
       expect(result.accessToken).toBe("test-access");
       // Verification email is fired asynchronously
-      expect(redisService.storeToken).toHaveBeenCalledWith("verify", expect.any(String), mockUser._id.toString(), expect.any(Number));
+      expect(redisSessionService.storeToken).toHaveBeenCalledWith("verify", expect.any(String), mockUser._id.toString(), expect.any(Number));
     });
 
     it("should throw error if user already exists", async () => {
@@ -180,7 +200,7 @@ describe("AuthService - Complete Suite", () => {
       await authService.forgotPassword("test@example.com");
 
       expect(mockUserModel.findOne).toHaveBeenCalledWith({ email: "test@example.com" });
-      expect(redisService.storeToken).toHaveBeenCalledWith("reset", expect.any(String), mockUser._id.toString(), expect.any(Number));
+      expect(redisSessionService.storeToken).toHaveBeenCalledWith("reset", expect.any(String), mockUser._id.toString(), expect.any(Number));
       expect(eventBus.emit).toHaveBeenCalledWith(AUTH_EVENTS.PASSWORD_RESET_REQUESTED, {
         email: "test@example.com",
         token: expect.any(String),
@@ -192,21 +212,21 @@ describe("AuthService - Complete Suite", () => {
 
       await authService.forgotPassword("nonexistent@example.com");
 
-      expect(redisService.storeToken).not.toHaveBeenCalled();
+      expect(redisSessionService.storeToken).not.toHaveBeenCalled();
       expect(eventBus.emit).not.toHaveBeenCalled();
     });
   });
 
   describe("resetPassword", () => {
     it("should verify token, update password, and delete token", async () => {
-      (redisService.getToken as any).mockResolvedValue(mockUser._id.toString());
+      (redisSessionService.getToken as any).mockResolvedValue(mockUser._id.toString());
       mockUserModel.findById.mockResolvedValue(mockUser);
 
       await authService.resetPassword("valid-token", "newpassword123");
 
-      expect(redisService.getToken).toHaveBeenCalledWith("reset", "valid-token");
+      expect(redisSessionService.getToken).toHaveBeenCalledWith("reset", "valid-token");
       expect(mockUser.save).toHaveBeenCalled();
-      expect(redisService.deleteToken).toHaveBeenCalledWith("reset", "valid-token");
+      expect(redisSessionService.deleteToken).toHaveBeenCalledWith("reset", "valid-token");
     });
   });
 
@@ -214,14 +234,14 @@ describe("AuthService - Complete Suite", () => {
 
   describe("verifyEmail", () => {
     it("should verify token, update user, and delete token", async () => {
-      (redisService.getToken as any).mockResolvedValue(mockUser._id.toString());
+      (redisSessionService.getToken as any).mockResolvedValue(mockUser._id.toString());
       mockUserModel.findByIdAndUpdate.mockResolvedValue(mockUser);
 
       await authService.verifyEmail("valid-verify-token");
 
-      expect(redisService.getToken).toHaveBeenCalledWith("verify", "valid-verify-token");
+      expect(redisSessionService.getToken).toHaveBeenCalledWith("verify", "valid-verify-token");
       expect(mockUserModel.findByIdAndUpdate).toHaveBeenCalled();
-      expect(redisService.deleteToken).toHaveBeenCalledWith("verify", "valid-verify-token");
+      expect(redisSessionService.deleteToken).toHaveBeenCalledWith("verify", "valid-verify-token");
     });
   });
 
@@ -231,7 +251,7 @@ describe("AuthService - Complete Suite", () => {
 
       await authService.resendVerificationEmail(mockUser._id.toString());
 
-      expect(redisService.storeToken).toHaveBeenCalledWith("verify", expect.any(String), mockUser._id.toString(), expect.any(Number));
+      expect(redisSessionService.storeToken).toHaveBeenCalledWith("verify", expect.any(String), mockUser._id.toString(), expect.any(Number));
       expect(eventBus.emit).toHaveBeenCalledWith(AUTH_EVENTS.VERIFICATION_REQUIRED, {
         email: "test@example.com",
         token: expect.any(String),

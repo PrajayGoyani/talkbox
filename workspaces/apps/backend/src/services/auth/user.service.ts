@@ -1,5 +1,5 @@
 import { UserRepository, userRepository } from "@repositories/user.repository";
-import { redisService } from "@services/infra/redis.service";
+import { redisSessionService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
 import { eventBus, USER_EVENTS } from "@utils/event-bus";
 
@@ -24,7 +24,7 @@ class UserService {
     await user.save();
 
     // Invalidate cache across all server instances
-    await redisService.publishCacheInvalidation("user", userId.toString());
+    await redisSessionService.publishCacheInvalidation("user", userId.toString());
 
     // Broadcast update to all partners in real-time
     eventBus.emit(USER_EVENTS.PROFILE_UPDATED, {
@@ -48,7 +48,7 @@ class UserService {
     await user.save();
 
     // Invalidate cache across all server instances
-    await redisService.publishCacheInvalidation("user", userId.toString());
+    await redisSessionService.publishCacheInvalidation("user", userId.toString());
 
     // Broadcast update to all partners in real-time
     eventBus.emit(USER_EVENTS.PROFILE_UPDATED, {

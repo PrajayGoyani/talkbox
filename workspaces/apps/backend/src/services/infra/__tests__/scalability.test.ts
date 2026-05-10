@@ -1,27 +1,60 @@
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
-import { redisService } from "@services/infra/redis.service";
+import { redisPresenceService, redisSessionService, redisGuardService, baseService } from "@services/infra/redis.service";
 import { socketService } from "@services/chat/socket.service";
 import { messageRepository } from "@repositories/message.repository";
 import { chatRepository } from "@repositories/chat.repository";
+import { chatQueryRepository } from "@repositories/chat-query.repository";
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
+vi.mock("@repositories/partner.repository", () => ({
+  partnerRepository: {
+    getPartnerIds: vi.fn(),
+    invalidatePartnerCache: vi.fn(),
+  },
+}));
+vi.mock("@repositories/chat-query.repository", () => ({
+  chatQueryRepository: {
+    findPartnerChats: vi.fn().mockResolvedValue([]),
+    searchChats: vi.fn(),
+    findAcceptedChatsByUser: vi.fn(),
+    findPendingRequestsByUser: vi.fn(),
+    transformChat: vi.fn(),
+  },
+}));
+
 vi.mock("@services/infra/redis.service", () => ({
-  redisService: {
+  redisPresenceService: {
+    getCachedPartners: vi.fn(),
+    setCachedPartners: vi.fn(),
+    getActiveChat: vi.fn().mockResolvedValue(null),
+    queuePresenceSync: vi.fn().mockResolvedValue(null),
+    getLastSeenBatched: vi.fn().mockResolvedValue(new Map()),
+    setUserOnline: vi.fn().mockResolvedValue(null),
+    setUserOffline: vi.fn().mockResolvedValue(null),
+  },
+  redisSessionService: {
+    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
+    incrementGlobalSession: vi.fn(),
+    decrementGlobalSession: vi.fn(),
+    getGlobalSessionCount: vi.fn(),
+    getOldestSession: vi.fn().mockResolvedValue(null),
+    publishSessionTakeover: vi.fn(),
+    takeoverFreeSession: vi.fn(),
+  },
+  redisGuardService: {
     incrementAndCheckLimit: vi.fn().mockResolvedValue({ allowed: true, current: 1, ttl: 60000 }),
     checkAndSetIdempotency: vi.fn().mockResolvedValue(true),
     isChatLocked: vi.fn().mockResolvedValue(false),
-    getCachedPartners: vi.fn(),
-    setCachedPartners: vi.fn(),
+  },
+  baseService: {
     isConnected: true,
     client: { publish: vi.fn() },
     subClient: { subscribe: vi.fn(), on: vi.fn() },
-    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
-    getActiveChat: vi.fn().mockResolvedValue(null),
   },
 }));
 
@@ -86,13 +119,13 @@ describe("Scalability Optimizations", () => {
 
       // Delay the DB response to simulate concurrency
       let queryCount = 0;
-      vi.spyOn(chatRepository, "findPartnerChats").mockImplementation(async () => {
+      vi.spyOn(chatQueryRepository, "findPartnerChats").mockImplementation(async () => {
         queryCount++;
         await new Promise((resolve) => setTimeout(resolve, 50));
         return mockChats as any;
       });
 
-      vi.spyOn(redisService, "getCachedPartners").mockResolvedValue(null);
+      vi.spyOn(redisPresenceService, "getCachedPartners").mockResolvedValue(null);
 
       // Trigger 5 concurrent requests
       const results = await Promise.all([
@@ -125,7 +158,7 @@ describe("Scalability Optimizations", () => {
         idempotencyKey: "unique-key",
       };
 
-      vi.spyOn(redisService, "checkAndSetIdempotency").mockResolvedValue(true);
+      vi.spyOn(redisGuardService, "checkAndSetIdempotency").mockResolvedValue(true);
 
       await socketService.saveAndDeliverMessage(sender, payload);
 
@@ -143,7 +176,7 @@ describe("Scalability Optimizations", () => {
         idempotencyKey: "dup-key",
       };
 
-      vi.spyOn(redisService, "checkAndSetIdempotency").mockResolvedValue(false);
+      vi.spyOn(redisGuardService, "checkAndSetIdempotency").mockResolvedValue(false);
       const mockResult = {
         _id: new ObjectId("507f1f77bcf86cd799439077"),
         chatId: new ObjectId(MOCK_CHAT_ID),
@@ -178,7 +211,7 @@ describe("Scalability Optimizations", () => {
       };
 
       // Simulate Redis L1 hit for idempotency (already set)
-      vi.spyOn(redisService, "checkAndSetIdempotency").mockResolvedValue(false);
+      vi.spyOn(redisGuardService, "checkAndSetIdempotency").mockResolvedValue(false);
       // Simulate DB hit
       const mockResult = {
         _id: new ObjectId("507f1f77bcf86cd799439077"),
@@ -200,7 +233,7 @@ describe("Scalability Optimizations", () => {
       await socketService.saveAndDeliverMessage(sender, payload);
 
       // Verify rate limit was NEVER checked for this duplicate
-      expect(vi.spyOn(redisService, "incrementAndCheckLimit")).not.toHaveBeenCalled();
+      expect(vi.spyOn(redisGuardService, "incrementAndCheckLimit")).not.toHaveBeenCalled();
     });
   });
 
@@ -215,18 +248,18 @@ describe("Scalability Optimizations", () => {
 
       // 1. First call hits Redis
       await socketService.handleTyping(sender, payload, true);
-      expect(vi.spyOn(redisService, "incrementAndCheckLimit")).toHaveBeenCalledTimes(1);
+      expect(vi.spyOn(redisGuardService, "incrementAndCheckLimit")).toHaveBeenCalledTimes(1);
 
       // 2. Immediate second call should NOT hit Redis (guarded locally)
       await socketService.handleTyping(sender, payload, true);
-      expect(vi.spyOn(redisService, "incrementAndCheckLimit")).toHaveBeenCalledTimes(1); // Still 1
+      expect(vi.spyOn(redisGuardService, "incrementAndCheckLimit")).toHaveBeenCalledTimes(1); // Still 1
 
       // 3. Advance time and it should hit Redis again
       vi.useFakeTimers();
       vi.setSystemTime(Date.now() + 3000);
 
       await socketService.handleTyping(sender, payload, true);
-      expect(vi.spyOn(redisService, "incrementAndCheckLimit")).toHaveBeenCalledTimes(2);
+      expect(vi.spyOn(redisGuardService, "incrementAndCheckLimit")).toHaveBeenCalledTimes(2);
 
       vi.useRealTimers();
     });
