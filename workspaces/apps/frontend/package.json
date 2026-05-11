@@ -7,8 +7,6 @@
     "build": "vp run --cache build-task",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsgo -p tsconfig.bun.json",
     "dev": "vp dev",
-    "fmt": "vp fmt",
-    "fmt:check": "vp fmt --check",
     "preview": "vp preview",
     "test": "vp test"
   },

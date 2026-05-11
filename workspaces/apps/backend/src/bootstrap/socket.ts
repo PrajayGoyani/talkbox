@@ -1,8 +1,9 @@
-import { TypedIO } from "@/types/socket.types";
 import { ALLOWED_ORIGINS } from "@config/env";
 import { baseService } from "@services/infra/redis.service";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { Server } from "socket.io";
+
+import { TypedIO } from "@/types/socket.types";
 
 /**
  * Initializes the Socket.io server with CORS and Redis adapter (if available).

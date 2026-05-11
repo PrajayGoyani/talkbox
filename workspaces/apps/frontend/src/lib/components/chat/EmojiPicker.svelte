@@ -61,9 +61,7 @@
 
 <div class="emoji-picker-container">
   {#if error}
-    <div
-      class="flex items-center justify-center h-full text-rose-500 text-sm p-4 text-center"
-    >
+    <div class="flex items-center justify-center h-full text-rose-500 text-sm p-4 text-center">
       {error}
     </div>
   {:else if isLoading}
@@ -85,8 +83,7 @@
       </div>
     </div>
   {:else}
-    <emoji-picker class="light-theme" onemoji-click={handleEmojiClick}
-    ></emoji-picker>
+    <emoji-picker class="light-theme" onemoji-click={handleEmojiClick}></emoji-picker>
   {/if}
 </div>
 

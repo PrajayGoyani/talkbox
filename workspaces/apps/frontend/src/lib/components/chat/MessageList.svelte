@@ -2,10 +2,7 @@
   import MessageBubble from "$components/chat/MessageBubble.svelte";
   import MessageSkeleton from "$components/chat/MessageSkeleton.svelte";
   import Icon from "$components/ui/Icon.svelte";
-  import {
-    MESSAGE_SKELETON_HEIGHT,
-    SCROLL_THROTTLE_DURATION,
-  } from "$lib/config";
+  import { MESSAGE_SKELETON_HEIGHT, SCROLL_THROTTLE_DURATION } from "$lib/config";
   import { messageStore } from "$state/active-chat.svelte";
   import { authStore } from "$state/auth.svelte";
   import type { ChatStatus } from "$lib/types/chat";
@@ -52,9 +49,7 @@
   let windowContainerHeight = $state(0);
 
   const messageSkeletonCount = $derived(
-    windowContainerHeight > 0
-      ? Math.ceil(windowContainerHeight / MESSAGE_SKELETON_HEIGHT)
-      : 6,
+    windowContainerHeight > 0 ? Math.ceil(windowContainerHeight / MESSAGE_SKELETON_HEIGHT) : 6,
   );
 
   // Group messages for better sticky header handling
@@ -92,11 +87,9 @@
 
   const handleMessagesScroll = throttle((e: Event) => {
     const target = e.target as HTMLDivElement;
-    const distanceFromBottom =
-      target.scrollHeight - target.scrollTop - target.clientHeight;
+    const distanceFromBottom = target.scrollHeight - target.scrollTop - target.clientHeight;
     const isNearBottom = distanceFromBottom < 150;
-    const scrolledUpSignificant =
-      distanceFromBottom > JUMP_BUTTON_SHOW_THRESHOLD;
+    const scrolledUpSignificant = distanceFromBottom > JUMP_BUTTON_SHOW_THRESHOLD;
 
     showJumpButton = scrolledUpSignificant;
     userHasScrolledUp = !isNearBottom;
@@ -113,18 +106,12 @@
     loadingOlderObserver = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if (
-          entry.isIntersecting &&
-          messageStore.hasMoreMessages &&
-          !messageStore.isLoadingMessages
-        ) {
-          const scrollBottom =
-            messagesContainer!.scrollHeight - messagesContainer!.scrollTop;
+        if (entry.isIntersecting && messageStore.hasMoreMessages && !messageStore.isLoadingMessages) {
+          const scrollBottom = messagesContainer!.scrollHeight - messagesContainer!.scrollTop;
           messageStore.loadOlderMessages().then(async () => {
             await tick();
             if (messagesContainer) {
-              messagesContainer.scrollTop =
-                messagesContainer.scrollHeight - scrollBottom;
+              messagesContainer.scrollTop = messagesContainer.scrollHeight - scrollBottom;
             }
           });
         }
@@ -171,9 +158,7 @@
         {/each}
       </div>
     {:else if messageStore.messages.length === 0}
-      <div
-        class="flex flex-col items-center justify-center gap-4 h-full text-slate-500 opacity-60 text-center py-20"
-      >
+      <div class="flex flex-col items-center justify-center gap-4 h-full text-slate-500 opacity-60 text-center py-20">
         <div class="bg-slate-100 dark:bg-white/5 p-4 rounded-full">
           <Icon name="chat" class="w-10 h-10" />
         </div>
@@ -196,9 +181,7 @@
 
       {#each groupedMessages as group (group.label)}
         <div class="flex flex-col gap-1 mb-4 relative">
-          <div
-            class="sticky -top-4 z-20 flex justify-center pointer-events-none py-2 -mb-2"
-          >
+          <div class="sticky -top-4 z-20 flex justify-center pointer-events-none py-2 -mb-2">
             <span
               class="pointer-events-auto px-4 py-1 text-[10px] tracking-widest font-bold text-slate-500 bg-slate-50/90 dark:bg-slate-900/95 border border-slate-200 dark:border-white/10 rounded-full shadow-md backdrop-blur-md transition-all duration-300"
               >{group.label}</span
@@ -210,8 +193,7 @@
 
           {#each group.messages as msg, i (msg.id)}
             {@const isSent = msg.senderId === authStore.user?.id}
-            {@const isFirstInGroup =
-              i === 0 || group.messages[i - 1].senderId !== msg.senderId}
+            {@const isFirstInGroup = i === 0 || group.messages[i - 1].senderId !== msg.senderId}
 
             <MessageBubble
               {msg}

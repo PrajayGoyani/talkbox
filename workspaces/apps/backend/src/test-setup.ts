@@ -7,3 +7,21 @@ process.env.NODE_ENV = "test";
 process.env.JWT_EXPIRATION = "1h";
 process.env.JWT_REFRESH_EXPIRATION = "7d";
 process.env.UPLOAD_STRATEGY = "local";
+
+/*
+// Mute specific DeprecationWarnings (e.g. url.parse() from dependencies)
+const originalEmit = process.emit;
+// @ts-ignore
+process.emit = function (name: string, data: any) {
+  if (
+    name === "warning" &&
+    data &&
+    data.name === "DeprecationWarning" &&
+    data.message?.includes("url.parse")
+  ) {
+    return false;
+  }
+  // @ts-ignore
+  return originalEmit.apply(process, arguments);
+};
+*/

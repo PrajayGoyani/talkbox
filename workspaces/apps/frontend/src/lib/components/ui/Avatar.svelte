@@ -44,12 +44,7 @@
       alt={user?.name || user?.username}
     />
   {:else}
-    <div
-      class={cn(
-        "rounded-full flex items-center justify-center font-bold shrink-0",
-        className,
-      )}
-    >
+    <div class={cn("rounded-full flex items-center justify-center font-bold shrink-0", className)}>
       {((user?.name || user?.username)?.[0] || "?").toUpperCase()}
     </div>
   {/if}

@@ -2,8 +2,8 @@
 
 @theme {
   --font-sans:
-    "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-    "Segoe UI Symbol", "Noto Color Emoji";
+    "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
 }
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
@@ -83,7 +83,7 @@ body {
 
 /* Panels & Lists */
 .panel-header {
-  @apply h-15 md:h-18 shrink-0 border-b border-slate-200 dark:border-white/10 flex items-center justify-between px-5;
+  @apply flex h-15 shrink-0 items-center justify-between border-b border-slate-200 px-5 md:h-18 dark:border-white/10;
 }
 
 .chat-item {

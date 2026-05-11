@@ -1,13 +1,20 @@
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
-import { redisPresenceService, redisSessionService, redisGuardService, baseService } from "@services/infra/redis.service";
-import { socketService } from "@services/chat/socket.service";
-import { messageRepository } from "@repositories/message.repository";
-import { chatRepository } from "@repositories/chat.repository";
 import { chatQueryRepository } from "@repositories/chat-query.repository";
+import { chatRepository } from "@repositories/chat.repository";
+import { messageRepository } from "@repositories/message.repository";
+import { chatCacheService } from "@services/chat/chat-cache.service";
+import { socketService } from "@services/chat/socket.service";
+import {
+  redisPresenceService,
+  redisSessionService,
+  redisGuardService,
+  baseService,
+} from "@services/infra/redis.service";
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
@@ -65,10 +72,11 @@ const MOCK_RECEIVER_ID = "507f1f77bcf86cd799439055";
 describe("Scalability Optimizations", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (socketService as any).partnerCache.clear();
+    chatCacheService.clear();
     (socketService as any).partnerRequests.clear();
     // Reset TypingHandler local guard
     (socketService as any).typingHandler.localGuard.clear();
+
 
     vi.spyOn(mongoose, "startSession").mockResolvedValue({
       startTransaction: vi.fn(),
@@ -83,7 +91,9 @@ describe("Scalability Optimizations", () => {
       senderId: new ObjectId(MOCK_USER_ID),
       contentBody: "Hi",
       createdAt: new Date(),
-      toObject: function() { return this; },
+      toObject: function () {
+        return this;
+      },
       reactions: [],
     };
 
@@ -163,7 +173,9 @@ describe("Scalability Optimizations", () => {
       await socketService.saveAndDeliverMessage(sender, payload);
 
       // Should NOT have called messageRepo.findOne for idempotency
-      expect(messageRepository.findOne).not.toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: "unique-key" }));
+      expect(messageRepository.findOne).not.toHaveBeenCalledWith(
+        expect.objectContaining({ idempotencyKey: "unique-key" }),
+      );
       expect(messageRepository.create).toHaveBeenCalled();
     });
 
@@ -243,8 +255,9 @@ describe("Scalability Optimizations", () => {
       const payload = { chatId: "c1", receiverId: "r1" };
 
       // Mock cache to avoid DB hits
-      (socketService as any).participantCache.set("c1", new Set([MOCK_USER_ID, "r1"]));
+      chatCacheService.setParticipants("c1", new Set([MOCK_USER_ID, "r1"]));
       socketService.io = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as any;
+
 
       // 1. First call hits Redis
       await socketService.handleTyping(sender, payload, true);

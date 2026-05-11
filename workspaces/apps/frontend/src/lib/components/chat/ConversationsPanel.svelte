@@ -1,6 +1,6 @@
 <script lang="ts">
-import { chatListStore } from "$state/chat/chat-list.svelte";
-import { chatActions } from "$state/chat/chat-actions.svelte";
+  import { chatListStore } from "$state/chat/chat-list.svelte";
+  import { chatActions } from "$state/chat/chat-actions.svelte";
 
   import ChatList from "$components/chat/ChatList.svelte";
   import Icon from "$components/ui/Icon.svelte";
@@ -20,11 +20,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
     onNotificationToggle,
   } = $props<{
     activeChatId?: string | null;
-    onSelectChat: (
-      chatId: string,
-      otherUser: UserDto,
-      status: ChatStatus,
-    ) => void;
+    onSelectChat: (chatId: string, otherUser: UserDto, status: ChatStatus) => void;
     unreadCount?: number;
     onNotificationToggle?: () => void;
   }>();
@@ -83,9 +79,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
   <div class="p-5 border-b border-slate-200 dark:border-white/10 shrink-0">
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center gap-2">
-        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
-          Messages
-        </h2>
+        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Messages</h2>
       </div>
 
       <div class="flex items-center gap-2">
@@ -93,9 +87,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
         <button
           class={[
             "hidden md:flex w-8 h-8 items-center justify-center rounded-lg transition-all active:scale-95",
-            showRequestInput
-              ? "bg-indigo-600 text-white"
-              : "text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10",
+            showRequestInput ? "bg-indigo-600 text-white" : "text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10",
           ]}
           onclick={() => (showRequestInput = !showRequestInput)}
           use:tooltip={{
@@ -177,9 +169,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
               disabled={requestLoading || !requestUsername.trim()}
             >
               {#if requestLoading}
-                <span
-                  class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
-                ></span>
+                <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
               {:else}
                 Send
               {/if}
@@ -191,9 +181,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
               {requestError}
             </p>
           {:else if requestSuccess}
-            <p
-              class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium px-1"
-            >
+            <p class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium px-1">
               {requestSuccess}
             </p>
           {/if}
@@ -203,13 +191,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
   </div>
 
   <div class="flex-1 min-h-0">
-    <ChatList
-      bind:this={chatListRef}
-      {activeChatId}
-      {onSelectChat}
-      {searchQuery}
-      {activeTab}
-    />
+    <ChatList bind:this={chatListRef} {activeChatId} {onSelectChat} {searchQuery} {activeTab} />
   </div>
 
   <!-- Mobile Floating Action Button (FAB) -->
@@ -222,9 +204,6 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
     }}
     aria-label="New Chat"
   >
-    <Icon
-      name={showRequestInput ? "close" : "add"}
-      class="w-6 h-6 transition-transform"
-    />
+    <Icon name={showRequestInput ? "close" : "add"} class="w-6 h-6 transition-transform" />
   </button>
 </div>

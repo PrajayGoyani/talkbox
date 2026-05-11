@@ -1,11 +1,11 @@
 <script lang="ts">
-import { chatListStore } from "$state/chat/chat-list.svelte";
-import { chatActions } from "$state/chat/chat-actions.svelte";
+  import { chatListStore } from "$state/chat/chat-list.svelte";
+  import { chatActions } from "$state/chat/chat-actions.svelte";
 
   import Avatar from "$components/ui/Avatar.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import { authStore } from "$state/auth.svelte";
-  
+
   import { USERNAME_ERROR } from "shared/constants/validation";
   import { isValidUsername } from "shared/utils/validation";
   import { onMount } from "svelte";
@@ -20,8 +20,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
   let requestLoading = $state(false);
   let requestError = $state<string | null>(null);
   let requestSuccess = $state<string | null>(null);
-  let processingStates: Record<string, "accepting" | "rejecting" | null> =
-    $state({});
+  let processingStates: Record<string, "accepting" | "rejecting" | null> = $state({});
 
   export const refreshRequests = async () => {
     loading = true;
@@ -79,12 +78,8 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
     }
   };
 
-  const incomingRequests = $derived(
-    chatListStore.requests.filter((c) => c.createdBy !== authStore.user?.id),
-  );
-  const outgoingRequests = $derived(
-    chatListStore.requests.filter((c) => c.createdBy === authStore.user?.id),
-  );
+  const incomingRequests = $derived(chatListStore.requests.filter((c) => c.createdBy !== authStore.user?.id));
+  const outgoingRequests = $derived(chatListStore.requests.filter((c) => c.createdBy === authStore.user?.id));
 
   onMount(() => {
     refreshRequests();
@@ -94,9 +89,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
 
 <div class="h-full flex flex-col">
   <div class="panel-header">
-    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
-      Chat Requests
-    </h2>
+    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Chat Requests</h2>
   </div>
 
   <div class="p-4 flex flex-col gap-4 overflow-y-auto flex-1">
@@ -123,9 +116,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
           aria-label="Send request"
         >
           {#if requestLoading}
-            <span
-              class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
-            ></span>
+            <span class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></span>
           {:else}
             <Icon name={"send"} class="w-4 h-4" />
           {/if}
@@ -135,10 +126,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
         <span class="text-rose-500 text-[11px] ml-1">{requestError}</span>
       {/if}
       {#if requestSuccess}
-        <span
-          class="text-emerald-500 text-[11px] ml-1 animate-in fade-in duration-300"
-          >{requestSuccess}</span
-        >
+        <span class="text-emerald-500 text-[11px] ml-1 animate-in fade-in duration-300">{requestSuccess}</span>
       {/if}
     </div>
 
@@ -147,9 +135,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
 
     <!-- Incoming Requests -->
     <div class="flex flex-col gap-2">
-      <span
-        class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"
-      >
+      <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
         Incoming
         {#if incomingRequests.length > 0}
           <span
@@ -160,16 +146,13 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
       </span>
       {#if loading}
         <div class="flex justify-center p-4">
-          <span
-            class="w-6 h-6 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
-          ></span>
+          <span class="w-6 h-6 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></span>
         </div>
       {:else if incomingRequests.length === 0}
         <div class="text-sm text-slate-500 py-2">No incoming requests</div>
       {:else}
         {#each incomingRequests as chat (chat.id)}
-          {@const displayName =
-            chat.otherUser?.name || chat.otherUser?.username || "Unknown"}
+          {@const displayName = chat.otherUser?.name || chat.otherUser?.username || "Unknown"}
           <div transition:slide={{ duration: 300, easing: quintOut }}>
             <div
               class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
@@ -184,9 +167,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
                     class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate"
                     title="@{chat.otherUser?.username}">{displayName}</span
                   >
-                  <span class="text-[11px] text-slate-500"
-                    >Wants to connect</span
-                  >
+                  <span class="text-[11px] text-slate-500">Wants to connect</span>
                 </div>
               </div>
               <div class="flex gap-1.5 shrink-0">
@@ -211,8 +192,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
                   disabled={!!processingStates[chat.id]}
                 >
                   {#if processingStates[chat.id] === "rejecting"}
-                    <span
-                      class="w-3.5 h-3.5 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin"
+                    <span class="w-3.5 h-3.5 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin"
                     ></span>
                   {:else}
                     <Icon name={"close"} class="w-4 h-4" stroke-width="2.5" />
@@ -227,16 +207,12 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
 
     <!-- Outgoing Requests -->
     <div class="flex flex-col gap-2">
-      <span
-        class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"
-        >Sent</span
-      >
+      <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Sent</span>
       {#if outgoingRequests.length === 0 && !loading}
         <div class="text-sm text-slate-500 py-2">No pending sent requests</div>
       {:else}
         {#each outgoingRequests as chat (chat.id)}
-          {@const displayName =
-            chat.otherUser?.name || chat.otherUser?.username || "Unknown"}
+          {@const displayName = chat.otherUser?.name || chat.otherUser?.username || "Unknown"}
           <div transition:slide={{ duration: 300, easing: quintOut }}>
             <div
               class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
@@ -251,9 +227,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
                     class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate"
                     title="@{chat.otherUser?.username}">{displayName}</span
                   >
-                  <span class="text-[11px] text-slate-500"
-                    >Waiting for response...</span
-                  >
+                  <span class="text-[11px] text-slate-500">Waiting for response...</span>
                 </div>
               </div>
             </div>

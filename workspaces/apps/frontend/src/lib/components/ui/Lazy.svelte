@@ -57,28 +57,20 @@
   <div class="flex items-center justify-center p-12 w-full h-full min-h-25">
     <div class="flex flex-col items-center gap-3">
       <Spinner class="w-8 h-8 text-indigo-500 animate-spin" />
-      <span class="text-xs font-medium text-slate-400 animate-pulse"
-        >Loading...</span
-      >
+      <span class="text-xs font-medium text-slate-400 animate-pulse">Loading...</span>
     </div>
   </div>
 {:else if isLoading}
   <!-- Content is loading but we are within the delay grace period - render nothing -->
   <div class="w-full h-full min-h-25"></div>
 {:else if error}
-  <div
-    class="p-8 flex flex-col items-center justify-center text-center gap-4 h-full"
-  >
+  <div class="p-8 flex flex-col items-center justify-center text-center gap-4 h-full">
     <div class="text-rose-500 opacity-50">
       <Icon name="alert-circle" class="w-12 h-12" />
     </div>
     <div class="max-w-xs">
-      <h3 class="text-slate-900 dark:text-white font-semibold">
-        Failed to load content
-      </h3>
-      <p class="text-sm text-slate-500 mt-1">
-        There was an error loading this part of the application.
-      </p>
+      <h3 class="text-slate-900 dark:text-white font-semibold">Failed to load content</h3>
+      <p class="text-sm text-slate-500 mt-1">There was an error loading this part of the application.</p>
       <button
         onclick={loadComponent}
         class="mt-4 px-4 py-2 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 rounded-lg text-sm font-medium transition-colors"

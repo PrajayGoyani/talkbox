@@ -357,11 +357,7 @@ import { verify } from "@solana/web3.js";
 
 async function verifyWalletOwnership(publicKey: string, signature: string, message: string) {
   try {
-    const isValid = verify(
-      Buffer.from(message),
-      Buffer.from(signature, "base64"),
-      Buffer.from(publicKey, "base64"),
-    );
+    const isValid = verify(Buffer.from(message), Buffer.from(signature, "base64"), Buffer.from(publicKey, "base64"));
     return isValid;
   } catch (error) {
     return false;

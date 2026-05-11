@@ -2,6 +2,7 @@ import { chatService } from "$services/chat.service";
 import { RealtimeEvent, realtimeEvents } from "$services/realtime-events";
 import { socketManager } from "$services/socket.manager.svelte";
 import { messageStore } from "$state/active-chat.svelte";
+
 import { authStore } from "../auth.svelte";
 import { chatListStore } from "./chat-list.svelte";
 

@@ -1,6 +1,11 @@
 import { presenceSyncHandler } from "@jobs/handlers/presence-sync.handler";
 import User from "@models/user.model";
-import { redisPresenceService, redisSessionService, redisGuardService, baseService } from "@services/infra/redis.service";
+import {
+  redisPresenceService,
+  redisSessionService,
+  redisGuardService,
+  baseService,
+} from "@services/infra/redis.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@models/user.model", () => ({
@@ -12,27 +17,31 @@ vi.mock("@models/user.model", () => ({
 vi.mock("@sentry/bun");
 
 vi.mock("@services/infra/redis.service", () => ({
-  redisService:  {
+  redisService: {
     popSyncQueue: vi.fn(),
     getLastSeenBatched: vi.fn(),
     getSyncQueueCount: vi.fn(),
     queuePresenceSyncBatched: vi.fn(),
-  }, redisPresenceService:  {
+  },
+  redisPresenceService: {
     popSyncQueue: vi.fn(),
     getLastSeenBatched: vi.fn(),
     getSyncQueueCount: vi.fn(),
     queuePresenceSyncBatched: vi.fn(),
-  }, redisSessionService:  {
+  },
+  redisSessionService: {
     popSyncQueue: vi.fn(),
     getLastSeenBatched: vi.fn(),
     getSyncQueueCount: vi.fn(),
     queuePresenceSyncBatched: vi.fn(),
-  }, redisGuardService:  {
+  },
+  redisGuardService: {
     popSyncQueue: vi.fn(),
     getLastSeenBatched: vi.fn(),
     getSyncQueueCount: vi.fn(),
     queuePresenceSyncBatched: vi.fn(),
-  }, baseService:  {
+  },
+  baseService: {
     popSyncQueue: vi.fn(),
     getLastSeenBatched: vi.fn(),
     getSyncQueueCount: vi.fn(),

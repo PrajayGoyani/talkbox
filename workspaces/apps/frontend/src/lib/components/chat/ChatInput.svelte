@@ -1,11 +1,11 @@
 <script lang="ts">
-import { socketManager } from "$services/socket.manager.svelte";
+  import { socketManager } from "$services/socket.manager.svelte";
 
   import EmojiPicker from "$components/chat/EmojiPicker.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
   import { messageStore } from "$state/active-chat.svelte";
-  
+
   import type { UserDto } from "shared/types/auth.dto";
   import { tick } from "svelte";
 
@@ -33,15 +33,11 @@ import { socketManager } from "$services/socket.manager.svelte";
   };
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || socketManager.isSendingMessage || !otherUser)
-      return;
+    if (!messageInput.trim() || socketManager.isSendingMessage || !otherUser) return;
 
     const found = getDisallowedEmojis(messageInput.trim());
     if (found.length > 0) {
-      uiStore.addAlert(
-        `Message contains disallowed emojis (${found.join(", ")}). Please remove them.`,
-        "danger",
-      );
+      uiStore.addAlert(`Message contains disallowed emojis (${found.join(", ")}). Please remove them.`, "danger");
       return;
     }
 
@@ -77,13 +73,11 @@ import { socketManager } from "$services/socket.manager.svelte";
     if (textareaElement) {
       const start = textareaElement.selectionStart;
       const end = textareaElement.selectionEnd;
-      messageInput =
-        messageInput.substring(0, start) + emoji + messageInput.substring(end);
+      messageInput = messageInput.substring(0, start) + emoji + messageInput.substring(end);
 
       tick().then(() => {
         if (textareaElement) {
-          textareaElement.selectionStart = textareaElement.selectionEnd =
-            start + emoji.length;
+          textareaElement.selectionStart = textareaElement.selectionEnd = start + emoji.length;
           textareaElement.focus();
           handleInput({ target: textareaElement } as any);
         }
@@ -100,9 +94,7 @@ import { socketManager } from "$services/socket.manager.svelte";
   });
 </script>
 
-<div
-  class="p-2.5 md:p-4 glass-panel border-t flex gap-2 md:gap-3 items-center relative z-40"
->
+<div class="p-2.5 md:p-4 glass-panel border-t flex gap-2 md:gap-3 items-center relative z-40">
   <Popover bind:isOpen={showEmojiPicker} position="top" align="start">
     {#snippet trigger({ toggle })}
       <button
@@ -137,9 +129,7 @@ import { socketManager } from "$services/socket.manager.svelte";
     disabled={!messageInput.trim() || socketManager.isSendingMessage}
   >
     {#if socketManager.isSendingMessage}
-      <span
-        class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
-      ></span>
+      <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
     {:else}
       <Icon name="send" class="w-5 h-5" />
     {/if}

@@ -40,10 +40,7 @@ export interface ClientToServerEvents {
   react_message: (data: { messageId: string; emoji: string; slug?: string }) => void;
   delete_message: (data: { messageId: string }) => void;
   edit_message: (data: { messageId: string; contentBody: string }) => void;
-  store_public_bundle: (
-    bundleData: any,
-    callback?: (res: { status: "ok" | "error" }) => void,
-  ) => void;
+  store_public_bundle: (bundleData: any, callback?: (res: { status: "ok" | "error" }) => void) => void;
   typing_start: (data: { receiverId: string; chatId: string }) => void;
   typing_stop: (data: { receiverId: string; chatId: string }) => void;
   read_chat: (data: { chatId: string }) => void;

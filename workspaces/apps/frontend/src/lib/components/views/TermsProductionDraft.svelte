@@ -6,8 +6,8 @@
   <div
     class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-2xl mb-8 text-amber-800 dark:text-amber-200 text-sm italic"
   >
-    <strong>Draft Component:</strong> This version of the Terms of Use includes production-grade
-    updates for real payments and is for future reference only.
+    <strong>Draft Component:</strong> This version of the Terms of Use includes production-grade updates for real payments
+    and is for future reference only.
   </div>
 
   <button
@@ -24,74 +24,65 @@
   <section class="mb-12">
     <h2 class="text-2xl font-bold mb-4">1. Acceptance of Terms</h2>
     <p>
-      By accessing and using Talkbox, you agree to be bound by these Terms of
-      Use, all applicable laws and regulations, and any third-party payment
-      processor terms.
+      By accessing and using Talkbox, you agree to be bound by these Terms of Use, all applicable laws and regulations,
+      and any third-party payment processor terms.
     </p>
   </section>
 
   <section class="mb-12">
     <h2 class="text-2xl font-bold mb-4">5. Subscription Plans & Payments</h2>
     <p>
-      Talkbox offers a Free tier and a Pro subscription. By subscribing to the
-      Pro plan, you gain access to increased usage limits, including up to 5
-      active sessions and unlimited message history. Payments are securely
-      processed via <strong>[Processor Name, e.g., Stripe]</strong>. Your
-      financial data is subject to the [Processor Name] Privacy Policy and Terms
-      of Service.
+      Talkbox offers a Free tier and a Pro subscription. By subscribing to the Pro plan, you gain access to increased
+      usage limits, including up to 5 active sessions and unlimited message history. Payments are securely processed via <strong
+        >[Processor Name, e.g., Stripe]</strong
+      >. Your financial data is subject to the [Processor Name] Privacy Policy and Terms of Service.
     </p>
     <p class="mt-4">
-      <strong>Auto-Renewal:</strong> Subscriptions automatically renew at the end
-      of the billing period unless canceled at least 24 hours before the renewal
-      date.
+      <strong>Auto-Renewal:</strong> Subscriptions automatically renew at the end of the billing period unless canceled at
+      least 24 hours before the renewal date.
     </p>
     <p class="mt-4">
-      <strong>Pricing Changes:</strong> Talkbox reserves the right to change subscription
-      pricing upon 30 days' notice to active subscribers via email or in-app notification.
+      <strong>Pricing Changes:</strong> Talkbox reserves the right to change subscription pricing upon 30 days' notice to
+      active subscribers via email or in-app notification.
     </p>
   </section>
 
   <section class="mb-12">
     <h2 class="text-2xl font-bold mb-4">6. Cancellation & Refund Policy</h2>
     <p>
-      <strong>Cancellation:</strong> You may cancel your Pro subscription at any
-      time via your Account Settings. Upon cancellation, you will maintain Pro access
-      until the end of your current billing period, after which your account will
-      revert to the Free tier.
+      <strong>Cancellation:</strong> You may cancel your Pro subscription at any time via your Account Settings. Upon cancellation,
+      you will maintain Pro access until the end of your current billing period, after which your account will revert to the
+      Free tier.
     </p>
     <p class="mt-4">
-      <strong>Refunds:</strong> We offer a 14-day satisfaction guarantee. Refund
-      requests made within 14 days of the initial purchase will be honored, provided
-      the service has not been excessively used. After 14 days, all subscription
-      purchases are final and non-refundable.
+      <strong>Refunds:</strong> We offer a 14-day satisfaction guarantee. Refund requests made within 14 days of the initial
+      purchase will be honored, provided the service has not been excessively used. After 14 days, all subscription purchases
+      are final and non-refundable.
     </p>
   </section>
 
   <section class="mb-12">
     <h2 class="text-2xl font-bold mb-4">7. Taxes</h2>
     <p>
-      Listed prices may or may not include regional taxes (VAT/GST/Sales Tax)
-      depending on your location. The final amount, including applicable taxes,
-      will be shown at checkout.
+      Listed prices may or may not include regional taxes (VAT/GST/Sales Tax) depending on your location. The final
+      amount, including applicable taxes, will be shown at checkout.
     </p>
   </section>
 
   <section class="mb-12">
     <h2 class="text-2xl font-bold mb-4">8. Payment Disputes</h2>
     <p>
-      Unauthorized chargebacks or payment disputes will result in immediate
-      suspension of the Pro subscription and may lead to permanent account
-      termination at the discretion of Talkbox.
+      Unauthorized chargebacks or payment disputes will result in immediate suspension of the Pro subscription and may
+      lead to permanent account termination at the discretion of Talkbox.
     </p>
   </section>
 
   <section class="mb-12">
     <h2 class="text-2xl font-bold mb-4">9. Data Deletion</h2>
     <p>
-      Users may choose to delete individual messages or entire chat threads.
-      Please be advised that user-initiated deletion is permanent. Once a
-      message is deleted by the user, it is removed from our active systems and
-      cannot be recovered or restored by the Talkbox team.
+      Users may choose to delete individual messages or entire chat threads. Please be advised that user-initiated
+      deletion is permanent. Once a message is deleted by the user, it is removed from our active systems and cannot be
+      recovered or restored by the Talkbox team.
     </p>
   </section>
 </div>

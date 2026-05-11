@@ -1,6 +1,6 @@
 <script lang="ts">
-import { chatListStore } from "$state/chat/chat-list.svelte";
-import { chatActions } from "$state/chat/chat-actions.svelte";
+  import { chatListStore } from "$state/chat/chat-list.svelte";
+  import { chatActions } from "$state/chat/chat-actions.svelte";
 
   import ChatContextMenu from "$components/chat/ChatContextMenu.svelte";
   import ChatListItem from "$components/chat/ChatListItem.svelte";
@@ -19,11 +19,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
     searchQuery: _searchQuery = "",
   } = $props<{
     activeChatId?: string | null;
-    onSelectChat: (
-      chatId: string,
-      otherUser: UserDto,
-      status: ChatStatus,
-    ) => void;
+    onSelectChat: (chatId: string, otherUser: UserDto, status: ChatStatus) => void;
     activeTab?: "all" | "unread";
     searchQuery?: string;
   }>();
@@ -35,17 +31,11 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
   let listContainer: HTMLDivElement | null = $state(null);
   let listContainerHeight = $state(0);
   const SKELETON_ITEM_HEIGHT = 80; // height of ChatListSkeleton
-  const skeletonCount = $derived(
-    listContainerHeight > 0
-      ? Math.ceil(listContainerHeight / SKELETON_ITEM_HEIGHT)
-      : 8,
-  );
+  const skeletonCount = $derived(listContainerHeight > 0 ? Math.ceil(listContainerHeight / SKELETON_ITEM_HEIGHT) : 8);
 
   let loading = $state(false);
   let error = $state<string | null>(null);
-  let processingStates = $state<
-    Record<string, "accepting" | "rejecting" | null>
-  >({});
+  let processingStates = $state<Record<string, "accepting" | "rejecting" | null>>({});
 
   // Context Menu State
   let menuPos = $state({ x: 0, y: 0 });
@@ -119,8 +109,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
     const list = (chatListStore.chats || []).filter((chat) => {
       if (!chat) return false;
       if (activeTab === "all") return chat.status === "accepted";
-      if (activeTab === "unread")
-        return chat.status === "accepted" && (chat.unreadCount ?? 0) > 0;
+      if (activeTab === "unread") return chat.status === "accepted" && (chat.unreadCount ?? 0) > 0;
       return true;
     });
     return list;
@@ -185,20 +174,13 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
     </div>
   {:else if error || chatActions.lastError}
     {#if error === "rate-limited" || chatActions.lastError === "rate-limited"}
-      <div
-        class="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in-95"
-      >
-        <div
-          class="w-16 h-16 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center mb-4"
-        >
+      <div class="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in-95">
+        <div class="w-16 h-16 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center mb-4">
           <Icon name="alert-circle" class="w-8 h-8 text-rose-500" />
         </div>
-        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
-          Slow Down a Bit
-        </h3>
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Slow Down a Bit</h3>
         <p class="text-xs text-slate-500 max-w-50 leading-relaxed">
-          You've sent too many requests. Please wait a minute before trying
-          again.
+          You've sent too many requests. Please wait a minute before trying again.
         </p>
       </div>
     {:else}
@@ -210,18 +192,14 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
     <div
       class="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in-95 duration-500"
     >
-      <div
-        class="w-20 h-20 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center mb-6"
-      >
+      <div class="w-20 h-20 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center mb-6">
         <Icon
           name={activeTab === "unread" ? "notifications" : "nav-chat"}
           class="w-10 h-10 text-slate-300 dark:text-slate-600"
         />
       </div>
       <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">
-        {activeTab === "unread"
-          ? "You're All Caught Up"
-          : "No Conversations Yet"}
+        {activeTab === "unread" ? "You're All Caught Up" : "No Conversations Yet"}
       </h3>
       <p class="text-sm text-slate-500 max-w-50 leading-relaxed">
         {activeTab === "unread"
@@ -246,15 +224,10 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
       {/each}
 
       <!-- Pagination Sentinel -->
-      <div
-        bind:this={sentinel}
-        class="h-10 w-full flex items-center justify-center py-4"
-      >
+      <div bind:this={sentinel} class="h-10 w-full flex items-center justify-center py-4">
         {#if (activeTab === "all" || activeTab === "unread") && chatListStore.isLoadingMoreChats}
           <div class="flex items-center gap-2 text-slate-400 text-xs">
-            <span
-              class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
-            ></span>
+            <span class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></span>
             Loading more...
           </div>
         {/if}

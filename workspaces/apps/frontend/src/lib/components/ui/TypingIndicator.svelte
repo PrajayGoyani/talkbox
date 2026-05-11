@@ -4,12 +4,7 @@
   let { class: className = "" } = $props<{ class?: string }>();
 </script>
 
-<div
-  class={cn(
-    "flex items-center gap-1 px-2 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-full w-min",
-    className,
-  )}
->
+<div class={cn("flex items-center gap-1 px-2 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-full w-min", className)}>
   <span class="w-1 h-1 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
   <span class="w-1 h-1 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
   <span class="w-1 h-1 bg-indigo-500 rounded-full animate-bounce"></span>
@@ -17,7 +12,8 @@
 
 <style>
   @keyframes bounce {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateY(0);
       opacity: 0.4;
     }

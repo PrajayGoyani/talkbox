@@ -1,7 +1,7 @@
 import { JWT_SECRET_KEY, NODE_ENV } from "@config/env";
-import { redisPresenceService } from "@services/infra/redis.service";
-import { socketService } from "@services/chat/socket.service";
 import { userCacheService } from "@services/auth/user-cache.service";
+import { socketService } from "@services/chat/socket.service";
+import { redisPresenceService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
 import jwt from "jsonwebtoken";
 
@@ -9,7 +9,6 @@ import { AuthenticatedSocketUser, JWTPayload, TypedIO, TypedSocket } from "@/typ
 
 export const configureSocketServer = (io: TypedIO): void => {
   socketService.init(io);
-
 
   // Chat Security Auditor: Authenticate socket connection
   io.use(async (socket: TypedSocket, next) => {

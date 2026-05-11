@@ -1,7 +1,7 @@
 import { getAgenda } from "@config/agenda";
 import { JOBS } from "@jobs/agenda-jobs";
-import { emailService } from "@services/notification/email.service";
 import { socketService } from "@services/chat/socket.service";
+import { emailService } from "@services/notification/email.service";
 import { AUTH_EVENTS, eventBus } from "@utils/event-bus";
 
 /**

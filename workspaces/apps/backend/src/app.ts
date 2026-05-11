@@ -5,8 +5,8 @@ import {
   initializeMiddlewares,
   initializeStatic,
 } from "@bootstrap/handler";
-import { PORT } from "@config/env";
 import { initSocketIO } from "@bootstrap/socket";
+import { PORT } from "@config/env";
 import { configureSocketServer } from "@controllers/socket.controller";
 import { registerRoutes } from "@routes/routes";
 import express from "express";

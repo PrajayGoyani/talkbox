@@ -34,11 +34,11 @@ up:
 
 # Development Mode (Backend: dev, Frontend: dev)
 dev:
-	@echo "Checking if services are already running..."
-	@if bunx pm2 status | grep -q "online"; then \
-		echo "Services are already running. Please run 'make down' first."; \
-		exit 1; \
-	fi
+# 	@echo "Checking if services are already running..."
+# 	@if bunx pm2 status | grep -q "online"; then \
+# 		echo "Services are already running. Please run 'make down' first."; \
+# 		exit 1; \
+# 	fi
 	@echo "Starting in DEVELOPMENT mode..."
 	APP_MODE=dev bunx pm2 start ecosystem.config.cjs
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { presenceStore } from "$state/chat/presence.svelte";
+  import { presenceStore } from "$state/chat/presence.svelte";
 
   import Avatar from "$components/ui/Avatar.svelte";
   import Icon from "$components/ui/Icon.svelte";
@@ -34,19 +34,13 @@ import { presenceStore } from "$state/chat/presence.svelte";
     onReject,
   }: Props = $props();
 
-  const displayName = $derived(
-    chat.otherUser?.name || chat.otherUser?.username || "Unknown",
-  );
+  const displayName = $derived(chat.otherUser?.name || chat.otherUser?.username || "Unknown");
   const typingUsers = $derived(presenceStore.typingStatus.get(chat.id));
-  const isTyping = $derived(
-    (typingUsers?.size ?? 0) > 0 && !typingUsers?.has(authStore.user?.id || ""),
-  );
+  const isTyping = $derived((typingUsers?.size ?? 0) > 0 && !typingUsers?.has(authStore.user?.id || ""));
 
   const isActive = $derived(activeChatId === chat.id);
   const isPending = $derived(chat.status === "pending");
-  const isIncomingRequest = $derived(
-    isPending && chat.createdBy !== authStore.user?.id,
-  );
+  const isIncomingRequest = $derived(isPending && chat.createdBy !== authStore.user?.id);
 </script>
 
 <div class="relative group">
@@ -58,12 +52,8 @@ import { presenceStore } from "$state/chat/presence.svelte";
     )}
     role="button"
     tabindex="0"
-    onclick={() =>
-      chat.otherUser && onSelect(chat.id, chat.otherUser, chat.status)}
-    onkeydown={(e) =>
-      e.key === "Enter" &&
-      chat.otherUser &&
-      onSelect(chat.id, chat.otherUser, chat.status)}
+    onclick={() => chat.otherUser && onSelect(chat.id, chat.otherUser, chat.status)}
+    onkeydown={(e) => e.key === "Enter" && chat.otherUser && onSelect(chat.id, chat.otherUser, chat.status)}
     oncontextmenu={(e) => onContextMenu(e, chat)}
   >
     <!-- Pinned Indicator -->
@@ -88,53 +78,39 @@ import { presenceStore } from "$state/chat/presence.svelte";
 
     <div class="flex flex-col flex-1 overflow-hidden text-left">
       <div class="flex justify-between items-baseline gap-2">
-        <span
-          class="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate flex items-center gap-1.5"
-        >
+        <span class="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate flex items-center gap-1.5">
           {displayName}
           {#if chat.isPinned}
             <Icon name="bolt" class="w-3 h-3 text-indigo-500 rotate-45" />
           {/if}
         </span>
         {#if chat.lastMessage?.sentAt}
-          <span class="text-[10px] text-slate-500 shrink-0"
-            >{formatListTime(chat.lastMessage.sentAt)}</span
-          >
+          <span class="text-[10px] text-slate-500 shrink-0">{formatListTime(chat.lastMessage.sentAt)}</span>
         {/if}
       </div>
 
       {#if isPending}
         <span class="text-xs text-amber-500 italic truncate mt-0.5">
-          {chat.createdBy === authStore.user?.id
-            ? "Request sent"
-            : "Incoming request"}
+          {chat.createdBy === authStore.user?.id ? "Request sent" : "Incoming request"}
         </span>
       {:else if isTyping}
         <div class="flex items-center gap-2 mt-0.5">
           <TypingIndicator />
-          <span
-            class="text-[10px] text-indigo-500 font-bold uppercase tracking-wider animate-pulse"
-            >Typing</span
-          >
+          <span class="text-[10px] text-indigo-500 font-bold uppercase tracking-wider animate-pulse">Typing</span>
         </div>
       {:else if chat.lastMessage?.contentBody}
         <span
           class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5 leading-tight flex items-baseline gap-1"
         >
           {#if chat.lastMessage.senderId === authStore.user?.id}
-            <span
-              class="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase shrink-0"
-              >You:</span
-            >
+            <span class="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase shrink-0">You:</span>
           {/if}
           <span class="truncate">
             {chat.lastMessage.contentBody || ""}
           </span>
         </span>
       {:else}
-        <span class="text-xs text-slate-500 truncate mt-0.5"
-          >No messages yet</span
-        >
+        <span class="text-xs text-slate-500 truncate mt-0.5">No messages yet</span>
       {/if}
     </div>
 
@@ -173,8 +149,7 @@ import { presenceStore } from "$state/chat/presence.svelte";
         disabled={!!processingState}
       >
         {#if processingState === "accepting"}
-          <span
-            class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"
+          <span class="w-3.5 h-3.5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"
           ></span>
         {:else}
           <Icon name="check" class="w-4 h-4" stroke-width="2.5" />
@@ -187,9 +162,7 @@ import { presenceStore } from "$state/chat/presence.svelte";
         disabled={!!processingState}
       >
         {#if processingState === "rejecting"}
-          <span
-            class="w-3.5 h-3.5 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin"
-          ></span>
+          <span class="w-3.5 h-3.5 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin"></span>
         {:else}
           <Icon name="close" class="w-4 h-4" stroke-width="2.5" />
         {/if}

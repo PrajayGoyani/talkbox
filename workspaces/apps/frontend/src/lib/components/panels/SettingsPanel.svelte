@@ -24,9 +24,7 @@
 
 <div class="h-full flex flex-col">
   <div class="panel-header">
-    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
-      Settings
-    </h2>
+    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Settings</h2>
   </div>
 
   <div class="p-4 flex flex-col gap-3 overflow-y-auto">
@@ -35,12 +33,8 @@
       class="flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
     >
       <div class="flex flex-col gap-0.5">
-        <span class="text-sm font-semibold text-slate-900 dark:text-slate-100"
-          >Theme</span
-        >
-        <span class="text-xs text-slate-500"
-          >Switch between dark and light mode</span
-        >
+        <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Theme</span>
+        <span class="text-xs text-slate-500">Switch between dark and light mode</span>
       </div>
       <button
         type="button"
@@ -73,12 +67,8 @@
       class="flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
     >
       <div class="flex flex-col gap-0.5">
-        <span class="text-sm font-semibold text-slate-900 dark:text-slate-100"
-          >Notification Sound</span
-        >
-        <span class="text-xs text-slate-500"
-          >Play a sound for incoming messages</span
-        >
+        <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Notification Sound</span>
+        <span class="text-xs text-slate-500">Play a sound for incoming messages</span>
       </div>
       <button
         type="button"
@@ -124,18 +114,14 @@
     </div> -->
 
     <!-- Mobile-only User section and Logout -->
-    <div
-      class="flex flex-col gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-white/10 md:hidden"
-    >
+    <div class="flex flex-col gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-white/10 md:hidden">
       <div class="px-1 flex items-center gap-3">
         <Avatar
           {user}
           class="w-12 h-12 bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 border-2 border-white dark:border-slate-800"
         />
         <div class="flex flex-col">
-          <span class="text-base font-bold text-slate-900 dark:text-slate-100"
-            >{user?.name || user?.username}</span
-          >
+          <span class="text-base font-bold text-slate-900 dark:text-slate-100">{user?.name || user?.username}</span>
           <span class="text-xs text-slate-500">@{user?.username}</span>
         </div>
       </div>

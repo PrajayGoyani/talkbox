@@ -1,10 +1,13 @@
 <!-- Generated: 2026-05-08 | Files scanned: ~160 | Token estimate: ~900 -->
+
 # Project Architecture
 
 ## System Overview
+
 Real-time chat application with a Svelte frontend and a Bun-based Express backend. Uses Socket.io for bi-directional communication, MongoDB for persistent storage, and Redis for distributed state, pub/sub, and caching.
 
 ## Components
+
 - **Frontend (Svelte 5)**: Client-side application using runes for state management and a custom hash router. Built with Vite Plus.
 - **Backend (Bun/Express)**: REST API and WebSocket server handling authentication, chat orchestration, and notifications.
 - **Shared (./shared)**: Shared types, Zod schemas, and utility functions used by both frontend and backend.
@@ -15,6 +18,7 @@ Real-time chat application with a Svelte frontend and a Bun-based Express backen
 - **Jobs (Agenda)**: Background task processing for data retention, email delivery, and account maintenance.
 
 ## Service Boundaries
+
 - **AuthService**: Handles registration, login, JWT management, and account upgrades (Pro).
 - **ChatService (Facade)**: High-level entry point delegating to specialized services:
   - `ChatActionService`: Orchestrates chat requests, accepts, rejects, and deletions.
@@ -30,10 +34,9 @@ Real-time chat application with a Svelte frontend and a Bun-based Express backen
 - **PolicyService**: Centralized business logic for plan-based restrictions (e.g., message limits).
 
 ## Data Flow
+
 1. **Request**: HTTP REST (Auth, User, Chat History, Notifications).
 2. **Real-time**: Socket.io (Messages, Typing, Presence, Notifications, Reactions).
 3. **Synchronization**: Redis Pub/Sub for cross-instance communication (Presence, Cache Invalidation, Session Takeover).
 4. **Storage**: Mongoose (ODM) -> MongoDB.
 5. **Background**: Agenda triggers retention jobs, presence synchronization, and scheduled maintenance.
-
-

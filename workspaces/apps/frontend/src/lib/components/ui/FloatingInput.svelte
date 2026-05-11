@@ -33,17 +33,10 @@
       {autocomplete}
       bind:value
       placeholder=" "
-      class={[
-        "input-field peer",
-        { "border-rose-500! ring-rose-500/10!": error },
-        { "pr-12": renderRight },
-      ]}
+      class={["input-field peer", { "border-rose-500! ring-rose-500/10!": error }, { "pr-12": renderRight }]}
       {...rest}
     />
-    <label
-      for={id}
-      class="floating-label peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400"
-    >
+    <label for={id} class="floating-label peer-focus:text-indigo-600 dark:peer-focus:text-indigo-400">
       {label}
     </label>
 
@@ -55,8 +48,6 @@
   </div>
 
   {#if error}
-    <span class="text-rose-500 text-xs mt-1 ml-1 animate-in fade-in duration-300"
-      >{error}</span
-    >
+    <span class="text-rose-500 text-xs mt-1 ml-1 animate-in fade-in duration-300">{error}</span>
   {/if}
 </div>

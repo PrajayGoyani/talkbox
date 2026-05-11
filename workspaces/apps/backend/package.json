@@ -9,8 +9,6 @@
   "scripts": {
     "build": "tsgo",
     "dev": "bun --watch --inspect=localhost:9230/talkbox --preload ./src/instrument.ts server.ts",
-    "fmt": "vp fmt",
-    "fmt:check": "vp fmt --check",
     "start": "bun --preload ./dist/src/instrument.js dist/server.js",
     "test": "vp test"
   },
@@ -20,8 +18,8 @@
     "@socket.io/redis-adapter": "^8.3.0",
     "@socket.io/redis-emitter": "^5.1.0",
     "agenda": "^6.2.4",
-    "bcrypt": "^5.1.1",
-    "cloudinary": "^1.41.3",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "express": "^5.2.1",
@@ -42,6 +40,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/bcryptjs": "^3.0.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",

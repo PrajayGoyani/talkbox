@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { emailService } from "../email.service";
-import nodemailer from "nodemailer";
 import { APP_NAME, EMAIL_FROM, FRONTEND_URL } from "@config/env";
+import nodemailer from "nodemailer";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+import { emailService } from "../email.service";
 
 vi.mock("nodemailer", () => ({
   default: {
@@ -19,7 +20,7 @@ describe("EmailService", () => {
     (nodemailer.createTransport as any).mockReturnValue({
       sendMail: mockSendMail,
     });
-    
+
     // Re-initialize or reset the service state if needed
     // Since emailService is a singleton, we might need to manually set transporter if it wasn't configured
     if (!emailService.isConfigured) {
@@ -32,7 +33,7 @@ describe("EmailService", () => {
   it("should send a verification email with the correct link", async () => {
     const to = "test@example.com";
     const token = "verify-token";
-    
+
     await emailService.sendVerificationEmail(to, token);
 
     expect(mockSendMail).toHaveBeenCalledWith(
@@ -41,14 +42,14 @@ describe("EmailService", () => {
         to,
         subject: expect.stringContaining("Verify"),
         html: expect.stringContaining(`${FRONTEND_URL}/#/verify-email?token=${token}`),
-      })
+      }),
     );
   });
 
   it("should send a password reset email with the correct link", async () => {
     const to = "test@example.com";
     const token = "reset-token";
-    
+
     await emailService.sendResetEmail(to, token);
 
     expect(mockSendMail).toHaveBeenCalledWith(
@@ -57,7 +58,7 @@ describe("EmailService", () => {
         to,
         subject: expect.stringContaining("Reset"),
         html: expect.stringContaining(`${FRONTEND_URL}/#/reset-password?token=${token}`),
-      })
+      }),
     );
   });
 
@@ -67,9 +68,6 @@ describe("EmailService", () => {
 
     await emailService.sendResetEmail("test@example.com", "token");
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Failed to send reset email"),
-      expect.any(Error)
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Failed to send reset email"), expect.any(Error));
   });
 });

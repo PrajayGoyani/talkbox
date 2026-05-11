@@ -85,12 +85,8 @@
     class="fixed top-0 right-0 w-[400px] max-w-[90vw] h-full bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-white/5 z-999 flex flex-col shadow-2xl"
     transition:fly={{ x: 400, duration: 400, easing: quintOut }}
   >
-    <div
-      class="p-5 border-b border-slate-200 dark:border-white/5 flex items-center justify-between shrink-0"
-    >
-      <h2 class="text-lg font-bold text-slate-900 dark:text-white">
-        Notifications
-      </h2>
+    <div class="p-5 border-b border-slate-200 dark:border-white/5 flex items-center justify-between shrink-0">
+      <h2 class="text-lg font-bold text-slate-900 dark:text-white">Notifications</h2>
       <div class="flex items-center gap-2">
         {#if notificationStore.unreadCount > 0}
           <button
@@ -113,9 +109,7 @@
 
     <div class="flex-1 overflow-y-auto py-2">
       {#if notificationStore.notifications.length === 0 && !notificationStore.loading}
-        <div
-          class="flex flex-col items-center gap-3 p-12 text-slate-500 text-center"
-        >
+        <div class="flex flex-col items-center gap-3 p-12 text-slate-500 text-center">
           <Icon name="notifications" class="w-12 h-12 opacity-20" />
           <p class="text-sm">No notifications yet</p>
         </div>
@@ -132,34 +126,23 @@
             <div
               class="w-10 h-10 rounded-xl bg-slate-200 dark:bg-white/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300"
             >
-              <Icon
-                name={getIcon(notification.type) as any}
-                class="w-5 h-5 text-indigo-400"
-              />
+              <Icon name={getIcon(notification.type) as any} class="w-5 h-5 text-indigo-400" />
             </div>
             <div class="flex flex-col flex-1 min-w-0 gap-0.5">
-              <span
-                class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
                 >{getLabel(notification.type)}</span
               >
               <span
                 class="text-sm text-slate-700 dark:text-slate-200 leading-snug wrap-break-word group-hover:text-slate-900 dark:group-hover:text-white transition-colors"
                 >{notification.message}</span
               >
-              <span class="text-[10px] text-slate-500 mt-0.5"
-                >{formatTimeAgo(notification.createdAt)}</span
-              >
+              <span class="text-[10px] text-slate-500 mt-0.5">{formatTimeAgo(notification.createdAt)}</span>
             </div>
             <div class="flex items-start shrink-0 pt-1">
               {#if !notification.isRead}
-                <span
-                  class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"
-                ></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></span>
               {:else}
-                <span
-                  class="text-[10px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >✓</span
-                >
+                <span class="text-[10px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">✓</span>
               {/if}
             </div>
           </button>

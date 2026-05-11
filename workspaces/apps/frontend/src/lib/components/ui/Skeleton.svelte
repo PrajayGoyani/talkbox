@@ -1,19 +1,9 @@
 <script lang="ts">
   import { cn } from "$utils/cn";
-  let {
-    width = "100%",
-    height = "1rem",
-    rounded = "0.5rem",
-    class: className = "",
-  } = $props();
+  let { width = "100%", height = "1rem", rounded = "0.5rem", class: className = "" } = $props();
 </script>
 
-<div
-  class={cn("skeleton", className)}
-  style:width
-  style:height
-  style:border-radius={rounded}
-></div>
+<div class={cn("skeleton", className)} style:width style:height style:border-radius={rounded}></div>
 
 <style>
   .skeleton {

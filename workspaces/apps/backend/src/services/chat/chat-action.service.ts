@@ -67,7 +67,7 @@ export class ChatActionService implements IChatActionService {
 
     // Invalidate partner cache for the target user so their socket re-syncs to watch the requester
     await redisSessionService.publishCacheInvalidation("partner", targetId.toString());
-    
+
     // Emit event for side-effects (notifications, etc)
     eventBus.emit(CHAT_EVENTS.REQUESTED, {
       chat,
@@ -104,7 +104,7 @@ export class ChatActionService implements IChatActionService {
     if (!updatedChat) throw AppError.notFound("Chat");
 
     const acceptor = await this.userRepository.findById(userId);
-    
+
     // Invalidate partner cache for both participants globally
     await Promise.all(
       updatedChat.participants.map((p: any) => redisSessionService.publishCacheInvalidation("partner", p.toString())),

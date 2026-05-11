@@ -1,9 +1,11 @@
 import type { Chat } from "$lib/types/chat";
+
 import { chatService } from "$services/chat.service";
 import { notificationService } from "$services/notification.service";
 import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
-import { authStore } from "$state/auth.svelte";
 import { messageStore } from "$state/active-chat.svelte";
+import { authStore } from "$state/auth.svelte";
+
 import { chatRequestsStore } from "./chat-requests.svelte";
 import { pinnedChatsStore } from "./pinned-chats.svelte";
 
@@ -25,8 +27,12 @@ export class ChatListStore {
   private listenerCleanups: Array<() => void> = [];
 
   // Facade helpers for UI components still using chatListStore
-  get requests() { return chatRequestsStore.items; }
-  get pendingRequestCount() { return chatRequestsStore.items.length; }
+  get requests() {
+    return chatRequestsStore.items;
+  }
+  get pendingRequestCount() {
+    return chatRequestsStore.items.length;
+  }
 
   constructor() {
     // Sync pinned status when auth changes
@@ -140,11 +146,11 @@ export class ChatListStore {
     const chat = this.chatsMap.get(data.chatId);
     // Only update preview if it was the last message
     if (chat?.lastMessage && chat.lastMessage.sentAt) {
-       // Note: In a real app we'd check if this messageId matches lastMessage.id
-       // For now, if it's updated and we want to reflect it in the list:
-       this.patchChatLocally(data.chatId, {
-         lastMessage: { ...chat.lastMessage, contentBody: data.contentBody }
-       });
+      // Note: In a real app we'd check if this messageId matches lastMessage.id
+      // For now, if it's updated and we want to reflect it in the list:
+      this.patchChatLocally(data.chatId, {
+        lastMessage: { ...chat.lastMessage, contentBody: data.contentBody },
+      });
     }
   }
 
@@ -190,7 +196,7 @@ export class ChatListStore {
 
       // Populate reactive map and user map
       this.userIdToChatIds.clear();
-      this.chats.forEach(c => {
+      this.chats.forEach((c) => {
         this.chatsMap.set(c.id, c);
         this.updateUserIdMap(c);
       });
@@ -215,7 +221,7 @@ export class ChatListStore {
         this.currentSearchQuery,
         20,
         this.chatCursor,
-        this.chatsAbortController?.signal
+        this.chatsAbortController?.signal,
       );
 
       const newChats = result.data.map((chat: any) => ({
@@ -226,7 +232,7 @@ export class ChatListStore {
 
       const oldLength = this.chats.length;
       this.chats = [...this.chats, ...newChats];
-      
+
       // Update map with new proxied items using O(1) indexed lookup
       newChats.forEach((_, i) => {
         const proxied = this.chats[oldLength + i];
@@ -244,8 +250,12 @@ export class ChatListStore {
   }
 
   // Delegated Actions
-  async fetchRequests() { return chatRequestsStore.loadInitial(); }
-  async loadMoreRequests() { return chatRequestsStore.loadMore(); }
+  async fetchRequests() {
+    return chatRequestsStore.loadInitial();
+  }
+  async loadMoreRequests() {
+    return chatRequestsStore.loadMore();
+  }
 
   toggleChatPin(chatId: string) {
     pinnedChatsStore.toggle(chatId);
@@ -300,7 +310,7 @@ export class ChatListStore {
         }
       }
     }
-    this.chats = this.chats.filter(c => c.id !== chatId);
+    this.chats = this.chats.filter((c) => c.id !== chatId);
     this.chatsMap.delete(chatId);
   }
 

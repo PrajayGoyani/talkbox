@@ -29,7 +29,7 @@ export class PinnedChatsStore {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          parsed.forEach(id => this.ids.add(id));
+          parsed.forEach((id) => this.ids.add(id));
         }
       } catch (e) {
         console.error("[PinnedChats] Failed to parse saved pins", e);

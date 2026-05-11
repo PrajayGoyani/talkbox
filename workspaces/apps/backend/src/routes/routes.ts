@@ -1,8 +1,8 @@
 import authRoutes from "@routes/auth.routes";
 import chatRoutes from "@routes/chat.routes";
 import notificationRoutes from "@routes/notification.routes";
-import userRoutes from "@routes/user.routes";
 import publicRoutes from "@routes/public.routes";
+import userRoutes from "@routes/user.routes";
 
 import { app } from "@/app";
 

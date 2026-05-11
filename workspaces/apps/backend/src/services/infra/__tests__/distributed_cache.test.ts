@@ -3,24 +3,28 @@ import { partnerRepository } from "@repositories/partner.repository";
 import { userRepository } from "@repositories/user.repository";
 import { chatActionService } from "@services/chat/chat-action.service";
 import { messageService } from "@services/chat/message.service";
-import { redisSessionService, redisPresenceService, redisGuardService, baseService } from "@services/infra/redis.service";
+import { redisSessionService } from "@services/infra/redis.service";
 import { ObjectId } from "mongodb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@services/infra/redis.service", () => ({
-  redisService:  {
+  redisService: {
     publishCacheInvalidation: vi.fn().mockResolvedValue(null),
     isConnected: true,
-  }, redisPresenceService:  {
+  },
+  redisPresenceService: {
     publishCacheInvalidation: vi.fn().mockResolvedValue(null),
     isConnected: true,
-  }, redisSessionService:  {
+  },
+  redisSessionService: {
     publishCacheInvalidation: vi.fn().mockResolvedValue(null),
     isConnected: true,
-  }, redisGuardService:  {
+  },
+  redisGuardService: {
     publishCacheInvalidation: vi.fn().mockResolvedValue(null),
     isConnected: true,
-  }, baseService:  {
+  },
+  baseService: {
     publishCacheInvalidation: vi.fn().mockResolvedValue(null),
     isConnected: true,
   },
@@ -89,9 +93,18 @@ describe("Distributed Cache Invalidation", () => {
 
       await chatActionService.deleteChat(mockChatId, mockUserId);
 
-      expect(vi.mocked(redisSessionService).publishCacheInvalidation).toHaveBeenCalledWith("partner", mockUserId.toString());
-      expect(vi.mocked(redisSessionService).publishCacheInvalidation).toHaveBeenCalledWith("partner", mockTargetId.toString());
-      expect(vi.mocked(redisSessionService).publishCacheInvalidation).toHaveBeenCalledWith("chat", mockChatId.toString());
+      expect(vi.mocked(redisSessionService).publishCacheInvalidation).toHaveBeenCalledWith(
+        "partner",
+        mockUserId.toString(),
+      );
+      expect(vi.mocked(redisSessionService).publishCacheInvalidation).toHaveBeenCalledWith(
+        "partner",
+        mockTargetId.toString(),
+      );
+      expect(vi.mocked(redisSessionService).publishCacheInvalidation).toHaveBeenCalledWith(
+        "chat",
+        mockChatId.toString(),
+      );
     });
   });
 

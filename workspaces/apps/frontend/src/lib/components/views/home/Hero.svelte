@@ -20,9 +20,7 @@
     Experience real-time messaging with a premium interface.
   </p>
 
-  <div
-    class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20"
-  >
+  <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
     {#if authStore.user}
       <button
         onclick={() => routerStore.navigate(dashboardLink)}

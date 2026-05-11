@@ -1,8 +1,4 @@
-export type NotificationType =
-  | "chat_request"
-  | "request_accepted"
-  | "request_rejected"
-  | "new_message";
+export type NotificationType = "chat_request" | "request_accepted" | "request_rejected" | "new_message";
 
 /**
  * Notification Data Transfer Object.

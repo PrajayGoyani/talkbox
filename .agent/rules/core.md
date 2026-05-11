@@ -11,18 +11,21 @@
 ## **🛠 Tech Stack Standards**
 
 ### **Toolchain: Vite Plus (vp)**
+
 - **Testing:** `vp test` (Vitest)
 - **Formatting:** `vp fmt`
 - **Linting:** `bun run check`
 - **Dev Server:** `vp dev`
 
 ### **Frontend (./frontend)**
+
 - **Framework:** Svelte 5 (MANDATORY: Use Runes $state, $derived, $props, $effect).
 - **Logic:** Keep business logic in .svelte.ts files; components should be for presentation.
 - **Styling:** Tailwind CSS (utility-first, responsive, accessible).
 - **State:** Use Svelte's native reactivity over external state libraries.
 
 ### **Backend (./backend)**
+
 - **Runtime:** Bun (MANDATORY: Use `bun` for script execution and package management).
 - **Architecture:** Controller-Service-Repository pattern.
 - **Communication:** One-to-one messaging via WebSockets (Socket.io or native).

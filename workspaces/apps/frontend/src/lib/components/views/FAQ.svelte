@@ -28,11 +28,8 @@
           <Icon name="chevron-down" class="w-5 h-5" />
         </span>
       </summary>
-      <div
-        class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400"
-      >
-        Talkbox is a fast, secure messaging app that keeps conversations in sync
-        across your devices.
+      <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+        Talkbox is a fast, secure messaging app that keeps conversations in sync across your devices.
       </div>
     </details>
 
@@ -47,12 +44,9 @@
           <Icon name="chevron-down" class="w-5 h-5" />
         </span>
       </summary>
-      <div
-        class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400"
-      >
-        Talkbox offers a generous Free tier that includes all core messaging
-        features. To unlock unlimited message history, higher session limits,
-        and priority support, you can upgrade to <strong>Talkbox Pro</strong>.
+      <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+        Talkbox offers a generous Free tier that includes all core messaging features. To unlock unlimited message
+        history, higher session limits, and priority support, you can upgrade to <strong>Talkbox Pro</strong>.
       </div>
     </details>
 
@@ -67,12 +61,9 @@
           <Icon name="chevron-down" class="w-5 h-5" />
         </span>
       </summary>
-      <div
-        class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400"
-      >
-        On the Free plan, message content older than 7 days is automatically
-        masked to save space and maintain platform performance. You can unlock
-        your entire chat history at any time by upgrading to a Pro subscription.
+      <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+        On the Free plan, message content older than 7 days is automatically masked to save space and maintain platform
+        performance. You can unlock your entire chat history at any time by upgrading to a Pro subscription.
       </div>
     </details>
 
@@ -87,12 +78,9 @@
           <Icon name="chevron-down" class="w-5 h-5" />
         </span>
       </summary>
-      <div
-        class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400"
-      >
-        Free accounts are limited to one active session at a time. If you log in
-        on a new device, your previous session will be closed. Pro users can
-        maintain up to 10 active sessions simultaneously.
+      <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+        Free accounts are limited to one active session at a time. If you log in on a new device, your previous session
+        will be closed. Pro users can maintain up to 10 active sessions simultaneously.
       </div>
     </details>
 
@@ -107,12 +95,9 @@
           <Icon name="chevron-down" class="w-5 h-5" />
         </span>
       </summary>
-      <div
-        class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400"
-      >
-        No. For your privacy, when you delete a message or a chat, it is
-        permanently removed from our servers and cannot be recovered by you or
-        the Talkbox team.
+      <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+        No. For your privacy, when you delete a message or a chat, it is permanently removed from our servers and cannot
+        be recovered by you or the Talkbox team.
       </div>
     </details>
 
@@ -127,11 +112,9 @@
           <Icon name="chevron-down" class="w-5 h-5" />
         </span>
       </summary>
-      <div
-        class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400"
-      >
-        Absolutely. Talkbox is a progressive web app that works beautifully on
-        mobile browsers. Your messages sync instantly across all devices.
+      <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+        Absolutely. Talkbox is a progressive web app that works beautifully on mobile browsers. Your messages sync
+        instantly across all devices.
       </div>
     </details>
 
@@ -146,12 +129,9 @@
           <Icon name="chevron-down" class="w-5 h-5" />
         </span>
       </summary>
-      <div
-        class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400"
-      >
-        We prioritize your security. All communications are encrypted over
-        HTTPS, and we use industry-standard practices to protect your data. We
-        never sell your personal information.
+      <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+        We prioritize your security. All communications are encrypted over HTTPS, and we use industry-standard practices
+        to protect your data. We never sell your personal information.
       </div>
     </details>
   </div>

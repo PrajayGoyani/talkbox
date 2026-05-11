@@ -52,12 +52,10 @@
       const leftEdge = initialLeft - contentWidth / 2;
       const rightEdge = initialLeft + contentWidth / 2;
       if (leftEdge < margin) offset = margin - leftEdge;
-      else if (rightEdge > screenWidth - margin)
-        offset = screenWidth - margin - rightEdge;
+      else if (rightEdge > screenWidth - margin) offset = screenWidth - margin - rightEdge;
     } else if (align === "start") {
       const rightEdge = initialLeft + contentWidth;
-      if (rightEdge > screenWidth - margin)
-        offset = screenWidth - margin - rightEdge;
+      if (rightEdge > screenWidth - margin) offset = screenWidth - margin - rightEdge;
     } else if (align === "end") {
       const leftEdge = initialLeft - contentWidth;
       if (leftEdge < margin) offset = margin - leftEdge;
@@ -77,12 +75,7 @@
     }
 
     // 2. Determine initial horizontal anchor
-    const initialLeft =
-      align === "center"
-        ? rect.left + rect.width / 2
-        : align === "start"
-          ? rect.left
-          : rect.right;
+    const initialLeft = align === "center" ? rect.left + rect.width / 2 : align === "start" ? rect.left : rect.right;
 
     // 3. Calculate horizontal offset to prevent screen overflow
     const hOffset = calculateHorizontalOffset(rect, initialLeft);
@@ -92,10 +85,7 @@
     const nextLeft = initialLeft + hOffset;
 
     // Jitter protection
-    if (
-      Math.abs(coords.top - nextTop) > 0.5 ||
-      Math.abs(coords.left - nextLeft) > 0.5
-    ) {
+    if (Math.abs(coords.top - nextTop) > 0.5 || Math.abs(coords.left - nextLeft) > 0.5) {
       coords = { top: nextTop, left: nextLeft };
     }
   };
@@ -164,17 +154,12 @@
       class="fixed z-9999 animate-in fade-in duration-200 transition-opacity"
       style:top="{coords.top}px"
       style:left="{coords.left}px"
-      style:transform="translate({align === 'center'
-        ? '-50%'
-        : align === 'start'
-          ? '0'
-          : '-100%'}, {effectivePosition === 'top'
+      style:transform="translate({align === 'center' ? '-50%' : align === 'start' ? '0' : '-100%'}, {effectivePosition ===
+      'top'
         ? 'calc(-100% - 12px)'
         : '12px'})"
     >
-      <div
-        class="glass-panel overflow-hidden rounded-2xl border border-slate-200/50 shadow-2xl dark:border-white/10"
-      >
+      <div class="glass-panel overflow-hidden rounded-2xl border border-slate-200/50 shadow-2xl dark:border-white/10">
         {@render children()}
       </div>
     </div>

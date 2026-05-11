@@ -36,7 +36,12 @@ vi.mock("ioredis", () => ({
   default: vi.fn(() => mockRedisInstance),
 }));
 
-import { baseService, redisGuardService, redisPresenceService, redisSessionService } from "@services/infra/redis.service";
+import {
+  baseService,
+  redisGuardService,
+  redisPresenceService,
+  redisSessionService,
+} from "@services/infra/redis.service";
 
 describe("RedisService (Expanded)", () => {
   beforeEach(() => {

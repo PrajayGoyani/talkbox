@@ -22,8 +22,7 @@
     if (!password) {
       errors.password = "Password is required";
     } else if (password !== password.trim()) {
-      errors.password =
-        "Leading or trailing spaces are not allowed in password";
+      errors.password = "Leading or trailing spaces are not allowed in password";
     }
 
     if (Object.keys(errors).length > 0) return;
@@ -45,15 +44,11 @@
       <img src="/favicon.png" alt="Talkbox Logo" class="w-16 h-16 rounded-2xl shadow-lg ring-4 ring-indigo-600/10" />
       <h1 class="auth-title mt-2">Welcome to Talkbox</h1>
     </div> -->
-    <p class="text-slate-500 dark:text-slate-400 text-[15px]">
-      Sign in to continue your conversations
-    </p>
+    <p class="text-slate-500 dark:text-slate-400 text-[15px]">Sign in to continue your conversations</p>
   </div>
 
   {#if authStore.error}
-    <div
-      class="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3 rounded-xl text-sm text-center"
-    >
+    <div class="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3 rounded-xl text-sm text-center">
       {authStore.error}
     </div>
   {/if}
@@ -105,9 +100,7 @@
 
     <button type="submit" class="btn-primary mt-2" disabled={authStore.loading}>
       {#if authStore.loading}
-        <span
-          class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
-        ></span>
+        <span class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
       {:else}
         Sign In
       {/if}

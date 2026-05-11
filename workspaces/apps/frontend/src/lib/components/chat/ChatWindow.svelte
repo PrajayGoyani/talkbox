@@ -1,6 +1,6 @@
 <script lang="ts">
-import { presenceStore } from "$state/chat/presence.svelte";
-import { socketManager } from "$services/socket.manager.svelte";
+  import { presenceStore } from "$state/chat/presence.svelte";
+  import { socketManager } from "$services/socket.manager.svelte";
 
   import ChatHeader from "$components/chat/ChatHeader.svelte";
   import ChatInput from "$components/chat/ChatInput.svelte";
@@ -32,9 +32,7 @@ import { socketManager } from "$services/socket.manager.svelte";
   let showMessageActionsId = $state<string | null>(null);
   let messageList: any = $state();
 
-  const partnerStatus = $derived(
-    presenceStore.onlineStatus.get(otherUser?.id || ""),
-  );
+  const partnerStatus = $derived(presenceStore.onlineStatus.get(otherUser?.id || ""));
   const chatTypingUsers = $derived(presenceStore.typingStatus.get(chatId));
 
   const handleEditInput = (e: Event) => {
@@ -107,8 +105,7 @@ import { socketManager } from "$services/socket.manager.svelte";
     </div>
     <h2 class="text-xl font-bold mb-2">Request Pending</h2>
     <p class="text-slate-500 max-w-xs">
-      You need to wait for {otherUser?.name || otherUser?.username} to accept your
-      chat request.
+      You need to wait for {otherUser?.name || otherUser?.username} to accept your chat request.
     </p>
   </div>
 {:else}
@@ -139,12 +136,7 @@ import { socketManager } from "$services/socket.manager.svelte";
     {/if}
   {/if}
 
-  <ChatInput
-    {chatId}
-    {otherUser}
-    {isTouchDevice}
-    onSend={() => messageList?.scrollToBottom()}
-  />
+  <ChatInput {chatId} {otherUser} {isTouchDevice} onSend={() => messageList?.scrollToBottom()} />
 {/if}
 
 <style>

@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import crypto from "crypto";
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
-import crypto from "crypto";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies before importing the module under test
 vi.mock("@config/env", () => ({
@@ -67,7 +67,7 @@ const mockUser = {
   plan: "free" as const,
   subscriptionExpiresAt: null,
   isEmailVerified: false,
-  toObject: function() {
+  toObject: function () {
     return {
       _id: this._id,
       username: this.username,
@@ -94,8 +94,13 @@ const mockUserModel: any = {
 // Create AuthService with mock repository
 import { UserRepository } from "@repositories/user.repository";
 import { AuthService } from "@services/auth/auth.service";
+import {
+  redisSessionService,
+  redisPresenceService,
+  redisGuardService,
+  baseService,
+} from "@services/infra/redis.service";
 import { AUTH_EVENTS, eventBus } from "@utils/event-bus";
-import { redisSessionService, redisPresenceService, redisGuardService, baseService } from "@services/infra/redis.service";
 import { verifyRefreshToken } from "@utils/jwt";
 
 const mockUserRepository = new UserRepository(mockUserModel);
@@ -126,17 +131,24 @@ describe("AuthService - Complete Suite", () => {
       expect(result.user.email).toBe("test@example.com");
       expect(result.accessToken).toBe("test-access");
       // Verification email is fired asynchronously
-      expect(redisSessionService.storeToken).toHaveBeenCalledWith("verify", expect.any(String), mockUser._id.toString(), expect.any(Number));
+      expect(redisSessionService.storeToken).toHaveBeenCalledWith(
+        "verify",
+        expect.any(String),
+        mockUser._id.toString(),
+        expect.any(Number),
+      );
     });
 
     it("should throw error if user already exists", async () => {
       mockUserModel.exists.mockResolvedValue({ _id: "exists" });
 
-      await expect(authService.signup({
-        username: "testuser",
-        email: "test@example.com",
-        password: "password123",
-      })).rejects.toThrow("User already exists");
+      await expect(
+        authService.signup({
+          username: "testuser",
+          email: "test@example.com",
+          password: "password123",
+        }),
+      ).rejects.toThrow("User already exists");
     });
   });
 
@@ -162,10 +174,12 @@ describe("AuthService - Complete Suite", () => {
     it("should throw for invalid credentials", async () => {
       mockUserModel.findByEmailOrUsername.mockResolvedValue(null);
 
-      await expect(authService.login({
-        username: "nonexistent",
-        password: "password123",
-      })).rejects.toThrow("Invalid credentials");
+      await expect(
+        authService.login({
+          username: "nonexistent",
+          password: "password123",
+        }),
+      ).rejects.toThrow("Invalid credentials");
     });
   });
 
@@ -192,7 +206,12 @@ describe("AuthService - Complete Suite", () => {
       await authService.forgotPassword("test@example.com");
 
       expect(mockUserModel.findOne).toHaveBeenCalledWith({ email: "test@example.com" });
-      expect(redisSessionService.storeToken).toHaveBeenCalledWith("reset", expect.any(String), mockUser._id.toString(), expect.any(Number));
+      expect(redisSessionService.storeToken).toHaveBeenCalledWith(
+        "reset",
+        expect.any(String),
+        mockUser._id.toString(),
+        expect.any(Number),
+      );
       expect(eventBus.emit).toHaveBeenCalledWith(AUTH_EVENTS.PASSWORD_RESET_REQUESTED, {
         email: "test@example.com",
         token: expect.any(String),
@@ -243,7 +262,12 @@ describe("AuthService - Complete Suite", () => {
 
       await authService.resendVerificationEmail(mockUser._id.toString());
 
-      expect(redisSessionService.storeToken).toHaveBeenCalledWith("verify", expect.any(String), mockUser._id.toString(), expect.any(Number));
+      expect(redisSessionService.storeToken).toHaveBeenCalledWith(
+        "verify",
+        expect.any(String),
+        mockUser._id.toString(),
+        expect.any(Number),
+      );
       expect(eventBus.emit).toHaveBeenCalledWith(AUTH_EVENTS.VERIFICATION_REQUIRED, {
         email: "test@example.com",
         token: expect.any(String),
@@ -261,10 +285,13 @@ describe("AuthService - Complete Suite", () => {
 
       expect(mockUser.plan).toBe("pro");
       expect(mockUser.save).toHaveBeenCalled();
-      expect(eventBus.emit).toHaveBeenCalledWith(AUTH_EVENTS.UPGRADED, expect.objectContaining({
-        userId: mockUser._id.toString(),
-        newPlan: "pro",
-      }));
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        AUTH_EVENTS.UPGRADED,
+        expect.objectContaining({
+          userId: mockUser._id.toString(),
+          newPlan: "pro",
+        }),
+      );
       expect(result.plan).toBe("pro");
     });
   });

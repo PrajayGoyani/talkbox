@@ -1,16 +1,21 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
-import { redisSessionService, redisPresenceService, redisGuardService, baseService } from "@services/infra/redis.service";
+import { CHAT_MESSAGES } from "@constants/messages";
+import { chatQueryRepository } from "@repositories/chat-query.repository";
+import { chatRepository } from "@repositories/chat.repository";
+import { partnerRepository } from "@repositories/partner.repository";
+import { userRepository } from "@repositories/user.repository";
+import { chatCacheService } from "@services/chat/chat-cache.service";
+import { messageService } from "@services/chat/message.service";
 import { socketService } from "@services/chat/socket.service";
+import {
+  redisSessionService,
+  redisPresenceService,
+  redisGuardService,
+  baseService,
+} from "@services/infra/redis.service";
 import { eventBus, USER_EVENTS } from "@utils/event-bus";
 import { ObjectId } from "mongodb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { chatRepository } from "@repositories/chat.repository";
-import { partnerRepository } from "@repositories/partner.repository";
-import { chatQueryRepository } from "@repositories/chat-query.repository";
-import { userRepository } from "@repositories/user.repository";
-import { messageService } from "@services/chat/message.service";
-import { chatCacheService } from "@services/chat/chat-cache.service";
-import { CHAT_MESSAGES } from "@constants/messages";
 
 // Mock dependencies
 vi.mock("@models/chat.model");

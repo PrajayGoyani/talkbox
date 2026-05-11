@@ -36,31 +36,23 @@
       </div>
       <h1 class="auth-title">Check your inbox</h1>
       <p class="text-slate-500 dark:text-slate-400 text-[15px] leading-relaxed">
-        If an account exists for <strong class="text-slate-700 dark:text-slate-200">{email}</strong>,
-        we've sent a password reset link. Please check your spam folder too.
+        If an account exists for <strong class="text-slate-700 dark:text-slate-200">{email}</strong>, we've sent a
+        password reset link. Please check your spam folder too.
       </p>
     </div>
 
-    <button
-      type="button"
-      class="btn-primary mt-2"
-      onclick={() => routerStore.navigate(Route.LOGIN)}
-    >
+    <button type="button" class="btn-primary mt-2" onclick={() => routerStore.navigate(Route.LOGIN)}>
       Back to Sign In
     </button>
   {:else}
     <!-- Form State -->
     <div class="text-center">
       <h1 class="auth-title">Forgot password?</h1>
-      <p class="text-slate-500 dark:text-slate-400 text-[15px]">
-        Enter your email and we'll send you a reset link
-      </p>
+      <p class="text-slate-500 dark:text-slate-400 text-[15px]">Enter your email and we'll send you a reset link</p>
     </div>
 
     {#if authStore.error}
-      <div
-        class="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3 rounded-xl text-sm text-center"
-      >
+      <div class="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3 rounded-xl text-sm text-center">
         {authStore.error}
       </div>
     {/if}
@@ -78,8 +70,7 @@
 
       <button type="submit" class="btn-primary mt-2" disabled={authStore.loading}>
         {#if authStore.loading}
-          <span class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
-          ></span>
+          <span class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
         {:else}
           Send Reset Link
         {/if}

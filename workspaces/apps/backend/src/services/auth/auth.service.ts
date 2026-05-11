@@ -89,7 +89,7 @@ export class AuthService {
 
     const token = crypto.randomBytes(32).toString("hex");
     await redisSessionService.storeToken("reset", token, user._id.toString(), RESET_TOKEN_TTL);
-    
+
     eventBus.emit(AUTH_EVENTS.PASSWORD_RESET_REQUESTED, { email, token });
   }
 
@@ -140,7 +140,7 @@ export class AuthService {
     try {
       const token = crypto.randomBytes(32).toString("hex");
       await redisSessionService.storeToken("verify", token, userId, VERIFY_TOKEN_TTL);
-      
+
       eventBus.emit(AUTH_EVENTS.VERIFICATION_REQUIRED, { email, token });
     } catch (err) {
       console.error("[AuthService] Failed to generate verification token:", err);

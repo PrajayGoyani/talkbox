@@ -14,18 +14,13 @@
     <div
       class="absolute -inset-8 bg-linear-to-tr from-indigo-500/20 via-sky-500/10 to-transparent blur-3xl rounded-full animate-pulse opacity-0 group-hover:opacity-100 transition-opacity duration-700"
     ></div>
-    <div
-      class="absolute -inset-4 bg-indigo-500/10 blur-2xl rounded-full animate-pulse"
-    ></div>
+    <div class="absolute -inset-4 bg-indigo-500/10 blur-2xl rounded-full animate-pulse"></div>
 
     <!-- Icon Container -->
     <div
       class="relative bg-white dark:bg-slate-800 p-8 rounded-4xl shadow-2xl border border-slate-200 dark:border-white/10 active:scale-95 transition-all duration-500 hover:scale-[102.5%]"
     >
-      <Icon
-        name="nav-chat"
-        class="w-16 h-16 text-indigo-600 dark:text-indigo-400 drop-shadow-lg"
-      />
+      <Icon name="nav-chat" class="w-16 h-16 text-indigo-600 dark:text-indigo-400 drop-shadow-lg" />
     </div>
   </div>
 
@@ -35,9 +30,7 @@
     Talkbox
   </h2>
 
-  <p
-    class="text-slate-500 dark:text-slate-400 mb-10 leading-relaxed text-base max-w-[400px]"
-  >
+  <p class="text-slate-500 dark:text-slate-400 mb-10 leading-relaxed text-base max-w-[400px]">
     Pick a conversation from sidebar or start a new one.
   </p>
 
@@ -51,10 +44,7 @@
       >
         <Icon name="add" class="w-6 h-6" />
       </div>
-      <span
-        class="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100"
-        >New Chat</span
-      >
+      <span class="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">New Chat</span>
     </button>
 
     <button
@@ -66,8 +56,7 @@
       >
         <Icon name="profile" class="w-6 h-6" />
       </div>
-      <span
-        class="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100"
+      <span class="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100"
         >Your Profile</span
       >
     </button>

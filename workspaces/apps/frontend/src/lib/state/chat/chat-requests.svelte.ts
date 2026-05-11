@@ -1,5 +1,6 @@
-import { chatService } from "$lib/services/chat.service";
 import type { ChatDto } from "$lib/types/chat";
+
+import { chatService } from "$lib/services/chat.service";
 import { authStore } from "$state/auth.svelte";
 
 export class ChatRequestsStore {
@@ -33,7 +34,7 @@ export class ChatRequestsStore {
       this.isLoading = false;
     }
   }
-// ... rest of the file
+  // ... rest of the file
 
   async loadMore() {
     if (!this.hasMore || this.isLoading) return;

@@ -26,15 +26,19 @@ vi.mock("@config/agenda", () => ({
 }));
 
 vi.mock("@services/infra/redis.service", () => ({
-  redisService:  {
+  redisService: {
     close: vi.fn(),
-  }, redisPresenceService:  {
+  },
+  redisPresenceService: {
     close: vi.fn(),
-  }, redisSessionService:  {
+  },
+  redisSessionService: {
     close: vi.fn(),
-  }, redisGuardService:  {
+  },
+  redisGuardService: {
     close: vi.fn(),
-  }, baseService:  {
+  },
+  baseService: {
     close: vi.fn(),
   },
 }));

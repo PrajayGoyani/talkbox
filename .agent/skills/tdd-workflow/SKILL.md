@@ -293,9 +293,7 @@ jest.mock("@/lib/supabase", () => ({
 
 ```typescript
 jest.mock("@/lib/redis", () => ({
-  searchMarketsByVector: jest.fn(() =>
-    Promise.resolve([{ slug: "test-market", similarity_score: 0.95 }]),
-  ),
+  searchMarketsByVector: jest.fn(() => Promise.resolve([{ slug: "test-market", similarity_score: 0.95 }])),
   checkRedisHealth: jest.fn(() => Promise.resolve({ connected: true })),
 }));
 ```

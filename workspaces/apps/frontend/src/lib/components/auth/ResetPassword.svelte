@@ -53,11 +53,7 @@
       </p>
     </div>
 
-    <button
-      type="button"
-      class="btn-primary mt-2"
-      onclick={() => routerStore.navigate(Route.LOGIN)}
-    >
+    <button type="button" class="btn-primary mt-2" onclick={() => routerStore.navigate(Route.LOGIN)}>
       Sign In Now
     </button>
   {:else}
@@ -76,9 +72,7 @@
     {/if}
 
     {#if authStore.error}
-      <div
-        class="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3 rounded-xl text-sm text-center"
-      >
+      <div class="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3 rounded-xl text-sm text-center">
         {authStore.error}
       </div>
     {/if}
@@ -121,8 +115,7 @@
 
       <button type="submit" class="btn-primary mt-2" disabled={authStore.loading || !token}>
         {#if authStore.loading}
-          <span class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
-          ></span>
+          <span class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
         {:else}
           Reset Password
         {/if}

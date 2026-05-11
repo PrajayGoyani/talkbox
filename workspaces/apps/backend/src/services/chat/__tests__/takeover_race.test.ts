@@ -1,6 +1,11 @@
 import Chat from "@models/chat.model";
-import { redisPresenceService, redisSessionService, redisGuardService, baseService } from "@services/infra/redis.service";
 import { socketService } from "@services/chat/socket.service";
+import {
+  redisPresenceService,
+  redisSessionService,
+  redisGuardService,
+  baseService,
+} from "@services/infra/redis.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies

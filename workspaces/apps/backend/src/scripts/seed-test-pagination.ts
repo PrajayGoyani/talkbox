@@ -2,7 +2,7 @@ import { connectDB } from "@config/db";
 import { BCRYPT_SALT } from "@config/env";
 import Chat from "@models/chat.model";
 import User from "@models/user.model";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
 
 const TEST_USERNAME = "user1";

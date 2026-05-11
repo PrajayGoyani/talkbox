@@ -49,28 +49,17 @@
             "mb-6 flex h-16 w-16 items-center justify-center rounded-2xl shadow-xl",
             isDanger && "bg-rose-500 text-white shadow-rose-500/20",
             isWarning && "bg-amber-500 text-white shadow-amber-500/20",
-            !isDanger &&
-              !isWarning &&
-              "bg-indigo-600 text-white shadow-indigo-600/20",
+            !isDanger && !isWarning && "bg-indigo-600 text-white shadow-indigo-600/20",
           )}
         >
-          <Icon
-            name={isDanger ? "trash" : isWarning ? "clock" : "check"}
-            class="h-8 w-8"
-            stroke-width="2.5"
-          />
+          <Icon name={isDanger ? "trash" : isWarning ? "clock" : "check"} class="h-8 w-8" stroke-width="2.5" />
         </div>
 
-        <h2
-          id="confirm-title"
-          class="mb-3 text-2xl font-bold text-slate-900 dark:text-white"
-        >
+        <h2 id="confirm-title" class="mb-3 text-2xl font-bold text-slate-900 dark:text-white">
           {confirmStore.title}
         </h2>
 
-        <p
-          class="mb-8 text-[15px] leading-relaxed text-slate-500 dark:text-slate-400"
-        >
+        <p class="mb-8 text-[15px] leading-relaxed text-slate-500 dark:text-slate-400">
           {confirmStore.message}
         </p>
 
@@ -85,11 +74,8 @@
             class={cn(
               "flex-1 rounded-2xl px-6 py-3.5 text-sm font-bold text-white transition-all active:scale-95 shadow-lg",
               isDanger && "bg-rose-500 hover:bg-rose-600 shadow-rose-500/25",
-              isWarning &&
-                "bg-amber-500 hover:bg-amber-600 shadow-amber-500/25",
-              !isDanger &&
-                !isWarning &&
-                "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/25",
+              isWarning && "bg-amber-500 hover:bg-amber-600 shadow-amber-500/25",
+              !isDanger && !isWarning && "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/25",
             )}
             onclick={() => confirmStore.confirm()}
           >

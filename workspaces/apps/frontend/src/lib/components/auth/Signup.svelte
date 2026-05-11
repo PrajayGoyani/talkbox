@@ -53,21 +53,16 @@
     } else if (password.length < 8) {
       errors.password = "Password must be at least 8 characters";
     } else if (password !== password.trim()) {
-      errors.password =
-        "Leading or trailing spaces are not allowed in password";
+      errors.password = "Leading or trailing spaces are not allowed in password";
     }
 
-    if (!confirmPassword)
-      errors.confirmPassword = "Please confirm your password";
-    else if (password !== confirmPassword)
-      errors.confirmPassword = "Passwords do not match";
+    if (!confirmPassword) errors.confirmPassword = "Please confirm your password";
+    else if (password !== confirmPassword) errors.confirmPassword = "Passwords do not match";
 
     if (Object.keys(errors).length > 0) return;
 
     // Sanitize name before sending
-    const sanitizedName = displayName.trim()
-      ? sanitizeName(displayName)
-      : undefined;
+    const sanitizedName = displayName.trim() ? sanitizeName(displayName) : undefined;
 
     const success = await authStore.signup({
       username: trimmedUsername.toLowerCase(),
@@ -89,9 +84,7 @@
 <div class="auth-card">
   <div class="text-center">
     <h1 class="auth-title">
-      {routerStore.params.intent === "pro"
-        ? "Get Started with Pro"
-        : "Create Account"}
+      {routerStore.params.intent === "pro" ? "Get Started with Pro" : "Create Account"}
     </h1>
     <!-- <div class="flex flex-col items-center gap-3 mb-2">
       <img src="/favicon.png" alt="Talkbox Logo" class="w-16 h-16 rounded-2xl shadow-lg ring-4 ring-indigo-600/10" />
@@ -104,9 +97,7 @@
   </div>
 
   {#if authStore.error}
-    <div
-      class="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3 rounded-xl text-sm text-center"
-    >
+    <div class="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3 rounded-xl text-sm text-center">
       {authStore.error}
     </div>
   {/if}
@@ -196,24 +187,20 @@
         href={"/#" + Route.TERMS}
         target="_blank"
         rel="noopener noreferrer"
-        class="text-indigo-600 hover:text-indigo-500 font-semibold"
-        >terms of service</a
+        class="text-indigo-600 hover:text-indigo-500 font-semibold">terms of service</a
       >
       and
       <a
         href={"/#" + Route.PRIVACY}
         target="_blank"
         rel="noopener noreferrer"
-        class="text-indigo-600 hover:text-indigo-500 font-semibold"
-        >privacy policy</a
+        class="text-indigo-600 hover:text-indigo-500 font-semibold">privacy policy</a
       >.
     </p>
 
     <button type="submit" class="btn-primary" disabled={authStore.loading}>
       {#if authStore.loading}
-        <span
-          class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
-        ></span>
+        <span class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
       {:else}
         Create Account
       {/if}

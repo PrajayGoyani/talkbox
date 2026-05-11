@@ -17,12 +17,7 @@
       id: "free",
       price: "$0",
       description: "Perfect for casual chatting and exploring Talkbox.",
-      features: [
-        "1 Active session limit",
-        "5 Active chats limit",
-        "7 Days message retention",
-        "Standard support",
-      ],
+      features: ["1 Active session limit", "5 Active chats limit", "7 Days message retention", "Standard support"],
       buttonText: "Start for Free",
       highlight: false,
     },
@@ -93,17 +88,13 @@
     if (authStore.user?.plan === "pro") return;
 
     if (!ALLOW_UPGRADES) {
-      uiStore.addAlert(
-        "Pro upgrades are temporarily disabled for maintenance. Please check back later!",
-        "info",
-      );
+      uiStore.addAlert("Pro upgrades are temporarily disabled for maintenance. Please check back later!", "info");
       return;
     }
 
     const confirmed = await confirmStore.show({
       title: "Simulated Checkout",
-      message:
-        "This is a dummy payment process. No real money will be charged. Are you ready to upgrade to Pro?",
+      message: "This is a dummy payment process. No real money will be charged. Are you ready to upgrade to Pro?",
       confirmText: "Yes, Upgrade Me",
       cancelText: "Maybe Later",
       variant: "info",
@@ -114,10 +105,7 @@
       try {
         await authStore.upgradeToPro();
         triggerCelebration();
-        uiStore.addAlert(
-          "Welcome to Pro! Your account has been upgraded.",
-          "success",
-        );
+        uiStore.addAlert("Welcome to Pro! Your account has been upgraded.", "success");
       } catch (err: any) {
         uiStore.addAlert(err.message || "Upgrade failed", "danger");
       } finally {
@@ -154,9 +142,7 @@
   }
 </script>
 
-<main
-  class="min-h-full w-full bg-slate-50 dark:bg-slate-950 px-4 py-12 md:py-24 flex flex-col items-center"
->
+<main class="min-h-full w-full bg-slate-50 dark:bg-slate-950 px-4 py-12 md:py-24 flex flex-col items-center">
   <div class="max-w-4xl w-full" in:fade={{ duration: 600 }}>
     <header class="text-center mb-16">
       <button
@@ -167,17 +153,13 @@
         Back
       </button>
 
-      <h1
-        class="text-4xl md:text-5xl font-black tracking-tighter mb-4 text-slate-900 dark:text-white"
-      >
-        Elevate Your <span
-          class="bg-linear-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent"
+      <h1 class="text-4xl md:text-5xl font-black tracking-tighter mb-4 text-slate-900 dark:text-white">
+        Elevate Your <span class="bg-linear-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent"
           >Talkbox</span
         > Experience
       </h1>
       <p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-        Join Pro to unlock unrestricted communication and premium features
-        tailored for professionals.
+        Join Pro to unlock unrestricted communication and premium features tailored for professionals.
       </p>
     </header>
 
@@ -212,21 +194,15 @@
           </div>
 
           <div class="mb-8 flex items-baseline gap-1">
-            <span class="text-4xl font-black text-slate-900 dark:text-white"
-              >{plan.price}</span
-            >
+            <span class="text-4xl font-black text-slate-900 dark:text-white">{plan.price}</span>
             {#if plan.period}
-              <span class="text-slate-500 dark:text-slate-500 font-medium"
-                >{plan.period}</span
-              >
+              <span class="text-slate-500 dark:text-slate-500 font-medium">{plan.period}</span>
             {/if}
           </div>
 
           <ul class="flex-1 space-y-4 mb-10">
             {#each plan.features as feature}
-              <li
-                class="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300"
-              >
+              <li class="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300">
                 <div
                   class="mt-0.5 w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0"
                 >
@@ -269,11 +245,8 @@
     </div>
 
     <footer class="mt-20 text-center">
-      <p
-        class="text-sm text-slate-500 dark:text-slate-600 mb-4 font-medium italic"
-      >
-        * Simulated subscription for demonstration purposes. Payments are not
-        truly processed.
+      <p class="text-sm text-slate-500 dark:text-slate-600 mb-4 font-medium italic">
+        * Simulated subscription for demonstration purposes. Payments are not truly processed.
       </p>
     </footer>
   </div>

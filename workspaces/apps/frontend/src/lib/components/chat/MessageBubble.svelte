@@ -1,17 +1,13 @@
 <script lang="ts">
-import { socketManager } from "$services/socket.manager.svelte";
+  import { socketManager } from "$services/socket.manager.svelte";
 
   import MessageReactionPicker from "$components/chat/MessageReactionPicker.svelte";
   import { authStore } from "$state/auth.svelte";
-  
+
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
   import { formatSimpleTime } from "$utils/date";
-  import {
-    getEmojiDisplayMode,
-    parseMessageContent,
-    type MessageSegment,
-  } from "$utils/emoji";
+  import { getEmojiDisplayMode, parseMessageContent, type MessageSegment } from "$utils/emoji";
   import type { UserDto } from "shared/types/auth.dto";
   import type { MessageDto } from "shared/types/chat.dto";
 
@@ -81,11 +77,9 @@ import { socketManager } from "$services/socket.manager.svelte";
         {
           "text-5xl md:text-6xl": emojiDisplayMode === "jumbo-1",
           "text-4xl md:text-5xl": emojiDisplayMode === "jumbo-2",
-          "text-3xl md:text-4xl":
-            emojiDisplayMode !== "jumbo-1" && emojiDisplayMode !== "jumbo-2",
+          "text-3xl md:text-4xl": emojiDisplayMode !== "jumbo-1" && emojiDisplayMode !== "jumbo-2",
         },
-        showMessageActionsId === msg.id &&
-          "bg-slate-100 dark:bg-white/5 ring-4 ring-slate-100 dark:ring-white/5",
+        showMessageActionsId === msg.id && "bg-slate-100 dark:bg-white/5 ring-4 ring-slate-100 dark:ring-white/5",
       )}
     >
       {#if !msg.isDeleted && !msg.isScrubbed}
@@ -126,12 +120,7 @@ import { socketManager } from "$services/socket.manager.svelte";
       }
     }}
     onkeydown={(e) => {
-      if (
-        (e.key === "Enter" || e.key === " ") &&
-        isTouchDevice &&
-        !msg.isDeleted &&
-        !msg.isScrubbed
-      ) {
+      if ((e.key === "Enter" || e.key === " ") && isTouchDevice && !msg.isDeleted && !msg.isScrubbed) {
         showMessageActionsId = showMessageActionsId === msg.id ? null : msg.id;
       }
     }}
@@ -180,9 +169,7 @@ import { socketManager } from "$services/socket.manager.svelte";
         >
           {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
             {@render renderSegment(segment)}
-          {/each}<span
-            class={["inline-block h-0", msg.isEdited && !msg.isDeleted ? "w-21" : "w-11"]}
-          ></span>
+          {/each}<span class={["inline-block h-0", msg.isEdited && !msg.isDeleted ? "w-21" : "w-11"]}></span>
         </p>
         <span
           class="absolute bottom-0 -right-1 text-[9px] opacity-60 leading-none pb-0.5 whitespace-nowrap flex items-center"
@@ -204,19 +191,9 @@ import { socketManager } from "$services/socket.manager.svelte";
   </div>
 {/if}
 
-{#snippet reactionList(
-  msg: MessageDto,
-  isSent: boolean,
-  otherUser: UserDto | null,
-  authStore: any,
-)}
+{#snippet reactionList(msg: MessageDto, isSent: boolean, otherUser: UserDto | null, authStore: any)}
   {#if msg.reactions && msg.reactions.length > 0}
-    <div
-      class={cn(
-        "flex flex-wrap gap-1 mt-1",
-        isSent ? "justify-end" : "justify-start",
-      )}
-    >
+    <div class={cn("flex flex-wrap gap-1 mt-1", isSent ? "justify-end" : "justify-start")}>
       {#each msg.reactions as reaction}
         {@const hasReacted = reaction.users.includes(authStore.user?.id || "")}
         {@const reactionStyles = hasReacted
@@ -247,9 +224,7 @@ import { socketManager } from "$services/socket.manager.svelte";
         >
           <span class="text-sm">{reaction.emoji}</span>
           {#if reaction.users.length > 1}
-            <span class="text-[10px] font-bold opacity-70 leading-none"
-              >{reaction.users.length}</span
-            >
+            <span class="text-[10px] font-bold opacity-70 leading-none">{reaction.users.length}</span>
           {/if}
         </button>
       {/each}
@@ -259,11 +234,7 @@ import { socketManager } from "$services/socket.manager.svelte";
 
 {#snippet renderEmoji(segment: MessageSegment, isJumbo = false)}
   <span
-    class={cn(
-      isJumbo
-        ? "select-none"
-        : "cursor-default inline-block align-middle px-0.5",
-    )}
+    class={cn(isJumbo ? "select-none" : "cursor-default inline-block align-middle px-0.5")}
     use:tooltip={{
       text: ":" + segment.name + ":",
       variant: "default",

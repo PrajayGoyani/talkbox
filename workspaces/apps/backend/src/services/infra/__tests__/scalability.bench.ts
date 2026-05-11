@@ -4,27 +4,31 @@ import { bench, describe, vi } from "vitest";
 
 vi.mock("@models/chat.model");
 vi.mock("@services/infra/redis.service", () => ({
-  redisService:  {
+  redisService: {
     incrementAndCheckLimit: vi.fn().mockResolvedValue(true),
     getCachedPartners: vi.fn().mockResolvedValue(null),
     setCachedPartners: vi.fn().mockResolvedValue(true),
     isConnected: true,
-  }, redisPresenceService:  {
+  },
+  redisPresenceService: {
     incrementAndCheckLimit: vi.fn().mockResolvedValue(true),
     getCachedPartners: vi.fn().mockResolvedValue(null),
     setCachedPartners: vi.fn().mockResolvedValue(true),
     isConnected: true,
-  }, redisSessionService:  {
+  },
+  redisSessionService: {
     incrementAndCheckLimit: vi.fn().mockResolvedValue(true),
     getCachedPartners: vi.fn().mockResolvedValue(null),
     setCachedPartners: vi.fn().mockResolvedValue(true),
     isConnected: true,
-  }, redisGuardService:  {
+  },
+  redisGuardService: {
     incrementAndCheckLimit: vi.fn().mockResolvedValue(true),
     getCachedPartners: vi.fn().mockResolvedValue(null),
     setCachedPartners: vi.fn().mockResolvedValue(true),
     isConnected: true,
-  }, baseService:  {
+  },
+  baseService: {
     incrementAndCheckLimit: vi.fn().mockResolvedValue(true),
     getCachedPartners: vi.fn().mockResolvedValue(null),
     setCachedPartners: vi.fn().mockResolvedValue(true),

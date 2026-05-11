@@ -1,5 +1,5 @@
-import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { ChatQueryRepository, chatQueryRepository } from "@repositories/chat-query.repository";
+import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { ObjectId } from "mongodb";
 import { ChatDto, ChatListingResponseDto } from "shared/types/chat.dto";
 
@@ -140,4 +140,3 @@ export class ChatListingService implements IChatListingService {
 }
 
 export const chatListingService = new ChatListingService(chatRepository, chatQueryRepository);
-

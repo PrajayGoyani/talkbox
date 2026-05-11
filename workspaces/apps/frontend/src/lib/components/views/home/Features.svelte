@@ -8,9 +8,7 @@
   <div class="max-w-7xl mx-auto px-4">
     <div class="text-center mb-20">
       <h2 class="text-3xl md:text-5xl font-bold mb-4">Everything you need</h2>
-      <p class="text-slate-600 dark:text-slate-400">
-        Powerhouse features packed into a minimalist interface.
-      </p>
+      <p class="text-slate-600 dark:text-slate-400">Powerhouse features packed into a minimalist interface.</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -25,8 +23,8 @@
         </div>
         <h3 class="text-xl font-bold mb-2">Multi-Device Sync</h3>
         <p class="text-slate-600 dark:text-slate-400">
-          Stay connected everywhere. Pro users can maintain up to 10 active
-          sessions across all their devices simultaneously.
+          Stay connected everywhere. Pro users can maintain up to 10 active sessions across all their devices
+          simultaneously.
         </p>
       </div>
 
@@ -41,8 +39,7 @@
         </div>
         <h3 class="text-xl font-bold mb-2">Secure & Private</h3>
         <p class="text-slate-600 dark:text-slate-400">
-          We encrypt your data and keep conversations private, just as they
-          should be. Your data is yours.
+          We encrypt your data and keep conversations private, just as they should be. Your data is yours.
         </p>
       </div>
 
@@ -57,8 +54,7 @@
         </div>
         <h3 class="text-xl font-bold mb-2">Unrestricted History</h3>
         <p class="text-slate-600 dark:text-slate-400">
-          Never lose a word. Upgrade to Pro to unlock unlimited message history
-          and access your entire archive.
+          Never lose a word. Upgrade to Pro to unlock unlimited message history and access your entire archive.
         </p>
       </div>
     </div>

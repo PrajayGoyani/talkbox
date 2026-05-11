@@ -1,8 +1,8 @@
 import type { MessageDto, MessageReactionUpdateDto } from "shared/types/chat.dto";
 
 import { chatService } from "$services/chat.service";
-import { socketManager } from "$services/socket.manager.svelte";
 import { RealtimeEvent, realtimeEvents } from "$services/realtime-events";
+import { socketManager } from "$services/socket.manager.svelte";
 
 const LOADER_AWAIT_MS = 300;
 

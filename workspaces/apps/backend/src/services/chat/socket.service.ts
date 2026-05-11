@@ -1,16 +1,16 @@
-import { partnerRepository } from "@repositories/partner.repository";
 import { chatQueryRepository } from "@repositories/chat-query.repository";
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { MessageRepository, messageRepository } from "@repositories/message.repository";
+import { partnerRepository } from "@repositories/partner.repository";
 import { UserRepository, userRepository } from "@repositories/user.repository";
-import { messageService } from "@services/chat/message.service";
 import { policyService } from "@services/auth/policy.service";
-import { PresenceService } from "@services/presence/presence.service";
+import { chatCacheService } from "@services/chat/chat-cache.service";
+import { messageService } from "@services/chat/message.service";
 import { baseService, redisSessionService, redisPresenceService } from "@services/infra/redis.service";
+import { PresenceService } from "@services/presence/presence.service";
 import { MessageHandler } from "@services/socket-handlers/message.handler";
 import { ReactionHandler } from "@services/socket-handlers/reaction.handler";
 import { TypingHandler } from "@services/socket-handlers/typing.handler";
-import { chatCacheService } from "@services/chat/chat-cache.service";
 import { eventBus, USER_EVENTS } from "@utils/event-bus";
 
 import { AuthenticatedSocketUser, TypedIO, TypedSocket } from "@/types/socket.types";

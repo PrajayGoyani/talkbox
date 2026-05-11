@@ -1,7 +1,9 @@
 <!-- Generated: 2026-05-08 | Files scanned: ~160 | Token estimate: ~850 -->
+
 # Frontend Architecture
 
 ## Page Tree
+
 - **Guest Layout (`GuestApp`)**
   - `/`: Landing page (Welcome).
   - `/login`, `/signup`: Auth entry points.
@@ -16,6 +18,7 @@
   - `/chat/settings`: Theme and app preferences.
 
 ## Component Hierarchy (`App.svelte`)
+
 1. **Authenticated Shell**
    - `IconRail`: Persistent sidebar navigation, notification badges, and logout.
    - `Sidebar` (`aside`): Contextual panels (`ConversationsPanel`, `ProfilePanel`, `RequestsPanel`, `SettingsPanel`).
@@ -33,6 +36,7 @@
    - `ConfirmationDialog`: Transactional user confirmation flows.
 
 ## State Management (Svelte 5 Runes)
+
 - **`authStore`**: Session state, profile persistence, and auth guards ($state).
 - **`chatStore`**:
   - `chats` / `requests`: Reactive collections of domain data.
@@ -43,9 +47,8 @@
 - **`routerStore`**: Hash-based router with segment parsing and auth-aware guards.
 
 ## Logic & Patterns
+
 - **Facade Delegation**: Services mirror backend facades to maintain consistent API boundaries.
 - **Virtual Scrolling**: `MessageList` utilizes `overflow-anchor` for high-performance history rendering.
 - **Pinning**: Local-first persistence for conversation order.
 - **Lazy Loading**: Code-splitting for panels and views to optimize initial bundle size.
-
-

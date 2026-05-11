@@ -121,7 +121,7 @@ async function seed() {
             messageId: msgB._id as any,
             contentBody: contentB,
             senderId: userB._id,
-            sentAt: msgB.createdAt, 
+            sentAt: msgB.createdAt,
           };
         }
         await chat.save();

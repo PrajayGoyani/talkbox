@@ -81,8 +81,6 @@ export interface MessageAckDto {
   error?: string;
 }
 
-
-
 /**
  * Data Transfer Object for Chat.
  */

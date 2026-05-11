@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from "mongoose";
 
 /**
  * Quote Model (Prototype)
- * 
+ *
  * FUTURE CONSIDERATION:
  * - Add 'tags' for better filtering (e.g., #productivity, #teamwork)
  * - Add 'displayInterval' to show certain announcements only during specific times
@@ -19,10 +19,10 @@ export interface IQuote extends Document {
 const quoteSchema = new Schema<IQuote>({
   text: { type: String, required: true },
   author: { type: String, default: null },
-  category: { 
-    type: String, 
-    enum: ["motivation", "tip", "announcement"], 
-    default: "motivation" 
+  category: {
+    type: String,
+    enum: ["motivation", "tip", "announcement"],
+    default: "motivation",
   },
   active: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },

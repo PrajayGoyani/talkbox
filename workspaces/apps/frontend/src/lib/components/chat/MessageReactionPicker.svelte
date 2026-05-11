@@ -1,10 +1,10 @@
 <script lang="ts">
-import { socketManager } from "$services/socket.manager.svelte";
+  import { socketManager } from "$services/socket.manager.svelte";
 
   import EmojiPicker from "$components/chat/EmojiPicker.svelte";
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
-  
+
   import { confirmStore } from "$state/confirm.svelte";
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
@@ -53,8 +53,7 @@ import { socketManager } from "$services/socket.manager.svelte";
   const handleDelete = async () => {
     const confirmed = await confirmStore.show({
       title: "Delete Message?",
-      message:
-        "Are you sure you want to delete this message? This action cannot be undone.",
+      message: "Are you sure you want to delete this message? This action cannot be undone.",
       confirmText: "Delete",
       variant: "danger",
     });
@@ -67,12 +66,14 @@ import { socketManager } from "$services/socket.manager.svelte";
 <div
   class={cn(
     "absolute -top-4 transition-all duration-200 flex items-center gap-0.5 z-20 p-0.5 rounded-xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200 dark:border-white/10 shadow-xl",
-    isOpen
-      ? "opacity-100 scale-100"
-      : "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100",
+    isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100",
     isTouchDevice
-      ? (isSent ? "right-0" : "left-0")
-      : (isSent ? "-left-2 -translate-x-full" : "-right-2 translate-x-full"),
+      ? isSent
+        ? "right-0"
+        : "left-0"
+      : isSent
+        ? "-left-2 -translate-x-full"
+        : "-right-2 translate-x-full",
   )}
 >
   <Popover bind:isOpen position="top" align={isSent ? "end" : "start"}>

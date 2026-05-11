@@ -1,5 +1,5 @@
-import { SvelteMap, SvelteSet } from "svelte/reactivity";
 import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import type { IPresenceStore } from "./types";
 

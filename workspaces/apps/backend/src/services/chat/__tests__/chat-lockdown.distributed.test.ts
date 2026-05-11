@@ -1,34 +1,43 @@
 import { chatLockdownService } from "@services/chat/chat-lockdown.service";
-import { redisPresenceService, redisSessionService, redisGuardService, baseService } from "@services/infra/redis.service";
+import {
+  redisPresenceService,
+  redisSessionService,
+  redisGuardService,
+  baseService,
+} from "@services/infra/redis.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@models/chat.model");
 vi.mock("@services/infra/redis.service", () => ({
-  redisService:  {
+  redisService: {
     lockChat: vi.fn().mockResolvedValue(null),
     unlockChat: vi.fn().mockResolvedValue(null),
     isChatLocked: vi.fn().mockResolvedValue(false),
     publishCacheInvalidation: vi.fn().mockResolvedValue(null),
     isConnected: true,
-  }, redisPresenceService:  {
+  },
+  redisPresenceService: {
     lockChat: vi.fn().mockResolvedValue(null),
     unlockChat: vi.fn().mockResolvedValue(null),
     isChatLocked: vi.fn().mockResolvedValue(false),
     publishCacheInvalidation: vi.fn().mockResolvedValue(null),
     isConnected: true,
-  }, redisSessionService:  {
+  },
+  redisSessionService: {
     lockChat: vi.fn().mockResolvedValue(null),
     unlockChat: vi.fn().mockResolvedValue(null),
     isChatLocked: vi.fn().mockResolvedValue(false),
     publishCacheInvalidation: vi.fn().mockResolvedValue(null),
     isConnected: true,
-  }, redisGuardService:  {
+  },
+  redisGuardService: {
     lockChat: vi.fn().mockResolvedValue(null),
     unlockChat: vi.fn().mockResolvedValue(null),
     isChatLocked: vi.fn().mockResolvedValue(false),
     publishCacheInvalidation: vi.fn().mockResolvedValue(null),
     isConnected: true,
-  }, baseService:  {
+  },
+  baseService: {
     lockChat: vi.fn().mockResolvedValue(null),
     unlockChat: vi.fn().mockResolvedValue(null),
     isChatLocked: vi.fn().mockResolvedValue(false),

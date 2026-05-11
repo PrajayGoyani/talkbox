@@ -1,5 +1,6 @@
 import { ALLOWED_ORIGINS, NODE_ENV } from "@config/env";
 import * as Sentry from "@sentry/bun";
+import { baseService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
 import { error as errorResponse, success } from "@utils/response";
 import cookieParser from "cookie-parser";
@@ -11,7 +12,6 @@ import path from "path";
 // import helmet from 'helmet';
 import { app, server } from "@/app";
 import { stopAgenda } from "@/config/agenda";
-import { baseService } from "@services/infra/redis.service";
 
 // ____________________ Bootstrap Handlers ____________________
 

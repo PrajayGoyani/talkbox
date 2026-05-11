@@ -7,12 +7,7 @@
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
 
-  type PanelId =
-    | "conversations"
-    | "profile"
-    | "settings"
-    | "requests"
-    | "pricing";
+  type PanelId = "conversations" | "profile" | "settings" | "requests" | "pricing";
 
   type Props = {
     activePanel: PanelId;
@@ -34,9 +29,7 @@
     hideOnMobile = false,
   }: Props = $props();
 
-  const displayName = $derived(
-    authStore.user?.name || authStore.user?.username || "?",
-  );
+  const displayName = $derived(authStore.user?.name || authStore.user?.username || "?");
 
   const tooltipPos = $derived(uiStore.windowWidth < 768 ? "top" : "right");
 
@@ -45,9 +38,7 @@
     { id: "profile", title: "Profile", icon: "profile" },
     { id: "settings", title: "Settings", icon: "settings" },
     { id: "requests", title: "Chat Requests", icon: "add" },
-    ...(authStore.user?.plan === "free"
-      ? [{ id: "pricing", title: "Upgrade to Pro", icon: "bolt" }]
-      : []),
+    ...(authStore.user?.plan === "free" ? [{ id: "pricing", title: "Upgrade to Pro", icon: "bolt" }] : []),
   ]);
 </script>
 
@@ -56,9 +47,7 @@
     ? 'hidden md:flex'
     : 'flex'}"
 >
-  <div
-    class="flex flex-row md:flex-col items-center gap-2 md:gap-1 w-full md:w-auto justify-between md:justify-start"
-  >
+  <div class="flex flex-row md:flex-col items-center gap-2 md:gap-1 w-full md:w-auto justify-between md:justify-start">
     <!-- App Logo / Home Button -->
     <button
       class="w-10 h-10 flex items-center justify-center text-indigo-500 md:mb-3 hover:bg-white/10 rounded-xl transition-all active:scale-90"
@@ -72,10 +61,7 @@
     <!-- Navigation Icons -->
     {#each navigationItems as item (item.id)}
       <button
-        class={[
-          "rail-btn relative",
-          { "rail-btn-active": activePanel === item.id },
-        ]}
+        class={["rail-btn relative", { "rail-btn-active": activePanel === item.id }]}
         onclick={() => onPanelSelect(item.id as PanelId)}
         use:tooltip={{ text: item.title, position: tooltipPos }}
         aria-label={item.title}

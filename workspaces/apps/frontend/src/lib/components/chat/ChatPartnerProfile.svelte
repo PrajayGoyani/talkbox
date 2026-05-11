@@ -18,10 +18,7 @@
     if (!user?.username) return;
     const textToCopy = `@${user.username}`;
     navigator.clipboard.writeText(textToCopy).then(() => {
-      tooltipStore.showTemporary(
-        "Username copied",
-        e.currentTarget as HTMLElement,
-      );
+      tooltipStore.showTemporary("Username copied", e.currentTarget as HTMLElement);
       usernameCopied = true;
       setTimeout(() => (usernameCopied = false), 2000);
     });
@@ -30,9 +27,7 @@
 
 <div class="h-full flex flex-col bg-white dark:bg-slate-900">
   <div class="panel-header">
-    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
-      User Info
-    </h2>
+    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">User Info</h2>
     <button
       onclick={onClose}
       class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-all active:scale-90"
@@ -66,16 +61,10 @@
     </div>
 
     <!-- Info List -->
-    <div
-      class="flex flex-col gap-5 pt-4 border-t border-slate-100 dark:border-white/5"
-    >
+    <div class="flex flex-col gap-5 pt-4 border-t border-slate-100 dark:border-white/5">
       <!-- Username -->
       <div class="flex flex-col gap-1.5">
-        <span
-          class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
-        >
-          Username
-        </span>
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"> Username </span>
         <div
           class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5"
         >
@@ -98,14 +87,8 @@
 
       <!-- Bio -->
       <div class="flex flex-col gap-1.5">
-        <span
-          class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
-        >
-          Bio
-        </span>
-        <p
-          class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap"
-        >
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"> Bio </span>
+        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">
           {user?.bio || "This user hasn't added a bio yet."}
         </p>
       </div>

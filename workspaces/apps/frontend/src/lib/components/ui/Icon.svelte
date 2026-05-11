@@ -78,12 +78,7 @@
   to ensure the icon inherits the surrounding text color.
 -->
 {#if iconUrl}
-  <span
-    class="icon-container shrink-0 {className}"
-    style:--icon-url={iconUrl}
-    aria-hidden="true"
-    {...rest}
-  ></span>
+  <span class="icon-container shrink-0 {className}" style:--icon-url={iconUrl} aria-hidden="true" {...rest}></span>
 {/if}
 
 <style>

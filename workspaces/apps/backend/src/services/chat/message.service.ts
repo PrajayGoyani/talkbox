@@ -10,12 +10,14 @@ import { AppError } from "@utils/AppError";
 import { isPastModifyLimit, isScrubbed } from "@utils/date.utils";
 import { extractEmojiMetadata } from "@utils/emoji.utils";
 import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
-import { chatCacheService } from "./chat-cache.service";
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 import { MessageDto } from "shared/types/chat.dto";
-import { IMessageService } from "./types";
+
 import { AuthenticatedSocketUser } from "@/types/socket.types";
+
+import { chatCacheService } from "./chat-cache.service";
+import { IMessageService } from "./types";
 
 export type MessageSender = Omit<AuthenticatedSocketUser, "bio">;
 
@@ -195,7 +197,7 @@ export class MessageService implements IMessageService {
     }
 
     // fallback to DB if cache miss to guarantee validation
-    return (await this.ensureParticipant(chatId, senderId));
+    return await this.ensureParticipant(chatId, senderId);
   }
 
   private async handleDeduplication(idempotencyKey: string, plan: "free" | "pro"): Promise<MessageDto | null> {
@@ -229,11 +231,11 @@ export class MessageService implements IMessageService {
       );
 
       const updateData: any = {
-        lastMessage: { 
+        lastMessage: {
           messageId: message._id,
-          contentBody, 
-          senderId, 
-          sentAt: message.createdAt 
+          contentBody,
+          senderId,
+          sentAt: message.createdAt,
         },
       };
 
@@ -326,9 +328,9 @@ export class MessageService implements IMessageService {
 
     // Fallback: Timestamp equality (for legacy chats without messageId)
     return Boolean(
-      chat.lastMessage.sentAt && 
+      chat.lastMessage.sentAt &&
       chat.lastMessage.sentAt.getTime() === message.createdAt.getTime() &&
-      chat.lastMessage.senderId?.toString() === message.senderId.toString()
+      chat.lastMessage.senderId?.toString() === message.senderId.toString(),
     );
   }
 
@@ -352,7 +354,7 @@ export class MessageService implements IMessageService {
 
     const participants = new Set(chat.participants.map((p: any) => p.toString()));
     chatCacheService.setParticipants(chatId, participants);
-    
+
     if (!participants.has(userId)) {
       throw AppError.forbidden(CHAT_MESSAGES.NOT_PARTICIPANT);
     }

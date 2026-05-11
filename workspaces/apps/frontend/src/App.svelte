@@ -1,14 +1,14 @@
 <script lang="ts">
-import { chatListStore } from "$state/chat/chat-list.svelte";
-import { chatActions } from "$state/chat/chat-actions.svelte";
-import { socketManager } from "$services/socket.manager.svelte";
+  import { chatListStore } from "$state/chat/chat-list.svelte";
+  import { chatActions } from "$state/chat/chat-actions.svelte";
+  import { socketManager } from "$services/socket.manager.svelte";
 
   import NotificationsDropdown from "$components/layout/NotificationsDropdown.svelte";
   import ToastContainer from "$components/layout/ToastContainer.svelte";
   import Lazy from "$components/ui/Lazy.svelte";
   import { Views } from "$lib/views";
   import { authStore } from "$state/auth.svelte";
-  
+
   import { notificationStore } from "$state/notification.svelte";
   import { themeStore } from "$state/theme.svelte";
   import { untrack } from "svelte";
@@ -33,24 +33,17 @@ import { socketManager } from "$services/socket.manager.svelte";
 
   // State
   // Derived state for current chat
-  const selectedChat = $derived(
-    chatListStore.chats.find((c) => c.id === selectedChatId) || null,
-  );
+  const selectedChat = $derived(chatListStore.chats.find((c) => c.id === selectedChatId) || null);
   let selectedOtherUser = $derived(selectedChat?.otherUser || null);
   let selectedChatStatus = $derived(selectedChat?.status || "");
 
   let toastContainer: ToastContainer | undefined = $state();
 
-  let activePanel = $derived(
-    (routerStore.segments[1] as PanelId) || "conversations",
-  );
+  let activePanel = $derived((routerStore.segments[1] as PanelId) || "conversations");
   let selectedChatId = $derived(routerStore.segments[2] || null);
   const validSegments = new Set(["terms", "privacy", "faq"]);
   let isDocPage = $derived(validSegments.has(routerStore.segments[0]));
-  const GUEST_VIEW_CONFIG: Record<
-    string,
-    { component: any; centered?: boolean }
-  > = {
+  const GUEST_VIEW_CONFIG: Record<string, { component: any; centered?: boolean }> = {
     login: { component: Views.Login, centered: true },
     signup: { component: Views.Signup, centered: true },
     "forgot-password": { component: Views.ForgotPassword, centered: true },
@@ -256,58 +249,36 @@ import { socketManager } from "$services/socket.manager.svelte";
 <!-- Snippets for clear logical separation -->
 
 {#snippet LoadingState()}
-  <div
-    class="flex flex-col items-center justify-center w-screen h-dvh bg-slate-50 dark:bg-slate-950 gap-4"
-  >
+  <div class="flex flex-col items-center justify-center w-screen h-dvh bg-slate-50 dark:bg-slate-950 gap-4">
     <div role="status">
-      <Spinner
-        class="w-8 h-8 text-slate-200 dark:text-white/10 fill-indigo-500 animate-spin"
-      />
+      <Spinner class="w-8 h-8 text-slate-200 dark:text-white/10 fill-indigo-500 animate-spin" />
       <span class="sr-only">Loading...</span>
     </div>
 
     {#if authStore.isSlowBoot}
       {#if SHOW_ENGAGING_LOADER}
-        <div
-          class="flex flex-col items-center gap-2 max-w-sm px-6 text-center"
-          transition:fade={{ duration: 400 }}
-        >
-          <p
-            class="text-slate-600 dark:text-slate-300 text-sm italic font-medium leading-relaxed"
-          >
+        <div class="flex flex-col items-center gap-2 max-w-sm px-6 text-center" transition:fade={{ duration: 400 }}>
+          <p class="text-slate-600 dark:text-slate-300 text-sm italic font-medium leading-relaxed">
             "{currentQuote.text}"
           </p>
           {#if currentQuote.author}
-            <span
-              class="text-[10px] uppercase tracking-widest text-slate-400 font-bold"
-            >
+            <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
               — {currentQuote.author}
             </span>
           {/if}
           <div class="mt-4 flex items-center gap-2">
             <div class="flex gap-1">
-              <div
-                class="w-1 h-1 rounded-full bg-indigo-500 animate-bounce [animation-delay:-0.3s]"
-              ></div>
-              <div
-                class="w-1 h-1 rounded-full bg-indigo-500 animate-bounce [animation-delay:-0.15s]"
-              ></div>
-              <div
-                class="w-1 h-1 rounded-full bg-indigo-500 animate-bounce"
-              ></div>
+              <div class="w-1 h-1 rounded-full bg-indigo-500 animate-bounce [animation-delay:-0.3s]"></div>
+              <div class="w-1 h-1 rounded-full bg-indigo-500 animate-bounce [animation-delay:-0.15s]"></div>
+              <div class="w-1 h-1 rounded-full bg-indigo-500 animate-bounce"></div>
             </div>
-            <span
-              class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter animate-pulse"
-            >
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter animate-pulse">
               Booting Server
             </span>
           </div>
         </div>
       {:else}
-        <p
-          class="text-slate-500 dark:text-slate-400 text-sm animate-pulse font-medium"
-          transition:fade
-        >
+        <p class="text-slate-500 dark:text-slate-400 text-sm animate-pulse font-medium" transition:fade>
           Please wait, server is booting up.
         </p>
       {/if}
@@ -319,10 +290,7 @@ import { socketManager } from "$services/socket.manager.svelte";
   <main
     class="flex flex-col w-screen h-dvh overflow-hidden bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300"
   >
-    <NotificationsDropdown
-      bind:isOpen={uiStore.notificationsOpen}
-      onNavigate={handleNotificationNavigate}
-    />
+    <NotificationsDropdown bind:isOpen={uiStore.notificationsOpen} onNavigate={handleNotificationNavigate} />
 
     {#if authStore.user && !authStore.user.isEmailVerified && false}
       <!-- TODO: should we verify the this at login time? -->
@@ -340,9 +308,7 @@ import { socketManager } from "$services/socket.manager.svelte";
       </div>
     {/if}
 
-    <div
-      class="flex flex-col md:flex-row flex-1 min-h-0 relative w-full overflow-hidden"
-    >
+    <div class="flex flex-col md:flex-row flex-1 min-h-0 relative w-full overflow-hidden">
       <IconRail
         {activePanel}
         onPanelSelect={(p: string) => {
@@ -395,11 +361,7 @@ import { socketManager } from "$services/socket.manager.svelte";
             {:else if activePanel === "profile"}
               <Lazy component={Views.ProfilePanel} />
             {:else if activePanel === "settings"}
-              <Lazy
-                component={Views.SettingsPanel}
-                user={authStore.user}
-                onLogout={handleLogout}
-              />
+              <Lazy component={Views.SettingsPanel} user={authStore.user} onLogout={handleLogout} />
             {:else if activePanel === "requests"}
               <Lazy component={Views.RequestsPanel} />
             {/if}
@@ -410,9 +372,7 @@ import { socketManager } from "$services/socket.manager.svelte";
       <section
         class={[
           "flex-1 min-h-0 min-w-0 flex flex-col relative bg-slate-100/50 dark:bg-slate-950/30",
-          selectedChatId
-            ? "flex"
-            : "hidden md:flex flex-col justify-center items-center",
+          selectedChatId ? "flex" : "hidden md:flex flex-col justify-center items-center",
         ]}
       >
         {#if selectedChatId}
@@ -447,8 +407,7 @@ import { socketManager } from "$services/socket.manager.svelte";
     </div>
     <ToastContainer
       bind:this={toastContainer}
-      onToastClick={(id: string) =>
-        uiStore.navigate(`${Route.CONVERSATIONS}/${id}`)}
+      onToastClick={(id: string) => uiStore.navigate(`${Route.CONVERSATIONS}/${id}`)}
     />
   </main>
 {/snippet}
@@ -458,49 +417,33 @@ import { socketManager } from "$services/socket.manager.svelte";
     component: Views.Home,
     centered: false,
   }}
-  <div
-    class="flex flex-col w-screen h-dvh bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden"
-  >
+  <div class="flex flex-col w-screen h-dvh bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden">
     <!-- Guest Header -->
     <header
       class="h-16 shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md z-50"
     >
-      <div
-        class="max-w-7xl mx-auto px-3 sm:px-4 h-full flex items-center justify-between"
-      >
+      <div class="max-w-7xl mx-auto px-3 sm:px-4 h-full flex items-center justify-between">
         <button
           onclick={() => uiStore.navigate("/")}
           class="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0 active:scale-95"
         >
-          <div
-            class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0"
-          >
+          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
             <span class="text-white font-bold text-xl">T</span>
           </div>
-          <span
-            class="font-bold text-lg sm:text-xl tracking-tight text-slate-900 dark:text-slate-100"
-            >Talkbox</span
-          >
+          <span class="font-bold text-lg sm:text-xl tracking-tight text-slate-900 dark:text-slate-100">Talkbox</span>
         </button>
 
         <div class="flex items-center gap-4">
           {#if routerStore.segments.length === 0}
-            <nav
-              class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400 mr-4"
-            >
-              <a
-                href="#features"
-                class="hover:text-indigo-600 transition-colors">Features</a
-              >
+            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400 mr-4">
+              <a href="#features" class="hover:text-indigo-600 transition-colors">Features</a>
               <button
                 onclick={() => uiStore.navigate(Route.FAQ)}
-                class="hover:text-indigo-600 transition-colors cursor-pointer"
-                >FAQ</button
+                class="hover:text-indigo-600 transition-colors cursor-pointer">FAQ</button
               >
               <button
                 onclick={() => uiStore.navigate(Route.PRICING)}
-                class="hover:text-indigo-600 transition-colors cursor-pointer"
-                >Pricing</button
+                class="hover:text-indigo-600 transition-colors cursor-pointer">Pricing</button
               >
             </nav>
           {/if}
@@ -544,16 +487,10 @@ import { socketManager } from "$services/socket.manager.svelte";
         <div class="w-full flex justify-center py-8 my-auto">
           <Lazy component={config.component}>
             {#snippet toggleSignup()}
-              <button
-                class="text-indigo-600 font-medium"
-                onclick={() => toggleView("SIGNUP")}>Sign up</button
-              >
+              <button class="text-indigo-600 font-medium" onclick={() => toggleView("SIGNUP")}>Sign up</button>
             {/snippet}
             {#snippet toggleLogin()}
-              <button
-                class="text-indigo-600 font-medium"
-                onclick={() => toggleView("LOGIN")}>Log in</button
-              >
+              <button class="text-indigo-600 font-medium" onclick={() => toggleView("LOGIN")}>Log in</button>
             {/snippet}
           </Lazy>
         </div>

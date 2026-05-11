@@ -25,11 +25,8 @@
   {#if status === "loading"}
     <!-- Loading State -->
     <div class="text-center flex flex-col items-center gap-4 py-4">
-      <div
-        class="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center"
-      >
-        <span class="w-7 h-7 border-3 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"
-        ></span>
+      <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+        <span class="w-7 h-7 border-3 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></span>
       </div>
       <h1 class="auth-title">Verifying email...</h1>
       <p class="text-slate-500 dark:text-slate-400 text-[15px]">Please wait a moment</p>
@@ -51,17 +48,14 @@
     <button
       type="button"
       class="btn-primary mt-2"
-      onclick={() =>
-        routerStore.navigate(authStore.user ? Route.CONVERSATIONS : Route.LOGIN)}
+      onclick={() => routerStore.navigate(authStore.user ? Route.CONVERSATIONS : Route.LOGIN)}
     >
       {authStore.user ? "Go to Conversations" : "Sign In"}
     </button>
   {:else}
     <!-- Error State -->
     <div class="text-center flex flex-col items-center gap-4">
-      <div
-        class="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center"
-      >
+      <div class="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
         <Icon name="alert-circle" class="w-7 h-7 text-rose-500" />
       </div>
       <h1 class="auth-title">Verification failed</h1>
@@ -73,8 +67,7 @@
     <button
       type="button"
       class="btn-primary mt-2"
-      onclick={() =>
-        routerStore.navigate(authStore.user ? Route.CONVERSATIONS : Route.LOGIN)}
+      onclick={() => routerStore.navigate(authStore.user ? Route.CONVERSATIONS : Route.LOGIN)}
     >
       {authStore.user ? "Go to Conversations" : "Sign In"}
     </button>

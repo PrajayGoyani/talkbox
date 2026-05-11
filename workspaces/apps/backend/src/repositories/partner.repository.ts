@@ -1,5 +1,5 @@
-import { chatCacheService } from "@services/chat/chat-cache.service";
 import Chat, { IChatModel } from "@models/chat.model";
+import { chatCacheService } from "@services/chat/chat-cache.service";
 
 export class PartnerRepository {
   constructor(public chatModel: IChatModel) {}

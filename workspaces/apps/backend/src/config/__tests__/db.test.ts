@@ -48,7 +48,7 @@ describe("connectDB", () => {
 
   it("should handle connection failure and exit", async () => {
     vi.spyOn(mongoose, "connect").mockRejectedValue(new Error("Connection failed"));
-    
+
     // Mock setTimeout to resolve immediately
     vi.spyOn(global, "setTimeout").mockImplementation((cb: any) => {
       if (typeof cb === "function") cb();

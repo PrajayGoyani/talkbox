@@ -1,6 +1,6 @@
 <script lang="ts">
-import { chatListStore } from "$state/chat/chat-list.svelte";
-import { chatActions } from "$state/chat/chat-actions.svelte";
+  import { chatListStore } from "$state/chat/chat-list.svelte";
+  import { chatActions } from "$state/chat/chat-actions.svelte";
 
   import Icon from "$components/ui/Icon.svelte";
   import type { Chat } from "$lib/types/chat";
@@ -103,10 +103,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
       onclick={handleMarkRead}
       disabled={(chat.unreadCount ?? 0) === 0}
     >
-      <Icon
-        name="check"
-        class="w-4.5 h-4.5 text-slate-400 group-hover:text-emerald-500"
-      />
+      <Icon name="check" class="w-4.5 h-4.5 text-slate-400 group-hover:text-emerald-500" />
       Mark as Read
     </button>
 
@@ -116,10 +113,7 @@ import { chatActions } from "$state/chat/chat-actions.svelte";
       class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-500 group"
       onclick={handleDelete}
     >
-      <Icon
-        name="trash"
-        class="w-4.5 h-4.5 transition-transform group-hover:rotate-6"
-      />
+      <Icon name="trash" class="w-4.5 h-4.5 transition-transform group-hover:rotate-6" />
       Delete Conversation
     </button>
   </div>

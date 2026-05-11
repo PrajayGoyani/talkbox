@@ -22,9 +22,7 @@
   let usernameCopied = $state(false);
   let emailCopied = $state(false);
 
-  const displayName = $derived(
-    authStore.user?.name || authStore.user?.username || "",
-  );
+  const displayName = $derived(authStore.user?.name || authStore.user?.username || "");
 
   const resolvedAvatarUrl = $derived.by(() => {
     const url = authStore.user?.avatarUrl;
@@ -164,10 +162,7 @@
     if (!authStore.user?.username) return;
     const textToCopy = `@${authStore.user.username}`;
     navigator.clipboard.writeText(textToCopy).then(() => {
-      tooltipStore.showTemporary(
-        "Username copied",
-        e.currentTarget as HTMLElement,
-      );
+      tooltipStore.showTemporary("Username copied", e.currentTarget as HTMLElement);
       usernameCopied = true;
       setTimeout(() => (usernameCopied = false), 2000);
     });
@@ -176,10 +171,7 @@
   const handleCopyEmail = (e: MouseEvent) => {
     if (!authStore.user?.email) return;
     navigator.clipboard.writeText(authStore.user.email).then(() => {
-      tooltipStore.showTemporary(
-        "Email copied",
-        e.currentTarget as HTMLElement,
-      );
+      tooltipStore.showTemporary("Email copied", e.currentTarget as HTMLElement);
       emailCopied = true;
       setTimeout(() => (emailCopied = false), 2000);
     });
@@ -188,9 +180,7 @@
 
 <div class="h-full flex flex-col">
   <div class="panel-header">
-    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
-      Profile
-    </h2>
+    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Profile</h2>
   </div>
 
   <div class="p-6 flex flex-col gap-6 overflow-y-auto">
@@ -199,20 +189,13 @@
       <button
         class="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center relative overflow-hidden shadow-xl shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 border-none p-0"
         onclick={handleAvatarSelect}
-        onkeydown={(e) =>
-          (e.key === "Enter" || e.key === " ") && handleAvatarSelect()}
+        onkeydown={(e) => (e.key === "Enter" || e.key === " ") && handleAvatarSelect()}
         aria-label="Change avatar"
       >
         {#if avatarPreview || resolvedAvatarUrl}
-          <img
-            src={avatarPreview || resolvedAvatarUrl}
-            alt="Avatar"
-            class="w-full h-full object-cover"
-          />
+          <img src={avatarPreview || resolvedAvatarUrl} alt="Avatar" class="w-full h-full object-cover" />
         {:else}
-          <span class="text-3xl font-bold text-white"
-            >{displayName[0]?.toUpperCase() || "?"}</span
-          >
+          <span class="text-3xl font-bold text-white">{displayName[0]?.toUpperCase() || "?"}</span>
         {/if}
         <div
           class="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity"
@@ -220,33 +203,19 @@
           <Icon name="camera" class="w-5 h-5" />
         </div>
         {#if uploadingAvatar}
-          <div
-            class="absolute inset-0 bg-black/60 flex items-center justify-center"
-          >
-            <span
-              class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
-            ></span>
+          <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <span class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></span>
           </div>
         {/if}
       </button>
-      <input
-        type="file"
-        bind:this={avatarInput}
-        onchange={handleAvatarChange}
-        accept="image/*"
-        class="hidden"
-      />
+      <input type="file" bind:this={avatarInput} onchange={handleAvatarChange} accept="image/*" class="hidden" />
     </div>
 
     <!-- User Info -->
     <div class="flex flex-col gap-5">
       <!-- Display Name -->
       <div class="flex flex-col gap-1.5">
-        <span
-          class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
-        >
-          Display Name
-        </span>
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"> Display Name </span>
         {#if editingName}
           <div class="flex gap-2 items-center">
             <input
@@ -264,8 +233,7 @@
               aria-label="Save name"
             >
               {#if saving}
-                <span
-                  class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
+                <span class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
                 ></span>
               {:else}
                 ✓
@@ -280,9 +248,7 @@
         {:else}
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2">
-              <span
-                id="display-name-value"
-                class="text-sm text-slate-900 dark:text-slate-100 wrap-break-word"
+              <span id="display-name-value" class="text-sm text-slate-900 dark:text-slate-100 wrap-break-word"
                 >{authStore.user?.name || "Not set"}</span
               >
               {#if authStore.user?.plan === "pro"}
@@ -306,11 +272,7 @@
 
       <!-- Bio -->
       <div class="flex flex-col gap-1.5">
-        <span
-          class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
-        >
-          Bio
-        </span>
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"> Bio </span>
         {#if editingBio}
           <div class="flex flex-col gap-2">
             <textarea
@@ -332,8 +294,7 @@
                   disabled={saving}
                 >
                   {#if saving}
-                    <span
-                      class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
+                    <span class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"
                     ></span>
                   {:else}
                     Save
@@ -354,9 +315,7 @@
               id="bio-value"
               class={[
                 "text-sm leading-relaxed wrap-break-word flex-1",
-                authStore.user?.bio
-                  ? "text-slate-600 dark:text-slate-400"
-                  : "text-slate-400 italic",
+                authStore.user?.bio ? "text-slate-600 dark:text-slate-400" : "text-slate-400 italic",
               ]}
             >
               {authStore.user?.bio || "No bio yet"}
@@ -374,15 +333,10 @@
 
       <!-- Username (read-only) -->
       <div class="flex flex-col gap-1.5">
-        <span
-          class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
-          >Username</span
-        >
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Username</span>
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-2">
-            <span
-              id="username-display"
-              class="font-mono text-xs text-indigo-600 dark:text-indigo-400"
+            <span id="username-display" class="font-mono text-xs text-indigo-600 dark:text-indigo-400"
               >@{authStore.user?.username}</span
             >
             <button
@@ -398,26 +352,16 @@
               />
             </button>
           </div>
-          <span
-            class="text-[10px] text-slate-500 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 rounded"
-            >Read-only</span
-          >
+          <span class="text-[10px] text-slate-500 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 rounded">Read-only</span>
         </div>
       </div>
 
       <!-- Email (read-only) -->
       <div class="flex flex-col gap-1.5">
-        <span
-          class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
-          >Email</span
-        >
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email</span>
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-2">
-            <span
-              id="email-display"
-              class="text-sm text-slate-900 dark:text-slate-100"
-              >{authStore.user?.email}</span
-            >
+            <span id="email-display" class="text-sm text-slate-900 dark:text-slate-100">{authStore.user?.email}</span>
             <button
               use:tooltip={"Copy email"}
               onclick={handleCopyEmail}
@@ -435,13 +379,8 @@
       </div>
 
       <!-- Subscription Plan -->
-      <div
-        class="flex flex-col gap-1.5 pt-4 border-t border-slate-100 dark:border-white/5"
-      >
-        <span
-          class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
-          >Subscription Plan</span
-        >
+      <div class="flex flex-col gap-1.5 pt-4 border-t border-slate-100 dark:border-white/5">
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Subscription Plan</span>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span
@@ -477,9 +416,7 @@
       </div>
     {/if}
     {#if saveSuccess}
-      <div
-        class="text-xs text-emerald-500 bg-emerald-500/10 p-2 rounded-lg animate-in fade-in duration-300"
-      >
+      <div class="text-xs text-emerald-500 bg-emerald-500/10 p-2 rounded-lg animate-in fade-in duration-300">
         Profile updated successfully!
       </div>
     {/if}

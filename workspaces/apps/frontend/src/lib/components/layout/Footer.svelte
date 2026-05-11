@@ -8,16 +8,12 @@
   let signupLink = Route.SIGNUP;
 </script>
 
-<footer
-  class="bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-16"
->
+<footer class="bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-16">
   <div class="max-w-7xl mx-auto px-4">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
       <div class="col-span-1 md:col-span-2">
         <div class="flex items-center gap-2 mb-6">
-          <div
-            class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center"
-          >
+          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
             <span class="text-white font-bold text-xl">T</span>
           </div>
           <span class="font-bold text-xl tracking-tight">Talkbox</span>
@@ -28,71 +24,56 @@
       </div>
 
       <div>
-        <h4
-          class="font-bold mb-6 uppercase text-xs tracking-widest text-slate-500"
-        >
-          Legal
-        </h4>
+        <h4 class="font-bold mb-6 uppercase text-xs tracking-widest text-slate-500">Legal</h4>
         <ul class="space-y-4 text-sm text-slate-600 dark:text-slate-400">
           <li>
             <button
               onclick={() => routerStore.navigate(Route.TERMS)}
-              class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              >Terms of Use</button
+              class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Terms of Use</button
             >
           </li>
           <li>
             <button
               onclick={() => routerStore.navigate(Route.PRIVACY)}
-              class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              >Privacy Policy</button
+              class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Privacy Policy</button
             >
           </li>
           <li>
             <button
               onclick={() => routerStore.navigate(Route.FAQ)}
-              class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              >FAQ</button
+              class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">FAQ</button
             >
           </li>
           <li>
             <button
               onclick={() => routerStore.navigate(Route.PRIVACY)}
-              class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              >Cookie Policy</button
+              class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Cookie Policy</button
             >
           </li>
         </ul>
       </div>
 
       <div>
-        <h4
-          class="font-bold mb-6 uppercase text-xs tracking-widest text-slate-500"
-        >
-          Links
-        </h4>
+        <h4 class="font-bold mb-6 uppercase text-xs tracking-widest text-slate-500">Links</h4>
         <ul class="space-y-4 text-sm text-slate-600 dark:text-slate-400">
           {#if authStore.user}
             <li>
               <button
                 onclick={() => routerStore.navigate(dashboardLink)}
-                class="hover:text-indigo-600 dark:hover:text-indigo-400"
-                >Dashboard</button
+                class="hover:text-indigo-600 dark:hover:text-indigo-400">Dashboard</button
               >
             </li>
           {:else}
             <li>
               <button
                 onclick={() => routerStore.navigate(loginLink)}
-                class="hover:text-indigo-600 dark:hover:text-indigo-400"
-                >Sign In</button
+                class="hover:text-indigo-600 dark:hover:text-indigo-400">Sign In</button
               >
             </li>
             <li>
               <button
                 onclick={() => routerStore.navigate(signupLink)}
-                class="hover:text-indigo-600 dark:hover:text-indigo-400"
-                >Sign Up</button
+                class="hover:text-indigo-600 dark:hover:text-indigo-400">Sign Up</button
               >
             </li>
           {/if}

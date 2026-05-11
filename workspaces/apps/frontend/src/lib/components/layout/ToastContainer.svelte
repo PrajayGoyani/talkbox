@@ -44,9 +44,7 @@
 </script>
 
 {#if toasts.length > 0}
-  <div
-    class="fixed bottom-6 right-6 flex flex-col-reverse gap-2 z-1000 pointer-events-none"
-  >
+  <div class="fixed bottom-6 right-6 flex flex-col-reverse gap-2 z-1000 pointer-events-none">
     {#each toasts as toast (toast.id)}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -63,14 +61,10 @@
           class="w-9 h-9 bg-indigo-600 text-white font-bold text-sm shrink-0 shadow-inner"
         />
         <div class="flex flex-col flex-1 min-w-0 gap-0.5">
-          <span
-            class="text-[13px] font-bold text-slate-900 dark:text-white truncate"
-            title="@{toast.senderUsername}"
+          <span class="text-[13px] font-bold text-slate-900 dark:text-white truncate" title="@{toast.senderUsername}"
             >{toast.senderName || toast.senderUsername}</span
           >
-          <span class="text-xs text-slate-500 dark:text-slate-400 truncate"
-            >{toast.preview}</span
-          >
+          <span class="text-xs text-slate-500 dark:text-slate-400 truncate">{toast.preview}</span>
         </div>
         <button
           class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-all shrink-0"

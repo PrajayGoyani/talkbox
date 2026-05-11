@@ -26,7 +26,6 @@
 - **UI Reactivity**: Fixed Svelte 5 reactivity edge cases, including key duplication and stale unread states.
 - **Toast Notifications**: Eliminated duplicate toast event listeners that caused multiple notifications for single events.
 
-
 ## [1.7.0] - 2026-04-28
 
 ### Added
@@ -45,7 +44,6 @@
 
 - **Validation Middleware**: Resolved a critical `TypeError` when sanitizing request data by correctly handling readonly property descriptors.
 - **Layout Consistency**: Fixed sidebar shrinking and layout shifting during message history loading.
-
 
 ## [1.6.0] - 2026-04-24
 

@@ -33,10 +33,12 @@ export class MessageRepository {
       chatId: msg.chatId.toString(),
       senderId: msg.senderId.toString(),
       contentBody: msg.contentBody,
-      attachment: msg.attachment ? {
-        kind: msg.attachment.kind,
-        url: msg.attachment.url,
-      } : undefined,
+      attachment: msg.attachment
+        ? {
+            kind: msg.attachment.kind,
+            url: msg.attachment.url,
+          }
+        : undefined,
       isDeleted: msg.isDeleted,
       deletedAt: msg.deletedAt,
       isEdited: msg.isEdited,

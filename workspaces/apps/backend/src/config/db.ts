@@ -32,7 +32,7 @@ export async function connectDB(retryAttempts: number = DB_RETRY_ATTEMPTS) {
       const backoffDelay = DB_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
       console.warn(
         `Warning: MongoDB connection attempt ${attempt} failed. Retrying in ${backoffDelay}ms... Error:`,
-        errorMessage
+        errorMessage,
       );
       await delay(backoffDelay);
     }

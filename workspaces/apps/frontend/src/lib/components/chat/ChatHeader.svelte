@@ -15,9 +15,7 @@
   }: {
     otherUser: UserDto | null;
     status?: ChatStatus;
-    partnerStatus:
-      | { isOnline: boolean; lastSeen: string | Date | null }
-      | undefined;
+    partnerStatus: { isOnline: boolean; lastSeen: string | Date | null } | undefined;
     onBack?: () => void;
   } = $props();
 
@@ -55,18 +53,11 @@
       <Icon name="sidebar" class="w-5 h-5" />
     </button>
 
-    <Avatar
-      user={otherUser}
-      showBadge={true}
-      class="w-9 h-9 bg-indigo-500 text-white text-sm"
-    />
+    <Avatar user={otherUser} showBadge={true} class="w-9 h-9 bg-indigo-500 text-white text-sm" />
 
     <div class="flex flex-col min-w-0 font-sans">
       <div class="flex items-center gap-2">
-        <h3
-          class="m-0 text-base md:text-lg font-semibold leading-none truncate"
-          title="@{otherUser?.username}"
-        >
+        <h3 class="m-0 text-base md:text-lg font-semibold leading-none truncate" title="@{otherUser?.username}">
           {otherUser?.name || otherUser?.username}
         </h3>
         {#if otherUser?.plan === "pro"}
@@ -101,10 +92,8 @@
       {:else}
         <div class="flex items-center gap-1.5 mt-1">
           {#if partnerStatus?.isOnline}
-            <span
-              class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
-            ></span><span class="text-xs text-emerald-500 font-medium"
-              >Online</span
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span><span
+              class="text-xs text-emerald-500 font-medium">Online</span
             >
           {:else if partnerStatus?.lastSeen}
             <span class="text-xs text-slate-500">

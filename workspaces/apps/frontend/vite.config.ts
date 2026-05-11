@@ -11,7 +11,6 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_PROXY_TARGET || "http://localhost:3000";
 
   return {
-    lint: { options: { typeAware: true, typeCheck: true } },
     plugins: [
       tailwindcss(),
       svelte({
@@ -48,28 +47,7 @@ export default defineConfig(({ mode }) => {
     staged: {
       "*": "vp check --fix",
     },
-    fmt: {
-      printWidth: 120,
-      ignorePatterns: ["routeTree.gen.ts", "docs/changelog/index.mdx", "dist/**"],
-      sortPackageJson: {
-        sortScripts: true,
-      },
-      sortTailwindcss: {
-        stylesheet: "./src/app.css",
-        functions: ["clsx", "cva", "cn"],
-      },
-      sortImports: {
-        groups: [
-          "type-import",
-          ["value-builtin", "value-external"],
-          "type-internal",
-          "value-internal",
-          ["type-parent", "type-sibling", "type-index"],
-          ["value-parent", "value-sibling", "value-index"],
-          "unknown",
-        ],
-      },
-    },
+
     server: {
       proxy: {
         "/api": {
