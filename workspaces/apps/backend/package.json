@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "",
   "license": "ISC",
   "author": "",
@@ -8,7 +8,7 @@
   "main": "app.js",
   "scripts": {
     "build": "tsgo",
-    "dev": "bun --watch --inspect=localhost:9229/talkbox --preload ./src/instrument.ts server.ts",
+    "dev": "bun --watch --inspect=localhost:9230/talkbox --preload ./src/instrument.ts server.ts",
     "fmt": "vp fmt",
     "fmt:check": "vp fmt --check",
     "start": "bun --preload ./dist/src/instrument.js dist/server.js",

@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.8.0] - 2026-05-11
+
+### Added
+
+- **Monorepo Migration**: Transitioned to a formal monorepo structure with dedicated `frontend`, `backend`, and `shared` workspaces using Bun.
+- **Engaging Loader**: Implemented a dynamic "engaging loader" system with backend-driven quotes and environment-controlled toggles.
+- **Touch-Friendly Tooltips**: Added long-press support for tooltips on mobile devices with light-dismiss behavior.
+- **Active Chat Tracking**: Implemented real-time tracking of active chat windows to optimize read status updates and notifications.
+- **Unified State Management**: Centralized chat state orchestration using Svelte 5 runes and persistent socket managers.
+- **Knowledge Graph Integration**: Integrated `code-review-graph` and `graphify` for enhanced developer context and impact analysis.
+
+### Changed
+
+- **Backend Architecture**: Fully refactored the backend into domain-driven services and implemented an event-driven decoupling pattern with dedicated repositories.
+- **Shared Package**: Consolidated types, constants, and utilities into a new `@user-chat/shared` workspace package.
+- **Unified Tooling**: Standardized development, building, and testing under the `vite-plus` (`vp`) toolchain across all workspaces.
+- **Redis Modularization**: Split the monolithic Redis service into specialized components for sessions, presence, and guards.
+- **Graceful Shutdown**: Enhanced the shutdown sequence with configurable timeouts and improved connection handling.
+
+### Fixed
+
+- **Socket Connectivity**: Resolved memory leaks and duplicate event listeners in the socket management layer.
+- **Auth Integrity**: Fixed `undefined` bearer token errors and standardized service headers for API requests.
+- **UI Reactivity**: Fixed Svelte 5 reactivity edge cases, including key duplication and stale unread states.
+- **Toast Notifications**: Eliminated duplicate toast event listeners that caused multiple notifications for single events.
+
+
 ## [1.7.0] - 2026-04-28
 
 ### Added
