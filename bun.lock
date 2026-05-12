@@ -82,7 +82,6 @@
     },
   },
   "overrides": {
-    "@mapbox/node-pre-gyp": "^2.0.3",
     "vite": "npm:@voidzero-dev/vite-plus-core@latest",
   },
   "packages": {

@@ -215,9 +215,24 @@ class AuthStore {
   }
 
   private clearAuth() {
+    this.clearUserDrafts();
     this.user = null;
     this.accessToken = null;
     storage.clearAuth();
+  }
+
+  private clearUserDrafts() {
+    if (typeof window !== "undefined" && this.user?.id) {
+      const prefix = `chat_draft_${this.user.id}_`;
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith(prefix)) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    }
   }
 
   private setAuth(data: AuthResponseDto) {

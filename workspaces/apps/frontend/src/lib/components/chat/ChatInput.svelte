@@ -11,6 +11,7 @@
 
   import { uiStore } from "$state/ui.svelte";
   import { getDisallowedEmojis } from "$utils/emoji";
+  import { authStore } from "$state/auth.svelte";
 
   let {
     chatId,
@@ -25,8 +26,56 @@
   } = $props();
 
   let messageInput = $state("");
+  let currentChatId = $state("");
   let textareaElement: HTMLTextAreaElement | undefined = $state();
   let showEmojiPicker = $state(false);
+
+  const encodeDraft = (text: string) => btoa(encodeURIComponent(text));
+  const decodeDraft = (encoded: string) => decodeURIComponent(atob(encoded));
+
+  $effect(() => {
+    if (chatId && chatId !== currentChatId && authStore.user?.id) {
+      currentChatId = chatId;
+      const draft = localStorage.getItem(`chat_draft_${authStore.user.id}_${chatId}`);
+      
+      if (draft) {
+        try {
+          messageInput = decodeDraft(draft);
+        } catch {
+          // Fallback if the draft was saved as plaintext before encoding was added
+          messageInput = draft;
+        }
+      } else {
+        messageInput = "";
+      }
+      
+      tick().then(adjustTextareaHeight);
+    }
+  });
+
+  const adjustTextareaHeight = () => {
+    if (!textareaElement) return;
+    textareaElement.style.height = "auto";
+    const newHeight = Math.min(textareaElement.scrollHeight, 128);
+    textareaElement.style.height = `${newHeight}px`;
+    textareaElement.style.overflowY = textareaElement.scrollHeight > 128 ? "auto" : "hidden";
+  };
+
+  $effect(() => {
+    if (currentChatId && authStore.user?.id) {
+      const draftKey = `chat_draft_${authStore.user.id}_${currentChatId}`;
+      if (messageInput) {
+        // Debounce saving to localStorage to avoid hitting disk on every keystroke
+        const timeout = setTimeout(() => {
+          localStorage.setItem(draftKey, encodeDraft(messageInput));
+        }, 500);
+        return () => clearTimeout(timeout);
+      } else {
+        // Clear immediately when input is emptied (e.g. after sending)
+        localStorage.removeItem(draftKey);
+      }
+    }
+  });
 
   const prefetchEmojiPicker = () => {
     import("emoji-picker-element").catch(() => {});
@@ -43,10 +92,7 @@
 
     socketManager.sendMessage(chatId, otherUser.id, messageInput);
     messageInput = "";
-    if (textareaElement) {
-      textareaElement.style.height = "auto";
-      textareaElement.style.overflowY = "hidden";
-    }
+    tick().then(adjustTextareaHeight);
     onSend?.();
   };
 
@@ -57,12 +103,8 @@
     }
   };
 
-  const handleInput = (e: Event) => {
-    const target = e.target as HTMLTextAreaElement;
-    target.style.height = "auto";
-    const newHeight = Math.min(target.scrollHeight, 128);
-    target.style.height = `${newHeight}px`;
-    target.style.overflowY = target.scrollHeight > 128 ? "auto" : "hidden";
+  const handleInput = () => {
+    adjustTextareaHeight();
 
     if (chatId && otherUser?.id) {
       socketManager.emitTyping(chatId, otherUser.id, true);
@@ -79,7 +121,7 @@
         if (textareaElement) {
           textareaElement.selectionStart = textareaElement.selectionEnd = start + emoji.length;
           textareaElement.focus();
-          handleInput({ target: textareaElement } as any);
+          handleInput();
         }
       });
     }
