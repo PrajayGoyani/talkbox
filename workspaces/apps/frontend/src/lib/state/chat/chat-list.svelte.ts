@@ -5,11 +5,12 @@ import { notificationService } from "$services/notification.service";
 import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
 import { messageStore } from "$state/active-chat.svelte";
 import { authStore } from "$state/auth.svelte";
+import type { AuthObserver } from "$state/auth-observer";
 
 import { chatRequestsStore } from "./chat-requests.svelte";
 import { pinnedChatsStore } from "./pinned-chats.svelte";
 
-export class ChatListStore {
+export class ChatListStore implements AuthObserver {
   // --- Reactive State (Runes) ---
   chats = $state<Array<Chat>>([]);
   hasMoreChats = $state(true);
@@ -35,21 +36,14 @@ export class ChatListStore {
   }
 
   constructor() {
-    // Sync pinned status when auth changes
-    if (typeof window !== "undefined") {
-      $effect.root(() => {
-        $effect(() => {
-          if (authStore.user?.id) {
-            this.initEventListeners();
-            this.sortChats();
-          } else {
-            this.clear();
-          }
-        });
-      });
-    }
-
     this.initEventListeners();
+    authStore.subscribe(this);
+  }
+
+  init(_userId: string) {
+    void this.fetchChats();
+    void this.fetchRequests();
+    this.sortChats();
   }
 
   private initEventListeners() {
@@ -181,11 +175,11 @@ export class ChatListStore {
     this.chatsAbortController?.abort();
     this.chatsAbortController = new AbortController();
     this.isLoadingChats = true;
+    this.currentSearchQuery = query;
     this.lastError = null;
 
     try {
       const result = await chatService.fetchChats(query, 20, null, this.chatsAbortController.signal);
-      this.currentSearchQuery = query;
       this.chatsMap.clear();
 
       this.chats = result.data.map((chat: any) => ({

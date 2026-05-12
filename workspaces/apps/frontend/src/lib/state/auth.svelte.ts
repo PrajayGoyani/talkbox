@@ -1,9 +1,9 @@
-import type { ApiResponse } from "shared/types/api.dto";
 import type { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from "shared/types/auth.dto";
 
-import { API_BASE } from "$lib/config";
+import { api, setTokenProvider } from "$lib/services/api.client";
 import { ApiError } from "$utils/errors";
 import { storage } from "$utils/storage";
+import type { AuthObserver } from "./auth-observer";
 
 // Access tokens expire in 15min typically; refresh 1 min before
 const REFRESH_INTERVAL_MS = 14 * 60 * 1000;
@@ -18,9 +18,24 @@ class AuthStore {
   isSlowBoot: boolean = $state(false);
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private bootTimer: ReturnType<typeof setTimeout> | null = null;
+  private observers: Set<AuthObserver> = new Set();
 
   constructor() {
+    setTokenProvider(() => this.accessToken);
     void this.init();
+  }
+
+  /**
+   * Register a store to react to auth changes.
+   * Returns a cleanup function to unregister.
+   */
+  subscribe(observer: AuthObserver) {
+    this.observers.add(observer);
+    // If already logged in, notify immediately
+    if (this.user?.id) {
+      observer.init?.(this.user.id);
+    }
+    return () => this.observers.delete(observer);
   }
 
   private async init() {
@@ -35,22 +50,23 @@ class AuthStore {
     }
 
     try {
-      // Try silent refresh first (HttpOnly cookie may have a valid refresh token)
       const refreshed = await this.silentRefresh();
 
       if (!refreshed) {
-        // Fallback: check storage for cached user (but we no longer store/check tokens here)
-        const storedUser = storage.getUser();
-        if (storedUser) {
-          this.user = storedUser;
-        }
+        // If refresh failed, the access token is missing, but the session cookie might still be valid.
+        // Try to fetch the user profile directly to verify the session.
+        console.log("[AuthStore] Silent refresh failed, trying fetchMe...");
+        await this.fetchMe();
       }
-
+    } catch (e) {
+      // If both fail, we are definitely logged out
+      console.warn("[AuthStore] Auth initialization failed. Redirecting to login.", e);
+      this.clearAuth();
+    } finally {
       const elapsed = Date.now() - startTime;
       if (elapsed < 500) {
         await new Promise((r) => setTimeout(r, 500 - elapsed));
       }
-    } finally {
       this.clearBootTimer();
       this.isCheckingAuth = false;
     }
@@ -63,40 +79,14 @@ class AuthStore {
     }
   }
 
-  /**
-   * Silent refresh: POST to /auth/refresh with credentials (HttpOnly cookie).
-   * On success: updates accessToken.
-   * Returns true if refresh succeeded.
-   */
+  /** Perform silent refresh using HttpOnly refresh token cookie */
   async silentRefresh(): Promise<boolean> {
     try {
-      const response = await fetch(`${API_BASE}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-        headers: this.getHeaders(true),
-      });
-
-      if (!response.ok) return false;
-
-      const res = await response.json();
-      if (res.success && res.data?.accessToken) {
-        this.accessToken = res.data.accessToken;
-
-        // If we have cached user data, keep it; otherwise fetch /me
-        if (!this.user) {
-          const storedUser = storage.getUser();
-          if (storedUser) {
-            this.user = storedUser;
-          } else {
-            await this.fetchMe();
-          }
-        }
-
-        this.scheduleRefresh();
-        return true;
-      }
-      return false;
-    } catch {
+      const data = await api.post<AuthResponseDto>("/auth/refresh");
+      this.setAuth(data);
+      return true;
+    } catch (e) {
+      // If refresh fails, we're not logged in, but don't log error as it's expected if no cookie
       return false;
     }
   }
@@ -104,21 +94,15 @@ class AuthStore {
   /** Fetch user profile using current accessToken */
   private async fetchMe() {
     try {
-      const resp = await fetch(`${API_BASE}/auth/me`, {
-        credentials: "include",
-      });
-      if (resp.status === 401) {
-        this.clearAuth();
-        return;
-      }
-      if (!resp.ok) return;
-      const res = await resp.json();
-      if (res.success && res.data) {
-        this.user = res.data;
-        storage.setUser(res.data);
-      }
+      const user = await api.get<UserDto>("/auth/me");
+      this.user = user;
+      storage.setUser(user);
+      this.notifyLogin(user.id);
     } catch (e) {
-      console.error("Failed to fetch user profile", e);
+      if (e instanceof ApiError && e.status === 401) {
+        this.clearAuth();
+      }
+      throw e;
     }
   }
 
@@ -133,85 +117,50 @@ class AuthStore {
   async login(credentials: LoginRequestDto) {
     this.loading = true;
     this.error = null;
-    let success = false;
     try {
-      const response = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: this.getHeaders(true),
-        credentials: "include",
-        body: JSON.stringify(credentials),
-      });
-
-      if (!response.ok) {
-        throw await ApiError.fromResponse(response);
-      }
-
-      const res: ApiResponse<AuthResponseDto> = await response.json();
-
-      if (res.success) {
-        this.setAuth(res.data);
-        success = true;
-      } else {
-        this.error = res.error?.message || "Login failed";
-      }
-    } catch (e) {
-      if (!ApiError.handleRateLimit(e)) {
-        this.error = e instanceof ApiError ? e.message : "Network error occurred";
-      } else {
-        this.error = "Too many attempts. Please wait.";
-      }
+      const data = await api.post<AuthResponseDto>("/auth/login", credentials);
+      this.setAuth(data);
+      return true;
+    } catch (e: any) {
+      this.error = e.message || "Login failed";
+      return false;
     } finally {
       this.loading = false;
     }
-    return success;
   }
 
   async signup(data: SignupRequestDto) {
     this.loading = true;
     this.error = null;
-    let success = false;
     try {
-      const response = await fetch(`${API_BASE}/auth/signup`, {
-        method: "POST",
-        headers: this.getHeaders(true),
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw await ApiError.fromResponse(response);
-      }
-
-      const res: ApiResponse<AuthResponseDto> = await response.json();
-
-      if (res.success) {
-        this.setAuth(res.data);
-        success = true;
-      } else {
-        this.error = res.error?.message || "Signup failed";
-      }
-    } catch (e) {
-      if (!ApiError.handleRateLimit(e)) {
-        this.error = e instanceof ApiError ? e.message : "Network error occurred";
-      } else {
-        this.error = "Too many attempts. Please wait.";
-      }
+      const authData = await api.post<AuthResponseDto>("/auth/signup", data);
+      this.setAuth(authData);
+      return true;
+    } catch (e: any) {
+      this.error = e.message || "Signup failed";
+      return false;
     } finally {
       this.loading = false;
     }
-    return success;
   }
 
   async logout() {
     if (this.refreshTimer) clearTimeout(this.refreshTimer);
     try {
-      if (typeof window !== "undefined") {
-        await fetch(`${API_BASE}/auth/logout`, { method: "POST", credentials: "include" });
-      }
+      await api.post("/auth/logout");
     } catch (e) {
-      console.error("Logout error", e);
+      console.warn("Logout request failed, clearing local auth anyway", e);
+    } finally {
+      this.clearAuth();
     }
-    this.clearAuth();
+  }
+
+  private notifyLogout() {
+    this.observers.forEach((obs) => obs.clear());
+  }
+
+  private notifyLogin(userId: string) {
+    this.observers.forEach((obs) => obs.init?.(userId));
   }
 
   private clearAuth() {
@@ -219,20 +168,16 @@ class AuthStore {
     this.user = null;
     this.accessToken = null;
     storage.clearAuth();
+    this.notifyLogout();
   }
 
   private clearUserDrafts() {
-    if (typeof window !== "undefined" && this.user?.id) {
-      const prefix = `chat_draft_${this.user.id}_`;
-      const keysToRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key?.startsWith(prefix)) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach((k) => localStorage.removeItem(k));
-    }
+    if (typeof window === "undefined" || !this.user?.id) return;
+
+    const prefix = `chat_draft_${this.user.id}_`;
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith(prefix))
+      .forEach((key) => localStorage.removeItem(key));
   }
 
   private setAuth(data: AuthResponseDto) {
@@ -240,30 +185,17 @@ class AuthStore {
     this.accessToken = data.accessToken;
     storage.setUser(data.user);
     this.scheduleRefresh();
+    this.notifyLogin(data.user.id);
   }
 
   /** Update user profile (name, bio) */
   async updateProfile(data: { name?: string | null; bio?: string | null }) {
     try {
-      const resp = await fetch(`${API_BASE}/user/profile`, {
-        method: "PATCH",
-        headers: this.getHeaders(true),
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-
-      if (!resp.ok) {
-        throw await ApiError.fromResponse(resp);
-      }
-
-      const res = await resp.json();
-      if (res.success && res.data) {
-        this.user = { ...this.user, ...res.data } as UserDto;
-        storage.setUser(this.user);
-      }
-      return res;
-    } catch (e: unknown) {
-      ApiError.handleRateLimit(e);
+      const updatedUser = await api.patch<UserDto>("/user/profile", data);
+      this.user = updatedUser;
+      storage.setUser(updatedUser);
+      return { success: true, data: updatedUser };
+    } catch (e: any) {
       console.error("Profile update error", e);
       throw e;
     }
@@ -271,7 +203,6 @@ class AuthStore {
 
   /** Upload user avatar */
   async updateAvatar(file: File) {
-    // Client-side validation
     if (!file.type.startsWith("image/")) {
       throw new Error("Please upload an image file");
     }
@@ -282,20 +213,13 @@ class AuthStore {
     try {
       const formData = new FormData();
       formData.append("avatar", file);
-      const resp = await fetch(`${API_BASE}/user/avatar`, {
-        method: "POST",
-        headers: this.getHeaders(),
-        credentials: "include",
-        body: formData,
-      });
-      const res = await resp.json();
-      if (!resp.ok) throw new Error(res.error?.message || "Failed to upload avatar");
-      if (res.success && res.data?.avatar_url) {
-        this.user = { ...this.user, avatarUrl: res.data.avatar_url } as UserDto;
+      const res = await api.post<{ avatar_url: string }>("/user/avatar", formData);
+      if (res.avatar_url) {
+        this.user = { ...this.user, avatarUrl: res.avatar_url } as UserDto;
         storage.setUser(this.user);
       }
-      return res;
-    } catch (e: unknown) {
+      return { success: true, data: res };
+    } catch (e: any) {
       console.error("Avatar upload error", e);
       throw e;
     }
@@ -305,24 +229,11 @@ class AuthStore {
   async upgradeToPro() {
     this.loading = true;
     try {
-      const resp = await fetch(`${API_BASE}/auth/upgrade-pro`, {
-        method: "POST",
-        headers: this.getHeaders(),
-        credentials: "include",
-      });
-
-      if (!resp.ok) {
-        throw await ApiError.fromResponse(resp);
-      }
-
-      const res = await resp.json();
-      if (res.success && res.data) {
-        this.user = { ...this.user, ...res.data } as UserDto;
-        storage.setUser(this.user);
-      }
-      return res;
-    } catch (e: unknown) {
-      ApiError.handleRateLimit(e);
+      const data = await api.post<UserDto>("/auth/upgrade-pro");
+      this.user = data;
+      storage.setUser(data);
+      return { success: true, data };
+    } catch (e: any) {
       console.error("Upgrade error", e);
       throw e;
     } finally {
@@ -337,25 +248,10 @@ class AuthStore {
     this.loading = true;
     this.error = null;
     try {
-      const response = await fetch(`${API_BASE}/auth/forgot-password`, {
-        method: "POST",
-        headers: this.getHeaders(true),
-        credentials: "include",
-        body: JSON.stringify({ email }),
-      });
-
-      if (!response.ok) {
-        throw await ApiError.fromResponse(response);
-      }
-
-      const res = await response.json();
-      return { success: true, message: res.data?.message };
-    } catch (e) {
-      if (!ApiError.handleRateLimit(e)) {
-        this.error = e instanceof ApiError ? e.message : "Network error occurred";
-      } else {
-        this.error = "Too many attempts. Please wait.";
-      }
+      const res = await api.post<{ message: string }>("/auth/forgot-password", { email });
+      return { success: true, message: res.message };
+    } catch (e: any) {
+      this.error = e.message || "Network error occurred";
       return { success: false };
     } finally {
       this.loading = false;
@@ -367,25 +263,10 @@ class AuthStore {
     this.loading = true;
     this.error = null;
     try {
-      const response = await fetch(`${API_BASE}/auth/reset-password`, {
-        method: "POST",
-        headers: this.getHeaders(true),
-        credentials: "include",
-        body: JSON.stringify({ token, password }),
-      });
-
-      if (!response.ok) {
-        throw await ApiError.fromResponse(response);
-      }
-
-      const res = await response.json();
-      return { success: true, message: res.data?.message };
-    } catch (e) {
-      if (!ApiError.handleRateLimit(e)) {
-        this.error = e instanceof ApiError ? e.message : "Network error occurred";
-      } else {
-        this.error = "Too many attempts. Please wait.";
-      }
+      const res = await api.post<{ message: string }>("/auth/reset-password", { token, password });
+      return { success: true, message: res.message };
+    } catch (e: any) {
+      this.error = e.message || "Network error occurred";
       return { success: false };
     } finally {
       this.loading = false;
@@ -399,25 +280,16 @@ class AuthStore {
     this.loading = true;
     this.error = null;
     try {
-      const response = await fetch(`${API_BASE}/auth/verify-email?token=${encodeURIComponent(token)}`, {
-        credentials: "include",
-      });
+      const res = await api.get<{ message: string }>(`/auth/verify-email?token=${encodeURIComponent(token)}`);
 
-      if (!response.ok) {
-        throw await ApiError.fromResponse(response);
-      }
-
-      const res = await response.json();
-
-      // Update local user state if logged in
       if (this.user) {
         this.user = { ...this.user, isEmailVerified: true } as UserDto;
         storage.setUser(this.user);
       }
 
-      return { success: true, message: res.data?.message };
-    } catch (e) {
-      this.error = e instanceof ApiError ? e.message : "Verification failed";
+      return { success: true, message: res.message };
+    } catch (e: any) {
+      this.error = e.message || "Verification failed";
       return { success: false };
     } finally {
       this.loading = false;
@@ -425,32 +297,14 @@ class AuthStore {
   }
 
   /** Resend verification email (authenticated) */
-  async resendVerification(): Promise<boolean> {
+  async resendVerification() {
     try {
-      const response = await fetch(`${API_BASE}/auth/resend-verification`, {
-        method: "POST",
-        headers: this.getHeaders(),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw await ApiError.fromResponse(response);
-      }
-
+      await api.post("/auth/resend-verification");
       return true;
     } catch (e) {
-      ApiError.handleRateLimit(e, "Please wait before requesting another verification email.");
       console.error("Resend verification error", e);
       return false;
     }
-  }
-  /** Helper to get headers with optional JSON content-type and auth token */
-  private getHeaders(json = false): Record<string, string> {
-    const headers: Record<string, string> = json ? { "Content-Type": "application/json" } : {};
-    if (this.accessToken) {
-      headers["Authorization"] = `Bearer ${this.accessToken}`;
-    }
-    return headers;
   }
 }
 

@@ -1,4 +1,3 @@
-import { uiStore } from "$state/ui.svelte";
 
 /**
  * Standardized API error class that captures HTTP status and backend error codes.
@@ -37,18 +36,4 @@ export class ApiError extends Error {
     return new ApiError(message, resp.status, code, details);
   }
 
-  /**
-   * Centralized handling for 429 Too Many Requests errors.
-   * Returns true if the error was handled.
-   */
-  static handleRateLimit(error: unknown, customMessage?: string): boolean {
-    if (error instanceof ApiError && error.status === 429) {
-      uiStore.addAlert(
-        customMessage || error.message || "You are doing that too fast. Please wait a minute.",
-        "danger",
-      );
-      return true;
-    }
-    return false;
-  }
 }

@@ -33,7 +33,6 @@
   const SKELETON_ITEM_HEIGHT = 80; // height of ChatListSkeleton
   const skeletonCount = $derived(listContainerHeight > 0 ? Math.ceil(listContainerHeight / SKELETON_ITEM_HEIGHT) : 8);
 
-  let loading = $state(false);
   let error = $state<string | null>(null);
   let processingStates = $state<Record<string, "accepting" | "rejecting" | null>>({});
 
@@ -57,13 +56,10 @@
   };
 
   export const refreshChats = async () => {
-    loading = true;
     try {
       await chatListStore.fetchChats(searchQuery);
     } catch (e) {
       error = chatActions.lastError;
-    } finally {
-      loading = false;
     }
   };
 
@@ -161,7 +157,7 @@
   bind:clientHeight={listContainerHeight}
 >
   <!-- Chat Items -->
-  {#if loading}
+  {#if chatListStore.isLoadingChats && chatListStore.chats.length === 0}
     <div class="flex flex-col">
       {#each Array(skeletonCount) as _, i}
         <div

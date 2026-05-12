@@ -11,7 +11,12 @@
     danger: {
       bg: "bg-rose-500/90 dark:bg-rose-600/90 border-rose-400/30",
       icon: "close",
-      label: "Action Rejected",
+      label: "System Error",
+    },
+    warning: {
+      bg: "bg-amber-500/90 dark:bg-amber-600/90 border-amber-400/30",
+      icon: "info",
+      label: "Warning",
     },
     info: {
       bg: "bg-indigo-500/90 dark:bg-indigo-600/90 border-indigo-400/30",

@@ -1,14 +1,32 @@
 import type { NotificationDto, NotificationResponseDto } from "shared/types/notification.dto";
 
-import { API_BASE } from "$lib/config";
+import { api } from "$lib/services/api.client";
+import { authStore } from "./auth.svelte";
+import type { AuthObserver } from "./auth-observer";
 
-class NotificationStore {
+class NotificationStore implements AuthObserver {
   notifications = $state<NotificationDto[]>([]);
   unreadCount = $state(0);
   loading = $state(false);
   hasMore = $state(true);
   private nextCursor: string | null = null;
   private readonly LIMIT = 15;
+
+  constructor() {
+    authStore.subscribe(this);
+  }
+
+  init(_userId: string) {
+    void this.fetchNotifications(true);
+  }
+
+  clear() {
+    this.notifications = [];
+    this.unreadCount = 0;
+    this.loading = false;
+    this.hasMore = true;
+    this.nextCursor = null;
+  }
 
   async fetchNotifications(reset = false) {
     if (this.loading && !reset) return;
@@ -20,18 +38,14 @@ class NotificationStore {
     }
 
     try {
-      const url = new URL(`${API_BASE}/notifications`, window.location.origin);
-      url.searchParams.set("limit", this.LIMIT.toString());
-      if (this.nextCursor) url.searchParams.set("cursor", this.nextCursor);
-
-      const resp = await fetch(url.toString(), {
-        credentials: "include",
+      const data = await api.get<NotificationResponseDto>("/notifications", {
+        params: {
+          limit: this.LIMIT,
+          cursor: this.nextCursor,
+        },
       });
 
-      if (!resp.ok) throw new Error("Failed to load notifications");
-
-      const result = await resp.json();
-      const { notifications, unreadCount, nextCursor, hasMore } = result.data as NotificationResponseDto;
+      const { notifications, unreadCount, nextCursor, hasMore } = data;
 
       if (reset) {
         this.notifications = notifications;
@@ -51,15 +65,9 @@ class NotificationStore {
 
   async markAsRead(id: string) {
     try {
-      const resp = await fetch(`${API_BASE}/notifications/${id}/read`, {
-        method: "PUT",
-        credentials: "include",
-      });
-
-      if (resp.ok) {
-        this.notifications = this.notifications.map((n) => (n._id === id ? { ...n, isRead: true } : n));
-        this.unreadCount = Math.max(0, this.unreadCount - 1);
-      }
+      await api.put(`/notifications/${id}/read`);
+      this.notifications = this.notifications.map((n) => (n._id === id ? { ...n, isRead: true } : n));
+      this.unreadCount = Math.max(0, this.unreadCount - 1);
     } catch (e) {
       console.error("Failed to mark notification as read:", e);
     }
@@ -67,15 +75,9 @@ class NotificationStore {
 
   async markAllAsRead() {
     try {
-      const resp = await fetch(`${API_BASE}/notifications/read-all`, {
-        method: "PUT",
-        credentials: "include",
-      });
-
-      if (resp.ok) {
-        this.notifications = this.notifications.map((n) => ({ ...n, isRead: true }));
-        this.unreadCount = 0;
-      }
+      await api.put("/notifications/read-all");
+      this.notifications = this.notifications.map((n) => ({ ...n, isRead: true }));
+      this.unreadCount = 0;
     } catch (e) {
       console.error("Failed to mark all notifications as read:", e);
     }

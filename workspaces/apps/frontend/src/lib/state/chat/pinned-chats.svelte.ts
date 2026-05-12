@@ -1,24 +1,23 @@
 import { authStore } from "$state/auth.svelte";
+import type { AuthObserver } from "$state/auth-observer";
 
 const browser = typeof window !== "undefined";
 const PINNED_KEY = "chat_pinned_ids";
 
-export class PinnedChatsStore {
+export class PinnedChatsStore implements AuthObserver {
   ids = $state(new Set<string>());
 
   constructor() {
+    authStore.subscribe(this);
+  }
+
+  clear() {
+    this.ids.clear();
+  }
+
+  init(userId: string) {
     if (browser) {
-      // Automatically load pins when user changes
-      $effect.root(() => {
-        $effect(() => {
-          const userId = authStore.user?.id;
-          if (userId) {
-            this._load(userId);
-          } else {
-            this.ids.clear();
-          }
-        });
-      });
+      this._load(userId);
     }
   }
 

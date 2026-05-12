@@ -9,6 +9,7 @@ import type {
 import type { NotificationDto } from "shared/types/notification.dto";
 import type { Socket } from "socket.io-client";
 
+import type { AuthObserver } from "$state/auth-observer";
 import { authStore } from "$state/auth.svelte";
 import { confirmStore } from "$state/confirm.svelte";
 import { routerStore } from "$state/router.svelte";
@@ -22,7 +23,7 @@ import { RealtimeEvent, realtimeEvents } from "./realtime-events";
  * Manages the Socket.io connection and translates raw socket events
  * into domain-specific RealtimeEvents.
  */
-export class SocketManager {
+export class SocketManager implements AuthObserver {
   socket: Socket | null = $state(null);
   isConnected = $state(false);
   isSendingMessage = $state(false);
@@ -30,7 +31,15 @@ export class SocketManager {
   private myTypingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor() {
-    // No longer coupled to a specific store
+    authStore.subscribe(this);
+  }
+
+  init(_userId: string) {
+    void this.connect();
+  }
+
+  clear() {
+    this.disconnect();
   }
 
   async connect() {

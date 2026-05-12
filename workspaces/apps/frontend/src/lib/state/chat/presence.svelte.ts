@@ -1,9 +1,11 @@
 import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
+import { authStore } from "$state/auth.svelte";
+import type { AuthObserver } from "$state/auth-observer";
 
 import type { IPresenceStore } from "./types";
 
-export class PresenceStore implements IPresenceStore {
+export class PresenceStore implements IPresenceStore, AuthObserver {
   onlineStatus = new SvelteMap<string, { isOnline: boolean; lastSeen: Date | null }>();
   typingStatus = new SvelteMap<string, SvelteSet<string>>();
 
@@ -42,6 +44,8 @@ export class PresenceStore implements IPresenceStore {
         this.typingTimeouts.delete(key);
       }
     });
+
+    authStore.subscribe(this);
   }
 
   setOnline(userId: string, isOnline: boolean, lastSeen: Date | null = null) {

@@ -3,10 +3,12 @@ import type { MessageDto, MessageReactionUpdateDto } from "shared/types/chat.dto
 import { chatService } from "$services/chat.service";
 import { RealtimeEvent, realtimeEvents } from "$services/realtime-events";
 import { socketManager } from "$services/socket.manager.svelte";
+import { authStore } from "$state/auth.svelte";
+import type { AuthObserver } from "$state/auth-observer";
 
 const LOADER_AWAIT_MS = 300;
 
-class MessageStore {
+class MessageStore implements AuthObserver {
   activeChatId: string | null = $state(null);
   messages: Array<MessageDto> = $state([]);
   hasMoreMessages = $state(true);
@@ -15,11 +17,13 @@ class MessageStore {
   private messagesAbortController: AbortController | null = null;
 
   constructor() {
-    realtimeEvents.on(RealtimeEvent.MESSAGE_RECEIVED, (msg) => this.handleReceiveMessage(msg));
+    realtimeEvents.on(RealtimeEvent.MESSAGE_RECEIVED, (data) => this.handleReceiveMessage(data));
     realtimeEvents.on(RealtimeEvent.MESSAGE_SENT_ACK, (data) => this.handleMessageSentAck(data.chatId, data.message));
     realtimeEvents.on(RealtimeEvent.MESSAGE_DELETED, (data) => this.handleMessageDeleted(data));
     realtimeEvents.on(RealtimeEvent.MESSAGE_UPDATED, (data) => this.handleMessageUpdated(data));
     realtimeEvents.on(RealtimeEvent.REACTION_UPDATED, (data) => this.handleReactionUpdate(data));
+
+    authStore.subscribe(this);
   }
 
   async initialize(chatId: string) {

@@ -58,23 +58,31 @@ export class AuthService {
     };
   }
 
-  async refresh(refreshToken: string): Promise<{ accessToken: string }> {
+  async refresh(refreshToken: string): Promise<AuthResponseDto> {
     if (!refreshToken) {
       throw AppError.unauthorized("Refresh token required", "TOKEN_REQUIRED");
     }
 
+    // FUTURE: Implement Refresh Token Rotation for maximum security.
+    // This would involve generating a new refreshToken here and invalidating the old one
+    // in the database/Redis to prevent reuse.
     const payload = verifyRefreshToken(refreshToken) as JWTPayload;
     const user = await this.userRepository.findById(payload.id);
     if (!user) throw AppError.unauthorized("Invalid user", "INVALID_USER");
+
     const accessToken = generateAccessToken({ id: user._id.toString() });
 
-    return { accessToken };
+    return {
+      user: this.userRepository.transformUser(user),
+      accessToken,
+      refreshToken, // Re-use the existing refresh token
+    };
   }
 
-  async getMe(userId: string | ObjectId): Promise<IUser> {
+  async getMe(userId: string | ObjectId): Promise<UserDto> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw AppError.notFound("User");
-    return user;
+    return this.userRepository.transformUser(user);
   }
 
   // ─── Password Reset ────────────────────────────────────────────────

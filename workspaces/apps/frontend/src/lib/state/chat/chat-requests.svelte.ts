@@ -2,23 +2,20 @@ import type { ChatDto } from "$lib/types/chat";
 
 import { chatService } from "$lib/services/chat.service";
 import { authStore } from "$state/auth.svelte";
+import type { AuthObserver } from "$state/auth-observer";
 
-export class ChatRequestsStore {
+export class ChatRequestsStore implements AuthObserver {
   items = $state<ChatDto[]>([]);
   hasMore = $state(true);
   isLoading = $state(false);
   cursor = $state<string | null>(null);
 
   constructor() {
-    if (typeof window !== "undefined") {
-      $effect.root(() => {
-        $effect(() => {
-          if (!authStore.user?.id) {
-            this.clear();
-          }
-        });
-      });
-    }
+    authStore.subscribe(this);
+  }
+
+  init(_userId: string) {
+    void this.loadInitial();
   }
 
   async loadInitial() {

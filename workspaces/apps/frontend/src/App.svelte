@@ -7,11 +7,12 @@
   import ToastContainer from "$components/layout/ToastContainer.svelte";
   import Lazy from "$components/ui/Lazy.svelte";
   import { Views } from "$lib/views";
+  import { api } from "$lib/services/api.client";
   import { authStore } from "$state/auth.svelte";
-
   import { notificationStore } from "$state/notification.svelte";
   import { themeStore } from "$state/theme.svelte";
-  import { untrack } from "svelte";
+  import { errorStore } from "$state/error.svelte";
+import { untrack } from "svelte";
   import { quintOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
 
@@ -21,7 +22,7 @@
   import Icon from "$components/ui/Icon.svelte";
   import Spinner from "$components/ui/Spinner.svelte";
   import ThemeToggle from "$components/ui/ThemeToggle.svelte";
-  import { API_BASE, SHOW_ENGAGING_LOADER } from "$lib/config";
+  import { SHOW_ENGAGING_LOADER } from "$lib/config";
   import { cn } from "$lib/utils/cn";
   import { routerStore } from "$state/router.svelte";
   import { uiStore } from "$state/ui.svelte";
@@ -92,44 +93,22 @@
     // },
   ];
 
-  let currentQuote = $state(QUOTES[0]);
+  let currentQuote = $state<{ text: string; author?: string }>(QUOTES[0]);
 
   /**
-   * Fetches dynamic quotes from the backend with a 2-second timeout fallback.
+   * Fetches dynamic quotes from the backend.
    */
   async function fetchDynamicQuote() {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-      currentQuote = { text: "Connect. Chat. Collaborate.", author: "Talkbox" };
-    }, 2000);
-
     try {
-      const response = await fetch(`${API_BASE}/public/quote`, {
-        signal: controller.signal,
+      const data = await api.get<{ text: string; author?: string }>("/public/quote", {
+        // Use a signal to allow cancellation if needed
+        signal: AbortSignal.timeout(2000),
       });
-
-      if (!response.ok) return;
-
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const res = await response.json();
-        if (res.success && res.data) {
-          currentQuote = res.data;
-        }
+      if (data) {
+        currentQuote = data;
       }
     } catch (e: any) {
-      // Note: do not remove
-      // if (e.name === "AbortError") {
-      //   console.warn("Dynamic quote fetch timed out (2s limit)");
-      //   return;
-      // }
-      // console.warn(
-      //   "Failed to fetch dynamic quote, falling back to static list",
-      //   e,
-      // );
-    } finally {
-      clearTimeout(timeoutId);
+      // Fallback is handled by the initial state and $effect
     }
   }
 
@@ -181,14 +160,9 @@
     }
   });
 
-  // Sync with auth state and connect socket when authenticated
+  // Sync with auth state when authenticated
   $effect(() => {
     if (authStore.user) {
-      socketManager.connect();
-      // Ensure chats and requests are fetched on mount/re-auth
-      chatListStore.fetchChats();
-      chatListStore.fetchRequests();
-
       // Register toast callback
       const cleanupToast = chatActions.onToast((data) => {
         if (toastContainer) {
@@ -206,8 +180,6 @@
       return () => {
         cleanupToast();
       };
-    } else if (!authStore.user && !authStore.isCheckingAuth) {
-      socketManager.disconnect();
     }
   });
 
@@ -217,7 +189,6 @@
   };
 
   const handleLogout = async () => {
-    socketManager.disconnect();
     await authStore.logout();
     routerStore.navigate(Route.LOGIN);
   };
@@ -511,6 +482,9 @@
 >
   {#each uiStore.alerts as alert (alert.id)}
     <Alert {alert} />
+  {/each}
+  {#each errorStore.errors as error (error.id)}
+    <Alert alert={{ id: error.id, message: error.message, type: error.type === "error" ? "danger" : error.type }} />
   {/each}
 </div>
 
