@@ -1,10 +1,10 @@
+import type { AuthObserver } from "$state/auth-observer";
 import type { MessageDto, MessageReactionUpdateDto } from "shared/types/chat.dto";
 
 import { chatService } from "$services/chat.service";
 import { RealtimeEvent, realtimeEvents } from "$services/realtime-events";
 import { socketManager } from "$services/socket.manager.svelte";
 import { authStore } from "$state/auth.svelte";
-import type { AuthObserver } from "$state/auth-observer";
 
 const LOADER_AWAIT_MS = 300;
 

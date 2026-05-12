@@ -15,7 +15,6 @@ import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
 vi.mock("@repositories/partner.repository", () => ({
@@ -76,7 +75,6 @@ describe("Scalability Optimizations", () => {
     (socketService as any).partnerRequests.clear();
     // Reset TypingHandler local guard
     (socketService as any).typingHandler.localGuard.clear();
-
 
     vi.spyOn(mongoose, "startSession").mockResolvedValue({
       startTransaction: vi.fn(),
@@ -257,7 +255,6 @@ describe("Scalability Optimizations", () => {
       // Mock cache to avoid DB hits
       chatCacheService.setParticipants("c1", new Set([MOCK_USER_ID, "r1"]));
       socketService.io = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as any;
-
 
       // 1. First call hits Redis
       await socketService.handleTyping(sender, payload, true);

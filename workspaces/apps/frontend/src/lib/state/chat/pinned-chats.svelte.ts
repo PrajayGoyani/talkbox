@@ -1,5 +1,6 @@
-import { authStore } from "$state/auth.svelte";
 import type { AuthObserver } from "$state/auth-observer";
+
+import { authStore } from "$state/auth.svelte";
 
 const browser = typeof window !== "undefined";
 const PINNED_KEY = "chat_pinned_ids";

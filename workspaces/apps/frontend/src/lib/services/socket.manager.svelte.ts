@@ -1,3 +1,4 @@
+import type { AuthObserver } from "$state/auth-observer";
 import type { UserDto } from "shared/types/auth.dto";
 import type {
   MessageAckDto,
@@ -9,7 +10,6 @@ import type {
 import type { NotificationDto } from "shared/types/notification.dto";
 import type { Socket } from "socket.io-client";
 
-import type { AuthObserver } from "$state/auth-observer";
 import { authStore } from "$state/auth.svelte";
 import { confirmStore } from "$state/confirm.svelte";
 import { routerStore } from "$state/router.svelte";

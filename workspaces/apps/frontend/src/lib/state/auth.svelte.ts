@@ -3,6 +3,7 @@ import type { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from
 import { api, setTokenProvider } from "$lib/services/api.client";
 import { ApiError } from "$utils/errors";
 import { storage } from "$utils/storage";
+
 import type { AuthObserver } from "./auth-observer";
 
 // Access tokens expire in 15min typically; refresh 1 min before

@@ -1,7 +1,8 @@
-import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
-import { SvelteMap, SvelteSet } from "svelte/reactivity";
-import { authStore } from "$state/auth.svelte";
 import type { AuthObserver } from "$state/auth-observer";
+
+import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
+import { authStore } from "$state/auth.svelte";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import type { IPresenceStore } from "./types";
 

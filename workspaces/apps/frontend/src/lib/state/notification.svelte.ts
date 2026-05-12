@@ -1,8 +1,10 @@
 import type { NotificationDto, NotificationResponseDto } from "shared/types/notification.dto";
 
 import { api } from "$lib/services/api.client";
-import { authStore } from "./auth.svelte";
+
 import type { AuthObserver } from "./auth-observer";
+
+import { authStore } from "./auth.svelte";
 
 class NotificationStore implements AuthObserver {
   notifications = $state<NotificationDto[]>([]);

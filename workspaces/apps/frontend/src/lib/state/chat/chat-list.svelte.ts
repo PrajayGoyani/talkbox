@@ -1,11 +1,11 @@
 import type { Chat } from "$lib/types/chat";
+import type { AuthObserver } from "$state/auth-observer";
 
 import { chatService } from "$services/chat.service";
 import { notificationService } from "$services/notification.service";
 import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
 import { messageStore } from "$state/active-chat.svelte";
 import { authStore } from "$state/auth.svelte";
-import type { AuthObserver } from "$state/auth-observer";
 
 import { chatRequestsStore } from "./chat-requests.svelte";
 import { pinnedChatsStore } from "./pinned-chats.svelte";

@@ -1,6 +1,6 @@
 import { API_BASE } from "$lib/config";
-import { ApiError } from "$utils/errors";
 import { errorStore } from "$state/error.svelte";
+import { ApiError } from "$utils/errors";
 
 export interface RequestOptions extends RequestInit {
   json?: any;
@@ -22,10 +22,7 @@ class ApiClient {
     const { json, params, headers: customHeaders, ...fetchOptions } = options;
 
     // 1. Construct URL with Search Params
-    const url = new URL(
-      `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`,
-      window.location.origin,
-    );
+    const url = new URL(`${API_BASE}${path.startsWith("/") ? path : `/${path}`}`, window.location.origin);
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {

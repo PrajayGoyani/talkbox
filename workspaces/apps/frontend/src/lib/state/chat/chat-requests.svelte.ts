@@ -1,8 +1,8 @@
 import type { ChatDto } from "$lib/types/chat";
+import type { AuthObserver } from "$state/auth-observer";
 
 import { chatService } from "$lib/services/chat.service";
 import { authStore } from "$state/auth.svelte";
-import type { AuthObserver } from "$state/auth-observer";
 
 export class ChatRequestsStore implements AuthObserver {
   items = $state<ChatDto[]>([]);

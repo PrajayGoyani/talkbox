@@ -1,4 +1,3 @@
-
 /**
  * Standardized API error class that captures HTTP status and backend error codes.
  */
@@ -35,5 +34,4 @@ export class ApiError extends Error {
 
     return new ApiError(message, resp.status, code, details);
   }
-
 }

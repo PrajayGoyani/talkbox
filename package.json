@@ -7,6 +7,9 @@
   ],
   "type": "module",
   "scripts": {
+    "build": "bun run build:backend && bun run build:frontend",
+    "build:backend": "bun run --cwd workspaces/apps/backend build",
+    "build:frontend": "bun run --cwd workspaces/apps/frontend build",
     "check": "vp run check:all",
     "fmt": "vp run fmt:all"
   },

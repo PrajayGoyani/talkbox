@@ -1,4 +1,5 @@
 import type { ChatListingResponseDto, MessageDto } from "shared/types/chat.dto";
+
 import { api } from "./api.client";
 
 export class ChatService {
