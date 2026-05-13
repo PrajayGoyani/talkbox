@@ -38,7 +38,14 @@
   let selectedChatId = $derived(routerStore.segments[2] || null);
 
   // Derived state for current chat
-  const isInitialChatListLoad = $derived(chatListStore.isLoadingChats && chatListStore.chats.length === 0);
+  let hasStartedInitialLoad = $state(false);
+  $effect(() => {
+    if (chatListStore.isLoadingChats) {
+      hasStartedInitialLoad = true;
+    }
+  });
+
+  const isInitialChatListLoad = $derived(!hasStartedInitialLoad || (chatListStore.isLoadingChats && chatListStore.chats.length === 0));
   const selectedChat = $derived(selectedChatId ? chatListStore.chatsMap.get(selectedChatId) || null : null);
   let selectedOtherUser = $derived(selectedChat?.otherUser || null);
   let selectedChatStatus = $derived(selectedChat?.status || "");

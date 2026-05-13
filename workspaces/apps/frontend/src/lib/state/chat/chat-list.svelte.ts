@@ -4,6 +4,7 @@ import type { AuthObserver } from "$state/auth-observer";
 import { chatService } from "$services/chat.service";
 import { notificationService } from "$services/notification.service";
 import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
+import { SvelteMap } from "svelte/reactivity";
 import { messageStore } from "$state/active-chat.svelte";
 import { authStore } from "$state/auth.svelte";
 import { uiStore } from "$state/ui.svelte";
@@ -23,7 +24,7 @@ export class ChatListStore implements AuthObserver {
   currentSearchQuery = $state("");
   lastError = $state<string | null>(null);
 
-  public chatsMap = $state(new Map<string, Chat>());
+  public chatsMap = new SvelteMap<string, Chat>();
   private userIdToChatIds = new Map<string, Set<string>>();
   private pendingChatFetches = new Map<string, Promise<void>>();
   private chatsAbortController: AbortController | null = null;
@@ -181,16 +182,18 @@ export class ChatListStore implements AuthObserver {
 
     try {
       const result = await chatService.fetchChats(query, 20, null, this.chatsAbortController.signal);
-      this.chatsMap.clear();
-
+      
+      // We want to keep chats that were manually loaded via deep-links (ensureChatLoaded)
+      // but we also want to remove stale chats that are no longer in the list (if we are not deep-linking).
+      // Strategy: Keep everything for now, but ensure the new results are correctly mapped.
+      
       this.chats = result.data.map((chat: any) => ({
         ...chat,
         isPinned: pinnedChatsStore.isPinned(chat.id),
         _lastUpdateTs: new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime(),
       }));
 
-      // Populate reactive map and user map
-      this.userIdToChatIds.clear();
+      // Update map with new results
       this.chats.forEach((c) => {
         this.chatsMap.set(c.id, c);
         this.updateUserIdMap(c);
@@ -199,7 +202,7 @@ export class ChatListStore implements AuthObserver {
       this.unreadChatsCount = this.chats.filter((c) => (c.unreadCount ?? 0) > 0).length;
       this.hasMoreChats = result.hasMore;
       this.chatCursor = result.nextCursor;
-      this.sortChats(false); // Pins already set during map
+      this.sortChats(false);
     } catch (e: any) {
       if (e.name === "AbortError") return;
       this.lastError = e.message || "Failed to fetch chats";
