@@ -106,13 +106,7 @@
       (entries) => {
         const entry = entries[0];
         if (entry.isIntersecting && messageStore.hasMoreMessages && !messageStore.isLoadingMessages) {
-          const scrollBottom = messagesContainer!.scrollHeight - messagesContainer!.scrollTop;
-          messageStore.loadOlderMessages().then(async () => {
-            await tick();
-            if (messagesContainer) {
-              messagesContainer.scrollTop = messagesContainer.scrollHeight - scrollBottom;
-            }
-          });
+          messageStore.loadOlderMessages();
         }
       },
       {
@@ -147,7 +141,6 @@
   <div
     bind:this={messagesContainer}
     class="h-full overflow-y-auto p-4 md:p-6 scrollbar-slim"
-    style="overflow-anchor: none;"
     onscroll={handleMessagesScroll}
   >
     {#if messageStore.isLoadingMessages && messageStore.messages.length === 0}
@@ -169,10 +162,10 @@
         </div>
       </div>
     {:else}
-      <div bind:this={topSentinel} class="h-1 -mt-4"></div>
+      <div bind:this={topSentinel} class="h-1 -mt-4" style="overflow-anchor: none;"></div>
 
       {#if messageStore.isLoadingMessages && messageStore.hasMoreMessages}
-        <div class="flex flex-col gap-4 mb-6">
+        <div class="flex flex-col gap-4 mb-6" style="overflow-anchor: none;">
           <MessageSkeleton sent={false} />
           <MessageSkeleton sent={true} />
         </div>
