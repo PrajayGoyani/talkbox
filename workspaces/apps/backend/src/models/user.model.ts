@@ -1,6 +1,5 @@
-import { BASE_URL, BCRYPT_SALT } from "@config/env";
+import { BASE_URL } from "@config/env";
 import { AppError } from "@utils/AppError";
-import bcrypt from "bcryptjs";
 import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IUser extends Document {
@@ -65,17 +64,15 @@ userSchema.virtual("avatarUrl").get(function (this: IUser) {
 });
 
 userSchema.methods.comparePassword = async function (password: string) {
-  return bcrypt.compare(password, this.password!);
+  return Bun.password.verify(password, this.password!);
 };
 
 /**
- * Hashes the user's password using bcryptjs.
- * NOTE: We use bcryptjs for its portability and to avoid native binary issues/warnings.
- * If the app scales to thousands of concurrent logins, consider switching to Argon2
- * or using the native 'Bun.password' API for maximum performance.
+ * Hashes the user's password using the native 'Bun.password' API (Argon2 by default).
+ * This provides maximum performance and security by utilizing native code.
  */
 userSchema.methods.hashPassword = async function () {
-  const hash = await bcrypt.hash(this.password!, BCRYPT_SALT);
+  const hash = await Bun.password.hash(this.password!);
   this.password = hash;
 };
 

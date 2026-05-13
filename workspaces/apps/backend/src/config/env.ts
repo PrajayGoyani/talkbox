@@ -13,7 +13,6 @@ export const NODE_ENV = process.env.NODE_ENV as string;
 export const DB_RETRY_ATTEMPTS = Number(process.env.DB_RETRY_ATTEMPTS) || 5;
 export const DB_RETRY_DELAY_MS = Number(process.env.DB_RETRY_DELAY_MS) || 1000;
 export const SENTRY_DSN = process.env.SENTRY_DSN as string;
-export const BCRYPT_SALT = Number(process.env.BCRYPT_SALT) || 12;
 export const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 export const UPLOAD_STRATEGY = process.env.UPLOAD_STRATEGY as string;
 export const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:4173")

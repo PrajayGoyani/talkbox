@@ -1,8 +1,6 @@
 import { connectDB } from "@config/db";
-import { BCRYPT_SALT } from "@config/env";
 import Chat from "@models/chat.model";
 import User from "@models/user.model";
-import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
 
 const TEST_USERNAME = "user1";
@@ -43,7 +41,7 @@ async function seed() {
     let user = await User.findOne({ username: TEST_USERNAME });
     if (!user) {
       console.log(`Creating user ${TEST_USERNAME}...`);
-      const hashedPassword = await bcrypt.hash("password123", BCRYPT_SALT);
+      const hashedPassword = await Bun.password.hash("password123");
       user = await User.create({
         username: TEST_USERNAME,
         email: `${TEST_USERNAME}@example.com`,

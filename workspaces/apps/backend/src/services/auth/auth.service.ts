@@ -47,6 +47,13 @@ export class AuthService {
       throw AppError.unauthorized("Invalid credentials", "INVALID_CREDENTIALS");
     }
 
+    // Migration Strategy: If the password hash is legacy (bcrypt), re-hash it with Argon2.
+    // Legacy bcrypt hashes start with '$2', while Bun's default Argon2 starts with '$argon2'.
+    if (user.password && user.password.startsWith("$2")) {
+      user.password = await Bun.password.hash(password);
+      await user.save();
+    }
+
     // Performance: Use updateById for lastSeen to avoid full .save() overhead
     // which triggers expensive Mongoose lifecycle hooks.
     await this.userRepository.updateById(user._id, { $set: { lastSeen: new Date() } });
