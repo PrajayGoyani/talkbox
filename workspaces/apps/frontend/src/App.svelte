@@ -12,7 +12,7 @@
   import { notificationStore } from "$state/notification.svelte";
   import { themeStore } from "$state/theme.svelte";
   import { errorStore } from "$state/error.svelte";
-import { untrack } from "svelte";
+  import { untrack } from "svelte";
   import { quintOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
 
@@ -32,16 +32,16 @@ import { untrack } from "svelte";
 
   type PanelId = "conversations" | "profile" | "settings" | "requests";
 
-  // State
-  // Derived state for current chat
-  const selectedChat = $derived(chatListStore.chats.find((c) => c.id === selectedChatId) || null);
-  let selectedOtherUser = $derived(selectedChat?.otherUser || null);
-  let selectedChatStatus = $derived(selectedChat?.status || "");
-
   let toastContainer: ToastContainer | undefined = $state();
 
   let activePanel = $derived((routerStore.segments[1] as PanelId) || "conversations");
   let selectedChatId = $derived(routerStore.segments[2] || null);
+
+  // Derived state for current chat
+  const isInitialChatListLoad = $derived(chatListStore.isLoadingChats && chatListStore.chats.length === 0);
+  const selectedChat = $derived(selectedChatId ? chatListStore.chatsMap.get(selectedChatId) || null : null);
+  let selectedOtherUser = $derived(selectedChat?.otherUser || null);
+  let selectedChatStatus = $derived(selectedChat?.status || "");
   const validSegments = new Set(["terms", "privacy", "faq"]);
   let isDocPage = $derived(validSegments.has(routerStore.segments[0]));
   const GUEST_VIEW_CONFIG: Record<string, { component: any; centered?: boolean }> = {
@@ -133,7 +133,9 @@ import { untrack } from "svelte";
   // Sync current chat messages when URL param changes (including on mount/refresh)
   $effect(() => {
     const chatId = selectedChatId;
-    if (chatId && authStore.user) {
+    // If the chat list is still loading its first batch, wait before loading messages.
+    // This ensures we have the chat metadata (like otherUser) before we fetch messages.
+    if (chatId && authStore.user && !isInitialChatListLoad) {
       untrack(() => {
         chatActions.loadMessages(chatId);
       });
@@ -347,13 +349,22 @@ import { untrack } from "svelte";
         ]}
       >
         {#if selectedChatId}
-          <Lazy
-            component={Views.ChatWindow}
-            chatId={selectedChatId}
-            otherUser={selectedOtherUser}
-            status={selectedChatStatus}
-            onBack={() => uiStore.navigate("/chat/" + activePanel)}
-          />
+          {#if isInitialChatListLoad || (!selectedChat && chatListStore.isLoadingChats)}
+            <div
+              class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-100/50 dark:bg-slate-950/30"
+            >
+              <Spinner class="w-8 h-8 text-indigo-600 mb-4" />
+              <p class="text-sm text-slate-500 animate-pulse">Loading conversation details...</p>
+            </div>
+          {:else}
+            <Lazy
+              component={Views.ChatWindow}
+              chatId={selectedChatId}
+              otherUser={selectedOtherUser}
+              status={selectedChatStatus}
+              onBack={() => uiStore.navigate("/chat/" + activePanel)}
+            />
+          {/if}
         {:else}
           <WelcomeDashboard />
         {/if}
