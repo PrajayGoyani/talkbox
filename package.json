@@ -24,10 +24,12 @@
     "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
   },
   "resolutions": {
-    "vite": "$vite"
+    "vite": "$vite",
+    "cloudinary": "^2.10.0"
   },
   "overrides": {
-    "vite": "$vite"
+    "vite": "$vite",
+    "cloudinary": "^2.10.0"
   },
   "packageManager": "bun@1.3.13"
 }
