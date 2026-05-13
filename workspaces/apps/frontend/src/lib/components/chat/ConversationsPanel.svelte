@@ -4,7 +4,7 @@
 
   import ChatList from "$components/chat/ChatList.svelte";
   import Icon from "$components/ui/Icon.svelte";
-  import SegmentedControl from "$components/ui/SegmentedControl.svelte";
+  import PillControl from "$components/ui/PillControl.svelte";
   import type { ChatStatus } from "$lib/types/chat";
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
@@ -135,7 +135,7 @@
         />
       </div>
 
-      <SegmentedControl
+      <PillControl
         bind:value={activeTab}
         options={[
           { label: "All", value: "all" },
