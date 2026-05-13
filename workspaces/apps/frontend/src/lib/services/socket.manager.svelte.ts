@@ -12,6 +12,7 @@ import type { Socket } from "socket.io-client";
 
 import { authStore } from "$state/auth.svelte";
 import { confirmStore } from "$state/confirm.svelte";
+import { notificationStore } from "$state/notification.svelte";
 import { routerStore } from "$state/router.svelte";
 import { uiStore } from "$state/ui.svelte";
 import { getDisallowedEmojis } from "$utils/emoji";
@@ -120,6 +121,7 @@ export class SocketManager implements AuthObserver {
     });
 
     this.socket.on("notification", (notification: NotificationDto) => {
+      notificationStore.addRealTimeNotification(notification);
       realtimeEvents.emit(RealtimeEvent.NOTIFICATION_RECEIVED, notification);
     });
 

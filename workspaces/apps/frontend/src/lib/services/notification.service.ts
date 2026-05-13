@@ -47,7 +47,7 @@ export class NotificationService {
       if (data.type === "chat_request") {
         uiStore.navigate(Route.REQUESTS);
       } else if (data.chatId) {
-        uiStore.navigate(`${Route.CHAT}/${data.chatId}`);
+        uiStore.navigate(`${Route.CONVERSATIONS}/${data.chatId}`);
       }
       notification.close();
     };

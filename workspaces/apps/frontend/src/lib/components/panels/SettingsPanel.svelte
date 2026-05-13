@@ -3,6 +3,7 @@
   import Icon from "$components/ui/Icon.svelte";
   import { settingsStore } from "$state/settings.svelte";
   import { themeStore } from "$state/theme.svelte";
+  import { playNotificationSound } from "$utils/audio";
   import type { UserDto } from "shared/types/auth.dto";
 
   const { onLogout, user } = $props<{
@@ -19,6 +20,10 @@
 
   function toggleSound() {
     settingsStore.toggleSound();
+  }
+
+  function testSound() {
+    playNotificationSound(true);
   }
 </script>
 
@@ -70,28 +75,39 @@
         <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Notification Sound</span>
         <span class="text-xs text-slate-500">Play a sound for incoming messages</span>
       </div>
-      <button
-        type="button"
-        class={[
-          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2",
-          soundEnabled ? "bg-indigo-600" : "bg-slate-400",
-        ]}
-        onclick={toggleSound}
-        aria-label="Toggle notification sound"
-      >
-        <span
-          class={[
-            "pointer-events-none relative flex h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out items-center justify-center text-slate-400",
-            soundEnabled ? "translate-x-5" : "translate-x-0",
-          ]}
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          class="p-2 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-500/10 transition-all active:scale-90"
+          onclick={testSound}
+          title="Play test sound"
+          aria-label="Play test sound"
         >
-          {#if soundEnabled}
-            <Icon name="notifications" class="w-3 h-3 text-indigo-600" />
-          {:else}
-            <Icon name="notifications" class="w-3 h-3 text-slate-400" />
-          {/if}
-        </span>
-      </button>
+          <Icon name="bolt" class="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          class={[
+            "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2",
+            soundEnabled ? "bg-indigo-600" : "bg-slate-400",
+          ]}
+          onclick={toggleSound}
+          aria-label="Toggle notification sound"
+        >
+          <span
+            class={[
+              "pointer-events-none relative flex h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out items-center justify-center text-slate-400",
+              soundEnabled ? "translate-x-5" : "translate-x-0",
+            ]}
+          >
+            {#if soundEnabled}
+              <Icon name="notifications" class="w-3 h-3 text-indigo-600" />
+            {:else}
+              <Icon name="notifications" class="w-3 h-3 text-slate-400" />
+            {/if}
+          </span>
+        </button>
+      </div>
     </div>
 
     <hr class="border-t border-slate-200 dark:border-white/10 my-1" />
