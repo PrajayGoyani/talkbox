@@ -46,9 +46,9 @@ export class AuthService {
     }
 
     // Migration Strategy: If the password hash is legacy (bcrypt), re-hash it with Argon2.
-    // Legacy bcrypt hashes start with '$2', while Bun's default Argon2 starts with '$argon2'.
+    // We assign the plain password to trigger the pre-save hook which uses Bun.password.hash.
     if (user.password && user.password.startsWith("$2")) {
-      user.password = await Bun.password.hash(password);
+      user.password = password;
       await user.save();
     }
 

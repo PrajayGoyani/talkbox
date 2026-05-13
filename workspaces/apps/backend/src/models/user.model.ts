@@ -65,7 +65,24 @@ userSchema.virtual("avatarUrl").get(function (this: IUser) {
 });
 
 userSchema.methods.comparePassword = async function (password: string) {
-  return Bun.password.verify(password, this.password!);
+  if (!this.password) {
+    throw new Error("[UserModel] Password field was not selected in the query. Ensure .select('+password') is used.");
+  }
+  
+  try {
+    return await Bun.password.verify(password, this.password);
+  } catch (error: any) {
+    // Bun throws "UnsupportedAlgorithm" if it doesn't recognize the hash format.
+    // If it's a legacy bcrypt hash ($2...), we fall back to bcryptjs.
+    if (this.password?.startsWith("$2")) {
+      const bcrypt = await import("bcryptjs");
+      return bcrypt.compare(password, this.password);
+    }
+
+    // Log unexpected errors but don't crash the server
+    console.error(`[UserModel] Password verification failed for user ${this._id}:`, error.message);
+    return false;
+  }
 };
 
 /**
@@ -79,11 +96,11 @@ userSchema.methods.hashPassword = async function () {
 
 userSchema.statics.findByEmailOrUsername = function (username: string) {
   if (this.isEmail(username)) {
-    return this.findOne({ email: username });
+    return this.findOne({ email: username }).select("+password");
   }
 
   if (this.isUsername(username)) {
-    return this.findOne({ username });
+    return this.findOne({ username }).select("+password");
   }
 
   throw AppError.badRequest("Invalid username or email", "INVALID_USERNAME_OR_EMAIL");
