@@ -36,7 +36,6 @@ export class ChatQueryRepository {
             id: otherUser._id?.toString() || (otherUser as unknown as ObjectId).toString(),
             username: otherUser.username,
             name: otherUser.name || null,
-            email: otherUser.email,
             avatarUrl: otherUser.avatar_url || `https://ui-avatars.com/api/?name=${otherUser.username}`,
             plan: otherUser.plan,
             bio: otherUser.bio,
@@ -51,7 +50,6 @@ export class ChatQueryRepository {
         : null,
       unreadCount: unread,
       createdAt: chat.createdAt,
-      participants: chat.participants.map((p) => p.toString()),
     };
   }
 
@@ -82,7 +80,7 @@ export class ChatQueryRepository {
               },
             },
             { $limit: 1 },
-            { $project: { username: 1, name: 1, email: 1, avatar_url: 1, plan: 1, bio: 1 } },
+            { $project: { username: 1, name: 1, avatar_url: 1, plan: 1, bio: 1 } },
           ],
           as: "otherUser",
         },
@@ -117,12 +115,10 @@ export class ChatQueryRepository {
         status: 1,
         isGroup: 1,
         createdBy: { $toString: "$createdBy" },
-        participants: 1,
         otherUser: {
           id: { $toString: "$otherUser._id" },
           username: "$otherUser.username",
           name: "$otherUser.name",
-          email: "$otherUser.email",
           avatarUrl: "$otherUser.avatar_url",
           plan: "$otherUser.plan",
           bio: "$otherUser.bio",
@@ -154,7 +150,7 @@ export class ChatQueryRepository {
       .find(query)
       .sort({ "lastMessage.sentAt": -1, _id: -1 })
       .limit(limit)
-      .populate("participants", "username name email avatar_url plan bio");
+      .populate("participants", "username name avatar_url plan bio");
   }
 
   public async findPendingRequestsByUser(userId: string | ObjectId, query: Record<string, any>, limit: number) {
@@ -162,7 +158,7 @@ export class ChatQueryRepository {
       .find(query)
       .sort({ createdAt: -1, _id: -1 })
       .limit(limit)
-      .populate("participants", "username name email avatar_url plan bio");
+      .populate("participants", "username name avatar_url plan bio");
   }
 }
 

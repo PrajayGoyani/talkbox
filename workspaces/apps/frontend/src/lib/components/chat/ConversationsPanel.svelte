@@ -9,9 +9,9 @@
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { USERNAME_ERROR } from "shared/constants/validation";
-  import type { UserDto } from "shared/types/auth.dto";
   import { isValidUsername } from "shared/utils/validation";
   import { slide } from "svelte/transition";
+  import type { ChatPartnerDto } from "shared/types/chat.dto";
 
   const {
     activeChatId,
@@ -20,7 +20,7 @@
     onNotificationToggle,
   } = $props<{
     activeChatId?: string | null;
-    onSelectChat: (chatId: string, otherUser: UserDto, status: ChatStatus) => void;
+    onSelectChat: (chatId: string, otherUser: ChatPartnerDto, status: ChatStatus) => void;
     unreadCount?: number;
     onNotificationToggle?: () => void;
   }>();

@@ -13,7 +13,7 @@ export class NotificationRepository {
     message: string;
   }) {
     const notification = await this.notificationModel.create(data);
-    return (notification as any).populate("senderId", "username email avatar_url");
+    return (notification as any).populate("senderId", "username avatar_url");
   }
 
   public async findByUser(userId: string | ObjectId, limit: number, cursor?: string | null) {
@@ -26,7 +26,7 @@ export class NotificationRepository {
       .find(query)
       .sort({ _id: -1 })
       .limit(limit)
-      .populate("senderId", "username email avatar_url")
+      .populate("senderId", "username avatar_url")
       .lean();
   }
 

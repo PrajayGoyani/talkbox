@@ -40,6 +40,7 @@ const userSchema = new Schema<IUser, IUserModel>({
   password: {
     type: String,
     required: true,
+    select: false,
   },
   avatar_url: { type: String, default: null },
   lastSeen: { type: Date, default: Date.now },

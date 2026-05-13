@@ -5,7 +5,7 @@
   import { tooltip } from "$state/tooltip.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { formatTimeAgo } from "$utils/date";
-  import type { UserDto } from "shared/types/auth.dto";
+  import type { ChatPartnerDto } from "shared/types/chat.dto";
 
   let {
     otherUser,
@@ -13,7 +13,7 @@
     partnerStatus,
     onBack,
   }: {
-    otherUser: UserDto | null;
+    otherUser: ChatPartnerDto | null;
     status?: ChatStatus;
     partnerStatus: { isOnline: boolean; lastSeen: string | Date | null } | undefined;
     onBack?: () => void;

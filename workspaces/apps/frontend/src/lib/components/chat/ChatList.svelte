@@ -9,7 +9,7 @@
   import { CHAT_SEARCH_DEBOUNCE } from "$lib/config";
   import type { Chat, ChatStatus } from "$lib/types/chat";
   import { debounce } from "$utils/timing";
-  import type { UserDto } from "shared/types/auth.dto";
+  import type { ChatPartnerDto } from "shared/types/chat.dto";
   import { onMount, untrack } from "svelte";
 
   let {
@@ -19,7 +19,7 @@
     searchQuery: _searchQuery = "",
   } = $props<{
     activeChatId?: string | null;
-    onSelectChat: (chatId: string, otherUser: UserDto, status: ChatStatus) => void;
+    onSelectChat: (chatId: string, otherUser: ChatPartnerDto, status: ChatStatus) => void;
     activeTab?: "all" | "unread";
     searchQuery?: string;
   }>();

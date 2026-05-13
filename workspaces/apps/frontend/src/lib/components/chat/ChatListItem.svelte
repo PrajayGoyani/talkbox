@@ -8,7 +8,7 @@
   import { authStore } from "$state/auth.svelte";
   import type { Chat, ChatStatus } from "$lib/types/chat";
   import { formatListTime } from "$utils/date";
-  import type { UserDto } from "shared/types/auth.dto";
+  import type { ChatPartnerDto } from "shared/types/chat.dto";
 
   interface Props {
     chat: Chat;
@@ -16,7 +16,7 @@
     isMenuOpen: boolean;
     isMenuTarget: boolean;
     processingState: "accepting" | "rejecting" | null;
-    onSelect: (chatId: string, otherUser: UserDto, status: ChatStatus) => void;
+    onSelect: (chatId: string, otherUser: ChatPartnerDto, status: ChatStatus) => void;
     onContextMenu: (e: MouseEvent, chat: Chat) => void;
     onAccept: (chatId: string) => void;
     onReject: (chatId: string) => void;

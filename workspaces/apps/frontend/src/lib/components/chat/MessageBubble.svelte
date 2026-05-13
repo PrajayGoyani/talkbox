@@ -8,13 +8,12 @@
   import { cn } from "$utils/cn";
   import { formatSimpleTime } from "$utils/date";
   import { getEmojiDisplayMode, parseMessageContent, type MessageSegment } from "$utils/emoji";
-  import type { UserDto } from "shared/types/auth.dto";
-  import type { MessageDto } from "shared/types/chat.dto";
+  import type { ChatPartnerDto, MessageDto } from "shared/types/chat.dto";
 
   type Props = {
     msg: MessageDto;
     isSent: boolean;
-    otherUser: UserDto | null;
+    otherUser: ChatPartnerDto | null;
     isFirstInGroup: boolean;
     i: number;
     isTouchDevice: boolean;
@@ -191,7 +190,7 @@
   </div>
 {/if}
 
-{#snippet reactionList(msg: MessageDto, isSent: boolean, otherUser: UserDto | null, authStore: any)}
+{#snippet reactionList(msg: MessageDto, isSent: boolean, otherUser: ChatPartnerDto | null, authStore: any)}
   {#if msg.reactions && msg.reactions.length > 0}
     <div class={cn("flex flex-wrap gap-1 mt-1", isSent ? "justify-end" : "justify-start")}>
       {#each msg.reactions as reaction}

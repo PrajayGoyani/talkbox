@@ -9,7 +9,6 @@ export interface NotificationDto {
   senderId: {
     _id: string;
     username: string;
-    email: string;
     avatar_url: string;
   };
   type: NotificationType;

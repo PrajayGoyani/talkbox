@@ -48,7 +48,6 @@ export interface UserStatusDto {
  * Interface for Message Data Transfer Object.
  */
 export interface MessageDto {
-  _id?: string;
   id: string;
   chatId: string;
   senderId: string;
@@ -82,6 +81,18 @@ export interface MessageAckDto {
 }
 
 /**
+ * Minimal user data for chat partners in listings.
+ */
+export interface ChatPartnerDto {
+  id: string;
+  username: string;
+  name: string | null;
+  avatarUrl: string;
+  plan: "free" | "pro";
+  bio?: string | null;
+}
+
+/**
  * Data Transfer Object for Chat.
  */
 export interface ChatDto {
@@ -89,15 +100,7 @@ export interface ChatDto {
   status: "pending" | "accepted" | "rejected";
   isGroup: boolean;
   createdBy: string;
-  otherUser?: {
-    id: string;
-    username: string;
-    name: string | null;
-    email: string;
-    avatarUrl: string;
-    plan: "free" | "pro";
-    bio?: string | null;
-  } | null;
+  otherUser?: ChatPartnerDto | null;
   lastMessage: {
     contentBody: string;
     senderId: string | null;
@@ -105,7 +108,6 @@ export interface ChatDto {
   } | null;
   unreadCount: number;
   createdAt: string | Date;
-  participants: string[];
 }
 
 /**

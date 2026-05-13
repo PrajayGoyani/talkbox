@@ -11,7 +11,7 @@ class UserService {
     if (!user) {
       throw AppError.notFound("User not found", "USER_NOT_FOUND");
     }
-    return user;
+    return this.userRepository.transformUser(user);
   }
 
   async uploadAvatar(userId: string, fileOrUrl: string) {
@@ -32,7 +32,7 @@ class UserService {
       profile: { avatarUrl: fileOrUrl },
     });
 
-    return user;
+    return this.userRepository.transformUser(user);
   }
 
   async updateProfile(userId: string, data: { name?: string; bio?: string | null; avatar_url?: string }) {
@@ -60,7 +60,7 @@ class UserService {
       },
     });
 
-    return user;
+    return this.userRepository.transformUser(user);
   }
 }
 

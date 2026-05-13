@@ -6,8 +6,7 @@
   import { messageStore } from "$state/active-chat.svelte";
   import { authStore } from "$state/auth.svelte";
   import type { ChatStatus } from "$lib/types/chat";
-  import type { UserDto } from "shared/types/auth.dto";
-  import type { MessageDto } from "shared/types/chat.dto";
+  import type { ChatPartnerDto, MessageDto } from "shared/types/chat.dto";
 
   import { getDateLabel } from "$utils/date";
   import { throttle } from "$utils/timing";
@@ -29,7 +28,7 @@
     showMessageActionsId = $bindable(),
   }: {
     chatId: string;
-    otherUser: UserDto | null;
+    otherUser: ChatPartnerDto | null;
     status?: ChatStatus;
     isTouchDevice: boolean;
     messageEditingId: string | null;

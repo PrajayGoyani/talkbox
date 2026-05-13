@@ -5,8 +5,7 @@
   import Icon from "$components/ui/Icon.svelte";
   import Popover from "$components/ui/Popover.svelte";
   import { messageStore } from "$state/active-chat.svelte";
-
-  import type { UserDto } from "shared/types/auth.dto";
+  import type { ChatPartnerDto } from "shared/types/chat.dto";
   import { tick } from "svelte";
 
   import { uiStore } from "$state/ui.svelte";
@@ -20,7 +19,7 @@
     onSend,
   }: {
     chatId: string;
-    otherUser: UserDto | null;
+    otherUser: ChatPartnerDto | null;
     isTouchDevice: boolean;
     onSend?: () => void;
   } = $props();
