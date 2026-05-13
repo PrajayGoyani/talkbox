@@ -28,6 +28,7 @@ export class SocketManager implements AuthObserver {
   socket: Socket | null = $state(null);
   isConnected = $state(false);
   isSendingMessage = $state(false);
+  simulateFailure = $state(false);
 
   private myTypingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -162,12 +163,16 @@ export class SocketManager implements AuthObserver {
   }
 
   sendMessage(chatId: string, receiverId: string, contentBody: string) {
-    if (!this.socket || !this.isConnected || !contentBody.trim()) return;
+    if (!this.socket || !this.isConnected || !contentBody.trim()) return null;
 
     this.isSendingMessage = true;
     this.emitTyping(chatId, receiverId, false);
 
     const idempotencyKey = crypto.randomUUID();
+
+    if (this.simulateFailure) {
+      return idempotencyKey;
+    }
 
     const timeout = setTimeout(() => {
       this.isSendingMessage = false;
@@ -187,11 +192,18 @@ export class SocketManager implements AuthObserver {
 
         if (ack?.status === "ok" && ack.message) {
           realtimeEvents.emit(RealtimeEvent.MESSAGE_SENT_ACK, { chatId, message: ack.message });
-        } else if (ack?.status === "error") {
-          // console.error("[SocketManager] Server returned error in ACK:", ack.error);
+        } else {
+          // If there's an error in the ACK, we should still stop the sending state
+          // and let the client-side timeout or a specific error event handle the UI.
+          if (ack?.status === "error") {
+            console.error("[SocketManager] Server returned error in ACK:", ack.error);
+            uiStore.addAlert(ack.error || "Failed to send message", "danger");
+          }
         }
       },
     );
+
+    return idempotencyKey;
   }
 
   emitTyping(chatId: string, receiverId: string, isTyping: boolean) {

@@ -49,6 +49,9 @@ export const ALLOW_UPGRADES = getBoolEnv("VITE_ALLOW_UPGRADES", false);
 /** Whether to show engaging quotes and animations during slow boot */
 export const SHOW_ENGAGING_LOADER = getBoolEnv("VITE_SHOW_ENGAGING_LOADER", true);
 
+/** Whether to show debug/testing settings in the UI */
+export const SHOW_DEBUG_SETTINGS = getBoolEnv("VITE_SHOW_DEBUG_SETTINGS", false);
+
 // --- Shared Constants ---
 
 /** Duration for typing indicators to show before auto-clearing (ms) */
@@ -59,6 +62,12 @@ export const TYPING_DEBOUNCE_DURATION = 2000;
 
 /** Fallback timeout for message sending if no response from server (ms) */
 export const MESSAGE_SEND_FALLBACK_TIMEOUT = 10000;
+
+/** Timeout for client-side optimistic message failure (ms) */
+export const MESSAGE_ACK_TIMEOUT = 15000;
+
+/** Minimum time to show message loader for a smoother transition (ms) */
+export const MESSAGE_LOADER_AWAIT_MS = 300;
 
 /** Default asset paths */
 export const ASSETS = {

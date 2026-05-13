@@ -36,7 +36,7 @@
     if (chatId && chatId !== currentChatId && authStore.user?.id) {
       currentChatId = chatId;
       const draft = localStorage.getItem(`chat_draft_${authStore.user.id}_${chatId}`);
-      
+
       if (draft) {
         try {
           messageInput = decodeDraft(draft);
@@ -47,7 +47,7 @@
       } else {
         messageInput = "";
       }
-      
+
       tick().then(adjustTextareaHeight);
     }
   });
@@ -81,7 +81,7 @@
   };
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || socketManager.isSendingMessage || !otherUser) return;
+    if (!messageInput.trim() || !otherUser) return;
 
     const found = getDisallowedEmojis(messageInput.trim());
     if (found.length > 0) {
@@ -89,7 +89,7 @@
       return;
     }
 
-    socketManager.sendMessage(chatId, otherUser.id, messageInput);
+    messageStore.sendMessage(messageInput, otherUser.id);
     messageInput = "";
     tick().then(adjustTextareaHeight);
     onSend?.();
@@ -127,7 +127,7 @@
   };
 
   $effect(() => {
-    if (!socketManager.isSendingMessage && textareaElement && chatId) {
+    if (textareaElement && chatId) {
       tick().then(() => {
         textareaElement?.focus();
       });
@@ -167,12 +167,8 @@
     class="bg-indigo-600 hover:bg-indigo-700 text-white w-9 h-9 md:w-10.5 md:h-10.5 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
     aria-label="Send message"
     onclick={handleSendMessage}
-    disabled={!messageInput.trim() || socketManager.isSendingMessage}
+    disabled={!messageInput.trim()}
   >
-    {#if socketManager.isSendingMessage}
-      <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-    {:else}
-      <Icon name="send" class="w-5 h-5" />
-    {/if}
+    <Icon name="send" class="w-5 h-5" />
   </button>
 </div>

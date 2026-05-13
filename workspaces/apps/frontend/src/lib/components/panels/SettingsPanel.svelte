@@ -3,7 +3,10 @@
   import Icon from "$components/ui/Icon.svelte";
   import { settingsStore } from "$state/settings.svelte";
   import { themeStore } from "$state/theme.svelte";
+  import { SHOW_DEBUG_SETTINGS } from "$lib/config";
+  import { socketManager } from "$services/socket.manager.svelte";
   import { playNotificationSound } from "$utils/audio";
+  import { cn } from "$utils/cn";
   import type { UserDto } from "shared/types/auth.dto";
 
   const { onLogout, user } = $props<{
@@ -110,7 +113,42 @@
       </div>
     </div>
 
-    <hr class="border-t border-slate-200 dark:border-white/10 my-1" />
+    {#if SHOW_DEBUG_SETTINGS}
+      <hr class="border-t border-slate-200 dark:border-white/10 my-1" />
+
+      <!-- Simulate Failure (Testing Only) -->
+      <div
+        class="flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+      >
+        <div class="flex flex-col gap-0.5">
+          <span class="text-sm font-semibold text-slate-900 dark:text-slate-100 italic">Simulate Send Failure</span>
+          <span class="text-xs text-slate-500">Enable to test optimistic failure UI</span>
+        </div>
+        <button
+          type="button"
+          class={[
+            "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-rose-600 focus:ring-offset-2",
+            socketManager.simulateFailure ? "bg-rose-600" : "bg-slate-400",
+          ]}
+          onclick={() => (socketManager.simulateFailure = !socketManager.simulateFailure)}
+          aria-label="Toggle simulate failure"
+        >
+          <span
+            class={[
+              "pointer-events-none relative flex h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out items-center justify-center text-slate-400",
+              socketManager.simulateFailure ? "translate-x-5" : "translate-x-0",
+            ]}
+          >
+            <Icon
+              name="alert-circle"
+              class={cn("w-3 h-3", socketManager.simulateFailure ? "text-rose-600" : "text-slate-400")}
+            />
+          </span>
+        </button>
+      </div>
+
+      <hr class="border-t border-slate-200 dark:border-white/10 my-1" />
+    {/if}
 
     <!-- <div
       class="flex items-center justify-between p-3 rounded-xl opacity-50 cursor-not-allowed"

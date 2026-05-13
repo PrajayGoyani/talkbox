@@ -2,13 +2,13 @@ import { ALLOWED_ORIGINS, NODE_ENV } from "@config/env";
 import * as Sentry from "@sentry/bun";
 import { baseService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
+import { generateETag } from "@utils/hash.utils";
 import { error as errorResponse, success } from "@utils/response";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import mongoose from "mongoose";
 import path from "path";
-import { generateETag } from "@utils/hash.utils";
 
 // import helmet from 'helmet';
 import { app, server } from "@/app";

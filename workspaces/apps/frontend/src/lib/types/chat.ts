@@ -12,3 +12,13 @@ export interface Chat extends ChatDto {
   /** Internal field for efficient sorting — not from API */
   _lastUpdateTs?: number;
 }
+
+export type MessageStatus = "sending" | "sent" | "failed";
+
+/**
+ * UI-extended version of MessageDto with optimistic status.
+ */
+export interface FrontendMessageDto extends MessageDto {
+  status?: MessageStatus;
+  receiverId?: string;
+}

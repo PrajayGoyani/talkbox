@@ -1,4 +1,5 @@
 import { expect, test, describe } from "vitest";
+
 import { generateETag, generateShortId, verifyIntegrity } from "../utils/hash.utils";
 
 describe("Hash Utilities", () => {
@@ -40,7 +41,7 @@ describe("Hash Utilities", () => {
     test("should verify integrity correctly", () => {
       const data = "integrity-check";
       const hash = Bun.hash(data);
-      
+
       expect(verifyIntegrity(data, hash.toString())).toBe(true);
       expect(verifyIntegrity(data, hash.toString(16))).toBe(true);
       expect(verifyIntegrity(data, "0x" + hash.toString(16))).toBe(true);

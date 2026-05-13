@@ -5,8 +5,8 @@
   import { MESSAGE_SKELETON_HEIGHT, SCROLL_THROTTLE_DURATION } from "$lib/config";
   import { messageStore } from "$state/active-chat.svelte";
   import { authStore } from "$state/auth.svelte";
-  import type { ChatStatus } from "$lib/types/chat";
-  import type { ChatPartnerDto, MessageDto } from "shared/types/chat.dto";
+  import type { ChatStatus, FrontendMessageDto } from "$lib/types/chat";
+  import type { ChatPartnerDto } from "shared/types/chat.dto";
 
   import { getDateLabel } from "$utils/date";
   import { throttle } from "$utils/timing";
@@ -34,7 +34,7 @@
     messageEditingId: string | null;
     editInputValue: string;
     editTextareaElement: HTMLTextAreaElement | undefined;
-    startEditing: (msg: MessageDto) => void;
+    startEditing: (msg: FrontendMessageDto) => void;
     cancelEditing: () => void;
     saveEditing: (msgId: string) => void;
     handleEditKeydown: (e: KeyboardEvent, msgId: string) => void;
@@ -53,7 +53,7 @@
 
   // Group messages for better sticky header handling
   const groupedMessages = $derived.by(() => {
-    const groups: { label: string; messages: MessageDto[] }[] = [];
+    const groups: { label: string; messages: FrontendMessageDto[] }[] = [];
     let lastLabel = "";
 
     for (const msg of messageStore.messages) {

@@ -13,7 +13,7 @@
  */
 export function generateETag(content: string | Buffer | Uint8Array): string {
   if (!content) return "";
-  
+
   // Bun.hash returns a 64-bit number. We convert it to hex for the ETag.
   const hash = Bun.hash(content);
   return `W/"${hash.toString(16)}"`;
@@ -41,15 +41,15 @@ export function generateShortId(content: string | number | Buffer): string {
  */
 export function verifyIntegrity(data: Buffer | string, expectedHash: number | string | bigint): boolean {
   const currentHash = Bun.hash(data);
-  
+
   if (typeof expectedHash === "number" || typeof expectedHash === "bigint") {
     return currentHash === BigInt(expectedHash);
   }
-  
+
   // If string, handle both decimal and hex formats
   if (expectedHash.startsWith("0x")) {
     return currentHash === BigInt(expectedHash);
   }
-  
+
   return currentHash.toString() === expectedHash || currentHash.toString(16) === expectedHash;
 }

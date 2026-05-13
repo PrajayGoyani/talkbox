@@ -1,5 +1,6 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
+import { resolve } from "node:path";
 import { loadEnv } from "vite";
 // Note: keep this code
 // import { compression } from "vite-plugin-compression2";
@@ -11,6 +12,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_PROXY_TARGET || "http://localhost:3000";
 
   return {
+    root: resolve(__dirname),
     plugins: [
       tailwindcss(),
       svelte({
@@ -24,15 +26,16 @@ export default defineConfig(({ mode }) => {
       // compression({ algorithm: "brotliCompress", exclude: [/\.(br)$/, /\.(gz)$/] }),
     ],
     resolve: {
+      extensions: [".mjs", ".js", ".ts", ".jsx", ".tsx", ".json", ".svelte", ".svelte.ts"],
       alias: {
-        $lib: "/src/lib",
-        $components: "/src/lib/components",
-        $state: "/src/lib/state",
-        $utils: "/src/lib/utils",
-        $types: "/src/lib/types",
-        $services: "/src/lib/services",
-        $assets: "/src/assets",
-        "@": "/src",
+        $lib: resolve(__dirname, "./src/lib"),
+        $components: resolve(__dirname, "./src/lib/components"),
+        $state: resolve(__dirname, "./src/lib/state"),
+        $utils: resolve(__dirname, "./src/lib/utils"),
+        $types: resolve(__dirname, "./src/lib/types"),
+        $services: resolve(__dirname, "./src/lib/services"),
+        $assets: resolve(__dirname, "./src/assets"),
+        "@": resolve(__dirname, "./src"),
       },
     },
     run: {

@@ -68,7 +68,7 @@ userSchema.methods.comparePassword = async function (password: string) {
   if (!this.password) {
     throw new Error("[UserModel] Password field was not selected in the query. Ensure .select('+password') is used.");
   }
-  
+
   try {
     return await Bun.password.verify(password, this.password);
   } catch (error: any) {

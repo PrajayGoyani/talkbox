@@ -45,7 +45,9 @@
     }
   });
 
-  const isInitialChatListLoad = $derived(!hasStartedInitialLoad || (chatListStore.isLoadingChats && chatListStore.chats.length === 0));
+  const isInitialChatListLoad = $derived(
+    !hasStartedInitialLoad || (chatListStore.isLoadingChats && chatListStore.chats.length === 0),
+  );
   const selectedChat = $derived(selectedChatId ? chatListStore.chatsMap.get(selectedChatId) || null : null);
   let selectedOtherUser = $derived(selectedChat?.otherUser || null);
   let selectedChatStatus = $derived(selectedChat?.status || "");

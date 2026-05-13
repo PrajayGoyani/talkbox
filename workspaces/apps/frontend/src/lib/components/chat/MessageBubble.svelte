@@ -2,16 +2,19 @@
   import { socketManager } from "$services/socket.manager.svelte";
 
   import MessageReactionPicker from "$components/chat/MessageReactionPicker.svelte";
+  import Icon from "$components/ui/Icon.svelte";
+  import { messageStore } from "$state/active-chat.svelte";
   import { authStore } from "$state/auth.svelte";
 
   import { tooltip } from "$state/tooltip.svelte";
   import { cn } from "$utils/cn";
   import { formatSimpleTime } from "$utils/date";
   import { getEmojiDisplayMode, parseMessageContent, type MessageSegment } from "$utils/emoji";
-  import type { ChatPartnerDto, MessageDto } from "shared/types/chat.dto";
+  import type { ChatPartnerDto } from "shared/types/chat.dto";
+  import type { FrontendMessageDto } from "$lib/types/chat";
 
   type Props = {
-    msg: MessageDto;
+    msg: FrontendMessageDto;
     isSent: boolean;
     otherUser: ChatPartnerDto | null;
     isFirstInGroup: boolean;
@@ -20,7 +23,7 @@
     messageEditingId: string | null;
     editInputValue: string;
     editTextareaElement: HTMLTextAreaElement | undefined;
-    startEditing: (msg: MessageDto) => void;
+    startEditing: (msg: FrontendMessageDto) => void;
     cancelEditing: () => void;
     saveEditing: (msgId: string) => void;
     handleEditKeydown: (e: KeyboardEvent, msgId: string) => void;
@@ -81,7 +84,7 @@
         showMessageActionsId === msg.id && "bg-slate-100 dark:bg-white/5 ring-4 ring-slate-100 dark:ring-white/5",
       )}
     >
-      {#if !msg.isDeleted && !msg.isScrubbed}
+      {#if !msg.isDeleted && !msg.isScrubbed && (msg.status === "sent" || !msg.status)}
         <MessageReactionPicker {msg} {isSent} {isTouchDevice} />
       {/if}
       {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
@@ -93,6 +96,18 @@
     <div class={cn("px-2.5 py-1 mt-1 flex items-center min-w-0")}>
       <span class="text-[9px] font-medium whitespace-nowrap opacity-70">
         {formatSimpleTime(msg.createdAt)}
+        {#if msg.status === "sending"}
+          <Icon name="clock" class="w-2.5 h-2.5 ml-1 animate-pulse" />
+        {:else if msg.status === "failed"}
+          <button
+            onclick={() => messageStore.retryMessage(msg.id)}
+            class="flex items-center gap-1 ml-2 px-2 py-1 rounded-full bg-rose-500 text-white hover:bg-rose-600 transition-all shadow-lg shadow-rose-500/30 active:scale-95"
+            title="Retry sending"
+          >
+            <Icon name="alert-circle" class="w-3 h-3" />
+            <span class="text-[10px] font-black uppercase tracking-tight">Retry</span>
+          </button>
+        {/if}
       </span>
     </div>
 
@@ -103,13 +118,15 @@
   </div>
 {:else}
   <!-- Normal Message Bubble -->
+  {@const hasStatus = msg.status === "sending" || msg.status === "failed"}
+  {@const showEdited = msg.isEdited && !msg.isDeleted && !msg.isScrubbed}
   <div
     class={cn(
       "chat-bubble rounded-2xl group",
       isSent ? "chat-bubble-sent" : "chat-bubble-received",
       isFirstInGroup && (isSent ? "rounded-tr-none" : "rounded-tl-none"),
-      i > 0 && !isFirstInGroup ? "mt-2" : "mt-3",
       (msg.isDeleted || msg.isScrubbed) && "opacity-60",
+      msg.status === "sending" && "opacity-70",
     )}
     role="button"
     tabindex="0"
@@ -168,19 +185,37 @@
         >
           {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
             {@render renderSegment(segment)}
-          {/each}<span class={["inline-block h-0", msg.isEdited && !msg.isDeleted ? "w-21" : "w-11"]}></span>
+          {/each}
+          <span
+            class={[
+              "inline-block h-0",
+              showEdited ? (hasStatus ? "w-36" : "w-21") : hasStatus ? "w-24" : "w-11",
+            ]}
+          ></span>
         </p>
         <span
           class="absolute bottom-0 -right-1 text-[9px] opacity-60 leading-none pb-0.5 whitespace-nowrap flex items-center"
         >
           {formatSimpleTime(msg.createdAt)}
-          {#if msg.isEdited && !msg.isDeleted}
+          {#if msg.status === "sending"}
+            <Icon name="clock" class="w-2.5 h-2.5 ml-1 animate-pulse" />
+          {:else if msg.status === "failed"}
+            <button
+              onclick={() => messageStore.retryMessage(msg.id)}
+              class="flex items-center gap-1 ml-1.5 px-1.5 py-0.5 rounded-md bg-rose-500/20 text-rose-500 dark:text-rose-400 hover:bg-rose-500/30 transition-all border border-rose-500/20 active:scale-95"
+              title="Retry sending"
+            >
+              <Icon name="alert-circle" class="w-2.5 h-2.5" />
+              <span class="text-[8px] font-black uppercase tracking-wider">Retry</span>
+            </button>
+          {/if}
+          {#if showEdited}
             <span class="ml-1 opacity-50 italic">(edited)</span>
           {/if}
         </span>
       {/if}
     </div>
-    {#if !msg.isDeleted && !msg.isScrubbed}
+    {#if !msg.isDeleted && !msg.isScrubbed && (msg.status === "sent" || !msg.status)}
       <MessageReactionPicker {msg} {isSent} {isTouchDevice} onEdit={() => startEditing(msg)} />
     {/if}
     <!-- Reaction list for normal -->
@@ -190,7 +225,7 @@
   </div>
 {/if}
 
-{#snippet reactionList(msg: MessageDto, isSent: boolean, otherUser: ChatPartnerDto | null, authStore: any)}
+{#snippet reactionList(msg: FrontendMessageDto, isSent: boolean, otherUser: ChatPartnerDto | null, authStore: any)}
   {#if msg.reactions && msg.reactions.length > 0}
     <div class={cn("flex flex-wrap gap-1 mt-1", isSent ? "justify-end" : "justify-start")}>
       {#each msg.reactions as reaction}
@@ -200,7 +235,7 @@
           : "bg-white text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"}
         {@const reactorNames = reaction.users.map((id) => {
           if (id === authStore.user?.id) return "You";
-          if (id === otherUser?.id) return otherUser.name || otherUser.username;
+          if (id === otherUser?.id) return otherUser?.name || otherUser?.username;
           return "Someone";
         })}
         {@const displaySlug = reaction.slug ? `:${reaction.slug}:` : ":emoji:"}

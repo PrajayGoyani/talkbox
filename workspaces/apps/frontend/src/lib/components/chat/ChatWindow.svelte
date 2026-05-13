@@ -93,6 +93,13 @@
     window.addEventListener("click", handleClick);
     return () => window.removeEventListener("click", handleClick);
   });
+
+  // Cleanup message store when the window is closed
+  $effect(() => {
+    return () => {
+      messageStore.destroy();
+    };
+  });
 </script>
 
 <ChatHeader {otherUser} {status} {partnerStatus} {onBack} />

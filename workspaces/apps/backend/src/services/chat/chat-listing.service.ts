@@ -1,8 +1,8 @@
 import { ChatQueryRepository, chatQueryRepository } from "@repositories/chat-query.repository";
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
+import { AppError } from "@utils/AppError";
 import { ObjectId } from "mongodb";
 import { ChatDto, ChatListingResponseDto } from "shared/types/chat.dto";
-import { AppError } from "@utils/AppError";
 
 import { IChatListingService } from "./types";
 

@@ -4,10 +4,10 @@ import type { AuthObserver } from "$state/auth-observer";
 import { chatService } from "$services/chat.service";
 import { notificationService } from "$services/notification.service";
 import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
-import { SvelteMap } from "svelte/reactivity";
 import { messageStore } from "$state/active-chat.svelte";
 import { authStore } from "$state/auth.svelte";
 import { uiStore } from "$state/ui.svelte";
+import { SvelteMap } from "svelte/reactivity";
 
 import { chatRequestsStore } from "./chat-requests.svelte";
 import { pinnedChatsStore } from "./pinned-chats.svelte";
@@ -182,11 +182,11 @@ export class ChatListStore implements AuthObserver {
 
     try {
       const result = await chatService.fetchChats(query, 20, null, this.chatsAbortController.signal);
-      
+
       // We want to keep chats that were manually loaded via deep-links (ensureChatLoaded)
       // but we also want to remove stale chats that are no longer in the list (if we are not deep-linking).
       // Strategy: Keep everything for now, but ensure the new results are correctly mapped.
-      
+
       this.chats = result.data.map((chat: any) => ({
         ...chat,
         isPinned: pinnedChatsStore.isPinned(chat.id),

@@ -1,32 +1,48 @@
+import type { FrontendMessageDto } from "$lib/types/chat";
 import type { AuthObserver } from "$state/auth-observer";
 import type { MessageDto, MessageReactionUpdateDto } from "shared/types/chat.dto";
 
+import { MESSAGE_ACK_TIMEOUT, MESSAGE_LOADER_AWAIT_MS } from "$lib/config";
 import { chatService } from "$services/chat.service";
 import { RealtimeEvent, realtimeEvents } from "$services/realtime-events";
 import { socketManager } from "$services/socket.manager.svelte";
 import { authStore } from "$state/auth.svelte";
 
-const LOADER_AWAIT_MS = 300;
-
-class MessageStore implements AuthObserver {
+export class MessageStore implements AuthObserver {
   activeChatId: string | null = $state(null);
-  messages: Array<MessageDto> = $state([]);
+  messages: Array<FrontendMessageDto> = $state([]);
   hasMoreMessages = $state(true);
   isLoadingMessages = $state(false);
 
   private messagesAbortController: AbortController | null = null;
+  private unsubscribers: Array<() => void> = [];
 
   constructor() {
-    realtimeEvents.on(RealtimeEvent.MESSAGE_RECEIVED, (data) => this.handleReceiveMessage(data));
-    realtimeEvents.on(RealtimeEvent.MESSAGE_SENT_ACK, (data) => this.handleMessageSentAck(data.chatId, data.message));
-    realtimeEvents.on(RealtimeEvent.MESSAGE_DELETED, (data) => this.handleMessageDeleted(data));
-    realtimeEvents.on(RealtimeEvent.MESSAGE_UPDATED, (data) => this.handleMessageUpdated(data));
-    realtimeEvents.on(RealtimeEvent.REACTION_UPDATED, (data) => this.handleReactionUpdate(data));
-
+    this.subscribe();
     authStore.subscribe(this);
   }
 
+  private subscribe() {
+    if (this.unsubscribers.length > 0) return;
+    this.unsubscribers.push(
+      realtimeEvents.on(RealtimeEvent.MESSAGE_RECEIVED, (data) => this.handleReceiveMessage(data)),
+      realtimeEvents.on(RealtimeEvent.MESSAGE_SENT_ACK, (data) => this.handleMessageSentAck(data.chatId, data.message)),
+      realtimeEvents.on(RealtimeEvent.MESSAGE_DELETED, (data) => this.handleMessageDeleted(data)),
+      realtimeEvents.on(RealtimeEvent.MESSAGE_UPDATED, (data) => this.handleMessageUpdated(data)),
+      realtimeEvents.on(RealtimeEvent.REACTION_UPDATED, (data) => this.handleReactionUpdate(data)),
+    );
+  }
+
+  /**
+   * Cleanup listeners when the store is no longer needed.
+   */
+  destroy() {
+    this.unsubscribers.forEach((unsub) => unsub());
+    this.unsubscribers = [];
+  }
+
   async initialize(chatId: string) {
+    this.subscribe();
     if (this.activeChatId === chatId) return;
 
     this.messagesAbortController?.abort();
@@ -46,16 +62,15 @@ class MessageStore implements AuthObserver {
       if (this.activeChatId !== chatId) return;
 
       const elapsed = Date.now() - startTime;
-      if (elapsed < LOADER_AWAIT_MS) {
-        await new Promise((r) => setTimeout(r, LOADER_AWAIT_MS - elapsed));
+      if (elapsed < MESSAGE_LOADER_AWAIT_MS) {
+        await new Promise((r) => setTimeout(r, MESSAGE_LOADER_AWAIT_MS - elapsed));
       }
 
-      this.messages = loadedMessages;
+      this.messages = loadedMessages as FrontendMessageDto[];
       this.hasMoreMessages = loadedMessages.length >= 50;
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return;
       console.error("Failed to load messages:", e);
-      // We can use a global error store or handle it in the Facade
     } finally {
       this.isLoadingMessages = false;
     }
@@ -75,12 +90,12 @@ class MessageStore implements AuthObserver {
       );
 
       const elapsed = Date.now() - startTime;
-      if (elapsed < LOADER_AWAIT_MS) {
-        await new Promise((r) => setTimeout(r, LOADER_AWAIT_MS - elapsed));
+      if (elapsed < MESSAGE_LOADER_AWAIT_MS) {
+        await new Promise((r) => setTimeout(r, MESSAGE_LOADER_AWAIT_MS - elapsed));
       }
 
       if (olderMessages.length > 0) {
-        this.messages.unshift(...olderMessages);
+        this.messages.unshift(...(olderMessages as FrontendMessageDto[]));
       }
       this.hasMoreMessages = olderMessages.length >= 50;
     } catch (e: unknown) {
@@ -92,6 +107,7 @@ class MessageStore implements AuthObserver {
   }
 
   clear() {
+    this.destroy();
     this.messagesAbortController?.abort();
     this.messagesAbortController = null;
     this.activeChatId = null;
@@ -103,7 +119,16 @@ class MessageStore implements AuthObserver {
 
   handleReceiveMessage(message: MessageDto) {
     if (message.chatId === this.activeChatId) {
-      this.messages.push(message);
+      const idx = this.messages.findIndex(
+        (m) => (m.idempotencyKey && m.idempotencyKey === message.idempotencyKey) || m.id === message.id,
+      );
+
+      if (idx !== -1) {
+        // Update existing message (could be optimistic or just a duplicate)
+        this.messages[idx] = { ...this.messages[idx], ...message, status: "sent" };
+      } else {
+        this.messages.push({ ...message, status: "sent" });
+      }
     }
   }
 
@@ -169,9 +194,62 @@ class MessageStore implements AuthObserver {
   handleMessageSentAck(chatId: string, message: MessageDto) {
     if (chatId === this.activeChatId) {
       const idx = this.messages.findIndex((m) => m.idempotencyKey === message.idempotencyKey);
-      if (idx === -1) {
-        this.messages.push(message);
+      if (idx !== -1) {
+        // Replace optimistic message with the real one from server
+        this.messages[idx] = { ...message, status: "sent" };
+      } else {
+        this.messages.push({ ...message, status: "sent" });
       }
+    }
+  }
+
+  sendMessage(contentBody: string, otherUserId: string) {
+    if (!this.activeChatId || !contentBody.trim()) return;
+
+    const chatId = this.activeChatId;
+    const idempotencyKey = socketManager.sendMessage(chatId, otherUserId, contentBody);
+
+    if (!idempotencyKey) return;
+
+    const optimisticMessage: FrontendMessageDto = {
+      id: `temp-${idempotencyKey}`,
+      chatId,
+      senderId: authStore.user?.id || "",
+      contentBody: contentBody.trim(),
+      idempotencyKey,
+      createdAt: new Date().toISOString(),
+      status: "sending",
+      reactions: [],
+      receiverId: otherUserId,
+      senderName: authStore.user?.name,
+      senderUsername: authStore.user?.username,
+      senderAvatar: authStore.user?.avatarUrl,
+    };
+
+    this.messages.push(optimisticMessage);
+
+    // Timeout to mark as failed if no ACK arrives
+    setTimeout(() => {
+      const msg = this.messages.find((m) => m.id === optimisticMessage.id);
+      if (msg && msg.status === "sending") {
+        msg.status = "failed";
+      }
+    }, MESSAGE_ACK_TIMEOUT);
+  }
+
+  retryMessage(tempId: string) {
+    const idx = this.messages.findIndex((m) => m.id === tempId);
+    if (idx === -1) return;
+
+    const msg = this.messages[idx];
+    if (msg.status !== "failed") return;
+
+    // Remove the failed message
+    this.messages.splice(idx, 1);
+
+    // Re-send
+    if (msg && msg.contentBody) {
+      this.sendMessage(msg.contentBody, msg.receiverId || "");
     }
   }
 }
