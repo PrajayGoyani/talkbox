@@ -64,10 +64,6 @@
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
-    // Only fetch if not already open
-    if (!isOpen) {
-      notificationStore.fetchNotifications(true);
-    }
   });
 </script>
 

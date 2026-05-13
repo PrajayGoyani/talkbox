@@ -31,7 +31,7 @@ class NotificationStore implements AuthObserver {
   }
 
   async fetchNotifications(reset = false) {
-    if (this.loading && !reset) return;
+    if (this.loading) return;
     this.loading = true;
 
     if (reset) {
