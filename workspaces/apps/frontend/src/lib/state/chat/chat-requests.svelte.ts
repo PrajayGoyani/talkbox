@@ -19,6 +19,7 @@ export class ChatRequestsStore implements AuthObserver {
   }
 
   async loadInitial() {
+    if (this.isLoading) return;
     this.isLoading = true;
     try {
       const response = await chatService.fetchRequests();

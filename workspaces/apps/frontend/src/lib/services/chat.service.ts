@@ -1,4 +1,4 @@
-import type { ChatListingResponseDto, MessageDto } from "shared/types/chat.dto";
+import type { ChatDto, ChatListingResponseDto, MessageDto } from "shared/types/chat.dto";
 
 import { api } from "./api.client";
 
@@ -21,6 +21,11 @@ export class ChatService {
     });
 
     return rawOlder.map((m) => ({ ...m, id: m._id || m.id })) as MessageDto[];
+  }
+
+  /** Load single chat by ID */
+  async fetchChat(chatId: string, signal?: AbortSignal): Promise<ChatDto> {
+    return api.get<ChatDto>(`/chat/${chatId}`, { signal });
   }
 
   /** Load chats list via REST */

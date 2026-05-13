@@ -349,7 +349,7 @@
         ]}
       >
         {#if selectedChatId}
-          {#if isInitialChatListLoad || (!selectedChat && chatListStore.isLoadingChats)}
+          {#if isInitialChatListLoad || !selectedChat}
             <div
               class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-100/50 dark:bg-slate-950/30"
             >
@@ -492,10 +492,13 @@
   class="fixed top-8 left-1/2 -translate-x-1/2 z-10001 flex flex-col gap-3 pointer-events-none w-full items-center px-4"
 >
   {#each uiStore.alerts as alert (alert.id)}
-    <Alert {alert} />
+    <Alert {alert} onClose={() => uiStore.removeAlert(alert.id)} />
   {/each}
   {#each errorStore.errors as error (error.id)}
-    <Alert alert={{ id: error.id, message: error.message, type: error.type === "error" ? "danger" : error.type }} />
+    <Alert
+      alert={{ id: error.id, message: error.message, type: error.type === "error" ? "danger" : error.type }}
+      onClose={() => errorStore.dismiss(error.id)}
+    />
   {/each}
 </div>
 

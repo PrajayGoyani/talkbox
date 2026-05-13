@@ -6,6 +6,7 @@ import { notificationService } from "$services/notification.service";
 import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
 import { messageStore } from "$state/active-chat.svelte";
 import { authStore } from "$state/auth.svelte";
+import { uiStore } from "$state/ui.svelte";
 
 import { chatRequestsStore } from "./chat-requests.svelte";
 import { pinnedChatsStore } from "./pinned-chats.svelte";
@@ -24,6 +25,7 @@ export class ChatListStore implements AuthObserver {
 
   public chatsMap = $state(new Map<string, Chat>());
   private userIdToChatIds = new Map<string, Set<string>>();
+  private pendingChatFetches = new Map<string, Promise<void>>();
   private chatsAbortController: AbortController | null = null;
   private listenerCleanups: Array<() => void> = [];
 
@@ -42,7 +44,6 @@ export class ChatListStore implements AuthObserver {
 
   init(_userId: string) {
     void this.fetchChats();
-    void this.fetchRequests();
     this.sortChats();
   }
 
@@ -205,6 +206,47 @@ export class ChatListStore implements AuthObserver {
     } finally {
       this.isLoadingChats = false;
     }
+  }
+
+  /**
+   * Ensures a specific chat is in the store (fetching it if not).
+   * Useful for deep-linking to chats beyond the first page of results.
+   */
+  async ensureChatLoaded(chatId: string) {
+    if (this.chatsMap.has(chatId)) return;
+
+    // Deduplicate in-flight requests
+    const existing = this.pendingChatFetches.get(chatId);
+    if (existing) return existing;
+
+    const fetchPromise = (async () => {
+      try {
+        const chat = await chatService.fetchChat(chatId);
+
+        // Secondary check: someone else might have loaded it while we were waiting
+        if (this.chatsMap.has(chatId)) return;
+
+        // Enhance with local properties
+        const enhancedChat = {
+          ...chat,
+          isPinned: pinnedChatsStore.isPinned(chat.id),
+          _lastUpdateTs: new Date(chat.lastMessage?.sentAt || chat.createdAt).getTime(),
+        };
+
+        // Add to store
+        this.chats = [enhancedChat, ...this.chats];
+        this.chatsMap.set(chat.id, enhancedChat);
+        this.updateUserIdMap(enhancedChat);
+      } catch (e) {
+        console.error("Failed to ensure chat is loaded:", e);
+        uiStore.addAlert("Failed to load chat details", "danger");
+      } finally {
+        this.pendingChatFetches.delete(chatId);
+      }
+    })();
+
+    this.pendingChatFetches.set(chatId, fetchPromise);
+    return fetchPromise;
   }
 
   async loadMoreChats() {

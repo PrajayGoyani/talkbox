@@ -66,3 +66,8 @@ export const markChatRead = async (req: Request, res: Response) => {
   const result = await chatService.markChatRead(req.params.chatId as string, req.user!.id);
   res.success(result);
 };
+
+export const getChat = async (req: Request, res: Response) => {
+  const chat = await chatService.getChat(req.user!.id, req.params.chatId as string);
+  res.success(chat);
+};

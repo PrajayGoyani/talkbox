@@ -3,8 +3,9 @@
   import { uiStore, type AlertData } from "$state/ui.svelte";
   import { fly } from "svelte/transition";
 
-  const { alert } = $props<{
+  const { alert, onClose } = $props<{
     alert: AlertData;
+    onClose?: () => void;
   }>();
 
   const variants: Record<AlertData["type"], { bg: string; icon: string; label: string }> = {
@@ -54,7 +55,10 @@
 
   <button
     class="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all active:scale-95"
-    onclick={() => uiStore.removeAlert(alert.id)}
+    onclick={() => {
+      if (onClose) onClose();
+      else uiStore.removeAlert(alert.id);
+    }}
     aria-label="Dismiss"
   >
     <Icon name="close" class="w-4 h-4" />

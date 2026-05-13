@@ -2,6 +2,7 @@ import { ChatQueryRepository, chatQueryRepository } from "@repositories/chat-que
 import { ChatRepository, chatRepository } from "@repositories/chat.repository";
 import { ObjectId } from "mongodb";
 import { ChatDto, ChatListingResponseDto } from "shared/types/chat.dto";
+import { AppError } from "@utils/AppError";
 
 import { IChatListingService } from "./types";
 
@@ -136,6 +137,20 @@ export class ChatListingService implements IChatListingService {
       nextCursor,
       hasMore,
     };
+  }
+
+  async getChat(userId: string | ObjectId, chatId: string | ObjectId): Promise<ChatDto> {
+    const chat = await this.queryRepository.findByIdWithParticipants(chatId);
+    if (!chat) {
+      throw AppError.notFound("Chat not found", "CHAT_NOT_FOUND");
+    }
+
+    const isParticipant = chat.participants.some((p: any) => p._id.toString() === userId.toString());
+    if (!isParticipant) {
+      throw AppError.forbidden("You are not part of this chat", "FORBIDDEN");
+    }
+
+    return this.queryRepository.transformChat(chat, userId);
   }
 }
 

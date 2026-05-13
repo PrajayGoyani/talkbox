@@ -160,6 +160,10 @@ export class ChatQueryRepository {
       .limit(limit)
       .populate("participants", "username name avatar_url plan bio");
   }
+
+  public async findByIdWithParticipants(chatId: string | ObjectId) {
+    return this.chatModel.findById(chatId).populate("participants", "username name avatar_url plan bio");
+  }
 }
 
 export const chatQueryRepository = new ChatQueryRepository(Chat);

@@ -11,6 +11,7 @@ import {
   getChatMessages,
   markChatRead,
   searchChats,
+  getChat,
 } from "@controllers/chat.controller";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import { rateLimiter } from "@middlewares/rate-limiter.middleware";
@@ -28,6 +29,9 @@ router.get("/requests", getChatRequests);
 
 // Search active chats
 router.get("/search", validateQuery(chatSearchSchema), searchChats);
+
+// Get single chat by ID
+router.get("/:chatId", getChat);
 
 // Send a chat request by username
 router.post("/request", validate(chatRequestSchema), requestChat);

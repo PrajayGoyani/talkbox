@@ -55,6 +55,7 @@ class ChatActions {
   }
 
   async loadMessages(chatId: string) {
+    await chatListStore.ensureChatLoaded(chatId);
     await messageStore.initialize(chatId);
     chatListStore.patchChatLocally(chatId, { unreadCount: 0 });
   }

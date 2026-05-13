@@ -157,4 +157,30 @@ describe("ChatService", () => {
       expect(result[0].isScrubbed).toBeUndefined();
     });
   });
+
+  describe("getChat", () => {
+    it("should fetch a chat successfully", async () => {
+      const chatId = "507f191e810c19729de860ef";
+      const userId = "507f191e810c19729de860f0";
+      const mockChat = { id: chatId, participants: [userId] };
+
+      // We need to mock the underlying listing service since ChatService proxies to it
+      const { chatListingService } = await import("../chat-listing.service");
+      vi.spyOn(chatListingService, "getChat").mockResolvedValue(mockChat as any);
+
+      const result = await chatService.getChat(userId, chatId);
+      expect(result).toEqual(mockChat);
+      expect(chatListingService.getChat).toHaveBeenCalledWith(userId, chatId);
+    });
+
+    it("should throw if chatListingService throws", async () => {
+      const chatId = "507f191e810c19729de860ef";
+      const userId = "507f191e810c19729de860f0";
+
+      const { chatListingService } = await import("../chat-listing.service");
+      vi.spyOn(chatListingService, "getChat").mockRejectedValue(new Error("Not Found"));
+
+      await expect(chatService.getChat(userId, chatId)).rejects.toThrow("Not Found");
+    });
+  });
 });
