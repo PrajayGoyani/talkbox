@@ -5,7 +5,7 @@
       "name": "Attach to Backend",
       "type": "bun",
       "request": "attach",
-      "url": "ws://127.0.0.1:9229/talkbox",
+      "url": "ws://127.0.0.1:9230/talkbox",
       "localRoot": "${workspaceFolder}/backend",
       "remoteRoot": "${workspaceFolder}/backend"
     },
