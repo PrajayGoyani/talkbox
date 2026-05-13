@@ -1,6 +1,5 @@
 import { CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, CLOUDINARY_CLOUD_NAME, UPLOAD_STRATEGY } from "@config/env";
 import { v2 as cloudinary } from "cloudinary";
-import crypto from "crypto";
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import path from "path";
@@ -19,7 +18,7 @@ const localStorage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + crypto.randomBytes(6).toString("hex");
+    const uniqueSuffix = crypto.randomUUID();
     cb(null, "avatar-" + uniqueSuffix + path.extname(file.originalname));
   },
 });
@@ -33,7 +32,7 @@ const cloudinaryStorage = new CloudinaryStorage({
     folder: "talkbox-avatars",
     allowed_formats: ["jpg", "png", "jpeg", "webp"],
     public_id: (_req, _file) => {
-      const uniqueSuffix = Date.now() + "-" + crypto.randomBytes(6).toString("hex");
+      const uniqueSuffix = crypto.randomUUID();
       return "avatar-" + uniqueSuffix;
     },
   },

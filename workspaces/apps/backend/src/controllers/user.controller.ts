@@ -15,7 +15,7 @@ export const uploadAvatar = async (req: Request, res: Response) => {
     throw AppError.badRequest("No file uploaded", "NO_FILE");
   }
 
-  const isCloudinary = process.env.UPLOAD_STRATEGY === "cloudinary";
+  const isCloudinary = Bun.env.UPLOAD_STRATEGY === "cloudinary";
   let avatarPath: string;
 
   if (isCloudinary) {

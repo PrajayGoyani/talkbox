@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -46,16 +45,14 @@ vi.mock("@utils/jwt", () => ({
   verifyRefreshToken: vi.fn(),
 }));
 
-// Mock crypto for deterministic tokens
-vi.mock("crypto", () => {
-  const mockRandomBytes = vi.fn().mockReturnValue({
-    toString: () => "test-token-hex-64-chars-deterministic-mock-0000000000000000",
-  });
-  return {
-    default: { randomBytes: mockRandomBytes },
-    randomBytes: mockRandomBytes,
-  };
+// Mock crypto.getRandomValues for deterministic tokens
+vi.spyOn(crypto, "getRandomValues").mockImplementation((arr: any) => {
+  arr.fill(0); // Mocked deterministic bytes
+  return arr;
 });
+
+// Since we use Buffer.from(crypto.getRandomValues(...)).toString('hex') in AuthService,
+// fill(0) will result in a string of '00' repeated.
 
 const mockUser = {
   _id: new ObjectId("507f191e810c19729de860ea"),

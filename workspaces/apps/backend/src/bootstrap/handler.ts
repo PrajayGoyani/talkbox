@@ -8,6 +8,7 @@ import cors from "cors";
 import express from "express";
 import mongoose from "mongoose";
 import path from "path";
+import { generateETag } from "@utils/hash.utils";
 
 // import helmet from 'helmet';
 import { app, server } from "@/app";
@@ -18,6 +19,7 @@ import { stopAgenda } from "@/config/agenda";
 // global application-level middlewares
 export function initializeMiddlewares() {
   app.set("trust proxy", 1);
+  app.set("etag", (body: any) => generateETag(body));
   // Define allowed origins
   const corsOptions = {
     origin: ALLOWED_ORIGINS,

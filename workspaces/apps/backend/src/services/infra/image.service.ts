@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
@@ -32,7 +31,7 @@ class ImageService {
    * @returns {Promise<string>} - The filename of the saved image.
    */
   async processAndSaveAvatar(buffer: Buffer, prefix: string = "avatar-"): Promise<string> {
-    const uniqueSuffix = Date.now() + "-" + crypto.randomBytes(6).toString("hex");
+    const uniqueSuffix = crypto.randomUUID();
     const filename = `${prefix}${uniqueSuffix}.webp`;
     const outputPath = path.join(this.uploadDir, filename);
 
@@ -40,7 +39,7 @@ class ImageService {
     await fs.mkdir(this.uploadDir, { recursive: true });
 
     const processedBuffer = await this.getProcessedBuffer(buffer);
-    await fs.writeFile(outputPath, processedBuffer);
+    await Bun.write(outputPath, processedBuffer);
 
     return filename;
   }

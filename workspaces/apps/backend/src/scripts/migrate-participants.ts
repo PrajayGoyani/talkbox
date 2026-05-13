@@ -4,9 +4,9 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure process.env.MONGO_URI is set for the imported connectDB
-if (!process.env.MONGO_URI && process.env.MONGODB_URI) {
-  process.env.MONGO_URI = process.env.MONGODB_URI;
+// Ensure Bun.env.MONGO_URI is set for the imported connectDB
+if (!Bun.env.MONGO_URI && Bun.env.MONGODB_URI) {
+  Bun.env.MONGO_URI = Bun.env.MONGODB_URI;
 }
 
 const { connectDB } = await import("../config/db");

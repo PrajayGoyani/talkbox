@@ -4,7 +4,7 @@ import Message from "@models/message.model";
 import User from "@models/user.model";
 import { Types } from "mongoose";
 
-const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "password123";
+const DEMO_PASSWORD = Bun.env.DEMO_PASSWORD || "password123";
 
 const demoUsers = [
   {

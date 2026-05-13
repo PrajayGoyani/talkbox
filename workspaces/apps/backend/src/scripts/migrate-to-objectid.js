@@ -4,7 +4,7 @@
  */
 import mongoose from "mongoose";
 
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = Bun.env.MONGO_URI;
 
 async function migrate() {
   await mongoose.connect(MONGO_URI);

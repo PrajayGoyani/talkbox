@@ -1,13 +1,11 @@
 import type { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from "shared/types/auth.dto";
 
 import { RESET_TOKEN_TTL, VERIFY_TOKEN_TTL } from "@config/env";
-import { IUser } from "@models/user.model";
 import { UserRepository, userRepository } from "@repositories/user.repository";
 import { redisSessionService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
 import { AUTH_EVENTS, eventBus } from "@utils/event-bus";
 import { generateAccessToken, generateTokens, verifyRefreshToken } from "@utils/jwt";
-import crypto from "crypto";
 import { ObjectId } from "mongodb";
 
 import { JWTPayload } from "@/types/socket.types";
@@ -102,7 +100,7 @@ export class AuthService {
     const user = await this.userRepository.findOne({ email });
     if (!user) return; // Silently ignore — prevent email enumeration
 
-    const token = crypto.randomBytes(32).toString("hex");
+    const token = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("hex");
     await redisSessionService.storeToken("reset", token, user._id.toString(), RESET_TOKEN_TTL);
 
     eventBus.emit(AUTH_EVENTS.PASSWORD_RESET_REQUESTED, { email, token });
@@ -153,7 +151,7 @@ export class AuthService {
    */
   private async _sendVerificationEmail(userId: string, email: string): Promise<void> {
     try {
-      const token = crypto.randomBytes(32).toString("hex");
+      const token = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("hex");
       await redisSessionService.storeToken("verify", token, userId, VERIFY_TOKEN_TTL);
 
       eventBus.emit(AUTH_EVENTS.VERIFICATION_REQUIRED, { email, token });
