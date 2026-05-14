@@ -17,6 +17,7 @@ vi.mock("$services/chat.service", () => ({
 vi.mock("$state/auth.svelte", () => ({
   authStore: {
     user: { id: "user-1", username: "testuser" },
+    subscribe: vi.fn(),
   },
 }));
 

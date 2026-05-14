@@ -124,6 +124,11 @@ export class MessageStore implements AuthObserver {
       );
 
       if (idx !== -1) {
+        // Optimization: If already sent and ID matches, skip update
+        if (this.messages[idx].status === "sent" && this.messages[idx].id === message.id) {
+          return;
+        }
+
         // Update existing message (could be optimistic or just a duplicate)
         this.messages[idx] = { ...this.messages[idx], ...message, status: "sent" };
       } else {
@@ -195,8 +200,13 @@ export class MessageStore implements AuthObserver {
     if (chatId === this.activeChatId) {
       const idx = this.messages.findIndex((m) => m.idempotencyKey === message.idempotencyKey);
       if (idx !== -1) {
-        // Replace optimistic message with the real one from server
-        this.messages[idx] = { ...message, status: "sent" };
+        // Optimization: If already marked as sent (likely by broadcast), skip redundant update
+        if (this.messages[idx].status === "sent" && this.messages[idx].id === message.id) {
+          return;
+        }
+
+        // Replace optimistic message with the real one from server, but preserve local fields
+        this.messages[idx] = { ...this.messages[idx], ...message, status: "sent" };
       } else {
         this.messages.push({ ...message, status: "sent" });
       }
