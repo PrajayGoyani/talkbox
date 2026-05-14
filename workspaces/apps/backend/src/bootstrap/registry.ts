@@ -70,8 +70,16 @@ export interface IRegistry {
 }
 
 /**
- * Registry Proxy: Automatically delegates property access to the appropriate domain module.
- * This eliminates the need for manual forwarding getters.
+ * Registry Proxy: Automatically delegates property access to domain modules.
+ *
+ * ⚠️ WARNING: RESOLUTION ORDER MATTERS
+ * Properties are resolved in this order: Auth -> Chat -> Socket -> Notification -> Repos -> Infra.
+ * If two modules share a property name, the one higher in the list will "shadow" the other.
+ *
+ * 💡 FUTURE PROOFING (Microservices):
+ * This Proxy provides "Location Transparency". If a domain (e.g., Auth) is moved to its own
+ * microservice, the registry implementation can be updated to return a remote client stub
+ * here without changing any consumer code in the controllers or middlewares.
  */
 export const registry = new Proxy({} as IRegistry, {
   get: (target, prop: string) => {
