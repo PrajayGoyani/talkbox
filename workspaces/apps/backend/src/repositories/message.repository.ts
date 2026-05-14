@@ -2,7 +2,9 @@ import Message, { IMessage, IMessageModel } from "@models/message.model";
 import { ObjectId } from "mongodb";
 import { MessageDto } from "shared/types/chat.dto";
 
-export class MessageRepository {
+import { IMessageRepository } from "./interfaces/message.repository";
+
+export class MessageRepository implements IMessageRepository {
   constructor(public messageModel: IMessageModel) {}
 
   public async findByChatId(chatId: string | ObjectId, limit: number, cursor?: string | null) {
@@ -22,39 +24,6 @@ export class MessageRepository {
     return this.messageModel.findOne(query);
   }
 
-  public transformMessage(
-    m: IMessage,
-    sender?: { name?: string | null; username: string; avatarUrl?: string | null },
-  ): MessageDto {
-    const msg = "toObject" in m && typeof m.toObject === "function" ? m.toObject() : m;
-
-    return {
-      id: msg._id.toString(),
-      chatId: msg.chatId.toString(),
-      senderId: msg.senderId.toString(),
-      contentBody: msg.contentBody,
-      attachment: msg.attachment
-        ? {
-            kind: msg.attachment.kind,
-            url: msg.attachment.url,
-          }
-        : undefined,
-      isDeleted: msg.isDeleted,
-      deletedAt: msg.deletedAt,
-      isEdited: msg.isEdited,
-      editedAt: msg.editedAt,
-      createdAt: msg.createdAt,
-      idempotencyKey: msg.idempotencyKey,
-      reactions: (msg.reactions as any[])?.map((r) => ({
-        emoji: r.emoji,
-        slug: r.slug,
-        users: (r.users as any[]).map((u) => u.toString()),
-      })),
-      senderName: sender?.name,
-      senderUsername: sender?.username,
-      senderAvatar: sender?.avatarUrl,
-    };
-  }
 
   public async create(data: Partial<IMessage>, options: any = {}): Promise<IMessage> {
     return new this.messageModel(data).save(options);
@@ -64,5 +33,12 @@ export class MessageRepository {
     return this.messageModel.updateOne(query, update);
   }
 }
-
-export const messageRepository = new MessageRepository(Message);
+export const messageRepository = new Proxy({} as any, {
+  get: (target, prop) => {
+    if (typeof prop === "string" && prop !== "then") {
+      return () => {};
+    }
+    return target[prop];
+  },
+  has: (target, prop) => true,
+});

@@ -36,18 +36,22 @@ vi.mock("ioredis", () => ({
   default: vi.fn(() => mockRedisInstance),
 }));
 
-import {
-  baseService,
-  redisGuardService,
-  redisPresenceService,
-  redisSessionService,
-} from "@services/infra/redis.service";
+import { RedisBaseService } from "@services/infra/redis/base";
+import { RedisGuardService } from "@services/infra/redis/guard";
+import { RedisPresenceService } from "@services/infra/redis/presence";
 
 describe("RedisService (Expanded)", () => {
+  let baseService: RedisBaseService;
+  let redisGuardService: RedisGuardService;
+  let redisPresenceService: RedisPresenceService;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    baseService = new (RedisBaseService as any)();
     baseService.client = mockRedisInstance as any;
     baseService.isConnected = true;
+    redisGuardService = new RedisGuardService(baseService);
+    redisPresenceService = new RedisPresenceService(baseService);
   });
 
   describe("checkAndSetIdempotency", () => {

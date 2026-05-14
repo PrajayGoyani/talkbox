@@ -1,5 +1,6 @@
 import { INotification } from "@models/notification.model";
-import { NotificationRepository, notificationRepository } from "@repositories/notification.repository";
+import { INotificationRepository } from "@repositories/interfaces/notification.repository";
+import { INotificationService } from "@services/interfaces/notification.service";
 import { AppError } from "@utils/AppError";
 import { ObjectId } from "mongodb";
 
@@ -13,8 +14,8 @@ interface CreateNotificationDto {
 
 import type { NotificationResponseDto } from "shared/types/notification.dto";
 
-class NotificationService {
-  constructor(private repository: NotificationRepository) {}
+export class NotificationService implements INotificationService {
+  constructor(private repository: INotificationRepository) {}
 
   /**
    * Create and persist a notification.
@@ -68,4 +69,4 @@ class NotificationService {
   }
 }
 
-export const notificationService = new NotificationService(notificationRepository);
+// Note: Instance creation moved to registry.ts

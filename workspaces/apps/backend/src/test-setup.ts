@@ -1,14 +1,15 @@
+console.log("[TestSetup] Initializing...");
 // Polyfill Bun for tests running in Node environment
 const isNode = typeof Bun === "undefined";
+
+import { vi } from "vitest";
 
 if (isNode) {
   const nodeCrypto = require("node:crypto");
 
-  // Provide a minimal Bun mock for Node environment
-  (globalThis as any).Bun = {
+  const bunMock = {
     env: process.env,
     hash: (data: string | Buffer | Uint8Array) => {
-      // Simple mock hash for tests
       let hash = 0n;
       const str = data.toString();
       for (let i = 0; i < str.length; i++) {
@@ -22,9 +23,10 @@ if (isNode) {
     },
   };
 
-  // Ensure Web Crypto API is available globally in Node
+  vi.stubGlobal("Bun", bunMock);
+
   if (!globalThis.crypto) {
-    (globalThis as any).crypto = nodeCrypto.webcrypto || nodeCrypto;
+    vi.stubGlobal("crypto", nodeCrypto.webcrypto || nodeCrypto);
   }
 }
 
@@ -56,7 +58,7 @@ process.emit = function (name: string, data: any) {
 };
 */
 
-const bunEnv = (globalThis as any).Bun.env;
+const bunEnv = (globalThis as any).Bun?.env || process.env;
 
 bunEnv.ALLOWED_ORIGINS = "*";
 bunEnv.JWT_SECRET_KEY = "test_secret";
@@ -67,3 +69,6 @@ bunEnv.JWT_EXPIRATION = "1h";
 bunEnv.JWT_REFRESH_EXPIRATION = "7d";
 bunEnv.UPLOAD_STRATEGY = "local";
 bunEnv.DEMO_PASSWORD = "password123";
+bunEnv.SMTP_HOST = "localhost";
+bunEnv.SMTP_USER = "test";
+bunEnv.SMTP_PASS = "test";

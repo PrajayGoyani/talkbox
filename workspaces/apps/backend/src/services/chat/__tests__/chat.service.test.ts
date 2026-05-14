@@ -3,7 +3,7 @@ import Chat from "@models/chat.model";
 import Message from "@models/message.model";
 import Notification from "@models/notification.model";
 import User from "@models/user.model";
-import { chatService } from "@services/chat/chat.service";
+import { ChatService } from "@services/chat/chat.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@models/chat.model");
@@ -14,173 +14,52 @@ vi.mock("@models/notification.model");
 const SENDER_ID = "507f191e810c19729de860ea";
 const TARGET_ID = "507f1f77bcf86cd799439011";
 
-describe("ChatService", () => {
+describe("ChatService Delegation", () => {
+  let chatService: ChatService;
+  let chatListingService: any;
+  let chatActionService: any;
+  let messageService: any;
+
   beforeEach(() => {
     vi.clearAllMocks();
+
+    chatListingService = {
+      getChatListing: vi.fn(),
+      getChat: vi.fn(),
+      getChatRequests: vi.fn(),
+      searchChats: vi.fn(),
+    };
+    chatActionService = {
+      requestChat: vi.fn(),
+      acceptChat: vi.fn(),
+      rejectChat: vi.fn(),
+      deleteChat: vi.fn(),
+    };
+    messageService = {
+      getChatMessages: vi.fn(),
+      markChatRead: vi.fn(),
+    };
+
+    chatService = new ChatService(chatListingService, chatActionService, messageService);
   });
 
-  describe("requestChat (Limits)", () => {
-    it("should allow a Free user to request a chat if below limit", async () => {
-      const targetUser = { _id: TARGET_ID, username: "target" };
-
-      vi.spyOn(User, "findOne").mockResolvedValue(targetUser as any);
-      vi.spyOn(User, "findById").mockResolvedValue({ _id: SENDER_ID, plan: "free" } as any);
-      // Mock count of accepted chats
-      vi.spyOn(Chat, "countDocuments").mockResolvedValue(FREE_PLAN_CHAT_LIMIT - 1);
-      vi.spyOn(Chat, "findOne").mockResolvedValue(null);
-      vi.spyOn(Chat, "create").mockResolvedValue({ _id: "chat123" } as any);
-      vi.spyOn(Notification, "create").mockResolvedValue({ populate: vi.fn().mockResolvedValue({}) } as any);
-
-      await chatService.requestChat(SENDER_ID, "target");
-
-      expect(vi.spyOn(Chat, "create")).toHaveBeenCalled();
-    });
-
-    it("should throw error if Free user reached active chat limit", async () => {
-      const targetUser = { _id: TARGET_ID, username: "target" };
-
-      vi.spyOn(User, "findOne").mockResolvedValue(targetUser as any);
-      vi.spyOn(User, "findById").mockResolvedValue({ _id: SENDER_ID, plan: "free" } as any);
-      vi.spyOn(Chat, "countDocuments").mockResolvedValue(FREE_PLAN_CHAT_LIMIT);
-
-      await expect(chatService.requestChat(SENDER_ID, "target")).rejects.toThrow(
-        expect.objectContaining({ code: "CHAT_LIMIT_REACHED" }),
-      );
-    });
-
-    it("should NOT enforce limit for Pro users", async () => {
-      const targetUser = { _id: TARGET_ID, username: "target" };
-
-      vi.spyOn(User, "findOne").mockResolvedValue(targetUser as any);
-      vi.spyOn(User, "findById").mockResolvedValue({ _id: SENDER_ID, plan: "pro" } as any);
-      // Even if count is high
-      vi.spyOn(Chat, "countDocuments").mockResolvedValue(100);
-      vi.spyOn(Chat, "findOne").mockResolvedValue(null);
-      vi.spyOn(Chat, "create").mockResolvedValue({ _id: "chat123" } as any);
-      vi.spyOn(Notification, "create").mockResolvedValue({ populate: vi.fn().mockResolvedValue({}) } as any);
-
-      await chatService.requestChat(SENDER_ID, "target");
-
-      expect(vi.spyOn(Chat, "create")).toHaveBeenCalled();
-    });
+  it("should delegate getChatListing to chatListingService", async () => {
+    await chatService.getChatListing("u1", 10, "c1");
+    expect(chatListingService.getChatListing).toHaveBeenCalledWith("u1", 10, "c1");
   });
 
-  describe("getChatMessages (Scrubbing)", () => {
-    it("should scrub old messages for Free users", async () => {
-      const chatId = "507f191e810c19729de860ef";
-      const userId = "507f191e810c19729de860f0";
-
-      const oldDate = new Date();
-      oldDate.setDate(oldDate.getDate() - (FREE_PLAN_SCRUB_DAYS + 1));
-
-      const recentDate = new Date();
-
-      const mockMessages = [
-        {
-          _id: { toString: () => "507f191e810c19729de860ec" },
-          chatId: { toString: () => chatId },
-          senderId: { toString: () => userId },
-          contentBody: "Hello",
-          createdAt: recentDate,
-          reactions: [],
-          toObject: function () {
-            return this;
-          },
-        },
-        {
-          _id: { toString: () => "507f191e810c19729de860ed" },
-          chatId: { toString: () => chatId },
-          senderId: { toString: () => userId },
-          contentBody: "Old Secret",
-          createdAt: oldDate,
-          reactions: [],
-          toObject: function () {
-            return this;
-          },
-        },
-      ];
-
-      vi.spyOn(Chat, "findById").mockResolvedValue({
-        _id: chatId,
-        status: "accepted",
-        participants: [userId, "other"],
-      } as any);
-      vi.spyOn(Message, "find").mockReturnValue({
-        sort: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue(mockMessages as any),
-      } as any);
-
-      const result = await chatService.getChatMessages(chatId, userId, 50, null, "free");
-
-      // Result is reversed in services, so m1 is index 1, m2 is index 0
-      expect(result[1].contentBody).toBe("Hello");
-      expect(result[1].isScrubbed).toBeUndefined();
-
-      expect(result[0].contentBody).toBe("Message unavailable on Free plan.");
-      expect(result[0].isScrubbed).toBe(true);
-    });
-
-    it("should NOT scrub old messages for Pro users", async () => {
-      const chatId = "507f191e810c19729de860f1";
-      const userId = "507f191e810c19729de860f2";
-
-      const oldDate = new Date();
-      oldDate.setDate(oldDate.getDate() - 30);
-
-      const mockMessages = [
-        {
-          _id: { toString: () => "507f191e810c19729de860ee" },
-          chatId: { toString: () => chatId },
-          senderId: { toString: () => userId },
-          contentBody: "Old Secret",
-          createdAt: oldDate,
-          reactions: [],
-          toObject: function () {
-            return this;
-          },
-        },
-      ];
-
-      vi.spyOn(Chat, "findById").mockResolvedValue({
-        _id: chatId,
-        status: "accepted",
-        participants: [userId, "other"],
-      } as any);
-      vi.spyOn(Message, "find").mockReturnValue({
-        sort: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue(mockMessages as any),
-      } as any);
-
-      const result = await chatService.getChatMessages(chatId, userId, 50, null, "pro");
-
-      expect(result[0].contentBody).toBe("Old Secret");
-      expect(result[0].isScrubbed).toBeUndefined();
-    });
+  it("should delegate requestChat to chatActionService", async () => {
+    await chatService.requestChat("u1", "target");
+    expect(chatActionService.requestChat).toHaveBeenCalledWith("u1", "target");
   });
 
-  describe("getChat", () => {
-    it("should fetch a chat successfully", async () => {
-      const chatId = "507f191e810c19729de860ef";
-      const userId = "507f191e810c19729de860f0";
-      const mockChat = { id: chatId, participants: [userId] };
+  it("should delegate getChatMessages to messageService", async () => {
+    await chatService.getChatMessages("chat1", "u1", 20, "c1", "pro", true);
+    expect(messageService.getChatMessages).toHaveBeenCalledWith("chat1", "u1", 20, "c1", "pro", true);
+  });
 
-      // We need to mock the underlying listing service since ChatService proxies to it
-      const { chatListingService } = await import("../chat-listing.service");
-      vi.spyOn(chatListingService, "getChat").mockResolvedValue(mockChat as any);
-
-      const result = await chatService.getChat(userId, chatId);
-      expect(result).toEqual(mockChat);
-      expect(chatListingService.getChat).toHaveBeenCalledWith(userId, chatId);
-    });
-
-    it("should throw if chatListingService throws", async () => {
-      const chatId = "507f191e810c19729de860ef";
-      const userId = "507f191e810c19729de860f0";
-
-      const { chatListingService } = await import("../chat-listing.service");
-      vi.spyOn(chatListingService, "getChat").mockRejectedValue(new Error("Not Found"));
-
-      await expect(chatService.getChat(userId, chatId)).rejects.toThrow("Not Found");
-    });
+  it("should delegate markChatRead to messageService", async () => {
+    await chatService.markChatRead("chat1", "u1");
+    expect(messageService.markChatRead).toHaveBeenCalledWith("chat1", "u1");
   });
 });

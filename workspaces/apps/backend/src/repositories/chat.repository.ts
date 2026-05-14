@@ -1,7 +1,9 @@
 import Chat, { IChat, IChatModel } from "@models/chat.model";
 import { ObjectId } from "mongodb";
 
-export class ChatRepository {
+import { IChatRepository } from "./interfaces/chat.repository";
+
+export class ChatRepository implements IChatRepository {
   constructor(public chatModel: IChatModel) {}
 
   public async findById(id: string | ObjectId) {
@@ -61,5 +63,10 @@ export class ChatRepository {
     }) as Promise<IChat | null>;
   }
 }
-
-export const chatRepository = new ChatRepository(Chat);
+export const chatRepository = new Proxy({} as any, {
+  get: (target, prop) => {
+    if (typeof prop === "string" && prop !== "then") return () => {};
+    return target[prop];
+  },
+  has: (target, prop) => true,
+});

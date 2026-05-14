@@ -1,113 +1,147 @@
-import { JWT_SECRET_KEY, NODE_ENV } from "@config/env";
-import { userCacheService } from "@services/auth/user-cache.service";
-import { socketService } from "@services/chat/socket.service";
-import { redisPresenceService } from "@services/infra/redis.service";
+import { activeChatSchema, deleteMessageSchema, editMessageSchema, reactMessageSchema, readChatSchema, sendMessageSchema, typingSchema } from "@schemas/socket.schema";
+import { SocketService } from "@services/chat/socket.service";
+import { IRedisPresenceService } from "@services/infra/interfaces";
 import { AppError } from "@utils/AppError";
 import jwt from "jsonwebtoken";
+import { z } from "zod";
 
 import { AuthenticatedSocketUser, JWTPayload, TypedIO, TypedSocket } from "@/types/socket.types";
+import { JWT_SECRET_KEY, NODE_ENV } from "@config/env";
+import { IUserCacheService } from "@services/interfaces/user-cache.service";
 
-export const configureSocketServer = (io: TypedIO): void => {
-  socketService.init(io);
+export class SocketController {
+  constructor(
+    private socketService: SocketService,
+    private redisPresenceService: IRedisPresenceService,
+    private userCacheService: IUserCacheService,
+  ) {}
 
-  // Chat Security Auditor: Authenticate socket connection
-  io.use(async (socket: TypedSocket, next) => {
-    const token = socket.handshake.auth.token;
-    if (!token) {
-      return next(AppError.unauthorized("Socket authentication error: Token required."));
-    }
-
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET_KEY) as unknown as JWTPayload;
-
-      const user = await userCacheService.getUser(decoded.id);
-      if (!user) {
-        return next(AppError.unauthorized("User not found"));
+  public configure(io: TypedIO): void {
+    // Authenticate socket connection
+    io.use(async (socket: TypedSocket, next) => {
+      const token = socket.handshake.auth.token;
+      if (!token) {
+        return next(AppError.unauthorized("Socket authentication error: Token required."));
       }
 
-      // Map UserDto → AuthenticatedSocketUser for socket context
-      const socketUser: AuthenticatedSocketUser = {
-        id: user.id,
-        username: user.username,
-        name: user.name ?? null,
-        avatarUrl: user.avatarUrl || "",
-        plan: user.plan,
-        bio: user.bio,
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET_KEY) as unknown as JWTPayload;
+        const user = await this.userCacheService.getUser(decoded.id);
+        if (!user) {
+          return next(AppError.unauthorized("User not found"));
+        }
+
+        const socketUser: AuthenticatedSocketUser = {
+          id: user.id,
+          username: user.username,
+          name: user.name ?? null,
+          avatarUrl: user.avatarUrl || "",
+          plan: user.plan,
+          bio: user.bio,
+        };
+        socket.data.user = socketUser;
+        next();
+      } catch (error) {
+        if (NODE_ENV === "development") {
+          console.error(error);
+        }
+        return next(AppError.unauthorized("Socket authentication error: Invalid Token."));
+      }
+    });
+
+    io.on("connection", async (socket: TypedSocket) => {
+      await this.socketService.handleConnection(socket);
+
+      const wrap = <T>(
+        schema: z.Schema<T>,
+        handler: (socket: TypedSocket, data: T, ack?: (res: any) => void) => Promise<void> | void,
+      ) => {
+        return async (data: any, ack?: (res: any) => void) => {
+          try {
+            const validatedData = schema.parse(data);
+            await handler(socket, validatedData, ack);
+          } catch (err: any) {
+            if (err instanceof z.ZodError) {
+              ack?.({ status: "error", error: "Validation failed", details: err.issues });
+            } else {
+              const message = err.message || "Internal error";
+              ack?.({ status: "error", error: message });
+              if (NODE_ENV === "development") {
+                console.error(`[SocketController] Error in handler:`, err);
+              }
+            }
+          }
+        };
       };
-      socket.data.user = socketUser;
-      next();
-    } catch (error) {
-      if (NODE_ENV === "development") {
-        console.error(error);
-      }
-      return next(AppError.unauthorized("Socket authentication error: Invalid Token."));
-    }
-  });
 
-  io.on("connection", async (socket: TypedSocket) => {
-    await socketService.handleConnection(socket);
+      socket.on(
+        "send_message",
+        wrap(sendMessageSchema, async (s, data, ack) => {
+          const message = await this.socketService.saveAndDeliverMessage(s.data.user, data);
+          ack?.({ status: "ok", message });
+        }),
+      );
 
-    socket.on("send_message", async (data, ack) => {
-      if (NODE_ENV === "development") {
-        console.log(`[SocketController] send_message received from user ${socket.data.user.id}:`, data);
-      }
-      try {
-        const message = await socketService.saveAndDeliverMessage(socket.data.user, data);
-        if (ack) ack({ status: "ok", message });
-      } catch (err) {
-        if (ack) ack({ status: "error", error: (err as Error).message });
-      }
+      socket.on(
+        "react_message",
+        wrap(reactMessageSchema, (s, data) => {
+          void this.socketService.handleReaction(s.data.user, data);
+        }),
+      );
+
+      socket.on(
+        "delete_message",
+        wrap(deleteMessageSchema, (s, data) => {
+          void this.socketService.handleDeleteMessage(s.data.user, data);
+        }),
+      );
+
+      socket.on(
+        "edit_message",
+        wrap(editMessageSchema, (s, data) => {
+          void this.socketService.handleEditMessage(s.data.user, data);
+        }),
+      );
+
+      socket.on(
+        "typing_start",
+        wrap(typingSchema, (s, data) => {
+          void this.socketService.handleTyping(s.data.user, data, true);
+        }),
+      );
+
+      socket.on(
+        "typing_stop",
+        wrap(typingSchema, (s, data) => {
+          void this.socketService.handleTyping(s.data.user, data, false);
+        }),
+      );
+
+      socket.on(
+        "read_chat",
+        wrap(readChatSchema, async (s, data) => {
+          await this.socketService.handleMarkAsRead(s.data.user.id, data.chatId);
+        }),
+      );
+
+      socket.on(
+        "active_chat",
+        wrap(activeChatSchema, async (s, data) => {
+          await this.redisPresenceService.setActiveChat(s.data.user.id, data.chatId);
+        }),
+      );
+
+      socket.on("disconnect", async () => {
+        try {
+          await this.redisPresenceService.setActiveChat(socket.data.user.id, null);
+        } catch (err) {
+          console.error(`[SocketController] Error clearing active chat on disconnect:`, err);
+        }
+      });
+
+      socket.on("store_public_bundle", async (_bundleData, ack) => {
+        ack?.({ status: "ok" });
+      });
     });
-
-    socket.on("react_message", async (data) => {
-      void socketService.handleReaction(socket.data.user, data);
-    });
-
-    socket.on("delete_message", async (data) => {
-      void socketService.handleDeleteMessage(socket.data.user, data);
-    });
-
-    socket.on("edit_message", async (data) => {
-      void socketService.handleEditMessage(socket.data.user, data);
-    });
-
-    // E2EE Key exchange setup
-    socket.on("store_public_bundle", async (_bundleData, ack) => {
-      // TODO: E2EE Key storage logic
-      if (ack) ack({ status: "ok" });
-    });
-
-    // Typing Indicators
-    socket.on("typing_start", (data) => {
-      void socketService.handleTyping(socket.data.user, data, true);
-    });
-
-    socket.on("typing_stop", (data) => {
-      void socketService.handleTyping(socket.data.user, data, false);
-    });
-
-    socket.on("read_chat", async (data) => {
-      try {
-        await socketService.handleMarkAsRead(socket.data.user.id, data.chatId);
-      } catch (err) {
-        console.error(`[SocketController] Error marking chat as read for user ${socket.data.user.id}:`, err);
-      }
-    });
-
-    socket.on("active_chat", async (data) => {
-      try {
-        await redisPresenceService.setActiveChat(socket.data.user.id, data.chatId);
-      } catch (err) {
-        console.error(`[SocketController] Error setting active chat for user ${socket.data.user.id}:`, err);
-      }
-    });
-
-    socket.on("disconnect", async () => {
-      try {
-        await redisPresenceService.setActiveChat(socket.data.user.id, null);
-      } catch (err) {
-        console.error(`[SocketController] Error clearing active chat on disconnect:`, err);
-      }
-    });
-  });
-};
+  }
+}

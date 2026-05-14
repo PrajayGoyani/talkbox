@@ -1,4 +1,4 @@
-import { socketService } from "@services/chat/socket.service";
+import { registry } from "@bootstrap/registry";
 import { eventBus, CHAT_EVENTS } from "@utils/event-bus";
 
 /**
@@ -8,11 +8,11 @@ import { eventBus, CHAT_EVENTS } from "@utils/event-bus";
 export const initSocketEventListeners = () => {
   // 1. Message Sent
   eventBus.on(CHAT_EVENTS.MESSAGE_SENT, ({ message, chat, sender, receiverId }) => {
-    if (!socketService.io) return;
+    if (!registry.socketService.io) return;
 
     for (const p of chat.participants) {
       const pId = p.toString();
-      socketService.io.to(`user:${pId}`).emit("receive_message", {
+      registry.socketService.io.to(`user:${pId}`).emit("receive_message", {
         ...message,
         senderName: sender.name || null,
         senderUsername: sender.username,
@@ -23,7 +23,7 @@ export const initSocketEventListeners = () => {
 
   // 2. Message Deleted
   eventBus.on(CHAT_EVENTS.MESSAGE_DELETED, ({ messageId, chatId, participants, isLastMessage }) => {
-    if (!socketService.io) return;
+    if (!registry.socketService.io) return;
 
     const updatePayload = {
       messageId,
@@ -32,13 +32,13 @@ export const initSocketEventListeners = () => {
     };
 
     participants.forEach((pId: string) => {
-      socketService.io?.to(`user:${pId}`).emit("message_deleted", updatePayload);
+      registry.socketService.io?.to(`user:${pId}`).emit("message_deleted", updatePayload);
     });
   });
 
   // 3. Message Updated
   eventBus.on(CHAT_EVENTS.MESSAGE_UPDATED, ({ messageId, chatId, contentBody, isEdited, editedAt, participants }) => {
-    if (!socketService.io) return;
+    if (!registry.socketService.io) return;
 
     const updatePayload = {
       messageId,
@@ -49,16 +49,16 @@ export const initSocketEventListeners = () => {
     };
 
     participants.forEach((pId: string) => {
-      socketService.io?.to(`user:${pId}`).emit("message_updated", updatePayload);
+      registry.socketService.io?.to(`user:${pId}`).emit("message_updated", updatePayload);
     });
   });
 
   // 4. Message Reaction Updated
   eventBus.on(CHAT_EVENTS.REACTION_UPDATED, ({ payload, participants }) => {
-    if (!socketService.io) return;
+    if (!registry.socketService.io) return;
 
     participants.forEach((pId: string) => {
-      socketService.io?.to(`user:${pId}`).emit("message_reaction_update", payload);
+      registry.socketService.io?.to(`user:${pId}`).emit("message_reaction_update", payload);
     });
   });
 };

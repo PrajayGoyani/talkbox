@@ -1,20 +1,19 @@
-import { getChatMessages, markChatRead } from "@controllers/chat.controller";
-import { chatService } from "@services/chat/chat.service";
+import { ChatController } from "@controllers/chat.controller";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.mock("@services/chat/chat.service", () => ({
-  chatService: {
-    getChatMessages: vi.fn(),
-    markChatRead: vi.fn(),
-  },
-}));
 
 describe("ChatController", () => {
   let req: any;
   let res: any;
+  let chatController: ChatController;
+  let chatService: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    chatService = {
+      getChatMessages: vi.fn(),
+      markChatRead: vi.fn(),
+    };
+    chatController = new ChatController(chatService);
     req = {
       params: { chatId: "chat123" },
       query: {},
@@ -33,17 +32,18 @@ describe("ChatController", () => {
       req.query.limit = "30";
       req.query.cursor = "msg-456";
       const mockMessages = [{ id: "msg1" }];
-      vi.spyOn(chatService, "getChatMessages").mockResolvedValue(mockMessages as any);
+      chatService.getChatMessages.mockResolvedValue(mockMessages as any);
 
-      await getChatMessages(req, res);
+      await chatController.getChatMessages(req, res);
 
       expect(chatService.getChatMessages).toHaveBeenCalledWith("chat123", "user123", 30, "msg-456", "free", false);
       expect(res.success).toHaveBeenCalledWith(mockMessages);
     });
 
     it("should use defaults if limit/cursor are missing", async () => {
-      await getChatMessages(req, res);
-      expect(vi.spyOn(chatService, "getChatMessages")).toHaveBeenCalledWith(
+      chatService.getChatMessages.mockResolvedValue([]);
+      await chatController.getChatMessages(req, res);
+      expect(chatService.getChatMessages).toHaveBeenCalledWith(
         "chat123",
         "user123",
         50,
@@ -55,8 +55,9 @@ describe("ChatController", () => {
 
     it("should prioritize headers for limit/cursor if query is missing", async () => {
       req.headers = { "x-limit": "10", "x-cursor": "msg-789" };
-      await getChatMessages(req, res);
-      expect(vi.spyOn(chatService, "getChatMessages")).toHaveBeenCalledWith(
+      chatService.getChatMessages.mockResolvedValue([]);
+      await chatController.getChatMessages(req, res);
+      expect(chatService.getChatMessages).toHaveBeenCalledWith(
         "chat123",
         "user123",
         10,
@@ -70,9 +71,9 @@ describe("ChatController", () => {
   describe("markChatRead", () => {
     it("should call chatService.markChatRead", async () => {
       const mockResult = { message: "success" };
-      vi.spyOn(chatService, "markChatRead").mockResolvedValue(mockResult);
+      chatService.markChatRead.mockResolvedValue(mockResult);
 
-      await markChatRead(req, res);
+      await chatController.markChatRead(req, res);
 
       expect(chatService.markChatRead).toHaveBeenCalledWith("chat123", "user123");
       expect(res.success).toHaveBeenCalledWith(mockResult);

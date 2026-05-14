@@ -2,14 +2,17 @@ import { RATE_LIMIT_DEFAULT_WINDOW_MS, RATE_LIMIT_SOCKET_MESSAGE_MAX } from "@co
 import { CHAT_MESSAGES } from "@constants/messages";
 import { IChat } from "@models/chat.model";
 import { IMessage } from "@models/message.model";
-import { ChatRepository, chatRepository } from "@repositories/chat.repository";
-import { MessageRepository, messageRepository } from "@repositories/message.repository";
-import { chatLockdownService } from "@services/chat/chat-lockdown.service";
-import { redisPresenceService, redisGuardService } from "@services/infra/redis.service";
+import { IChatRepository } from "@repositories/interfaces/chat.repository";
+import { IMessageRepository } from "@repositories/interfaces/message.repository";
+import { IChatLockdownService, IMessageService } from "./types";
+import {
+  IRedisPresenceService,
+  IRedisGuardService,
+} from "@services/infra/interfaces";
 import { AppError } from "@utils/AppError";
 import { isPastModifyLimit, isScrubbed } from "@utils/date.utils";
-import { extractEmojiMetadata } from "@utils/emoji.utils";
 import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
+import { toMessageDto } from "@utils/mappers";
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 import { MessageDto } from "shared/types/chat.dto";
@@ -17,14 +20,17 @@ import { MessageDto } from "shared/types/chat.dto";
 import { AuthenticatedSocketUser } from "@/types/socket.types";
 
 import { chatCacheService } from "./chat-cache.service";
-import { IMessageService } from "./types";
+
 
 export type MessageSender = Omit<AuthenticatedSocketUser, "bio">;
 
 export class MessageService implements IMessageService {
   constructor(
-    private chatRepo: ChatRepository,
-    private messageRepo: MessageRepository,
+    private chatRepo: IChatRepository,
+    private messageRepo: IMessageRepository,
+    private chatLockdownService: IChatLockdownService,
+    private redisPresenceService: IRedisPresenceService,
+    private redisGuardService: IRedisGuardService,
   ) {}
 
   async getChatMessages(
@@ -121,7 +127,7 @@ export class MessageService implements IMessageService {
     // 4. Atomic Persistence
     let persistenceResult: { message: IMessage; chat: IChat };
     try {
-      const activeChatId = await redisPresenceService.getActiveChat(receiverId);
+      const activeChatId = await this.redisPresenceService.getActiveChat(receiverId);
       const skipUnreadIncrement = activeChatId === chatId;
 
       persistenceResult = await this.persistMessageAndNotifyChat(
@@ -163,13 +169,13 @@ export class MessageService implements IMessageService {
   private async applySecurityGuards(senderId: string, chatId: string, idempotencyKey: string): Promise<boolean> {
     // 1. Check Idempotency FIRST (L1 check)
     // If Redis already has this key, it's a retry; skip further security costs.
-    const isNewToRedis = await redisGuardService.checkAndSetIdempotency(idempotencyKey, 900);
+    const isNewToRedis = await this.redisGuardService.checkAndSetIdempotency(idempotencyKey, 900);
     if (!isNewToRedis) return false;
 
     // 2. Heavy Checks (Lockdown & Rate Limit) only for NEW messages
     const [isLocked, rlStatus] = await Promise.all([
-      chatLockdownService.isChatDeleted(chatId),
-      redisGuardService.incrementAndCheckLimit(
+      this.chatLockdownService.isChatDeleted(chatId),
+      this.redisGuardService.incrementAndCheckLimit(
         `rl:socket:message:${senderId}`,
         RATE_LIMIT_SOCKET_MESSAGE_MAX,
         RATE_LIMIT_DEFAULT_WINDOW_MS,
@@ -371,25 +377,9 @@ export class MessageService implements IMessageService {
     plan: "free" | "pro" = "free",
     sender?: { name?: string | null; username: string; avatarUrl?: string | null },
   ): MessageDto {
-    const dto = this.messageRepo.transformMessage(m, sender);
-    const isMessageScrubbed = isScrubbed(plan, m.createdAt);
-
-    if (m.isDeleted) {
-      dto.contentBody = CHAT_MESSAGES.MESSAGE_DELETED;
-      dto.reactions = [];
-      dto.attachment = { kind: null, url: null };
-    } else if (isMessageScrubbed) {
-      dto.contentBody = "Message unavailable on Free plan.";
-      dto.reactions = [];
-      dto.attachment = { kind: null, url: null };
-      dto.isScrubbed = true;
-    }
-
-    const skipEmojiMetadata: boolean = m.isDeleted || isMessageScrubbed;
-    dto.emojiMetadata = skipEmojiMetadata ? undefined : extractEmojiMetadata(dto.contentBody);
-
-    return dto;
+    return toMessageDto(m, plan, sender);
   }
 }
 
-export const messageService = new MessageService(chatRepository, messageRepository);
+// Note: Instance creation moved to registry.ts
+export const messageService = {};

@@ -1,10 +1,14 @@
-import { UserRepository, userRepository } from "@repositories/user.repository";
-import { redisSessionService } from "@services/infra/redis.service";
+import { IUserRepository } from "@repositories/interfaces/user.repository";
+import { IUserService } from "@services/interfaces/user.service";
+import { IRedisSessionService } from "@services/infra/interfaces";
 import { AppError } from "@utils/AppError";
 import { eventBus, USER_EVENTS } from "@utils/event-bus";
 
-class UserService {
-  constructor(private userRepository: UserRepository) {}
+export class UserService implements IUserService {
+  constructor(
+    private userRepository: IUserRepository,
+    private redisSessionService: IRedisSessionService,
+  ) {}
 
   async searchByUsername(username: string) {
     const user = await this.userRepository.findByEmailOrUsername(username);
@@ -24,7 +28,7 @@ class UserService {
     await user.save();
 
     // Invalidate cache across all server instances
-    await redisSessionService.publishCacheInvalidation("user", userId.toString());
+    await this.redisSessionService.publishCacheInvalidation("user", userId.toString());
 
     // Broadcast update to all partners in real-time
     eventBus.emit(USER_EVENTS.PROFILE_UPDATED, {
@@ -48,7 +52,7 @@ class UserService {
     await user.save();
 
     // Invalidate cache across all server instances
-    await redisSessionService.publishCacheInvalidation("user", userId.toString());
+    await this.redisSessionService.publishCacheInvalidation("user", userId.toString());
 
     // Broadcast update to all partners in real-time
     eventBus.emit(USER_EVENTS.PROFILE_UPDATED, {
@@ -64,4 +68,4 @@ class UserService {
   }
 }
 
-export const userService = new UserService(userRepository);
+// Note: Instance creation moved to registry.ts

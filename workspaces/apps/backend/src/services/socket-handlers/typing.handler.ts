@@ -1,7 +1,7 @@
 import { RATE_LIMIT_DEFAULT_WINDOW_MS } from "@config/env";
-import { ChatRepository } from "@repositories/chat.repository";
-import { messageService } from "@services/chat/message.service";
-import { redisGuardService } from "@services/infra/redis.service";
+import { IChatRepository } from "@repositories/interfaces/chat.repository";
+import { IMessageService } from "@services/chat/types";
+import { IRedisGuardService } from "@services/infra/interfaces";
 import { LRUCache } from "lru-cache";
 import { TypingIndicatorDto } from "shared/types/chat.dto";
 
@@ -15,7 +15,9 @@ export class TypingHandler {
 
   constructor(
     private ioProvider: () => TypedIO | null,
-    private chatRepo: ChatRepository,
+    private chatRepo: IChatRepository,
+    private messageService: IMessageService,
+    private redisGuardService: IRedisGuardService,
   ) {}
 
   async handleTyping(
@@ -33,7 +35,7 @@ export class TypingHandler {
     const shouldHitRedis = now - lastCheck > 2000;
 
     if (shouldHitRedis) {
-      const rlStatus = await redisGuardService.incrementAndCheckLimit(
+      const rlStatus = await this.redisGuardService.incrementAndCheckLimit(
         `rl:socket:typing:${senderId}`,
         60,
         RATE_LIMIT_DEFAULT_WINDOW_MS,
@@ -43,7 +45,7 @@ export class TypingHandler {
     }
 
     try {
-      await messageService.ensureParticipant(chatId, senderId);
+      await this.messageService.ensureParticipant(chatId, senderId);
 
       const io = this.ioProvider();
       const typingPayload: TypingIndicatorDto = {

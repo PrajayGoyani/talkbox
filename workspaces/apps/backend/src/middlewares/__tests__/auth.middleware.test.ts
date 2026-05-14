@@ -1,16 +1,18 @@
+import { registry } from "@bootstrap/registry";
 import { authenticateToken } from "@middlewares/auth.middleware";
-import { userCacheService } from "@services/auth/user-cache.service";
 import { verifyAccessToken } from "@utils/jwt";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@services/auth/user-cache.service", () => ({
-  userCacheService: {
-    getUser: vi.fn(),
-  },
-}));
-
 vi.mock("@utils/jwt", () => ({
   verifyAccessToken: vi.fn(),
+}));
+
+vi.mock("@bootstrap/registry", () => ({
+  registry: {
+    userCacheService: {
+      getUser: vi.fn(),
+    },
+  },
 }));
 
 describe("AuthMiddleware", () => {
@@ -20,6 +22,8 @@ describe("AuthMiddleware", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(registry.userCacheService.getUser).mockImplementation(async (id) => ({ id, username: "testuser" } as any));
+
     req = {
       headers: {},
       cookies: {},
@@ -34,7 +38,6 @@ describe("AuthMiddleware", () => {
   it("should authenticate via Authorization header", async () => {
     req.headers.authorization = "Bearer valid-token";
     vi.mocked(verifyAccessToken).mockReturnValue({ id: "user123" } as any);
-    vi.spyOn(userCacheService, "getUser").mockResolvedValue({ id: "user123", username: "test" } as any);
 
     await authenticateToken(req, res, next);
 
@@ -47,7 +50,6 @@ describe("AuthMiddleware", () => {
   it("should authenticate via access_token cookie if header is missing", async () => {
     req.cookies.access_token = "cookie-token";
     vi.mocked(verifyAccessToken).mockReturnValue({ id: "user456" } as any);
-    vi.spyOn(userCacheService, "getUser").mockResolvedValue({ id: "user456", username: "cookie-user" } as any);
 
     await authenticateToken(req, res, next);
 

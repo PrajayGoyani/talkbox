@@ -1,7 +1,6 @@
 import { getAgenda } from "@config/agenda";
 import { JOBS } from "@jobs/agenda-jobs";
-import { socketService } from "@services/chat/socket.service";
-import { emailService } from "@services/notification/email.service";
+import { registry } from "@bootstrap/registry";
 import { AUTH_EVENTS, eventBus } from "@utils/event-bus";
 
 /**
@@ -13,7 +12,7 @@ export const initAuthEventListeners = () => {
   // 1. Verification Email
   eventBus.on(AUTH_EVENTS.VERIFICATION_REQUIRED, async ({ email, token }) => {
     try {
-      await emailService.sendVerificationEmail(email, token);
+      await registry.emailService.sendVerificationEmail(email, token);
     } catch (err) {
       console.error("[EventBus] Failed to send verification email:", err);
     }
@@ -22,7 +21,7 @@ export const initAuthEventListeners = () => {
   // 2. Password Reset Email
   eventBus.on(AUTH_EVENTS.PASSWORD_RESET_REQUESTED, async ({ email, token }) => {
     try {
-      await emailService.sendResetEmail(email, token);
+      await registry.emailService.sendResetEmail(email, token);
     } catch (err) {
       console.error("[EventBus] Failed to send password reset email:", err);
     }
@@ -45,7 +44,7 @@ export const initAuthEventListeners = () => {
 
     // 3b. Broadcast plan update to partners via Socket.io
     try {
-      await socketService.notifyProfileUpdate(userId.toString(), { plan: newPlan });
+      await registry.socketService.notifyProfileUpdate(userId.toString(), { plan: newPlan });
     } catch (err) {
       console.error("[EventBus] Failed to notify partners of profile update:", err);
     }

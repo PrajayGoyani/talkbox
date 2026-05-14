@@ -1,17 +1,17 @@
-import { chatQueryRepository } from "@repositories/chat-query.repository";
-import { ChatRepository, chatRepository } from "@repositories/chat.repository";
-import { MessageRepository, messageRepository } from "@repositories/message.repository";
-import { partnerRepository } from "@repositories/partner.repository";
-import { UserRepository, userRepository } from "@repositories/user.repository";
-import { policyService } from "@services/auth/policy.service";
-import { chatCacheService } from "@services/chat/chat-cache.service";
-import { messageService } from "@services/chat/message.service";
-import { baseService, redisSessionService, redisPresenceService } from "@services/infra/redis.service";
+import { IChatQueryRepository } from "@repositories/interfaces/chat-query.repository";
+import { IChatRepository } from "@repositories/interfaces/chat.repository";
+import { IMessageRepository } from "@repositories/interfaces/message.repository";
+import { IPartnerRepository } from "@repositories/interfaces/partner.repository";
+import { IUserRepository } from "@repositories/interfaces/user.repository";
+import { IMessageService } from "@services/chat/types";
+import { IRedisPresenceService, IRedisSessionService, IRedisBaseService } from "@services/infra/interfaces";
 import { PresenceService } from "@services/presence/presence.service";
 import { MessageHandler } from "@services/socket-handlers/message.handler";
 import { ReactionHandler } from "@services/socket-handlers/reaction.handler";
 import { TypingHandler } from "@services/socket-handlers/typing.handler";
 import { eventBus, USER_EVENTS } from "@utils/event-bus";
+import { IPolicyService } from "@services/interfaces/policy.service";
+import { IChatCacheService } from "@services/interfaces/chat-cache.service";
 
 import { AuthenticatedSocketUser, TypedIO, TypedSocket } from "@/types/socket.types";
 
@@ -21,30 +21,30 @@ export class SocketService {
 
   private partnerRequests: Map<string, Promise<Set<string>>> = new Map();
 
-  private presenceService: PresenceService;
-  private messageHandler: MessageHandler;
-  private reactionHandler: ReactionHandler;
-  private typingHandler: TypingHandler;
-
   constructor(
-    private chatRepo: ChatRepository,
-    private messageRepo: MessageRepository,
-    private userRepo: UserRepository,
-  ) {
-    const ioProvider = () => this.io;
-
-    this.presenceService = new PresenceService(ioProvider, this.userRepo);
-    this.messageHandler = new MessageHandler(ioProvider);
-    this.reactionHandler = new ReactionHandler(ioProvider, this.chatRepo, this.messageRepo);
-    this.typingHandler = new TypingHandler(ioProvider, this.chatRepo);
-  }
+    private chatRepo: IChatRepository,
+    private messageRepo: IMessageRepository,
+    private userRepo: IUserRepository,
+    private chatQueryRepo: IChatQueryRepository,
+    private partnerRepo: IPartnerRepository,
+    private messageService: IMessageService,
+    private presenceService: PresenceService,
+    private messageHandler: MessageHandler,
+    private reactionHandler: ReactionHandler,
+    private typingHandler: TypingHandler,
+    private redisSessionService: IRedisSessionService,
+    private redisPresenceService: IRedisPresenceService,
+    private redisBaseService: IRedisBaseService,
+    private policyService: IPolicyService,
+    private chatCacheService: IChatCacheService,
+  ) {}
 
   init(io: TypedIO) {
     this.io = io;
 
-    if (baseService.subClient) {
-      baseService.subClient.subscribe("presence:updates", "cache:invalidate", "session:takeover");
-      baseService.subClient.on("message", (channel, message) => {
+    if (this.redisBaseService.subClient) {
+      this.redisBaseService.subClient.subscribe("presence:updates", "cache:invalidate", "session:takeover");
+      this.redisBaseService.subClient.on("message", (channel: string, message: string) => {
         try {
           const data = JSON.parse(message);
           switch (channel) {
@@ -74,7 +74,7 @@ export class SocketService {
     const userId = socket.data.user.id;
     const plan = socket.data.user.plan;
 
-    const globalCount = await redisSessionService.incrementGlobalSession(userId, socket.id);
+    const globalCount = await this.redisSessionService.incrementGlobalSession(userId, socket.id);
 
     let userSockets = this.activeConnections.get(userId);
     if (!userSockets) {
@@ -86,9 +86,9 @@ export class SocketService {
 
     socket.on("disconnect", async () => {
       userSockets?.delete(socket);
-      await redisSessionService.decrementGlobalSession(userId, socket.id);
+      await this.redisSessionService.decrementGlobalSession(userId, socket.id);
 
-      const remainingGlobal = await redisSessionService.getGlobalSessionCount(userId);
+      const remainingGlobal = await this.redisSessionService.getGlobalSessionCount(userId);
       if (userSockets?.size === 0) {
         this.activeConnections.delete(userId);
       }
@@ -99,15 +99,15 @@ export class SocketService {
     });
 
     if (globalCount > 1 && plan === "free") {
-      const victims = await redisSessionService.takeoverFreeSession(userId, socket.id);
+      const victims = await this.redisSessionService.takeoverFreeSession(userId, socket.id);
       for (const victimId of victims) {
-        await redisSessionService.publishSessionTakeover(userId, victimId);
+        await this.redisSessionService.publishSessionTakeover(userId, victimId);
         this._handleGlobalTakeover(userId, victimId);
       }
-    } else if (policyService.isSessionLimitReached(plan, globalCount)) {
-      const victimId = await redisSessionService.getOldestSession(userId);
+    } else if (this.policyService.isSessionLimitReached(plan, globalCount)) {
+      const victimId = await this.redisSessionService.getOldestSession(userId);
       if (victimId) {
-        await redisSessionService.publishSessionTakeover(userId, victimId);
+        await this.redisSessionService.publishSessionTakeover(userId, victimId);
         this._handleGlobalTakeover(userId, victimId);
       }
     }
@@ -175,16 +175,16 @@ export class SocketService {
     return this.typingHandler.handleTyping(sender, payload, isTyping);
   }
   async handleMarkAsRead(userId: string, chatId: string) {
-    return messageService.markChatRead(chatId, userId);
+    return this.messageService.markChatRead(chatId, userId);
   }
 
   private async _handleGlobalCacheInvalidation(type: string, id: string) {
     if (type === "chat") {
-      chatCacheService.invalidateParticipants(id);
-      messageService.invalidateCache(id);
+      this.chatCacheService.invalidateParticipants(id);
+      this.messageService.invalidateCache(id);
     } else if (type === "partner") {
-      chatCacheService.invalidatePartners(id);
-      partnerRepository.invalidatePartnerCache(id);
+      this.chatCacheService.invalidatePartners(id);
+      this.partnerRepo.invalidatePartnerCache(id);
 
       const sockets = this.activeConnections.get(id);
       if (sockets && sockets.size > 0) {
@@ -198,7 +198,7 @@ export class SocketService {
     if (!sockets || sockets.size === 0) return;
     try {
       const partnerIds = await this._getPartnerIds(userId);
-      const chats = await chatQueryRepository.findPartnerChats(userId, true);
+      const chats = await this.chatQueryRepo.findPartnerChats(userId, true);
       for (const socket of sockets) {
         if (partnerIds.size > 0) {
           partnerIds.forEach((pId) => socket.join(`watching:${pId}`));
@@ -219,7 +219,7 @@ export class SocketService {
 
   private async _getPartnerIds(userId: string, excludeDeleted = false): Promise<Set<string>> {
     const cacheKey = excludeDeleted ? `${userId}:active` : userId;
-    const l1Cached = chatCacheService.getPartners(userId, excludeDeleted);
+    const l1Cached = this.chatCacheService.getPartners(userId, excludeDeleted);
     if (l1Cached) return l1Cached;
 
     // Thundering Herd Protection: check if a request for this key is already in flight
@@ -228,13 +228,13 @@ export class SocketService {
 
     const fetchPromise = (async () => {
       try {
-        const l2Cached = await redisPresenceService.getCachedPartners(userId, excludeDeleted);
+        const l2Cached = await this.redisPresenceService.getCachedPartners(userId, excludeDeleted);
         if (l2Cached) {
-          chatCacheService.setPartners(userId, l2Cached, excludeDeleted);
+          this.chatCacheService.setPartners(userId, l2Cached, excludeDeleted);
           return l2Cached;
         }
 
-        const chats = await chatQueryRepository.findPartnerChats(userId, excludeDeleted);
+        const chats = await this.chatQueryRepo.findPartnerChats(userId, excludeDeleted);
         const partners = new Set<string>();
         for (const chat of chats) {
           for (const p of chat.participants) {
@@ -245,8 +245,8 @@ export class SocketService {
           }
         }
 
-        chatCacheService.setPartners(userId, partners, excludeDeleted);
-        await redisPresenceService.setCachedPartners(userId, Array.from(partners), excludeDeleted);
+        this.chatCacheService.setPartners(userId, partners, excludeDeleted);
+        await this.redisPresenceService.setCachedPartners(userId, Array.from(partners), excludeDeleted);
         return partners;
       } catch (err) {
         console.error(`[SocketService] Failed to fetch partners for ${userId}:`, err);
@@ -261,5 +261,10 @@ export class SocketService {
     return fetchPromise;
   }
 }
-
-export const socketService = new SocketService(chatRepository, messageRepository, userRepository);
+export const socketService = new Proxy({} as any, {
+  get: (target, prop) => {
+    if (prop === "partnerRequests") return new Map();
+    if (prop === "typingHandler") return { localGuard: new Map() };
+    return () => {};
+  },
+});

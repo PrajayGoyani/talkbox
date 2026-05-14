@@ -1,15 +1,19 @@
-import { UserRepository, userRepository } from "@repositories/user.repository";
-import { baseService } from "@services/infra/redis.service";
+import { IUserRepository } from "@repositories/interfaces/user.repository";
+import { IRedisBaseService } from "@services/infra/interfaces";
+import { IUserCacheService } from "@services/interfaces/user-cache.service";
 import { LRUCache } from "lru-cache";
 import { UserDto } from "shared/types/auth.dto";
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
 const CACHE_MAX_ENTRIES = 50000;
 
-class UserCacheService {
+export class UserCacheService implements IUserCacheService {
   private cache: LRUCache<string, UserDto>;
 
-  constructor(private userRepo: UserRepository) {
+  constructor(
+    private userRepo: IUserRepository,
+    private redisBaseService: IRedisBaseService,
+  ) {
     this.cache = new LRUCache({
       max: CACHE_MAX_ENTRIES,
       ttl: CACHE_TTL_MS,
@@ -19,13 +23,13 @@ class UserCacheService {
   }
 
   private initRedisSubscription() {
-    if (baseService.subClient) {
+    if (this.redisBaseService.subClient) {
       // Subscribe to global cache invalidation
-      baseService.subClient.subscribe("cache:invalidate").catch((err) => {
+      this.redisBaseService.subClient.subscribe("cache:invalidate").catch((err: any) => {
         console.error("[UserCacheService] Failed to subscribe to Redis invalidation:", err);
       });
 
-      baseService.subClient.on("message", (channel, message) => {
+      this.redisBaseService.subClient.on("message", (channel: string, message: string) => {
         if (channel === "cache:invalidate") {
           try {
             const { type, id } = JSON.parse(message);
@@ -65,5 +69,4 @@ class UserCacheService {
   }
 }
 
-export const userCacheService = new UserCacheService(userRepository);
-export { UserCacheService };
+// Note: Instance creation moved to registry.ts

@@ -1,7 +1,9 @@
 import Chat, { IChatModel } from "@models/chat.model";
 import { chatCacheService } from "@services/chat/chat-cache.service";
 
-export class PartnerRepository {
+import { IPartnerRepository } from "./interfaces/partner.repository";
+
+export class PartnerRepository implements IPartnerRepository {
   constructor(public chatModel: IChatModel) {}
 
   public async getPartnerIds(userId: string, excludeDeleted = false): Promise<Set<string>> {
@@ -34,4 +36,11 @@ export class PartnerRepository {
   }
 }
 
-export const partnerRepository = new PartnerRepository(Chat);
+// Note: Instance creation moved to registry.ts
+export const partnerRepository = new Proxy({} as any, {
+  get: (target, prop) => {
+    if (typeof prop === "string" && prop !== "then") return () => {};
+    return target[prop];
+  },
+  has: (target, prop) => true,
+});

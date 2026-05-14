@@ -1,19 +1,21 @@
 import { FREE_PLAN_CHAT_LIMIT } from "@config/env";
 import { IChat } from "@models/chat.model";
-import { ChatRepository, chatRepository } from "@repositories/chat.repository";
-import { UserRepository, userRepository } from "@repositories/user.repository";
-import { chatLockdownService } from "@services/chat/chat-lockdown.service";
-import { redisSessionService } from "@services/infra/redis.service";
+import { IChatRepository } from "@repositories/interfaces/chat.repository";
+import { IUserRepository } from "@repositories/interfaces/user.repository";
+import { IRedisSessionService } from "@services/infra/interfaces";
+import { IChatLockdownService, IChatActionService } from "./types";
 import { AppError } from "@utils/AppError";
 import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
 import { ObjectId } from "mongodb";
 
-import { IChatActionService } from "./types";
+
 
 export class ChatActionService implements IChatActionService {
   constructor(
-    private repository: ChatRepository,
-    private userRepository: UserRepository,
+    private repository: IChatRepository,
+    private userRepository: IUserRepository,
+    private chatLockdownService: IChatLockdownService,
+    private redisSessionService: IRedisSessionService,
   ) {}
 
   async requestChat(senderId: string | ObjectId, targetUsername: string): Promise<IChat> {
@@ -66,7 +68,7 @@ export class ChatActionService implements IChatActionService {
     });
 
     // Invalidate partner cache for the target user so their socket re-syncs to watch the requester
-    await redisSessionService.publishCacheInvalidation("partner", targetId.toString());
+    await this.redisSessionService.publishCacheInvalidation("partner", targetId.toString());
 
     // Emit event for side-effects (notifications, etc)
     eventBus.emit(CHAT_EVENTS.REQUESTED, {
@@ -107,7 +109,9 @@ export class ChatActionService implements IChatActionService {
 
     // Invalidate partner cache for both participants globally
     await Promise.all(
-      updatedChat.participants.map((p: any) => redisSessionService.publishCacheInvalidation("partner", p.toString())),
+      updatedChat.participants.map((p: any) =>
+        this.redisSessionService.publishCacheInvalidation("partner", p.toString()),
+      ),
     );
 
     // Emit event for real-time updates and notifications
@@ -168,12 +172,14 @@ export class ChatActionService implements IChatActionService {
     });
 
     // Invalidate lockdown cache immediately
-    await chatLockdownService.lockdownChat(chatId.toString());
+    await this.chatLockdownService.lockdownChat(chatId.toString());
 
     // Invalidate partner cache for both participants and chat cache globally
     await Promise.all([
-      ...chat.participants.map((p: any) => redisSessionService.publishCacheInvalidation("partner", p.toString())),
-      redisSessionService.publishCacheInvalidation("chat", chatId.toString()),
+      ...chat.participants.map((p: any) =>
+        this.redisSessionService.publishCacheInvalidation("partner", p.toString()),
+      ),
+      this.redisSessionService.publishCacheInvalidation("chat", chatId.toString()),
     ]);
 
     // Emit event for side-effects
@@ -183,4 +189,4 @@ export class ChatActionService implements IChatActionService {
   }
 }
 
-export const chatActionService = new ChatActionService(chatRepository, userRepository);
+// Note: Instance creation moved to registry.ts

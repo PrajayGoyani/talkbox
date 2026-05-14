@@ -1,4 +1,4 @@
-import { userCacheService } from "@services/auth/user-cache.service";
+import { registry } from "@bootstrap/registry";
 import { verifyAccessToken } from "@utils/jwt";
 import { NextFunction, Request, Response } from "express";
 
@@ -17,7 +17,7 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
 
   try {
     const decoded = verifyAccessToken(token) as { id: string };
-    const user = await userCacheService.getUser(decoded.id);
+    const user = await registry.userCacheService.getUser(decoded.id);
 
     if (!user) {
       return res.status(403).json({ message: "User no longer exists." });

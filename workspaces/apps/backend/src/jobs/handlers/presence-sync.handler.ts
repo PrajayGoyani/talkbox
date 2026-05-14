@@ -24,12 +24,15 @@ export const presenceSyncHandler = async () => {
 
       const lastSeenMap = await redisPresenceService.getLastSeenBatched(userIds);
 
-      const bulkOps = Array.from(lastSeenMap.entries()).map(([userId, lastSeen]) => ({
-        updateOne: {
-          filter: { _id: userId },
-          update: { $set: { lastSeen } },
-        },
-      }));
+      const bulkOps: { updateOne: { filter: { _id: string }; update: { $set: { lastSeen: Date } } } }[] = [];
+      for (const [userId, lastSeen] of lastSeenMap) {
+        bulkOps.push({
+          updateOne: {
+            filter: { _id: userId },
+            update: { $set: { lastSeen } },
+          },
+        });
+      }
 
       if (bulkOps.length > 0) {
         await User.bulkWrite(bulkOps as any);

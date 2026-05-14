@@ -1,13 +1,15 @@
 import { APP_NAME, EMAIL_FROM, FRONTEND_URL, SMTP_HOST, SMTP_PASS, SMTP_PORT, SMTP_USER } from "@config/env";
 import nodemailer from "nodemailer";
 
+import { IEmailService } from "../interfaces/email.service";
+
 /**
  * Email service for sending transactional emails (password reset, email verification).
  *
  * Gracefully no-ops if SMTP is not configured — the app continues to work
  * without email features. This avoids breaking dev setups that don't have SMTP.
  */
-class EmailService {
+export class EmailService implements IEmailService {
   private transporter: nodemailer.Transporter | null = null;
 
   constructor() {
@@ -98,4 +100,4 @@ class EmailService {
   }
 }
 
-export const emailService = new EmailService();
+export const emailService = {};

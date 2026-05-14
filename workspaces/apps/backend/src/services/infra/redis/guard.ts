@@ -1,6 +1,7 @@
+import { IRedisGuardService } from "../interfaces";
 import { RedisBaseService } from "./base";
 
-export class RedisGuardService {
+export class RedisGuardService implements IRedisGuardService {
   constructor(private base: RedisBaseService) {}
 
   private get client() {
@@ -49,11 +50,11 @@ export class RedisGuardService {
     key: string,
     limit: number,
     windowMs: number,
-  ): Promise<{ allowed: boolean; current: number; ttl: number }> {
+  ): Promise<{ allowed: boolean; current: number; ttl: number; remaining?: number }> {
     if (!this.client || !this.isConnected) {
       // Fail open: if redis is down, we allow the request to proceed to ensure app availability.
       console.warn(`[RedisGuardService] Redis disconnected. Failing open for rate limit key: ${key}`);
-      return { allowed: true, current: 0, ttl: windowMs };
+      return { allowed: true, current: 0, ttl: windowMs, remaining: 0 };
     }
     try {
       const results =

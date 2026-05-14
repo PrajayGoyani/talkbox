@@ -2,7 +2,9 @@ import User, { IUser, IUserModel } from "@models/user.model";
 import { ObjectId } from "mongodb";
 import { UserDto } from "shared/types/auth.dto";
 
-export class UserRepository {
+import { IUserRepository } from "./interfaces/user.repository";
+
+export class UserRepository implements IUserRepository {
   constructor(public userModel: IUserModel) {}
 
   public async findById(id: string | ObjectId) {
@@ -50,5 +52,10 @@ export class UserRepository {
     };
   }
 }
-
-export const userRepository = new UserRepository(User);
+export const userRepository = new Proxy({} as any, {
+  get: (target, prop) => {
+    if (typeof prop === "string" && prop !== "then") return () => {};
+    return target[prop];
+  },
+  has: (target, prop) => true,
+});

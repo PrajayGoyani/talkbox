@@ -1,8 +1,9 @@
 import type { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from "shared/types/auth.dto";
 
 import { RESET_TOKEN_TTL, VERIFY_TOKEN_TTL } from "@config/env";
-import { UserRepository, userRepository } from "@repositories/user.repository";
-import { redisSessionService } from "@services/infra/redis.service";
+import { IUserRepository } from "@repositories/interfaces/user.repository";
+import { IAuthService } from "@services/interfaces/auth.service";
+import { IRedisSessionService } from "@services/infra/interfaces";
 import { AppError } from "@utils/AppError";
 import { AUTH_EVENTS, eventBus } from "@utils/event-bus";
 import { generateAccessToken, generateTokens, verifyRefreshToken } from "@utils/jwt";
@@ -12,8 +13,11 @@ import { JWTPayload } from "@/types/socket.types";
 
 // Internal aliases removed - using shared DTOs directly
 
-export class AuthService {
-  constructor(private userRepository: UserRepository) {}
+export class AuthService implements IAuthService {
+  constructor(
+    private userRepository: IUserRepository,
+    private redisSessionService: IRedisSessionService,
+  ) {}
 
   async signup({ username, email, password, name }: SignupRequestDto): Promise<AuthResponseDto> {
     const existingUser = await this.userRepository.exists({ email });
@@ -101,7 +105,7 @@ export class AuthService {
     if (!user) return; // Silently ignore — prevent email enumeration
 
     const token = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("hex");
-    await redisSessionService.storeToken("reset", token, user._id.toString(), RESET_TOKEN_TTL);
+    await this.redisSessionService.storeToken("reset", token, user._id.toString(), RESET_TOKEN_TTL);
 
     eventBus.emit(AUTH_EVENTS.PASSWORD_RESET_REQUESTED, { email, token });
   }
@@ -110,7 +114,7 @@ export class AuthService {
    * Complete password reset: verify token, update password, delete token.
    */
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    const userId = await redisSessionService.getToken("reset", token);
+    const userId = await this.redisSessionService.getToken("reset", token);
     if (!userId) throw AppError.badRequest("Invalid or expired reset token", "INVALID_RESET_TOKEN");
 
     const user = await this.userRepository.findById(userId);
@@ -118,7 +122,7 @@ export class AuthService {
 
     user.password = newPassword; // pre-save hook hashes it
     await user.save();
-    await redisSessionService.deleteToken("reset", token);
+    await this.redisSessionService.deleteToken("reset", token);
   }
 
   // ─── Email Verification ────────────────────────────────────────────
@@ -127,11 +131,11 @@ export class AuthService {
    * Verify a user's email using the token from the verification link.
    */
   async verifyEmail(token: string): Promise<void> {
-    const userId = await redisSessionService.getToken("verify", token);
+    const userId = await this.redisSessionService.getToken("verify", token);
     if (!userId) throw AppError.badRequest("Invalid or expired verification token", "INVALID_VERIFY_TOKEN");
 
     await this.userRepository.updateById(userId, { isEmailVerified: true });
-    await redisSessionService.deleteToken("verify", token);
+    await this.redisSessionService.deleteToken("verify", token);
   }
 
   /**
@@ -152,7 +156,7 @@ export class AuthService {
   private async _sendVerificationEmail(userId: string, email: string): Promise<void> {
     try {
       const token = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("hex");
-      await redisSessionService.storeToken("verify", token, userId, VERIFY_TOKEN_TTL);
+      await this.redisSessionService.storeToken("verify", token, userId, VERIFY_TOKEN_TTL);
 
       eventBus.emit(AUTH_EVENTS.VERIFICATION_REQUIRED, { email, token });
     } catch (err) {
@@ -186,4 +190,4 @@ export class AuthService {
   }
 }
 
-export const authService = new AuthService(userRepository);
+// Note: Instance creation moved to registry.ts

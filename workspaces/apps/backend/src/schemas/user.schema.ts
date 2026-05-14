@@ -7,7 +7,7 @@ import { z } from "zod";
  * - Strip anything that's not a letter, space, hyphen, or apostrophe
  * - Capitalize first letter of each word
  */
-const sanitizeName = (val) =>
+const sanitizeName = (val: string) =>
   val
     .trim()
     .replace(/[^a-zA-Z\s\-']/g, "")

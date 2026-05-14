@@ -1,5 +1,4 @@
-import { socketService } from "@services/chat/socket.service";
-import { notificationService } from "@services/notification/notification.service";
+import { registry } from "@bootstrap/registry";
 import { eventBus, CHAT_EVENTS } from "@utils/event-bus";
 
 /**
@@ -10,7 +9,7 @@ import { eventBus, CHAT_EVENTS } from "@utils/event-bus";
 export const initChatEventListeners = () => {
   // 1. Chat Requested
   eventBus.on(CHAT_EVENTS.REQUESTED, async ({ chat, senderId, targetUserId, senderUsername }) => {
-    const notification = await notificationService.create({
+    const notification = await registry.notificationService.create({
       recipientId: targetUserId,
       senderId: senderId,
       type: "chat_request",
@@ -18,14 +17,14 @@ export const initChatEventListeners = () => {
       message: `${senderUsername} sent you a chat request`,
     });
 
-    if (socketService.io) {
-      socketService.io.to(`user:${targetUserId}`).emit("notification", notification as any);
+    if (registry.socketService.io) {
+      registry.socketService.io.to(`user:${targetUserId}`).emit("notification", notification as any);
     }
   });
 
   // 2. Chat Accepted
   eventBus.on(CHAT_EVENTS.ACCEPTED, async ({ chat, userId, acceptorUsername }) => {
-    const notification = await notificationService.create({
+    const notification = await registry.notificationService.create({
       recipientId: chat.createdBy,
       senderId: userId,
       type: "request_accepted",
@@ -33,15 +32,15 @@ export const initChatEventListeners = () => {
       message: `${acceptorUsername || "A user"} accepted your chat request`,
     });
 
-    if (socketService.io) {
-      socketService.io.to(`user:${chat.createdBy}`).emit("notification", notification as any);
-      socketService.io.to(`user:${chat.createdBy}`).emit("chat_accepted", { chatId: chat._id.toString() });
+    if (registry.socketService.io) {
+      registry.socketService.io.to(`user:${chat.createdBy}`).emit("notification", notification as any);
+      registry.socketService.io.to(`user:${chat.createdBy}`).emit("chat_accepted", { chatId: chat._id.toString() });
     }
   });
 
   // 3. Chat Rejected
   eventBus.on(CHAT_EVENTS.REJECTED, async ({ chat, userId, rejectorUsername }) => {
-    const notification = await notificationService.create({
+    const notification = await registry.notificationService.create({
       recipientId: chat.createdBy,
       senderId: userId,
       type: "request_rejected",
@@ -49,8 +48,8 @@ export const initChatEventListeners = () => {
       message: `${rejectorUsername || "A user"} declined your chat request`,
     });
 
-    if (socketService.io) {
-      socketService.io.to(`user:${chat.createdBy}`).emit("notification", notification as any);
+    if (registry.socketService.io) {
+      registry.socketService.io.to(`user:${chat.createdBy}`).emit("notification", notification as any);
     }
   });
 

@@ -1,5 +1,5 @@
-import { userService } from "@services/auth/user.service";
-import { imageService } from "@services/infra/image.service";
+import { ImageService } from "@services/infra/image.service";
+import { IUserService } from "@services/interfaces/user.service";
 import { AppError } from "@utils/AppError";
 import { v2 as cloudinary } from "cloudinary";
 import { Request, Response } from "express";
@@ -10,47 +10,54 @@ interface CloudinaryUploadResult {
   format: string;
 }
 
-export const uploadAvatar = async (req: Request, res: Response) => {
-  if (!req.file) {
-    throw AppError.badRequest("No file uploaded", "NO_FILE");
-  }
+export class UserController {
+  constructor(
+    private userService: IUserService,
+    private imageService: ImageService,
+  ) {}
 
-  const isCloudinary = Bun.env.UPLOAD_STRATEGY === "cloudinary";
-  let avatarPath: string;
+  public uploadAvatar = async (req: Request, res: Response) => {
+    if (!req.file) {
+      throw AppError.badRequest("No file uploaded", "NO_FILE");
+    }
 
-  if (isCloudinary) {
-    const processedBuffer = await imageService.getProcessedBuffer(req.file.buffer);
+    const isCloudinary = Bun.env.UPLOAD_STRATEGY === "cloudinary";
+    let avatarPath: string;
 
-    const uploadResult = await new Promise<CloudinaryUploadResult>((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: "talkbox-avatars",
-          format: "webp",
-          public_id: `avatar-${Date.now()}`,
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result as CloudinaryUploadResult);
-        },
-      );
-      uploadStream.end(processedBuffer);
-    });
-    avatarPath = uploadResult.secure_url;
-  } else {
-    const filename = await imageService.processAndSaveAvatar(req.file.buffer);
-    avatarPath = `/uploads/${filename}`;
-  }
+    if (isCloudinary) {
+      const processedBuffer = await this.imageService.getProcessedBuffer(req.file.buffer);
 
-  const result = await userService.uploadAvatar(req.user!.id, avatarPath);
-  res.success(result);
-};
+      const uploadResult = await new Promise<CloudinaryUploadResult>((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: "talkbox-avatars",
+            format: "webp",
+            public_id: `avatar-${Date.now()}`,
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result as CloudinaryUploadResult);
+          },
+        );
+        uploadStream.end(processedBuffer);
+      });
+      avatarPath = uploadResult.secure_url;
+    } else {
+      const filename = await this.imageService.processAndSaveAvatar(req.file.buffer);
+      avatarPath = `/uploads/${filename}`;
+    }
 
-export const updateProfile = async (req: Request, res: Response) => {
-  const result = await userService.updateProfile(req.user!.id, req.body);
-  res.success(result);
-};
+    const result = await this.userService.uploadAvatar(req.user!.id, avatarPath);
+    res.success(result);
+  };
 
-export const searchByUsername = async (req: Request, res: Response) => {
-  const user = await userService.searchByUsername(req.query.username as string);
-  res.success(user);
-};
+  public updateProfile = async (req: Request, res: Response) => {
+    const result = await this.userService.updateProfile(req.user!.id, req.body);
+    res.success(result);
+  };
+
+  public searchByUsername = async (req: Request, res: Response) => {
+    const user = await this.userService.searchByUsername(req.query.username as string);
+    res.success(user);
+  };
+}

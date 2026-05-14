@@ -1,44 +1,34 @@
 import { RATE_LIMIT_AUTH_MAX } from "@config/env";
-import {
-  forgotPassword,
-  getMe,
-  login,
-  logout,
-  refresh,
-  resendVerification,
-  resetPassword,
-  signup,
-  upgradeToPro,
-  verifyEmail,
-} from "@controllers/auth.controller";
+import { forgotPasswordSchema, loginSchema, resetPasswordSchema, signupSchema } from "@schemas/user.schema";
+import { registry } from "@bootstrap/registry";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import { createRateLimiter } from "@middlewares/rate-limiter.middleware";
 import { validate } from "@middlewares/validate.middleware";
-import { forgotPasswordSchema, loginSchema, resetPasswordSchema, signupSchema } from "@schemas/user.schema";
-import express from "express";
+import { Router } from "express";
 
-const router = express.Router();
+const router = Router();
+const authController = registry.authController;
 
 const authRateLimiter = createRateLimiter(RATE_LIMIT_AUTH_MAX, 60000, "auth");
 
-router.post("/signup", authRateLimiter, validate(signupSchema), signup);
+router.post("/signup", authRateLimiter, validate(signupSchema), authController.signup);
 
-router.post("/login", authRateLimiter, validate(loginSchema), login);
+router.post("/login", authRateLimiter, validate(loginSchema), authController.login);
 
-router.post("/refresh", refresh);
+router.post("/refresh", authController.refresh);
 
-router.post("/logout", logout);
+router.post("/logout", authController.logout);
 
-router.get("/me", authenticateToken, getMe);
+router.get("/me", authenticateToken, authController.getMe);
 
-router.post("/upgrade-pro", authenticateToken, upgradeToPro);
+router.post("/upgrade-pro", authenticateToken, authController.upgradeToPro);
 
 // Password Reset (public, rate-limited)
-router.post("/forgot-password", authRateLimiter, validate(forgotPasswordSchema), forgotPassword);
-router.post("/reset-password", authRateLimiter, validate(resetPasswordSchema), resetPassword);
+router.post("/forgot-password", authRateLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
+router.post("/reset-password", authRateLimiter, validate(resetPasswordSchema), authController.resetPassword);
 
 // Email Verification
-router.get("/verify-email", verifyEmail);
-router.post("/resend-verification", authenticateToken, resendVerification);
+router.get("/verify-email", authController.verifyEmail);
+router.post("/resend-verification", authenticateToken, authController.resendVerification);
 
 export default router;

@@ -1,26 +1,33 @@
-import { redisGuardService, redisSessionService } from "@services/infra/redis.service";
+import { IRedisGuardService, IRedisSessionService } from "@services/infra/interfaces";
+import { ObjectId } from "mongodb";
+import { IChatLockdownService } from "./types";
 
 /**
  * Distributed lockdown logic for deleted chats.
  * Prevents messages from being sent to deleted chats by checking a Redis Set.
  * This avoids the memory bottleneck of a local in-memory Set.
  */
-class ChatLockdownService {
-  async lockdownChat(chatId: string | import("mongodb").ObjectId) {
+export class ChatLockdownService implements IChatLockdownService {
+  constructor(
+    private redisGuardService: IRedisGuardService,
+    private redisSessionService: IRedisSessionService,
+  ) {}
+
+  async lockdownChat(chatId: string | ObjectId) {
     const id = chatId.toString();
-    await redisGuardService.lockChat(id);
-    await redisSessionService.publishCacheInvalidation("chat", id);
+    await this.redisGuardService.lockChat(id);
+    await this.redisSessionService.publishCacheInvalidation("chat", id);
   }
 
-  async isChatDeleted(chatId: string | import("mongodb").ObjectId): Promise<boolean> {
-    return await redisGuardService.isChatLocked(chatId.toString());
+  async isChatDeleted(chatId: string | ObjectId): Promise<boolean> {
+    return await this.redisGuardService.isChatLocked(chatId.toString());
   }
 
-  async unlockChat(chatId: string | import("mongodb").ObjectId) {
+  async unlockChat(chatId: string | ObjectId) {
     const id = chatId.toString();
-    await redisGuardService.unlockChat(id);
-    await redisSessionService.publishCacheInvalidation("chat", id);
+    await this.redisGuardService.unlockChat(id);
+    await this.redisSessionService.publishCacheInvalidation("chat", id);
   }
 }
 
-export const chatLockdownService = new ChatLockdownService();
+// Note: Instance creation moved to registry.ts

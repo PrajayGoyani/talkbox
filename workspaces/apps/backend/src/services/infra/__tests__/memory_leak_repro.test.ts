@@ -1,66 +1,12 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
 import Chat from "@models/chat.model";
-import { socketService } from "@services/chat/socket.service";
-import {
-  redisPresenceService,
-  redisSessionService,
-  redisGuardService,
-  baseService,
-} from "@services/infra/redis.service";
+import { SocketService } from "@services/chat/socket.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
 vi.mock("@models/user.model");
-vi.mock("@repositories/partner.repository", () => ({
-  partnerRepository: {
-    getPartnerIds: vi.fn(),
-    invalidatePartnerCache: vi.fn(),
-  },
-}));
-vi.mock("@repositories/chat-query.repository", () => ({
-  chatQueryRepository: {
-    findPartnerChats: vi.fn().mockResolvedValue([]),
-    searchChats: vi.fn(),
-    findAcceptedChatsByUser: vi.fn(),
-    findPendingRequestsByUser: vi.fn(),
-    transformChat: vi.fn(),
-  },
-}));
-
-vi.mock("@services/infra/redis.service", () => ({
-  redisPresenceService: {
-    setUserOnline: vi.fn().mockResolvedValue(null),
-    setUserOffline: vi.fn().mockResolvedValue(null),
-    getOnlineUsers: vi.fn().mockResolvedValue(new Set()),
-    getCachedPartners: vi.fn().mockResolvedValue(null),
-    setCachedPartners: vi.fn().mockResolvedValue(null),
-    invalidatePartnerCache: vi.fn().mockResolvedValue(null),
-    queuePresenceSync: vi.fn().mockResolvedValue(null),
-    getLastSeenBatched: vi.fn().mockResolvedValue(new Map()),
-  },
-  redisSessionService: {
-    incrementGlobalSession: vi.fn(),
-    decrementGlobalSession: vi.fn(),
-    getGlobalSessionCount: vi.fn(),
-    getOldestSession: vi.fn().mockResolvedValue(null),
-    publishSessionTakeover: vi.fn(),
-    takeoverFreeSession: vi.fn(),
-    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
-  },
-  redisGuardService: {
-    incrementAndCheckLimit: vi.fn().mockResolvedValue({ allowed: true, current: 1, ttl: 60000 }),
-    checkAndSetIdempotency: vi.fn().mockResolvedValue(true),
-  },
-  baseService: {
-    isConnected: true,
-    subClient: {
-      subscribe: vi.fn().mockResolvedValue(null),
-      on: vi.fn(),
-    },
-  },
-}));
 
 const MOCK_PRO_USER_ID = "507f1f77bcf86cd799439022";
 
@@ -80,9 +26,42 @@ const createMockSocket = (userId: string, plan: "free" | "pro") =>
   }) as any;
 
 describe("SocketService Memory Leak Reproduction", () => {
+  let socketService: SocketService;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    (socketService as any).activeConnections.clear();
+    const chatRepo: any = { findById: vi.fn() };
+    const messageRepo: any = { create: vi.fn() };
+    const userRepo: any = { findByIds: vi.fn() };
+    const chatQueryRepo: any = { findPartnerChats: vi.fn().mockResolvedValue([]) };
+    const partnerRepo: any = { getPartnerIds: vi.fn().mockResolvedValue(new Set()), invalidatePartnerCache: vi.fn() };
+    const messageService: any = { invalidateCache: vi.fn(), markChatRead: vi.fn() };
+    const presenceService: any = { notifyStatusChange: vi.fn(), getPartnersStatusBatch: vi.fn().mockResolvedValue([]) };
+    const messageHandler: any = { saveAndDeliver: vi.fn(), handleDelete: vi.fn(), handleEdit: vi.fn() };
+    const reactionHandler: any = { handleReaction: vi.fn() };
+    const typingHandler: any = { handleTyping: vi.fn() };
+    const redisSessionService: any = {
+      incrementGlobalSession: vi.fn(),
+      decrementGlobalSession: vi.fn(),
+      getGlobalSessionCount: vi.fn(),
+      getOldestSession: vi.fn().mockResolvedValue("some-old-id"),
+      publishSessionTakeover: vi.fn(),
+      takeoverFreeSession: vi.fn().mockResolvedValue([]),
+    };
+    const redisPresenceService: any = {
+      getCachedPartners: vi.fn().mockResolvedValue(null),
+      setCachedPartners: vi.fn().mockResolvedValue(null),
+    };
+    const redisBaseService: any = { isConnected: true, subClient: { subscribe: vi.fn(), on: vi.fn() } };
+    const policyService: any = { isSessionLimitReached: vi.fn() };
+    const chatCacheService: any = { getPartners: vi.fn(), setPartners: vi.fn(), invalidateParticipants: vi.fn(), invalidatePartners: vi.fn() };
+
+    socketService = new SocketService(
+      chatRepo, messageRepo, userRepo, chatQueryRepo, partnerRepo,
+      messageService, presenceService, messageHandler, reactionHandler, typingHandler,
+      redisSessionService, redisPresenceService, redisBaseService, policyService, chatCacheService,
+    );
+    socketService.activeConnections.clear();
     vi.spyOn(Chat, "find").mockReturnValue({
       select: vi.fn().mockReturnThis(),
       lean: vi.fn().mockResolvedValue([]),
@@ -93,8 +72,10 @@ describe("SocketService Memory Leak Reproduction", () => {
     const userId = MOCK_PRO_USER_ID;
 
     // Simulate Redis saying this is the (LIMIT + 1)-th session globally
-    vi.spyOn(redisSessionService, "incrementGlobalSession").mockResolvedValue(PRO_PLAN_SESSION_LIMIT + 1);
-    vi.spyOn(redisSessionService, "getOldestSession").mockResolvedValue("some-old-id");
+    const sessionService = (socketService as any).redisSessionService;
+    sessionService.incrementGlobalSession.mockResolvedValue(PRO_PLAN_SESSION_LIMIT + 1);
+    sessionService.getOldestSession.mockResolvedValue("some-old-id");
+    (socketService as any).policyService.isSessionLimitReached.mockReturnValue(true);
 
     const socket = createMockSocket(userId, "pro");
 
@@ -105,8 +86,8 @@ describe("SocketService Memory Leak Reproduction", () => {
     expect(socket.disconnect).not.toHaveBeenCalled();
 
     // Check that userId is in activeConnections
-    const activeConnections = (socketService as any).activeConnections;
+    const activeConnections = socketService.activeConnections;
     expect(activeConnections.has(userId)).toBe(true);
-    expect(activeConnections.get(userId).has(socket)).toBe(true);
+    expect(activeConnections.get(userId)!.has(socket)).toBe(true);
   });
 });

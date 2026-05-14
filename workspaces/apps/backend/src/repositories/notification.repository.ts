@@ -1,8 +1,9 @@
 import Notification, { INotificationModel } from "@models/notification.model";
 import { ObjectId } from "mongodb";
 import { NotificationDto } from "shared/types/notification.dto";
+import { INotificationRepository } from "./interfaces/notification.repository";
 
-export class NotificationRepository {
+export class NotificationRepository implements INotificationRepository {
   constructor(public notificationModel: INotificationModel) {}
 
   public async create(data: {
@@ -62,5 +63,4 @@ export class NotificationRepository {
     };
   }
 }
-
-export const notificationRepository = new NotificationRepository(Notification);
+export const notificationRepository = {};

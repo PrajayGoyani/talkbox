@@ -11,8 +11,8 @@ import {
   initializeStatic,
 } from "@bootstrap/handler";
 import { initSocketIO } from "@bootstrap/socket";
+import { registry } from "@bootstrap/registry";
 import { PORT } from "@config/env";
-import { configureSocketServer } from "@controllers/socket.controller";
 import { registerRoutes } from "@routes/routes";
 import express from "express";
 import http from "http";
@@ -25,7 +25,7 @@ export let io: TypedIO;
 
 export async function configureSocket() {
   io = initSocketIO(server);
-  configureSocketServer(io);
+  registry.socketController.configure(io);
 }
 
 export function startServer() {

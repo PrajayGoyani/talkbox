@@ -1,22 +1,26 @@
 import { ChatDto, ChatListingResponseDto, MessageDto } from "shared/types/chat.dto";
 
-import { chatActionService } from "./chat-action.service";
-import { chatListingService } from "./chat-listing.service";
-import { messageService } from "./message.service";
+import { IChatListingService, IChatActionService, IMessageService } from "./types";
+import { IChatService } from "@services/interfaces/chat.service";
 
 /**
  * Facade for Chat-related services.
  * Maintains the original API for backward compatibility while delegating
  * core logic to specialized domain services.
  */
-class ChatService {
+export class ChatService implements IChatService {
+  constructor(
+    private chatListingService: IChatListingService,
+    private chatActionService: IChatActionService,
+    private messageService: IMessageService,
+  ) {}
   // --- Listings ---
   async getChatListing(userId: string, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto> {
-    return chatListingService.getChatListing(userId, limit, cursor);
+    return this.chatListingService.getChatListing(userId, limit, cursor);
   }
 
   async getChatRequests(userId: string, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto> {
-    return chatListingService.getChatRequests(userId, limit, cursor);
+    return this.chatListingService.getChatRequests(userId, limit, cursor);
   }
 
   async searchChats(
@@ -25,28 +29,28 @@ class ChatService {
     limit?: number,
     cursor?: string | null,
   ): Promise<ChatListingResponseDto> {
-    return chatListingService.searchChats(userId, query, limit, cursor);
+    return this.chatListingService.searchChats(userId, query, limit, cursor);
   }
 
   async getChat(userId: string, chatId: string): Promise<ChatDto> {
-    return chatListingService.getChat(userId, chatId);
+    return this.chatListingService.getChat(userId, chatId);
   }
 
   // --- Actions ---
   async requestChat(senderId: string, targetUsername: string): Promise<any> {
-    return chatActionService.requestChat(senderId, targetUsername);
+    return this.chatActionService.requestChat(senderId, targetUsername);
   }
 
   async acceptChat(chatId: string, userId: string): Promise<any> {
-    return chatActionService.acceptChat(chatId, userId);
+    return this.chatActionService.acceptChat(chatId, userId);
   }
 
   async rejectChat(chatId: string, userId: string): Promise<any> {
-    return chatActionService.rejectChat(chatId, userId);
+    return this.chatActionService.rejectChat(chatId, userId);
   }
 
   async deleteChat(chatId: string, userId: string): Promise<{ message: string }> {
-    return chatActionService.deleteChat(chatId, userId);
+    return this.chatActionService.deleteChat(chatId, userId);
   }
 
   // --- Messages ---
@@ -58,12 +62,12 @@ class ChatService {
     plan?: "free" | "pro",
     markAsRead?: boolean,
   ): Promise<MessageDto[]> {
-    return messageService.getChatMessages(chatId, userId, limit, cursor, plan, markAsRead);
+    return this.messageService.getChatMessages(chatId, userId, limit, cursor, plan, markAsRead);
   }
 
   async markChatRead(chatId: string, userId: string): Promise<{ message: string }> {
-    return messageService.markChatRead(chatId, userId);
+    return this.messageService.markChatRead(chatId, userId);
   }
 }
 
-export const chatService = new ChatService();
+// Note: Instance creation moved to registry.ts

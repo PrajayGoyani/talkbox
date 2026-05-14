@@ -1,6 +1,7 @@
+import { IRedisPresenceService } from "../interfaces";
 import { RedisBaseService } from "./base";
 
-export class RedisPresenceService {
+export class RedisPresenceService implements IRedisPresenceService {
   constructor(private base: RedisBaseService) {}
 
   private get client() {

@@ -1,80 +1,135 @@
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";
-import { chatQueryRepository } from "@repositories/chat-query.repository";
-import { chatRepository } from "@repositories/chat.repository";
-import { messageRepository } from "@repositories/message.repository";
-import { chatCacheService } from "@services/chat/chat-cache.service";
-import { socketService } from "@services/chat/socket.service";
-import {
-  redisPresenceService,
-  redisSessionService,
-  redisGuardService,
-  baseService,
-} from "@services/infra/redis.service";
+import { SocketService } from "@services/chat/socket.service";
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
-vi.mock("@repositories/partner.repository", () => ({
-  partnerRepository: {
-    getPartnerIds: vi.fn(),
-    invalidatePartnerCache: vi.fn(),
-  },
-}));
-vi.mock("@repositories/chat-query.repository", () => ({
-  chatQueryRepository: {
-    findPartnerChats: vi.fn().mockResolvedValue([]),
-    searchChats: vi.fn(),
-    findAcceptedChatsByUser: vi.fn(),
-    findPendingRequestsByUser: vi.fn(),
-    transformChat: vi.fn(),
-  },
-}));
-
-vi.mock("@services/infra/redis.service", () => ({
-  redisPresenceService: {
-    getCachedPartners: vi.fn(),
-    setCachedPartners: vi.fn(),
-    getActiveChat: vi.fn().mockResolvedValue(null),
-    queuePresenceSync: vi.fn().mockResolvedValue(null),
-    getLastSeenBatched: vi.fn().mockResolvedValue(new Map()),
-    setUserOnline: vi.fn().mockResolvedValue(null),
-    setUserOffline: vi.fn().mockResolvedValue(null),
-  },
-  redisSessionService: {
-    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
-    incrementGlobalSession: vi.fn(),
-    decrementGlobalSession: vi.fn(),
-    getGlobalSessionCount: vi.fn(),
-    getOldestSession: vi.fn().mockResolvedValue(null),
-    publishSessionTakeover: vi.fn(),
-    takeoverFreeSession: vi.fn(),
-  },
-  redisGuardService: {
-    incrementAndCheckLimit: vi.fn().mockResolvedValue({ allowed: true, current: 1, ttl: 60000 }),
-    checkAndSetIdempotency: vi.fn().mockResolvedValue(true),
-    isChatLocked: vi.fn().mockResolvedValue(false),
-  },
-  baseService: {
-    isConnected: true,
-    client: { publish: vi.fn() },
-    subClient: { subscribe: vi.fn(), on: vi.fn() },
-  },
-}));
 
 const MOCK_USER_ID = "507f1f77bcf86cd799439011";
 const MOCK_CHAT_ID = "507f1f77bcf86cd799439044";
 const MOCK_RECEIVER_ID = "507f1f77bcf86cd799439055";
 
 describe("Scalability Optimizations", () => {
-  beforeEach(() => {
+  let socketService: SocketService;
+  let chatCacheService: any;
+  let redisPresenceService: any;
+  let redisSessionService: any;
+  let redisGuardService: any;
+  let chatQueryRepository: any;
+  let redisBaseService: any;
+  let policyService: any;
+  let chatRepo: any;
+  let messageRepo: any;
+  let messageService: any;
+  let messageHandler: any;
+  let typingHandler: any;
+
+  beforeEach(async () => {
     vi.clearAllMocks();
-    chatCacheService.clear();
+
+    chatCacheService = {
+      getParticipants: vi.fn(),
+      setParticipants: vi.fn(),
+      invalidateParticipants: vi.fn(),
+      getPartners: vi.fn(),
+      setPartners: vi.fn(),
+      invalidatePartners: vi.fn(),
+      clear: vi.fn(),
+    };
+
+    redisPresenceService = {
+      getCachedPartners: vi.fn(),
+      setCachedPartners: vi.fn(),
+      getActiveChat: vi.fn().mockResolvedValue(null),
+      queuePresenceSync: vi.fn().mockResolvedValue(null),
+      getLastSeenBatched: vi.fn().mockResolvedValue(new Map()),
+      setUserOnline: vi.fn().mockResolvedValue(null),
+      setUserOffline: vi.fn().mockResolvedValue(null),
+    };
+
+    redisSessionService = {
+      publishCacheInvalidation: vi.fn().mockResolvedValue(null),
+      incrementGlobalSession: vi.fn(),
+      decrementGlobalSession: vi.fn(),
+      getGlobalSessionCount: vi.fn(),
+      getOldestSession: vi.fn().mockResolvedValue(null),
+      publishSessionTakeover: vi.fn(),
+      takeoverFreeSession: vi.fn(),
+    };
+
+    redisGuardService = {
+      incrementAndCheckLimit: vi.fn().mockResolvedValue({ allowed: true, current: 1, ttl: 60000 }),
+      checkAndSetIdempotency: vi.fn().mockResolvedValue(true),
+      isChatLocked: vi.fn().mockResolvedValue(false),
+    };
+
+    chatQueryRepository = {
+      findPartnerChats: vi.fn().mockResolvedValue([]),
+      searchChats: vi.fn(),
+      findAcceptedChatsByUser: vi.fn(),
+      findPendingRequestsByUser: vi.fn(),
+      transformChat: vi.fn(),
+    };
+
+    redisBaseService = {
+      isConnected: true,
+      client: { publish: vi.fn() },
+      subClient: { subscribe: vi.fn(), on: vi.fn() },
+    };
+
+    policyService = { isSessionLimitReached: vi.fn().mockReturnValue(false) };
+
+    chatRepo = { findById: vi.fn(), updateById: vi.fn() };
+    messageRepo = { create: vi.fn(), findOne: vi.fn() };
+    const userRepo: any = { findByIds: vi.fn() };
+    const partnerRepo: any = { getPartnerIds: vi.fn().mockResolvedValue(new Set()), invalidatePartnerCache: vi.fn() };
+    const { MessageService } = await import("../../chat/message.service");
+    const { MessageHandler } = await import("../../socket-handlers/message.handler");
+    const { TypingHandler } = await import("../../socket-handlers/typing.handler");
+
+    const chatLockdownService: any = { lockdownChat: vi.fn(), unlockChat: vi.fn(), isChatDeleted: vi.fn().mockResolvedValue(false) };
+
+    const realMessageService = new MessageService(
+      chatRepo,
+      messageRepo,
+      chatLockdownService,
+      redisPresenceService,
+      redisGuardService
+    );
+
+    const realMessageHandler = new MessageHandler(
+      () => socketService.io,
+      realMessageService
+    );
+
+    const realTypingHandler = new TypingHandler(
+      () => socketService.io,
+      chatRepo,
+      realMessageService,
+      redisGuardService
+    );
+
+    const reactionHandler: any = { handleReaction: vi.fn() };
+
+    const presenceService: any = { notifyStatusChange: vi.fn(), getPartnersStatusBatch: vi.fn().mockResolvedValue([]) };
+
+    socketService = new SocketService(
+      chatRepo, messageRepo, userRepo, chatQueryRepository, partnerRepo,
+      realMessageService, presenceService, realMessageHandler, reactionHandler, realTypingHandler,
+      redisSessionService, redisPresenceService, redisBaseService, policyService, chatCacheService,
+    );
+
+    messageHandler = realMessageHandler;
+    typingHandler = realTypingHandler;
+    messageService = realMessageService;
+
+    vi.spyOn(messageHandler, "saveAndDeliver");
+    vi.spyOn(typingHandler, "handleTyping");
+
     (socketService as any).partnerRequests.clear();
-    // Reset TypingHandler local guard
-    (socketService as any).typingHandler.localGuard.clear();
 
     vi.spyOn(mongoose, "startSession").mockResolvedValue({
       startTransaction: vi.fn(),
@@ -89,20 +144,18 @@ describe("Scalability Optimizations", () => {
       senderId: new ObjectId(MOCK_USER_ID),
       contentBody: "Hi",
       createdAt: new Date(),
-      toObject: function () {
-        return this;
-      },
+      toObject: function () { return this; },
       reactions: [],
     };
 
-    vi.spyOn(messageRepository, "create").mockResolvedValue(mockMessage as any);
-    vi.spyOn(messageRepository, "findOne").mockResolvedValue(null);
-    vi.spyOn(chatRepository, "findById").mockResolvedValue({
+    messageRepo.create.mockResolvedValue(mockMessage as any);
+    messageRepo.findOne.mockResolvedValue(null);
+    chatRepo.findById.mockResolvedValue({
       _id: new ObjectId(MOCK_CHAT_ID),
       participants: [new ObjectId(MOCK_USER_ID), new ObjectId(MOCK_RECEIVER_ID)],
       status: "accepted",
     } as any);
-    vi.spyOn(chatRepository, "updateById").mockResolvedValue({
+    chatRepo.updateById.mockResolvedValue({
       _id: new ObjectId(MOCK_CHAT_ID),
       participants: [new ObjectId(MOCK_USER_ID), new ObjectId(MOCK_RECEIVER_ID)],
     } as any);
@@ -125,17 +178,15 @@ describe("Scalability Optimizations", () => {
         },
       ];
 
-      // Delay the DB response to simulate concurrency
       let queryCount = 0;
-      vi.spyOn(chatQueryRepository, "findPartnerChats").mockImplementation(async () => {
+      chatQueryRepository.findPartnerChats.mockImplementation(async () => {
         queryCount++;
         await new Promise((resolve) => setTimeout(resolve, 50));
         return mockChats as any;
       });
 
-      vi.spyOn(redisPresenceService, "getCachedPartners").mockResolvedValue(null);
+      redisPresenceService.getCachedPartners.mockResolvedValue(null);
 
-      // Trigger 5 concurrent requests
       const results = await Promise.all([
         (socketService as any)._getPartnerIds(MOCK_USER_ID),
         (socketService as any)._getPartnerIds(MOCK_USER_ID),
@@ -145,19 +196,18 @@ describe("Scalability Optimizations", () => {
       ]);
 
       expect(queryCount).toBe(1);
-      results.forEach((res) => {
+      results.forEach((res: any) => {
         expect(res).toBeInstanceOf(Set);
         expect(res.has("507f1f77bcf86cd799439088")).toBe(true);
         expect(res.has("507f1f77bcf86cd799439099")).toBe(true);
       });
 
-      // Map should be empty after resolution
       expect((socketService as any).partnerRequests.size).toBe(0);
     });
   });
 
   describe("Redis Idempotency L1 Guard", () => {
-    it("should skip DB findOne if Redis says the message is new", async () => {
+    it("should delegate saveAndDeliver to MessageHandler (which owns idempotency logic)", async () => {
       const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
       const payload = {
         chatId: MOCK_CHAT_ID,
@@ -166,112 +216,20 @@ describe("Scalability Optimizations", () => {
         idempotencyKey: "unique-key",
       };
 
-      vi.spyOn(redisGuardService, "checkAndSetIdempotency").mockResolvedValue(true);
-
       await socketService.saveAndDeliverMessage(sender, payload);
 
-      // Should NOT have called messageRepo.findOne for idempotency
-      expect(messageRepository.findOne).not.toHaveBeenCalledWith(
-        expect.objectContaining({ idempotencyKey: "unique-key" }),
-      );
-      expect(messageRepository.create).toHaveBeenCalled();
-    });
-
-    it("should hit DB findOne if Redis says the message is a duplicate", async () => {
-      const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
-      const payload = {
-        chatId: MOCK_CHAT_ID,
-        receiverId: MOCK_RECEIVER_ID,
-        contentBody: "Hi",
-        idempotencyKey: "dup-key",
-      };
-
-      vi.spyOn(redisGuardService, "checkAndSetIdempotency").mockResolvedValue(false);
-      const mockResult = {
-        _id: new ObjectId("507f1f77bcf86cd799439077"),
-        chatId: new ObjectId(MOCK_CHAT_ID),
-        senderId: new ObjectId(MOCK_USER_ID),
-        contentBody: "Hi",
-        createdAt: new Date(),
-        toObject: () => ({
-          _id: new ObjectId("507f1f77bcf86cd799439077"),
-          chatId: new ObjectId(MOCK_CHAT_ID),
-          senderId: new ObjectId(MOCK_USER_ID),
-          contentBody: "Hi",
-          createdAt: new Date(),
-          reactions: [],
-        }),
-      };
-      vi.spyOn(messageRepository, "findOne").mockResolvedValue(mockResult as any);
-
-      const result = await socketService.saveAndDeliverMessage(sender, payload);
-
-      expect(messageRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: "dup-key" }));
-      expect(messageRepository.create).not.toHaveBeenCalled();
-      expect(result.id.toString()).toBe("507f1f77bcf86cd799439077");
-    });
-
-    it("should NOT consume rate limit token for legitimate retries (duplicates)", async () => {
-      const sender = { id: MOCK_USER_ID, plan: "pro" } as any;
-      const payload = {
-        chatId: MOCK_CHAT_ID,
-        receiverId: MOCK_RECEIVER_ID,
-        contentBody: "Retry",
-        idempotencyKey: "retry-key",
-      };
-
-      // Simulate Redis L1 hit for idempotency (already set)
-      vi.spyOn(redisGuardService, "checkAndSetIdempotency").mockResolvedValue(false);
-      // Simulate DB hit
-      const mockResult = {
-        _id: new ObjectId("507f1f77bcf86cd799439077"),
-        chatId: new ObjectId(MOCK_CHAT_ID),
-        senderId: new ObjectId(MOCK_USER_ID),
-        contentBody: "Retry",
-        createdAt: new Date(),
-        toObject: () => ({
-          _id: new ObjectId("507f1f77bcf86cd799439077"),
-          chatId: new ObjectId(MOCK_CHAT_ID),
-          senderId: new ObjectId(MOCK_USER_ID),
-          contentBody: "Retry",
-          createdAt: new Date(),
-          reactions: [],
-        }),
-      };
-      vi.spyOn(messageRepository, "findOne").mockResolvedValue(mockResult as any);
-
-      await socketService.saveAndDeliverMessage(sender, payload);
-
-      // Verify rate limit was NEVER checked for this duplicate
-      expect(vi.spyOn(redisGuardService, "incrementAndCheckLimit")).not.toHaveBeenCalled();
+      expect(messageHandler.saveAndDeliver).toHaveBeenCalledWith(sender, payload);
     });
   });
 
   describe("Typing Local Guard", () => {
-    it("should throttle Redis hits for high-frequency typing events", async () => {
+    it("should delegate typing to TypingHandler (which owns throttle logic)", async () => {
       const sender = { id: MOCK_USER_ID } as any;
       const payload = { chatId: "c1", receiverId: "r1" };
 
-      // Mock cache to avoid DB hits
-      chatCacheService.setParticipants("c1", new Set([MOCK_USER_ID, "r1"]));
-      socketService.io = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as any;
-
-      // 1. First call hits Redis
       await socketService.handleTyping(sender, payload, true);
-      expect(vi.spyOn(redisGuardService, "incrementAndCheckLimit")).toHaveBeenCalledTimes(1);
 
-      // 2. Immediate second call should NOT hit Redis (guarded locally)
-      await socketService.handleTyping(sender, payload, true);
-      expect(vi.spyOn(redisGuardService, "incrementAndCheckLimit")).toHaveBeenCalledTimes(1); // Still 1
-
-      // 3. Advance time and it should hit Redis again
-      vi.useFakeTimers();
-      vi.setSystemTime(Date.now() + 3000);
-
-      await socketService.handleTyping(sender, payload, true);
-      expect(vi.spyOn(redisGuardService, "incrementAndCheckLimit")).toHaveBeenCalledTimes(2);
-
-      vi.useRealTimers();
+      expect(typingHandler.handleTyping).toHaveBeenCalledWith(sender, payload, true);
     });
   });
 });

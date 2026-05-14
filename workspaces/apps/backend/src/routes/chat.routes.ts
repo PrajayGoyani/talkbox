@@ -1,54 +1,43 @@
-import express from "express";
-const router = express.Router();
-
-import {
-  getChatListing,
-  getChatRequests,
-  requestChat,
-  acceptChat,
-  rejectChat,
-  deleteChat,
-  getChatMessages,
-  markChatRead,
-  searchChats,
-  getChat,
-} from "@controllers/chat.controller";
+import { registry } from "@bootstrap/registry";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import { rateLimiter } from "@middlewares/rate-limiter.middleware";
 import { validate, validateQuery } from "@middlewares/validate.middleware";
 import { chatRequestSchema, chatSearchSchema } from "@schemas/chat.schema";
+import { Router } from "express";
+const router = Router();
+const chatController = registry.chatController;
 
 router.use(authenticateToken);
 router.use(rateLimiter);
 
 // Get chat listing (active only)
-router.get("/", getChatListing);
+router.get("/", chatController.getChatListing);
 
 // Get pending chat requests
-router.get("/requests", getChatRequests);
+router.get("/requests", chatController.getChatRequests);
 
 // Search active chats
-router.get("/search", validateQuery(chatSearchSchema), searchChats);
+router.get("/search", validateQuery(chatSearchSchema), chatController.searchChats);
 
 // Get single chat by ID
-router.get("/:chatId", getChat);
+router.get("/:chatId", chatController.getChat);
 
 // Send a chat request by username
-router.post("/request", validate(chatRequestSchema), requestChat);
+router.post("/request", validate(chatRequestSchema), chatController.requestChat);
 
 // Accept a pending chat request
-router.put("/:chatId/accept", acceptChat);
+router.put("/:chatId/accept", chatController.acceptChat);
 
 // Reject a pending chat request
-router.put("/:chatId/reject", rejectChat);
+router.put("/:chatId/reject", chatController.rejectChat);
 
 // Delete chat
-router.delete("/:chatId", deleteChat);
+router.delete("/:chatId", chatController.deleteChat);
 
 // Get chat messages
-router.get("/:chatId/messages", getChatMessages);
+router.get("/:chatId/messages", chatController.getChatMessages);
 
 // Mark chat as read for current user
-router.put("/:chatId/read", markChatRead);
+router.put("/:chatId/read", chatController.markChatRead);
 
 export default router;

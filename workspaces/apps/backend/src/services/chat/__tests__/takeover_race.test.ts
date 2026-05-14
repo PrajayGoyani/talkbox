@@ -1,65 +1,11 @@
 import Chat from "@models/chat.model";
-import { socketService } from "@services/chat/socket.service";
-import {
-  redisPresenceService,
-  redisSessionService,
-  redisGuardService,
-  baseService,
-} from "@services/infra/redis.service";
+import { SocketService } from "@services/chat/socket.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
 vi.mock("@models/user.model");
-vi.mock("@repositories/partner.repository", () => ({
-  partnerRepository: {
-    getPartnerIds: vi.fn(),
-    invalidatePartnerCache: vi.fn(),
-  },
-}));
-vi.mock("@repositories/chat-query.repository", () => ({
-  chatQueryRepository: {
-    findPartnerChats: vi.fn().mockResolvedValue([]),
-    searchChats: vi.fn(),
-    findAcceptedChatsByUser: vi.fn(),
-    findPendingRequestsByUser: vi.fn(),
-    transformChat: vi.fn(),
-  },
-}));
-
-vi.mock("@services/infra/redis.service", () => ({
-  redisPresenceService: {
-    setUserOnline: vi.fn().mockResolvedValue(null),
-    setUserOffline: vi.fn().mockResolvedValue(null),
-    getCachedPartners: vi.fn().mockResolvedValue(null),
-    setCachedPartners: vi.fn().mockResolvedValue(null),
-    invalidatePartnerCache: vi.fn().mockResolvedValue(null),
-    getOnlineUsers: vi.fn().mockResolvedValue(new Set()),
-    queuePresenceSync: vi.fn().mockResolvedValue(null),
-    getLastSeenBatched: vi.fn().mockResolvedValue(new Map()),
-  },
-  redisSessionService: {
-    incrementGlobalSession: vi.fn(),
-    decrementGlobalSession: vi.fn(),
-    getGlobalSessionCount: vi.fn(),
-    getOldestSession: vi.fn().mockResolvedValue(null),
-    publishSessionTakeover: vi.fn(),
-    takeoverFreeSession: vi.fn(),
-    publishCacheInvalidation: vi.fn().mockResolvedValue(null),
-  },
-  redisGuardService: {
-    incrementAndCheckLimit: vi.fn().mockResolvedValue({ allowed: true, current: 1, ttl: 60000 }),
-    checkAndSetIdempotency: vi.fn().mockResolvedValue(true),
-  },
-  baseService: {
-    isConnected: true,
-    subClient: {
-      subscribe: vi.fn().mockResolvedValue(null),
-      on: vi.fn(),
-    },
-  },
-}));
 
 const MOCK_USER_ID = "507f1f77bcf86cd799439011";
 
@@ -79,9 +25,42 @@ const createMockSocket = (userId: string, id: string) =>
   }) as any;
 
 describe("SocketService Takeover Race Condition", () => {
+  let socketService: SocketService;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    (socketService as any).activeConnections.clear();
+    const chatRepo: any = { findById: vi.fn() };
+    const messageRepo: any = { create: vi.fn() };
+    const userRepo: any = { findByIds: vi.fn() };
+    const chatQueryRepo: any = { findPartnerChats: vi.fn().mockResolvedValue([]) };
+    const partnerRepo: any = { getPartnerIds: vi.fn().mockResolvedValue(new Set()), invalidatePartnerCache: vi.fn() };
+    const messageService: any = { invalidateCache: vi.fn(), markChatRead: vi.fn() };
+    const presenceService: any = { notifyStatusChange: vi.fn(), getPartnersStatusBatch: vi.fn().mockResolvedValue([]) };
+    const messageHandler: any = { saveAndDeliver: vi.fn(), handleDelete: vi.fn(), handleEdit: vi.fn() };
+    const reactionHandler: any = { handleReaction: vi.fn() };
+    const typingHandler: any = { handleTyping: vi.fn() };
+    const redisSessionService: any = {
+      incrementGlobalSession: vi.fn(),
+      decrementGlobalSession: vi.fn(),
+      getGlobalSessionCount: vi.fn(),
+      getOldestSession: vi.fn().mockResolvedValue(null),
+      publishSessionTakeover: vi.fn(),
+      takeoverFreeSession: vi.fn(),
+    };
+    const redisPresenceService: any = {
+      getCachedPartners: vi.fn().mockResolvedValue(null),
+      setCachedPartners: vi.fn().mockResolvedValue(null),
+    };
+    const redisBaseService: any = { isConnected: true, subClient: { subscribe: vi.fn(), on: vi.fn() } };
+    const policyService: any = { isSessionLimitReached: vi.fn().mockReturnValue(false) };
+    const chatCacheService: any = { getPartners: vi.fn(), setPartners: vi.fn(), invalidateParticipants: vi.fn(), invalidatePartners: vi.fn() };
+
+    socketService = new SocketService(
+      chatRepo, messageRepo, userRepo, chatQueryRepo, partnerRepo,
+      messageService, presenceService, messageHandler, reactionHandler, typingHandler,
+      redisSessionService, redisPresenceService, redisBaseService, policyService, chatCacheService,
+    );
+    socketService.activeConnections.clear();
     vi.spyOn(Chat, "find").mockReturnValue({
       select: vi.fn().mockReturnThis(),
       lean: vi.fn().mockResolvedValue([]),
@@ -98,8 +77,7 @@ describe("SocketService Takeover Race Condition", () => {
       if (ev === "disconnect") disconnectA = fn;
     });
 
-    // Register them properly
-    vi.spyOn(redisSessionService, "takeoverFreeSession").mockResolvedValue([]);
+    // Register them properly — each call uses mock redisSessionService
     await socketService.handleConnection(socketA);
     await socketService.handleConnection(socketB);
 
@@ -121,9 +99,9 @@ describe("SocketService Takeover Race Condition", () => {
     expect(socketB.disconnect).not.toHaveBeenCalled();
 
     // Local state should only have Socket B
-    const userSockets = (socketService as any).activeConnections.get(MOCK_USER_ID);
-    expect(userSockets.size).toBe(1);
-    expect(userSockets.has(socketB)).toBe(true);
+    const userSockets = socketService.activeConnections.get(MOCK_USER_ID);
+    expect(userSockets!.size).toBe(1);
+    expect(userSockets!.has(socketB)).toBe(true);
   });
 
   it("should handle multiple victims sequentially without kicking the winner", async () => {
@@ -139,7 +117,6 @@ describe("SocketService Takeover Race Condition", () => {
       if (ev === "disconnect") disconnect2 = fn;
     });
 
-    vi.spyOn(redisSessionService, "takeoverFreeSession").mockResolvedValue([]);
     await socketService.handleConnection(socketWinner);
     await socketService.handleConnection(socketVictim1);
     await socketService.handleConnection(socketVictim2);
@@ -147,17 +124,17 @@ describe("SocketService Takeover Race Condition", () => {
     // Takeover message for Victim 1
     (socketService as any)._handleGlobalTakeover(MOCK_USER_ID, "socket-Victim1");
     if (disconnect1) await disconnect1();
-    const userSockets = (socketService as any).activeConnections.get(MOCK_USER_ID);
-    expect(userSockets.size).toBe(2);
+    const userSockets = socketService.activeConnections.get(MOCK_USER_ID);
+    expect(userSockets!.size).toBe(2);
 
     // Takeover message for Victim 2
     (socketService as any)._handleGlobalTakeover(MOCK_USER_ID, "socket-Victim2");
     if (disconnect2) await disconnect2();
-    expect(userSockets.size).toBe(1);
+    expect(userSockets!.size).toBe(1);
 
     // Winner remains
     expect(socketWinner.disconnect).not.toHaveBeenCalled();
-    expect(userSockets.has(socketWinner)).toBe(true);
+    expect(userSockets!.has(socketWinner)).toBe(true);
   });
 
   it("should kick everyone if no victimSocketId is provided (fallback safety)", async () => {
@@ -172,7 +149,6 @@ describe("SocketService Takeover Race Condition", () => {
       if (ev === "disconnect") d2 = fn;
     });
 
-    vi.spyOn(redisSessionService, "takeoverFreeSession").mockResolvedValue([]);
     await socketService.handleConnection(socketA);
     await socketService.handleConnection(socketB);
 
@@ -184,6 +160,6 @@ describe("SocketService Takeover Race Condition", () => {
 
     expect(socketA.disconnect).toHaveBeenCalled();
     expect(socketB.disconnect).toHaveBeenCalled();
-    expect((socketService as any).activeConnections.has(MOCK_USER_ID)).toBe(false);
+    expect(socketService.activeConnections.has(MOCK_USER_ID)).toBe(false);
   });
 });

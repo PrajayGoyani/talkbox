@@ -6,7 +6,7 @@ import { generateETag } from "@utils/hash.utils";
 import { error as errorResponse, success } from "@utils/response";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import path from "path";
 
@@ -57,7 +57,7 @@ export function initializeErrorHandlers() {
   });
 
   // Global error handler
-  app.use((err, _req, res, _next) => {
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof AppError) {
       res.status(err.statusCode).json(errorResponse(err.code, err.message, err.details));
       return;

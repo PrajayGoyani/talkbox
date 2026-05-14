@@ -1,8 +1,8 @@
 import { RATE_LIMIT_DEFAULT_WINDOW_MS, RATE_LIMIT_SOCKET_MESSAGE_MAX, REACTIONS_MAX_UNIQUE } from "@config/env";
-import { ChatRepository } from "@repositories/chat.repository";
-import { MessageRepository } from "@repositories/message.repository";
-import { messageService } from "@services/chat/message.service";
-import { redisGuardService } from "@services/infra/redis.service";
+import { IChatRepository } from "@repositories/interfaces/chat.repository";
+import { IMessageRepository } from "@repositories/interfaces/message.repository";
+import { IMessageService } from "@services/chat/types";
+import { IRedisGuardService } from "@services/infra/interfaces";
 import { isScrubbed } from "@utils/date.utils";
 import { getCanonicalSlug } from "@utils/emoji.utils";
 import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
@@ -15,8 +15,10 @@ import { AuthenticatedSocketUser, TypedIO } from "@/types/socket.types";
 export class ReactionHandler {
   constructor(
     private ioProvider: () => TypedIO | null,
-    private chatRepo: ChatRepository,
-    private messageRepo: MessageRepository,
+    private chatRepo: IChatRepository,
+    private messageRepo: IMessageRepository,
+    private messageService: IMessageService,
+    private redisGuardService: IRedisGuardService,
   ) {}
 
   async handleReaction(sender: AuthenticatedSocketUser, payload: { messageId: string; emoji: string; slug?: string }) {
@@ -27,7 +29,7 @@ export class ReactionHandler {
     if (getDisallowedEmojis(emoji).length > 0) return;
 
     // 0. Rate limit
-    const rlStatus = await redisGuardService.incrementAndCheckLimit(
+    const rlStatus = await this.redisGuardService.incrementAndCheckLimit(
       `rl:socket:reaction:${sender.id}`,
       RATE_LIMIT_SOCKET_MESSAGE_MAX,
       RATE_LIMIT_DEFAULT_WINDOW_MS,
@@ -54,7 +56,7 @@ export class ReactionHandler {
       const chatIdStr = message.chatId.toString();
 
       // Use shared participant cache from messageService
-      await messageService.ensureParticipant(chatIdStr, senderIdStr);
+      await this.messageService.ensureParticipant(chatIdStr, senderIdStr);
 
       const senderIdIdx = new Types.ObjectId(sender.id);
       const reactionIndex = message.reactions.findIndex((r) => r.emoji === emoji);

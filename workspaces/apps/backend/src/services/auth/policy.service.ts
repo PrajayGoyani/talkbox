@@ -1,6 +1,8 @@
 import { PRO_PLAN_SESSION_LIMIT } from "@config/env";
 
-export class PolicyService {
+import { IPolicyService } from "../interfaces/policy.service";
+
+export class PolicyService implements IPolicyService {
   /**
    * Checks if a user has reached their session limit based on their plan.
    * @returns true if limited, false otherwise.
@@ -17,4 +19,4 @@ export class PolicyService {
   }
 }
 
-export const policyService = new PolicyService();
+export const policyService = {};

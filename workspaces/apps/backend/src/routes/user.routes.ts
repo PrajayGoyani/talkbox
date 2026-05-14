@@ -1,7 +1,7 @@
 import express from "express";
 const router = express.Router();
 
-import { searchByUsername, updateProfile, uploadAvatar } from "@controllers/user.controller";
+import { registry } from "@bootstrap/registry";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import { rateLimiter } from "@middlewares/rate-limiter.middleware";
 import { memoryUpload } from "@middlewares/upload.middleware";
@@ -12,12 +12,12 @@ router.use(authenticateToken);
 router.use(rateLimiter);
 
 // Upload avatar
-router.post("/avatar", memoryUpload.single("avatar"), uploadAvatar);
+router.post("/avatar", memoryUpload.single("avatar"), registry.userController.uploadAvatar);
 
 // Update user profile
-router.patch("/profile", validate(updateProfileSchema), updateProfile);
+router.patch("/profile", validate(updateProfileSchema), registry.userController.updateProfile);
 
 // search by exact username
-router.get("/search", searchByUsername);
+router.get("/search", registry.userController.searchByUsername);
 
 export default router;

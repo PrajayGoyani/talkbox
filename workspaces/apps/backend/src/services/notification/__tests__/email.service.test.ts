@@ -2,7 +2,7 @@ import { APP_NAME, EMAIL_FROM, FRONTEND_URL } from "@config/env";
 import nodemailer from "nodemailer";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import { emailService } from "../email.service";
+import { EmailService } from "../email.service";
 
 vi.mock("nodemailer", () => ({
   default: {
@@ -13,6 +13,7 @@ vi.mock("nodemailer", () => ({
 }));
 
 describe("EmailService", () => {
+  let emailService: EmailService;
   const mockSendMail = vi.fn().mockResolvedValue({ messageId: "test-id" });
 
   beforeEach(() => {
@@ -21,13 +22,7 @@ describe("EmailService", () => {
       sendMail: mockSendMail,
     });
 
-    // Re-initialize or reset the service state if needed
-    // Since emailService is a singleton, we might need to manually set transporter if it wasn't configured
-    if (!emailService.isConfigured) {
-      (emailService as any).transporter = nodemailer.createTransport({} as any);
-    } else {
-      (emailService as any).transporter.sendMail = mockSendMail;
-    }
+    emailService = new EmailService();
   });
 
   it("should send a verification email with the correct link", async () => {

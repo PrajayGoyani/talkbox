@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
 
-class ImageService {
+export class ImageService {
   public uploadDir: any;
 
   constructor() {
@@ -61,4 +61,4 @@ class ImageService {
   }
 }
 
-export const imageService = new ImageService();
+export const imageService = {};

@@ -1,5 +1,5 @@
-import { ChatQueryRepository, chatQueryRepository } from "@repositories/chat-query.repository";
-import { ChatRepository, chatRepository } from "@repositories/chat.repository";
+import { IChatQueryRepository } from "@repositories/interfaces/chat-query.repository";
+import { IChatRepository } from "@repositories/interfaces/chat.repository";
 import { AppError } from "@utils/AppError";
 import { ObjectId } from "mongodb";
 import { ChatDto, ChatListingResponseDto } from "shared/types/chat.dto";
@@ -8,8 +8,8 @@ import { IChatListingService } from "./types";
 
 export class ChatListingService implements IChatListingService {
   constructor(
-    private repository: ChatRepository,
-    private queryRepository: ChatQueryRepository,
+    private repository: IChatRepository,
+    private queryRepository: IChatQueryRepository,
   ) {}
 
   async getChatListing(
@@ -154,4 +154,4 @@ export class ChatListingService implements IChatListingService {
   }
 }
 
-export const chatListingService = new ChatListingService(chatRepository, chatQueryRepository);
+// Note: Instance creation moved to registry.ts

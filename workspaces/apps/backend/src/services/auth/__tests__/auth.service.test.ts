@@ -101,7 +101,7 @@ import { AUTH_EVENTS, eventBus } from "@utils/event-bus";
 import { verifyRefreshToken } from "@utils/jwt";
 
 const mockUserRepository = new UserRepository(mockUserModel);
-const authService = new AuthService(mockUserRepository);
+const authService = new AuthService(mockUserRepository, redisSessionService);
 
 describe("AuthService - Complete Suite", () => {
   beforeEach(() => {

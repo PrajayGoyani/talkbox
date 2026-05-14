@@ -1,4 +1,5 @@
-import { UserRepository } from "@repositories/user.repository";
+import { IUserRepository } from "@repositories/interfaces/user.repository";
+import { IRedisPresenceService } from "@services/infra/interfaces";
 import { redisPresenceService } from "@services/infra/redis.service";
 
 import { TypedIO, TypedSocket } from "@/types/socket.types";
@@ -6,7 +7,8 @@ import { TypedIO, TypedSocket } from "@/types/socket.types";
 export class PresenceService {
   constructor(
     private ioProvider: () => TypedIO | null,
-    private userRepo: UserRepository,
+    private userRepo: IUserRepository,
+    private redisPresenceService: IRedisPresenceService,
   ) {}
 
   // setupStatusWatchers and cleanupStatusWatchers removed.
@@ -32,8 +34,8 @@ export class PresenceService {
     if (partnerIdsArr.length === 0) return [];
 
     const [onlinePartners, lastSeenMap] = await Promise.all([
-      redisPresenceService.getOnlineUsers(partnerIdsArr),
-      redisPresenceService.getLastSeenBatched(partnerIdsArr),
+      this.redisPresenceService.getOnlineUsers(partnerIdsArr),
+      this.redisPresenceService.getLastSeenBatched(partnerIdsArr),
     ]);
 
     const missingFromRedisIds = partnerIdsArr.filter((id) => !onlinePartners.has(id) && !lastSeenMap.has(id));
@@ -58,11 +60,11 @@ export class PresenceService {
   async notifyStatusChange(userId: string, isOnline: boolean) {
     try {
       if (isOnline) {
-        await redisPresenceService.setUserOnline(userId);
+        await this.redisPresenceService.setUserOnline(userId);
       } else {
         const lastSeen = new Date();
-        await redisPresenceService.setUserOffline(userId, lastSeen);
-        await redisPresenceService.queuePresenceSync(userId);
+        await this.redisPresenceService.setUserOffline(userId, lastSeen);
+        await this.redisPresenceService.queuePresenceSync(userId);
         // NOTE: findByIdAndUpdate(userId, { lastSeen }) removed for scalability.
         // Persistence to DB is now handled via periodic background sync.
         // Cold storage in MongoDB might be slightly stale if Redis is cleared.

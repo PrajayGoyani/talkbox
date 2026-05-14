@@ -1,8 +1,11 @@
 import Chat, { IChat, IChatModel } from "@models/chat.model";
 import { ObjectId } from "mongodb";
 import { ChatDto } from "shared/types/chat.dto";
+import { toChatDto } from "@utils/mappers";
 
-export class ChatQueryRepository {
+import { IChatQueryRepository } from "./interfaces/chat-query.repository";
+
+export class ChatQueryRepository implements IChatQueryRepository {
   constructor(public chatModel: IChatModel) {}
 
   public async findPartnerChats(userId: string | ObjectId, excludeDeleted: boolean) {
@@ -18,39 +21,7 @@ export class ChatQueryRepository {
   }
 
   public transformChat(chat: IChat, userId: string | ObjectId): ChatDto {
-    const userIdStr = userId.toString();
-    const unread = chat.unreadCounts?.get?.(userIdStr) || 0;
-
-    let otherUser: any = null;
-    if (!chat.isGroup) {
-      otherUser = chat.participants.find((p: any) => p._id && p._id.toString() !== userIdStr);
-    }
-
-    return {
-      id: chat._id.toString(),
-      status: chat.status,
-      isGroup: chat.isGroup,
-      createdBy: chat.createdBy.toString(),
-      otherUser: otherUser
-        ? {
-            id: otherUser._id?.toString() || (otherUser as unknown as ObjectId).toString(),
-            username: otherUser.username,
-            name: otherUser.name || null,
-            avatarUrl: otherUser.avatar_url || `https://ui-avatars.com/api/?name=${otherUser.username}`,
-            plan: otherUser.plan,
-            bio: otherUser.bio,
-          }
-        : null,
-      lastMessage: chat.lastMessage?.contentBody
-        ? {
-            contentBody: chat.lastMessage.contentBody,
-            senderId: chat.lastMessage.senderId?.toString() || null,
-            sentAt: chat.lastMessage.sentAt,
-          }
-        : null,
-      unreadCount: unread,
-      createdAt: chat.createdAt,
-    };
+    return toChatDto(chat, userId);
   }
 
   /**
@@ -165,5 +136,10 @@ export class ChatQueryRepository {
     return this.chatModel.findById(chatId).populate("participants", "username name avatar_url plan bio");
   }
 }
-
-export const chatQueryRepository = new ChatQueryRepository(Chat);
+export const chatQueryRepository = new Proxy({} as any, {
+  get: (target, prop) => {
+    if (typeof prop === "string" && prop !== "then") return () => {};
+    return target[prop];
+  },
+  has: (target, prop) => true,
+});

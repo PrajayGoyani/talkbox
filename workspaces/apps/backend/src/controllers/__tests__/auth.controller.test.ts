@@ -1,15 +1,5 @@
-import { forgotPassword, resendVerification, resetPassword, verifyEmail } from "@controllers/auth.controller";
-import { authService } from "@services/auth/auth.service";
+import { AuthController } from "@controllers/auth.controller";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.mock("@services/auth/auth.service", () => ({
-  authService: {
-    forgotPassword: vi.fn(),
-    resetPassword: vi.fn(),
-    verifyEmail: vi.fn(),
-    resendVerificationEmail: vi.fn(),
-  },
-}));
 
 vi.mock("@config/env", () => ({
   COOKIE_SAMESITE: "lax",
@@ -19,9 +9,18 @@ vi.mock("@config/env", () => ({
 describe("AuthController - Password Reset & Email Verification", () => {
   let req: any;
   let res: any;
+  let authController: AuthController;
+  let authService: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    authService = {
+      forgotPassword: vi.fn(),
+      resetPassword: vi.fn(),
+      verifyEmail: vi.fn(),
+      resendVerificationEmail: vi.fn(),
+    };
+    authController = new AuthController(authService);
     req = { body: {}, query: {}, user: { id: "user123" } };
     res = {
       status: vi.fn().mockReturnThis(),
@@ -33,9 +32,9 @@ describe("AuthController - Password Reset & Email Verification", () => {
   describe("forgotPassword", () => {
     it("should call authService.forgotPassword and return success", async () => {
       req.body.email = "test@example.com";
-      vi.spyOn(authService, "forgotPassword").mockResolvedValue();
+      authService.forgotPassword.mockResolvedValue();
 
-      await forgotPassword(req, res);
+      await authController.forgotPassword(req, res);
 
       expect(authService.forgotPassword).toHaveBeenCalledWith("test@example.com");
       expect(res.success).toHaveBeenCalledWith({
@@ -47,9 +46,9 @@ describe("AuthController - Password Reset & Email Verification", () => {
   describe("resetPassword", () => {
     it("should call authService.resetPassword and return success", async () => {
       req.body = { token: "valid-token", password: "newpassword123" };
-      vi.spyOn(authService, "resetPassword").mockResolvedValue();
+      authService.resetPassword.mockResolvedValue();
 
-      await resetPassword(req, res);
+      await authController.resetPassword(req, res);
 
       expect(authService.resetPassword).toHaveBeenCalledWith("valid-token", "newpassword123");
       expect(res.success).toHaveBeenCalledWith({
@@ -61,9 +60,9 @@ describe("AuthController - Password Reset & Email Verification", () => {
   describe("verifyEmail", () => {
     it("should verify email with token from query params", async () => {
       req.query.token = "verify-token-123";
-      vi.spyOn(authService, "verifyEmail").mockResolvedValue();
+      authService.verifyEmail.mockResolvedValue();
 
-      await verifyEmail(req, res);
+      await authController.verifyEmail(req, res);
 
       expect(authService.verifyEmail).toHaveBeenCalledWith("verify-token-123");
       expect(res.success).toHaveBeenCalledWith({
@@ -74,15 +73,15 @@ describe("AuthController - Password Reset & Email Verification", () => {
     it("should throw if token is missing", async () => {
       req.query = {};
 
-      await expect(verifyEmail(req, res)).rejects.toThrow("Token is required");
+      await expect(authController.verifyEmail(req, res)).rejects.toThrow("Token is required");
     });
   });
 
   describe("resendVerification", () => {
     it("should call authService.resendVerificationEmail with user id", async () => {
-      vi.spyOn(authService, "resendVerificationEmail").mockResolvedValue();
+      authService.resendVerificationEmail.mockResolvedValue();
 
-      await resendVerification(req, res);
+      await authController.resendVerification(req, res);
 
       expect(authService.resendVerificationEmail).toHaveBeenCalledWith("user123");
       expect(res.success).toHaveBeenCalledWith({
