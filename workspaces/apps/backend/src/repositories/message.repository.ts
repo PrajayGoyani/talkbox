@@ -24,7 +24,6 @@ export class MessageRepository implements IMessageRepository {
     return this.messageModel.findOne(query);
   }
 
-
   public async create(data: Partial<IMessage>, options: any = {}): Promise<IMessage> {
     return new this.messageModel(data).save(options);
   }

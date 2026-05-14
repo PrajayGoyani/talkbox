@@ -1,9 +1,9 @@
-import { ALLOWED_ORIGINS } from "@config/env";
 import { registry } from "@bootstrap/registry";
+import { ALLOWED_ORIGINS } from "@config/env";
 import { baseService } from "@services/infra/redis.service";
 import { createAdapter } from "@socket.io/redis-adapter";
-import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
+import { Server } from "socket.io";
 
 import { TypedIO } from "@/types/socket.types";
 

@@ -43,28 +43,14 @@ describe("ChatController", () => {
     it("should use defaults if limit/cursor are missing", async () => {
       chatService.getChatMessages.mockResolvedValue([]);
       await chatController.getChatMessages(req, res);
-      expect(chatService.getChatMessages).toHaveBeenCalledWith(
-        "chat123",
-        "user123",
-        50,
-        null,
-        "free",
-        false,
-      );
+      expect(chatService.getChatMessages).toHaveBeenCalledWith("chat123", "user123", 50, null, "free", false);
     });
 
     it("should prioritize headers for limit/cursor if query is missing", async () => {
       req.headers = { "x-limit": "10", "x-cursor": "msg-789" };
       chatService.getChatMessages.mockResolvedValue([]);
       await chatController.getChatMessages(req, res);
-      expect(chatService.getChatMessages).toHaveBeenCalledWith(
-        "chat123",
-        "user123",
-        10,
-        "msg-789",
-        "free",
-        false,
-      );
+      expect(chatService.getChatMessages).toHaveBeenCalledWith("chat123", "user123", 10, "msg-789", "free", false);
     });
   });
 

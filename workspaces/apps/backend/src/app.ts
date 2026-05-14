@@ -10,8 +10,8 @@ import {
   initializeMiddlewares,
   initializeStatic,
 } from "@bootstrap/handler";
-import { initSocketIO } from "@bootstrap/socket";
 import { registry } from "@bootstrap/registry";
+import { initSocketIO } from "@bootstrap/socket";
 import { PORT } from "@config/env";
 import { registerRoutes } from "@routes/routes";
 import express from "express";

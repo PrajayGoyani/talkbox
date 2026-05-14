@@ -5,13 +5,13 @@ import { IPartnerRepository } from "@repositories/interfaces/partner.repository"
 import { IUserRepository } from "@repositories/interfaces/user.repository";
 import { IMessageService } from "@services/chat/types";
 import { IRedisPresenceService, IRedisSessionService, IRedisBaseService } from "@services/infra/interfaces";
+import { IChatCacheService } from "@services/interfaces/chat-cache.service";
+import { IPolicyService } from "@services/interfaces/policy.service";
 import { PresenceService } from "@services/presence/presence.service";
 import { MessageHandler } from "@services/socket-handlers/message.handler";
 import { ReactionHandler } from "@services/socket-handlers/reaction.handler";
 import { TypingHandler } from "@services/socket-handlers/typing.handler";
 import { eventBus, USER_EVENTS } from "@utils/event-bus";
-import { IPolicyService } from "@services/interfaces/policy.service";
-import { IChatCacheService } from "@services/interfaces/chat-cache.service";
 
 import { AuthenticatedSocketUser, TypedIO, TypedSocket } from "@/types/socket.types";
 

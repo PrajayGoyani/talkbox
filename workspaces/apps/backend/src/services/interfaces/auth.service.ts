@@ -1,5 +1,5 @@
-import { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from "shared/types/auth.dto";
 import { ObjectId } from "mongodb";
+import { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from "shared/types/auth.dto";
 
 export interface IAuthService {
   signup(dto: SignupRequestDto): Promise<AuthResponseDto>;

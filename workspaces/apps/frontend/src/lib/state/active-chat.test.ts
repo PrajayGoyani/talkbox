@@ -1,10 +1,9 @@
 import { chatService } from "$services/chat.service";
 import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
 import { socketManager } from "$services/socket.manager.svelte";
+import { MessageStore } from "$state/active-chat.svelte";
 import { authStore } from "$state/auth.svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-
-import { MessageStore } from "$state/active-chat.svelte";
 
 // Mock dependencies
 vi.mock("$services/chat.service", () => ({

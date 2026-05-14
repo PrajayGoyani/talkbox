@@ -54,12 +54,29 @@ describe("SocketService Memory Leak Reproduction", () => {
     };
     const redisBaseService: any = { isConnected: true, subClient: { subscribe: vi.fn(), on: vi.fn() } };
     const policyService: any = { isSessionLimitReached: vi.fn() };
-    const chatCacheService: any = { getPartners: vi.fn(), setPartners: vi.fn(), invalidateParticipants: vi.fn(), invalidatePartners: vi.fn() };
+    const chatCacheService: any = {
+      getPartners: vi.fn(),
+      setPartners: vi.fn(),
+      invalidateParticipants: vi.fn(),
+      invalidatePartners: vi.fn(),
+    };
 
     socketService = new SocketService(
-      chatRepo, messageRepo, userRepo, chatQueryRepo, partnerRepo,
-      messageService, presenceService, messageHandler, reactionHandler, typingHandler,
-      redisSessionService, redisPresenceService, redisBaseService, policyService, chatCacheService,
+      chatRepo,
+      messageRepo,
+      userRepo,
+      chatQueryRepo,
+      partnerRepo,
+      messageService,
+      presenceService,
+      messageHandler,
+      reactionHandler,
+      typingHandler,
+      redisSessionService,
+      redisPresenceService,
+      redisBaseService,
+      policyService,
+      chatCacheService,
     );
     socketService.activeConnections.clear();
     vi.spyOn(Chat, "find").mockReturnValue({

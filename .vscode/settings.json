@@ -28,5 +28,8 @@
     ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
   ],
   "typescript.experimental.useTsgo": true,
-  "typescript.native-preview.tsdk": "/home/dev/Documents/work/other/projects/user-chat/node_modules/@typescript/native-preview"
+  "typescript.native-preview.tsdk": "/home/dev/Documents/work/other/projects/user-chat/node_modules/@typescript/native-preview",
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  }
 }

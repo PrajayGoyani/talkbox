@@ -22,7 +22,9 @@ describe("AuthMiddleware", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(registry.userCacheService.getUser).mockImplementation(async (id) => ({ id, username: "testuser" } as any));
+    vi.mocked(registry.userCacheService.getUser).mockImplementation(
+      async (id) => ({ id, username: "testuser" }) as any,
+    );
 
     req = {
       headers: {},

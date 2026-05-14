@@ -3,12 +3,7 @@ import { ChatDto, ChatListingResponseDto, MessageDto } from "shared/types/chat.d
 export interface IChatService {
   getChatListing(userId: string, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto>;
   getChatRequests(userId: string, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto>;
-  searchChats(
-    userId: string,
-    query: string,
-    limit?: number,
-    cursor?: string | null,
-  ): Promise<ChatListingResponseDto>;
+  searchChats(userId: string, query: string, limit?: number, cursor?: string | null): Promise<ChatListingResponseDto>;
   getChat(userId: string, chatId: string): Promise<ChatDto>;
   requestChat(senderId: string, targetUsername: string): Promise<any>;
   acceptChat(chatId: string, userId: string): Promise<any>;

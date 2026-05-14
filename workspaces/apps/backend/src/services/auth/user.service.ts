@@ -1,6 +1,6 @@
 import { IUserRepository } from "@repositories/interfaces/user.repository";
-import { IUserService } from "@services/interfaces/user.service";
 import { IRedisSessionService } from "@services/infra/interfaces";
+import { IUserService } from "@services/interfaces/user.service";
 import { AppError } from "@utils/AppError";
 import { eventBus, USER_EVENTS } from "@utils/event-bus";
 

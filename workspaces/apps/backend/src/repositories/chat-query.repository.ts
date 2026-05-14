@@ -1,7 +1,7 @@
 import Chat, { IChat, IChatModel } from "@models/chat.model";
+import { toChatDto } from "@utils/mappers";
 import { ObjectId } from "mongodb";
 import { ChatDto } from "shared/types/chat.dto";
-import { toChatDto } from "@utils/mappers";
 
 import { IChatQueryRepository } from "./interfaces/chat-query.repository";
 

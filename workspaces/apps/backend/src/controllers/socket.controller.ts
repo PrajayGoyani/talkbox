@@ -1,13 +1,21 @@
-import { activeChatSchema, deleteMessageSchema, editMessageSchema, reactMessageSchema, readChatSchema, sendMessageSchema, typingSchema } from "@schemas/socket.schema";
+import { JWT_SECRET_KEY, NODE_ENV } from "@config/env";
+import {
+  activeChatSchema,
+  deleteMessageSchema,
+  editMessageSchema,
+  reactMessageSchema,
+  readChatSchema,
+  sendMessageSchema,
+  typingSchema,
+} from "@schemas/socket.schema";
 import { SocketService } from "@services/chat/socket.service";
 import { IRedisPresenceService } from "@services/infra/interfaces";
+import { IUserCacheService } from "@services/interfaces/user-cache.service";
 import { AppError } from "@utils/AppError";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 
 import { AuthenticatedSocketUser, JWTPayload, TypedIO, TypedSocket } from "@/types/socket.types";
-import { JWT_SECRET_KEY, NODE_ENV } from "@config/env";
-import { IUserCacheService } from "@services/interfaces/user-cache.service";
 
 export class SocketController {
   constructor(

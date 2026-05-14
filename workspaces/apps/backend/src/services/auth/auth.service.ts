@@ -2,8 +2,8 @@ import type { AuthResponseDto, LoginRequestDto, SignupRequestDto, UserDto } from
 
 import { RESET_TOKEN_TTL, VERIFY_TOKEN_TTL } from "@config/env";
 import { IUserRepository } from "@repositories/interfaces/user.repository";
-import { IAuthService } from "@services/interfaces/auth.service";
 import { IRedisSessionService } from "@services/infra/interfaces";
+import { IAuthService } from "@services/interfaces/auth.service";
 import { AppError } from "@utils/AppError";
 import { AUTH_EVENTS, eventBus } from "@utils/event-bus";
 import { generateAccessToken, generateTokens, verifyRefreshToken } from "@utils/jwt";

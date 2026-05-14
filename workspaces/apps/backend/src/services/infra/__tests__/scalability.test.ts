@@ -90,26 +90,27 @@ describe("Scalability Optimizations", () => {
     const { MessageHandler } = await import("../../socket-handlers/message.handler");
     const { TypingHandler } = await import("../../socket-handlers/typing.handler");
 
-    const chatLockdownService: any = { lockdownChat: vi.fn(), unlockChat: vi.fn(), isChatDeleted: vi.fn().mockResolvedValue(false) };
+    const chatLockdownService: any = {
+      lockdownChat: vi.fn(),
+      unlockChat: vi.fn(),
+      isChatDeleted: vi.fn().mockResolvedValue(false),
+    };
 
     const realMessageService = new MessageService(
       chatRepo,
       messageRepo,
       chatLockdownService,
       redisPresenceService,
-      redisGuardService
+      redisGuardService,
     );
 
-    const realMessageHandler = new MessageHandler(
-      () => socketService.io,
-      realMessageService
-    );
+    const realMessageHandler = new MessageHandler(() => socketService.io, realMessageService);
 
     const realTypingHandler = new TypingHandler(
       () => socketService.io,
       chatRepo,
       realMessageService,
-      redisGuardService
+      redisGuardService,
     );
 
     const reactionHandler: any = { handleReaction: vi.fn() };
@@ -117,9 +118,21 @@ describe("Scalability Optimizations", () => {
     const presenceService: any = { notifyStatusChange: vi.fn(), getPartnersStatusBatch: vi.fn().mockResolvedValue([]) };
 
     socketService = new SocketService(
-      chatRepo, messageRepo, userRepo, chatQueryRepository, partnerRepo,
-      realMessageService, presenceService, realMessageHandler, reactionHandler, realTypingHandler,
-      redisSessionService, redisPresenceService, redisBaseService, policyService, chatCacheService,
+      chatRepo,
+      messageRepo,
+      userRepo,
+      chatQueryRepository,
+      partnerRepo,
+      realMessageService,
+      presenceService,
+      realMessageHandler,
+      reactionHandler,
+      realTypingHandler,
+      redisSessionService,
+      redisPresenceService,
+      redisBaseService,
+      policyService,
+      chatCacheService,
     );
 
     messageHandler = realMessageHandler;
@@ -144,7 +157,9 @@ describe("Scalability Optimizations", () => {
       senderId: new ObjectId(MOCK_USER_ID),
       contentBody: "Hi",
       createdAt: new Date(),
-      toObject: function () { return this; },
+      toObject: function () {
+        return this;
+      },
       reactions: [],
     };
 

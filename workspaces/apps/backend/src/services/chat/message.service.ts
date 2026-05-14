@@ -4,11 +4,7 @@ import { IChat } from "@models/chat.model";
 import { IMessage } from "@models/message.model";
 import { IChatRepository } from "@repositories/interfaces/chat.repository";
 import { IMessageRepository } from "@repositories/interfaces/message.repository";
-import { IChatLockdownService, IMessageService } from "./types";
-import {
-  IRedisPresenceService,
-  IRedisGuardService,
-} from "@services/infra/interfaces";
+import { IRedisPresenceService, IRedisGuardService } from "@services/infra/interfaces";
 import { AppError } from "@utils/AppError";
 import { isPastModifyLimit, isScrubbed } from "@utils/date.utils";
 import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
@@ -20,7 +16,7 @@ import { MessageDto } from "shared/types/chat.dto";
 import { AuthenticatedSocketUser } from "@/types/socket.types";
 
 import { chatCacheService } from "./chat-cache.service";
-
+import { IChatLockdownService, IMessageService } from "./types";
 
 export type MessageSender = Omit<AuthenticatedSocketUser, "bio">;
 

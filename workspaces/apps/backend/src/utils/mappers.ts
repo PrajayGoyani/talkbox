@@ -1,9 +1,10 @@
+import { CHAT_MESSAGES } from "@constants/messages";
 import { IChat } from "@models/chat.model";
 import { IMessage } from "@models/message.model";
 import { ObjectId } from "mongodb";
 import { ChatDto, MessageDto } from "shared/types/chat.dto";
+
 import { isScrubbed } from "./date.utils";
-import { CHAT_MESSAGES } from "@constants/messages";
 import { extractEmojiMetadata } from "./emoji.utils";
 
 export const toChatDto = (chat: IChat, userId: string | ObjectId): ChatDto => {

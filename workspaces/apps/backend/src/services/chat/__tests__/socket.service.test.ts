@@ -60,7 +60,10 @@ describe("SocketService", () => {
       invalidateParticipants: vi.fn((key: string) => cacheStore.delete(key)),
       getPartners: vi.fn((key: string) => partnerStore.get(key)),
       setPartners: vi.fn((key: string, val: Set<string>) => partnerStore.set(key, val)),
-      invalidatePartners: vi.fn((key: string) => { partnerStore.delete(key); partnerStore.delete(`${key}:active`); }),
+      invalidatePartners: vi.fn((key: string) => {
+        partnerStore.delete(key);
+        partnerStore.delete(`${key}:active`);
+      }),
     };
     mockChatRepo = { findById: vi.fn() };
     mockMessageRepo = { create: vi.fn() };

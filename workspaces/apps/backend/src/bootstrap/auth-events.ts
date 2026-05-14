@@ -1,6 +1,6 @@
+import { registry } from "@bootstrap/registry";
 import { getAgenda } from "@config/agenda";
 import { JOBS } from "@jobs/agenda-jobs";
-import { registry } from "@bootstrap/registry";
 import { AUTH_EVENTS, eventBus } from "@utils/event-bus";
 
 /**

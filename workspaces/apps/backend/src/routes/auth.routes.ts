@@ -1,9 +1,9 @@
-import { RATE_LIMIT_AUTH_MAX } from "@config/env";
-import { forgotPasswordSchema, loginSchema, resetPasswordSchema, signupSchema } from "@schemas/user.schema";
 import { registry } from "@bootstrap/registry";
+import { RATE_LIMIT_AUTH_MAX } from "@config/env";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import { createRateLimiter } from "@middlewares/rate-limiter.middleware";
 import { validate } from "@middlewares/validate.middleware";
+import { forgotPasswordSchema, loginSchema, resetPasswordSchema, signupSchema } from "@schemas/user.schema";
 import { Router } from "express";
 
 const router = Router();

@@ -1,7 +1,7 @@
+import { IChatService } from "@services/interfaces/chat.service";
 import { ChatDto, ChatListingResponseDto, MessageDto } from "shared/types/chat.dto";
 
 import { IChatListingService, IChatActionService, IMessageService } from "./types";
-import { IChatService } from "@services/interfaces/chat.service";
 
 /**
  * Facade for Chat-related services.

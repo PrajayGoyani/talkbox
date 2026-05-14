@@ -3,12 +3,11 @@ import { IChat } from "@models/chat.model";
 import { IChatRepository } from "@repositories/interfaces/chat.repository";
 import { IUserRepository } from "@repositories/interfaces/user.repository";
 import { IRedisSessionService } from "@services/infra/interfaces";
-import { IChatLockdownService, IChatActionService } from "./types";
 import { AppError } from "@utils/AppError";
 import { CHAT_EVENTS, eventBus } from "@utils/event-bus";
 import { ObjectId } from "mongodb";
 
-
+import { IChatLockdownService, IChatActionService } from "./types";
 
 export class ChatActionService implements IChatActionService {
   constructor(
@@ -176,9 +175,7 @@ export class ChatActionService implements IChatActionService {
 
     // Invalidate partner cache for both participants and chat cache globally
     await Promise.all([
-      ...chat.participants.map((p: any) =>
-        this.redisSessionService.publishCacheInvalidation("partner", p.toString()),
-      ),
+      ...chat.participants.map((p: any) => this.redisSessionService.publishCacheInvalidation("partner", p.toString())),
       this.redisSessionService.publishCacheInvalidation("chat", chatId.toString()),
     ]);
 

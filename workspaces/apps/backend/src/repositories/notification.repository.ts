@@ -1,6 +1,7 @@
 import Notification, { INotificationModel } from "@models/notification.model";
 import { ObjectId } from "mongodb";
 import { NotificationDto } from "shared/types/notification.dto";
+
 import { INotificationRepository } from "./interfaces/notification.repository";
 
 export class NotificationRepository implements INotificationRepository {

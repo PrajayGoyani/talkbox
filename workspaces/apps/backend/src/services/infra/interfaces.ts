@@ -13,7 +13,11 @@ export interface IRedisSessionService {
 
 export interface IRedisGuardService {
   checkAndSetIdempotency(key: string, ttlSeconds: number): Promise<boolean>;
-  incrementAndCheckLimit(key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; current?: number; ttl?: number; remaining?: number }>;
+  incrementAndCheckLimit(
+    key: string,
+    limit: number,
+    windowMs: number,
+  ): Promise<{ allowed: boolean; current?: number; ttl?: number; remaining?: number }>;
   lockChat(chatId: string): Promise<void>;
   unlockChat(chatId: string): Promise<void>;
   isChatLocked(chatId: string): Promise<boolean>;
