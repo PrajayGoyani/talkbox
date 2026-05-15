@@ -1,4 +1,5 @@
 import Notification, { INotificationModel } from "@models/notification.model";
+import { toNotificationDto } from "@utils/mappers";
 import { ObjectId } from "mongodb";
 import { NotificationDto } from "shared/types/notification.dto";
 
@@ -52,16 +53,6 @@ export class NotificationRepository implements INotificationRepository {
   }
 
   public transformNotification(n: any): NotificationDto {
-    return {
-      _id: n._id.toString(),
-      recipientId: n.recipientId.toString(),
-      senderId: n.senderId as unknown as NotificationDto["senderId"],
-      type: n.type,
-      referenceId: n.referenceId.toString(),
-      message: n.message,
-      isRead: n.isRead,
-      createdAt: n.createdAt,
-    };
+    return toNotificationDto(n);
   }
 }
-export const notificationRepository = {};

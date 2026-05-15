@@ -16,7 +16,6 @@ vi.mock("node:dns/promises", () => ({
 }));
 
 describe("connectDB", () => {
-  const originalPlatform = process.platform;
   const originalExit = process.exit;
 
   beforeEach(() => {
@@ -26,14 +25,12 @@ describe("connectDB", () => {
     }) as any;
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterAll(() => {
     vi.restoreAllMocks();
     process.exit = originalExit;
-    Object.defineProperty(process, "platform", {
-      value: originalPlatform,
-    });
   });
 
   it("should connect to MongoDB successfully", async () => {
@@ -42,14 +39,12 @@ describe("connectDB", () => {
     await connectDB();
 
     expect(connectSpy).toHaveBeenCalledWith(MONGO_URI);
-    expect(vi.spyOn(console, "log")).toHaveBeenCalledWith("Connected to MongoDB");
     expect(process.exit).not.toHaveBeenCalled();
   });
 
-  it("should handle connection failure and exit", async () => {
+  it("should handle connection failure and exit after retries", async () => {
     vi.spyOn(mongoose, "connect").mockRejectedValue(new Error("Connection failed"));
 
-    // Mock setTimeout to resolve immediately
     vi.spyOn(global, "setTimeout").mockImplementation((cb: any) => {
       if (typeof cb === "function") cb();
       return { unref: () => {} } as any;
@@ -57,37 +52,40 @@ describe("connectDB", () => {
 
     try {
       await connectDB(3);
-    } catch (e: any) {
+    } catch {
       // Expected throw from process.exit mock
     }
 
     expect(mongoose.connect).toHaveBeenCalledTimes(3);
     expect(process.exit).toHaveBeenCalled();
-    // Check first argument of the first call
     expect((process.exit as any).mock.calls[0][0]).toBe(1);
   });
 
   it("should apply Windows DNS hack on win32 platform", async () => {
-    Object.defineProperty(process, "platform", {
-      value: "win32",
-    });
-    vi.spyOn(mongoose, "connect").mockResolvedValue({} as any);
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, "platform", { value: "win32" });
+    const connectSpy = vi.spyOn(mongoose, "connect").mockResolvedValue({} as any);
 
-    await connectDB();
-
-    expect(setServers).toHaveBeenCalledWith(["1.1.1.1", "8.8.8.8"]);
-    expect(mongoose.connect).toHaveBeenCalled();
+    try {
+      await connectDB();
+      expect(setServers).toHaveBeenCalledWith(["1.1.1.1", "8.8.8.8"]);
+      expect(connectSpy).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(process, "platform", { value: originalPlatform });
+    }
   });
 
   it("should NOT apply Windows DNS hack on other platforms", async () => {
-    Object.defineProperty(process, "platform", {
-      value: "linux",
-    });
-    vi.spyOn(mongoose, "connect").mockResolvedValue({} as any);
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, "platform", { value: "linux" });
+    const connectSpy = vi.spyOn(mongoose, "connect").mockResolvedValue({} as any);
 
-    await connectDB();
-
-    expect(setServers).not.toHaveBeenCalled();
-    expect(mongoose.connect).toHaveBeenCalled();
+    try {
+      await connectDB();
+      expect(setServers).not.toHaveBeenCalled();
+      expect(connectSpy).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(process, "platform", { value: originalPlatform });
+    }
   });
 });

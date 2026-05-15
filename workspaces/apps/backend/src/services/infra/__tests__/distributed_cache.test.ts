@@ -15,15 +15,6 @@ describe("Distributed Cache Invalidation", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    vi.doMock("@repositories/chat.repository", () => ({
-      ChatRepository: vi.fn(),
-    }));
-    vi.doMock("@repositories/user.repository", () => ({
-      UserRepository: vi.fn(),
-    }));
-    vi.doMock("@repositories/partner.repository", () => ({
-      PartnerRepository: vi.fn(),
-    }));
 
     chatRepository = {
       findById: vi.fn(),

@@ -1,7 +1,6 @@
 import { IChatQueryRepository } from "@repositories/interfaces/chat-query.repository";
 import { IChatRepository } from "@repositories/interfaces/chat.repository";
 import { IMessageRepository } from "@repositories/interfaces/message.repository";
-import { IPartnerRepository } from "@repositories/interfaces/partner.repository";
 import { IUserRepository } from "@repositories/interfaces/user.repository";
 import { IMessageService } from "@services/chat/types";
 import { IRedisPresenceService, IRedisSessionService, IRedisBaseService } from "@services/infra/interfaces";
@@ -26,7 +25,6 @@ export class SocketService {
     private messageRepo: IMessageRepository,
     private userRepo: IUserRepository,
     private chatQueryRepo: IChatQueryRepository,
-    private partnerRepo: IPartnerRepository,
     private messageService: IMessageService,
     private presenceService: PresenceService,
     private messageHandler: MessageHandler,
@@ -184,7 +182,6 @@ export class SocketService {
       this.messageService.invalidateCache(id);
     } else if (type === "partner") {
       this.chatCacheService.invalidatePartners(id);
-      this.partnerRepo.invalidatePartnerCache(id);
 
       const sockets = this.activeConnections.get(id);
       if (sockets && sockets.size > 0) {
@@ -261,10 +258,3 @@ export class SocketService {
     return fetchPromise;
   }
 }
-export const socketService = new Proxy({} as any, {
-  get: (target, prop) => {
-    if (prop === "partnerRequests") return new Map();
-    if (prop === "typingHandler") return { localGuard: new Map() };
-    return () => {};
-  },
-});

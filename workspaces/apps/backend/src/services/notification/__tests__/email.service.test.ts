@@ -1,4 +1,4 @@
-import { APP_NAME, EMAIL_FROM, FRONTEND_URL } from "@config/env";
+import { APP_NAME, FRONTEND_URL } from "@config/env";
 import nodemailer from "nodemailer";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -64,5 +64,18 @@ describe("EmailService", () => {
     await emailService.sendResetEmail("test@example.com", "token");
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Failed to send reset email"), expect.any(Error));
+  });
+
+  it("should report isConfigured when SMTP is configured", () => {
+    expect(emailService.isConfigured).toBe(true);
+  });
+
+  it("should use [EmailService] prefix in error messages", async () => {
+    mockSendMail.mockRejectedValueOnce(new Error("Connection refused"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await emailService.sendResetEmail("test@example.com", "token");
+
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("[EmailService]"), expect.any(Error));
   });
 });

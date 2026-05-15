@@ -32,12 +32,3 @@ export class MessageRepository implements IMessageRepository {
     return this.messageModel.updateOne(query, update);
   }
 }
-export const messageRepository = new Proxy({} as any, {
-  get: (target, prop) => {
-    if (typeof prop === "string" && prop !== "then") {
-      return () => {};
-    }
-    return target[prop];
-  },
-  has: (target, prop) => true,
-});

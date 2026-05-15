@@ -65,7 +65,6 @@ describe("SocketService Takeover Race Condition", () => {
       messageRepo,
       userRepo,
       chatQueryRepo,
-      partnerRepo,
       messageService,
       presenceService,
       messageHandler,

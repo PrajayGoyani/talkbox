@@ -1,3 +1,4 @@
+// import helmet from 'helmet';
 import { ALLOWED_ORIGINS, NODE_ENV } from "@config/env";
 import * as Sentry from "@sentry/bun";
 import { baseService } from "@services/infra/redis.service";
@@ -10,7 +11,6 @@ import express, { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import path from "path";
 
-// import helmet from 'helmet';
 import { app, server } from "@/app";
 import { stopAgenda } from "@/config/agenda";
 

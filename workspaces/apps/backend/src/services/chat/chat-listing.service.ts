@@ -153,5 +153,3 @@ export class ChatListingService implements IChatListingService {
     return this.queryRepository.transformChat(chat, userId);
   }
 }
-
-// Note: Instance creation moved to registry.ts

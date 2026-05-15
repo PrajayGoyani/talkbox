@@ -189,5 +189,3 @@ export class AuthService implements IAuthService {
     return this.userRepository.transformUser(user);
   }
 }
-
-// Note: Instance creation moved to registry.ts

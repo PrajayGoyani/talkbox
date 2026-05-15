@@ -69,5 +69,3 @@ export class ChatService implements IChatService {
     return this.messageService.markChatRead(chatId, userId);
   }
 }
-
-// Note: Instance creation moved to registry.ts

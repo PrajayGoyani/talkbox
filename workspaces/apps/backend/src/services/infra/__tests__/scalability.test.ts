@@ -1,5 +1,3 @@
-import Chat from "@models/chat.model";
-import Message from "@models/message.model";
 import { SocketService } from "@services/chat/socket.service";
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
@@ -7,6 +5,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@models/chat.model");
 vi.mock("@models/message.model");
+vi.mock("../../chat/chat-cache.service", () => ({
+  chatCacheService: {
+    getParticipants: vi.fn(),
+    setParticipants: vi.fn(),
+    invalidateParticipants: vi.fn(),
+    getPartners: vi.fn(),
+    setPartners: vi.fn(),
+    invalidatePartners: vi.fn(),
+    clear: vi.fn(),
+  },
+}));
 
 const MOCK_USER_ID = "507f1f77bcf86cd799439011";
 const MOCK_CHAT_ID = "507f1f77bcf86cd799439044";
@@ -122,7 +131,6 @@ describe("Scalability Optimizations", () => {
       messageRepo,
       userRepo,
       chatQueryRepository,
-      partnerRepo,
       realMessageService,
       presenceService,
       realMessageHandler,

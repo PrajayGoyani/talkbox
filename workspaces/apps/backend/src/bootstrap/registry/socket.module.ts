@@ -42,7 +42,6 @@ export class SocketModule {
         this.repos.messageRepo,
         this.repos.userRepo,
         this.repos.chatQueryRepo,
-        this.repos.partnerRepo,
         this.chat.messageService,
         presenceService,
         messageHandler,

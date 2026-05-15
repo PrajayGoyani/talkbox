@@ -376,6 +376,3 @@ export class MessageService implements IMessageService {
     return toMessageDto(m, plan, sender);
   }
 }
-
-// Note: Instance creation moved to registry.ts
-export const messageService = {};

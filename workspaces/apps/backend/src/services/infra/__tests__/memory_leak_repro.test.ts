@@ -25,7 +25,7 @@ const createMockSocket = (userId: string, plan: "free" | "pro") =>
     on: vi.fn(),
   }) as any;
 
-describe("SocketService Memory Leak Reproduction", () => {
+describe("SocketService Pro Session Takeover", () => {
   let socketService: SocketService;
 
   beforeEach(() => {
@@ -66,7 +66,6 @@ describe("SocketService Memory Leak Reproduction", () => {
       messageRepo,
       userRepo,
       chatQueryRepo,
-      partnerRepo,
       messageService,
       presenceService,
       messageHandler,
@@ -101,6 +100,9 @@ describe("SocketService Memory Leak Reproduction", () => {
 
     // Verify it was NOT rejected (Pro users trigger takeover instead)
     expect(socket.disconnect).not.toHaveBeenCalled();
+
+    // Verify takeover was triggered (oldest session kicked, not takeoverFreeSession — Pro users use getOldestSession)
+    expect(sessionService.publishSessionTakeover).toHaveBeenCalled();
 
     // Check that userId is in activeConnections
     const activeConnections = socketService.activeConnections;

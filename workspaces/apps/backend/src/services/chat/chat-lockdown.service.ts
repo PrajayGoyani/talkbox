@@ -30,5 +30,3 @@ export class ChatLockdownService implements IChatLockdownService {
     await this.redisSessionService.publishCacheInvalidation("chat", id);
   }
 }
-
-// Note: Instance creation moved to registry.ts

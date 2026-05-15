@@ -1,8 +1,11 @@
 import { CHAT_MESSAGES } from "@constants/messages";
 import { IChat } from "@models/chat.model";
 import { IMessage } from "@models/message.model";
+import { IUser } from "@models/user.model";
 import { ObjectId } from "mongodb";
+import { UserDto } from "shared/types/auth.dto";
 import { ChatDto, MessageDto } from "shared/types/chat.dto";
+import { NotificationDto } from "shared/types/notification.dto";
 
 import { isScrubbed } from "./date.utils";
 import { extractEmojiMetadata } from "./emoji.utils";
@@ -94,3 +97,29 @@ export const toMessageDto = (
 
   return dto;
 };
+
+export const toUserDto = (user: IUser): UserDto => {
+  const obj = "toObject" in user && typeof user.toObject === "function" ? user.toObject() : user;
+  return {
+    id: obj._id.toString(),
+    username: obj.username,
+    name: obj.name || null,
+    email: obj.email,
+    avatarUrl: user.avatarUrl,
+    plan: obj.plan,
+    subscriptionExpiresAt: obj.subscriptionExpiresAt,
+    isEmailVerified: obj.isEmailVerified ?? false,
+    bio: obj.bio || null,
+  };
+};
+
+export const toNotificationDto = (n: any): NotificationDto => ({
+  _id: n._id.toString(),
+  recipientId: n.recipientId.toString(),
+  senderId: n.senderId as unknown as NotificationDto["senderId"],
+  type: n.type,
+  referenceId: n.referenceId.toString(),
+  message: n.message,
+  isRead: n.isRead,
+  createdAt: n.createdAt,
+});

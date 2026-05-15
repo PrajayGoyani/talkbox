@@ -6,6 +6,10 @@ import { loadEnv } from "vite";
 // import { compression } from "vite-plugin-compression2";
 import { defineConfig } from "vite-plus";
 
+import { svelteRunesPlugin } from "../../../plugins/svelte-runes.js";
+
+const isTest = process.env.VITEST === "true";
+
 // https://viteplus.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
@@ -15,11 +19,12 @@ export default defineConfig(({ mode }) => {
     root: resolve(__dirname),
     plugins: [
       tailwindcss(),
+      ...(isTest ? [svelteRunesPlugin()] : []),
       svelte({
         compilerOptions: {
           discloseVersion: false,
         },
-        // inspector: true,
+        ...(isTest ? { exclude: [/\.svelte\.ts$/] } : {}),
       }),
       // Note: keep this code
       // compression({ algorithm: "gzip", exclude: [/\.(br)$/, /\.(gz)$/] }),

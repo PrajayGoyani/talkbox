@@ -68,5 +68,3 @@ export class UserCacheService implements IUserCacheService {
     this.cache.set(userId, user);
   }
 }
-
-// Note: Instance creation moved to registry.ts

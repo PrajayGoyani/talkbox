@@ -1,4 +1,5 @@
 import User, { IUser, IUserModel } from "@models/user.model";
+import { toUserDto } from "@utils/mappers";
 import { ObjectId } from "mongodb";
 import { UserDto } from "shared/types/auth.dto";
 
@@ -38,24 +39,6 @@ export class UserRepository implements IUserRepository {
   }
 
   public transformUser(user: IUser): UserDto {
-    const obj = user.toObject ? user.toObject() : (user as any);
-    return {
-      id: obj._id.toString(),
-      username: obj.username,
-      name: obj.name || null,
-      email: obj.email,
-      avatarUrl: user.avatarUrl, // Use virtual
-      plan: obj.plan,
-      subscriptionExpiresAt: obj.subscriptionExpiresAt,
-      isEmailVerified: obj.isEmailVerified ?? false,
-      bio: obj.bio || null,
-    };
+    return toUserDto(user);
   }
 }
-export const userRepository = new Proxy({} as any, {
-  get: (target, prop) => {
-    if (typeof prop === "string" && prop !== "then") return () => {};
-    return target[prop];
-  },
-  has: (target, prop) => true,
-});

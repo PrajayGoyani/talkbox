@@ -136,10 +136,3 @@ export class ChatQueryRepository implements IChatQueryRepository {
     return this.chatModel.findById(chatId).populate("participants", "username name avatar_url plan bio");
   }
 }
-export const chatQueryRepository = new Proxy({} as any, {
-  get: (target, prop) => {
-    if (typeof prop === "string" && prop !== "then") return () => {};
-    return target[prop];
-  },
-  has: (target, prop) => true,
-});

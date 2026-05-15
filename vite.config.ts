@@ -3,6 +3,8 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite-plus";
 
+import { svelteRunesPlugin } from "./plugins/svelte-runes.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -12,6 +14,7 @@ const fmt = JSON.parse(readFileSync(resolve(__dirname, "oxfmt.json"), "utf-8"));
 export default defineConfig({
   lint,
   fmt,
+  plugins: [svelteRunesPlugin()],
   test: {
     globals: true,
     environment: "node",

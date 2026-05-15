@@ -63,10 +63,3 @@ export class ChatRepository implements IChatRepository {
     }) as Promise<IChat | null>;
   }
 }
-export const chatRepository = new Proxy({} as any, {
-  get: (target, prop) => {
-    if (typeof prop === "string" && prop !== "then") return () => {};
-    return target[prop];
-  },
-  has: (target, prop) => true,
-});

@@ -67,5 +67,3 @@ export class UserService implements IUserService {
     return this.userRepository.transformUser(user);
   }
 }
-
-// Note: Instance creation moved to registry.ts

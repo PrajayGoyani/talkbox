@@ -1,6 +1,5 @@
 import { IUserRepository } from "@repositories/interfaces/user.repository";
 import { IRedisPresenceService } from "@services/infra/interfaces";
-import { redisPresenceService } from "@services/infra/redis.service";
 
 import { TypedIO, TypedSocket } from "@/types/socket.types";
 

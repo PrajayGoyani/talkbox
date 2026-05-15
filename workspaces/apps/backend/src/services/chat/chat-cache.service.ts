@@ -67,10 +67,4 @@ export class ChatCacheService implements IChatCacheService {
   }
 }
 
-export const chatCacheService = new Proxy({} as any, {
-  get: (target, prop) => {
-    if (typeof prop === "string" && prop !== "then") return () => {};
-    return target[prop];
-  },
-  has: (target, prop) => true,
-});
+export const chatCacheService = new ChatCacheService();

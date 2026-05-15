@@ -185,5 +185,3 @@ export class ChatActionService implements IChatActionService {
     return { message: "Chat successfully deleted" };
   }
 }
-
-// Note: Instance creation moved to registry.ts

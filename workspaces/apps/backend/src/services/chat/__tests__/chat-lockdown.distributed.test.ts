@@ -19,18 +19,20 @@ describe("ChatLockdownService Redis-First", () => {
     chatLockdownService = new ChatLockdownService(guardService, sessionService);
   });
 
-  it("should delegating locking to redisService", async () => {
+  it("should delegating locking to redisService and invalidate cache", async () => {
     const chatId = "chat123";
     await chatLockdownService.lockdownChat(chatId);
 
     expect(guardService.lockChat).toHaveBeenCalledWith(chatId);
+    expect(sessionService.publishCacheInvalidation).toHaveBeenCalledWith("chat", chatId);
   });
 
-  it("should delegating unlocking to redisService", async () => {
+  it("should delegating unlocking to redisService and invalidate cache", async () => {
     const chatId = "chat123";
     await chatLockdownService.unlockChat(chatId);
 
     expect(guardService.unlockChat).toHaveBeenCalledWith(chatId);
+    expect(sessionService.publishCacheInvalidation).toHaveBeenCalledWith("chat", chatId);
   });
 
   it("should delegating existence check to redisService and be async", async () => {

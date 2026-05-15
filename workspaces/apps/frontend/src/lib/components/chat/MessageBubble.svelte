@@ -186,11 +186,7 @@
           {#each parseMessageContent(msg.contentBody, msg.emojiMetadata) as segment}
             {@render renderSegment(segment)}
           {/each}
-          <span
-            class={[
-              "inline-block h-0",
-              showEdited ? (hasStatus ? "w-36" : "w-21") : hasStatus ? "w-24" : "w-11",
-            ]}
+          <span class={["inline-block h-0", showEdited ? (hasStatus ? "w-36" : "w-21") : hasStatus ? "w-24" : "w-11"]}
           ></span>
         </p>
         <span

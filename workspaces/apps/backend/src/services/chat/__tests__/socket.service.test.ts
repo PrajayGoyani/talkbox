@@ -134,7 +134,6 @@ describe("SocketService", () => {
       mockMessageRepo,
       mockUserRepo,
       mockChatQueryRepo,
-      mockPartnerRepo,
       mockMessageService,
       mockPresenceService,
       mockMessageHandler,

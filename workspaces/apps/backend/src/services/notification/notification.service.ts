@@ -68,5 +68,3 @@ export class NotificationService implements INotificationService {
     return { message: "All notifications marked as read" };
   }
 }
-
-// Note: Instance creation moved to registry.ts
