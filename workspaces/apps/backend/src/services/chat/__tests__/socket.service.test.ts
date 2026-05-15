@@ -309,6 +309,143 @@ describe("SocketService", () => {
     });
   });
 
+  describe("emitToUser — Smart Local Routing", () => {
+    let mockIo: any;
+    const userId = MOCK_USER_ID;
+
+    beforeEach(() => {
+      mockIo = {
+        to: vi.fn().mockReturnThis(),
+        emit: vi.fn(),
+      };
+      socketService.io = mockIo as any;
+      socketService.activeConnections.clear();
+    });
+
+    it("should emit locally when user is only on this instance", async () => {
+      const socket = createMockSocket(userId, "free");
+      socketService.activeConnections.set(userId, new Set([socket]));
+      vi.mocked(mockRedisSessionService.getGlobalSessionCount).mockResolvedValue(1);
+
+      await socketService.emitToUser(userId, "test_event", { hello: "world" });
+
+      expect(socket.emit).toHaveBeenCalledWith("test_event", { hello: "world" });
+      expect(mockIo.emit).not.toHaveBeenCalled();
+    });
+
+    it("should fall back to global emit when user has no local sockets", async () => {
+      vi.mocked(mockRedisSessionService.getGlobalSessionCount).mockResolvedValue(0);
+
+      await socketService.emitToUser(userId, "test_event", { hello: "world" });
+
+      expect(mockIo.to).toHaveBeenCalledWith(`user:${userId}`);
+      expect(mockIo.emit).toHaveBeenCalledWith("test_event", { hello: "world" });
+    });
+
+    it("should fall back to global emit when local sockets < global connections", async () => {
+      const socket = createMockSocket(userId, "free");
+      socketService.activeConnections.set(userId, new Set([socket]));
+      vi.mocked(mockRedisSessionService.getGlobalSessionCount).mockResolvedValue(2);
+
+      await socketService.emitToUser(userId, "test_event", { hello: "world" });
+
+      expect(socket.emit).not.toHaveBeenCalled();
+      expect(mockIo.to).toHaveBeenCalledWith(`user:${userId}`);
+      expect(mockIo.emit).toHaveBeenCalledWith("test_event", { hello: "world" });
+    });
+
+    it("should emit locally even when io is null if user is local-only", async () => {
+      socketService.io = null;
+      const socket = createMockSocket(userId, "free");
+      socketService.activeConnections.set(userId, new Set([socket]));
+      vi.mocked(mockRedisSessionService.getGlobalSessionCount).mockResolvedValue(1);
+
+      await socketService.emitToUser(userId, "test_event", { hello: "world" });
+
+      expect(socket.emit).toHaveBeenCalledWith("test_event", { hello: "world" });
+    });
+
+    it("should emit to all local sockets when user has multiple tabs on this instance", async () => {
+      const socket1 = createMockSocket(userId, "free");
+      const socket2 = createMockSocket(userId, "free");
+      socketService.activeConnections.set(userId, new Set([socket1, socket2]));
+      vi.mocked(mockRedisSessionService.getGlobalSessionCount).mockResolvedValue(2);
+
+      await socketService.emitToUser(userId, "test_event", { hello: "world" });
+
+      expect(socket1.emit).toHaveBeenCalledWith("test_event", { hello: "world" });
+      expect(socket2.emit).toHaveBeenCalledWith("test_event", { hello: "world" });
+      expect(mockIo.emit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("emitToUsers — Batch Smart Local Routing", () => {
+    let mockIo: any;
+    const userA = "user-a";
+    const userB = "user-b";
+    const userC = "user-c";
+
+    beforeEach(() => {
+      mockIo = {
+        to: vi.fn().mockReturnThis(),
+        emit: vi.fn(),
+      };
+      socketService.io = mockIo as any;
+      socketService.activeConnections.clear();
+    });
+
+    it("should route each user correctly (local vs global)", async () => {
+      const socketA = createMockSocket(userA, "free");
+      socketService.activeConnections.set(userA, new Set([socketA]));
+      const socketB = createMockSocket(userB, "free");
+      socketService.activeConnections.set(userB, new Set([socketB]));
+
+      vi.mocked(mockRedisSessionService.getGlobalSessionCount).mockImplementation(async (uid: string) => {
+        if (uid === userA) return 1;
+        if (uid === userB) return 2;
+        return 0;
+      });
+
+      await socketService.emitToUsers([userA, userB, userC], "test_event", { hello: "world" });
+
+      expect(socketA.emit).toHaveBeenCalledWith("test_event", { hello: "world" });
+      expect(socketB.emit).not.toHaveBeenCalled();
+      expect(mockIo.to).toHaveBeenCalledWith(`user:${userB}`);
+      expect(mockIo.to).toHaveBeenCalledWith(`user:${userC}`);
+      expect(mockIo.to).not.toHaveBeenCalledWith(`user:${userA}`);
+      expect(mockIo.emit).toHaveBeenCalledTimes(2);
+    });
+
+    it("should be a no-op for empty user list", async () => {
+      await socketService.emitToUsers([], "test_event", { hello: "world" });
+      expect(mockIo.emit).not.toHaveBeenCalled();
+    });
+
+    it("should handle all users being local-only", async () => {
+      const socketA = createMockSocket(userA, "free");
+      const socketB = createMockSocket(userB, "free");
+      socketService.activeConnections.set(userA, new Set([socketA]));
+      socketService.activeConnections.set(userB, new Set([socketB]));
+      vi.mocked(mockRedisSessionService.getGlobalSessionCount).mockResolvedValue(1);
+
+      await socketService.emitToUsers([userA, userB], "test_event", { hello: "world" });
+
+      expect(socketA.emit).toHaveBeenCalledWith("test_event", { hello: "world" });
+      expect(socketB.emit).toHaveBeenCalledWith("test_event", { hello: "world" });
+      expect(mockIo.emit).not.toHaveBeenCalled();
+    });
+
+    it("should handle all users needing global broadcast", async () => {
+      vi.mocked(mockRedisSessionService.getGlobalSessionCount).mockResolvedValue(0);
+
+      await socketService.emitToUsers([userA, userB], "test_event", { hello: "world" });
+
+      expect(mockIo.to).toHaveBeenCalledWith(`user:${userA}`);
+      expect(mockIo.to).toHaveBeenCalledWith(`user:${userB}`);
+      expect(mockIo.emit).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe("Throttling & Rate Limiting", () => {
     it("should delegate rate limiting and error handling to MessageHandler", async () => {
       const sender = { id: MOCK_USER_ID, plan: "pro" } as any;

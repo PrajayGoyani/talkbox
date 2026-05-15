@@ -38,5 +38,7 @@ export interface IRedisPresenceService {
 export interface IRedisBaseService {
   client: any;
   subClient: any;
+  adapterPubClient: any;
+  adapterSubClient: any;
   isConnected: boolean;
 }

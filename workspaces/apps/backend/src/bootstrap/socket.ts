@@ -21,11 +21,11 @@ export const initSocketIO = (server: HttpServer): TypedIO => {
   });
 
   // Enable multi-instance support via Redis Adapter
-  if (baseService.client && baseService.subClient) {
-    const pubClient = baseService.client;
-    const subClient = baseService.subClient;
+  if (baseService.adapterPubClient && baseService.adapterSubClient) {
+    const pubClient = baseService.adapterPubClient;
+    const subClient = baseService.adapterSubClient;
     io.adapter(createAdapter(pubClient, subClient));
-    console.log("[SocketBootstrap] Redis adapter configured for distributed events.");
+    console.log("[SocketBootstrap] Redis adapter configured for distributed events (isolated clients).");
   }
 
   registry.socketService.init(io);

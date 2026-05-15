@@ -118,6 +118,59 @@ export class SocketService {
     await this._syncWatchingRooms(userId, userSockets);
   }
 
+  // ─── Smart Local Routing ──────────────────────────────────────────
+
+  /**
+   * Emit to a specific user, bypassing Redis adapter when the user
+   * is only connected to this instance (Smart Local Routing).
+   */
+  async emitToUser(userId: string, event: string, data: unknown): Promise<void> {
+    const localSockets = this.activeConnections.get(userId);
+
+    if (localSockets && localSockets.size > 0) {
+      const globalCount = await this.redisSessionService.getGlobalSessionCount(userId);
+
+      if (globalCount === localSockets.size) {
+        localSockets.forEach((socket) => {
+          (socket as any).emit(event, data);
+        });
+        return;
+      }
+    }
+
+    (this.io as any)?.to(`user:${userId}`).emit(event, data);
+  }
+
+  async emitToUsers(userIds: string[], event: string, data: unknown): Promise<void> {
+    if (userIds.length === 0) return;
+
+    const needsBroadcast: string[] = [];
+
+    for (const userId of userIds) {
+      const localSockets = this.activeConnections.get(userId);
+
+      if (localSockets && localSockets.size > 0) {
+        const globalCount = await this.redisSessionService.getGlobalSessionCount(userId);
+
+        if (globalCount === localSockets.size) {
+          localSockets.forEach((socket) => {
+            (socket as any).emit(event, data);
+          });
+          continue;
+        }
+      }
+
+      needsBroadcast.push(userId);
+    }
+
+    if (needsBroadcast.length > 0) {
+      const io = this.io;
+      for (const userId of needsBroadcast) {
+        (io as any)?.to(`user:${userId}`).emit(event, data);
+      }
+    }
+  }
+
   async notifyProfileUpdate(userId: string, profile: any) {
     const io = this.io;
     io?.to(`watching:${userId}`).emit("profile_updated", { userId, ...profile });

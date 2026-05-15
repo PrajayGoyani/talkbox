@@ -17,9 +17,7 @@ export const initChatEventListeners = () => {
       message: `${senderUsername} sent you a chat request`,
     });
 
-    if (registry.socketService.io) {
-      registry.socketService.io.to(`user:${targetUserId}`).emit("notification", notification as any);
-    }
+    registry.socketService.emitToUser(targetUserId, "notification", notification as any);
   });
 
   // 2. Chat Accepted
@@ -32,10 +30,8 @@ export const initChatEventListeners = () => {
       message: `${acceptorUsername || "A user"} accepted your chat request`,
     });
 
-    if (registry.socketService.io) {
-      registry.socketService.io.to(`user:${chat.createdBy}`).emit("notification", notification as any);
-      registry.socketService.io.to(`user:${chat.createdBy}`).emit("chat_accepted", { chatId: chat._id.toString() });
-    }
+    registry.socketService.emitToUser(chat.createdBy.toString(), "notification", notification as any);
+    registry.socketService.emitToUser(chat.createdBy.toString(), "chat_accepted", { chatId: chat._id.toString() });
   });
 
   // 3. Chat Rejected
@@ -48,9 +44,7 @@ export const initChatEventListeners = () => {
       message: `${rejectorUsername || "A user"} declined your chat request`,
     });
 
-    if (registry.socketService.io) {
-      registry.socketService.io.to(`user:${chat.createdBy}`).emit("notification", notification as any);
-    }
+    registry.socketService.emitToUser(chat.createdBy.toString(), "notification", notification as any);
   });
 
   // 4. Chat Deleted

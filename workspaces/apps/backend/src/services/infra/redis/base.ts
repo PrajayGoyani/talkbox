@@ -5,6 +5,8 @@ import { Redis } from "ioredis";
 export class RedisBaseService {
   public client: Redis | null = null;
   public subClient: Redis | null = null;
+  public adapterPubClient: Redis | null = null;
+  public adapterSubClient: Redis | null = null;
   private _isConnected = false;
 
   get isConnected() {
@@ -49,6 +51,16 @@ export class RedisBaseService {
         maxRetriesPerRequest: null,
         enableReadyCheck: false,
       });
+
+      // Dedicated clients for Socket.IO Redis Adapter to avoid interference with custom Pub/Sub
+      this.adapterPubClient = new Redis(REDIS_URL, {
+        maxRetriesPerRequest: null,
+      });
+
+      this.adapterSubClient = new Redis(REDIS_URL, {
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+      });
     } catch (err) {
       console.error("[RedisBaseService] Failed to initialize Redis:", err);
     }
@@ -63,6 +75,14 @@ export class RedisBaseService {
       if (this.subClient) {
         await this.subClient.quit();
         this.subClient = null;
+      }
+      if (this.adapterPubClient) {
+        await this.adapterPubClient.quit();
+        this.adapterPubClient = null;
+      }
+      if (this.adapterSubClient) {
+        await this.adapterSubClient.quit();
+        this.adapterSubClient = null;
       }
       this.isConnected = false;
     } catch (err: any) {
