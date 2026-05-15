@@ -118,18 +118,19 @@ export class SocketService {
     await this._syncWatchingRooms(userId, userSockets);
   }
 
-  // ─── Smart Local Routing ──────────────────────────────────────────
+  // ─── Emission Methods ──────────────────────────────────────────
 
   /**
-   * Emit to a specific user, bypassing Redis adapter when the user
-   * is only connected to this instance (Smart Local Routing).
+   * Emit to a specific user. Always uses the adapter (Redis) to ensure
+   * propagation across all instances (Live and Local).
    */
   async emitToUser(userId: string, event: string, data: unknown): Promise<void> {
+    /*
+    // Smart Local Routing (Short-term optimization)
+    // TODO: Re-enable once global session counts are perfectly synchronized in hybrid environments.
     const localSockets = this.activeConnections.get(userId);
-
     if (localSockets && localSockets.size > 0) {
       const globalCount = await this.redisSessionService.getGlobalSessionCount(userId);
-
       if (globalCount === localSockets.size) {
         localSockets.forEach((socket) => {
           (socket as any).emit(event, data);
@@ -137,21 +138,23 @@ export class SocketService {
         return;
       }
     }
-
+    */
     (this.io as any)?.to(`user:${userId}`).emit(event, data);
   }
 
+  /**
+   * Emit to multiple users.
+   */
   async emitToUsers(userIds: string[], event: string, data: unknown): Promise<void> {
     if (userIds.length === 0) return;
-
-    const needsBroadcast: string[] = [];
+    const io = this.io;
 
     for (const userId of userIds) {
+      /*
+      // Smart Local Routing (Short-term optimization)
       const localSockets = this.activeConnections.get(userId);
-
       if (localSockets && localSockets.size > 0) {
         const globalCount = await this.redisSessionService.getGlobalSessionCount(userId);
-
         if (globalCount === localSockets.size) {
           localSockets.forEach((socket) => {
             (socket as any).emit(event, data);
@@ -159,15 +162,8 @@ export class SocketService {
           continue;
         }
       }
-
-      needsBroadcast.push(userId);
-    }
-
-    if (needsBroadcast.length > 0) {
-      const io = this.io;
-      for (const userId of needsBroadcast) {
-        (io as any)?.to(`user:${userId}`).emit(event, data);
-      }
+      */
+      (io as any)?.to(`user:${userId}`).emit(event, data);
     }
   }
 
