@@ -8,8 +8,13 @@ import type { AcceptChatRequestDto, RejectChatRequestDto } from "shared/types/ch
 
 import { Request } from "express";
 
-export type AcceptChatRequest = Request<AcceptChatRequestDto, {}, {}>;
-export type RejectChatRequest = Request<RejectChatRequestDto, {}, {}>;
+export type AcceptChatRequest = Request<AcceptChatRequestDto & ChatIdParam, {}, {}>;
+export type RejectChatRequest = Request<RejectChatRequestDto & ChatIdParam, {}, {}>;
+
+export interface ChatIdParam {
+  [key: string]: string;
+  chatId: string;
+}
 
 export interface RefreshRequest extends Request {
   cookies: {

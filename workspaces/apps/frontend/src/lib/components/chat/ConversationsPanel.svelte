@@ -12,6 +12,7 @@
   import { isValidUsername } from "shared/utils/validation";
   import { slide } from "svelte/transition";
   import type { ChatPartnerDto } from "shared/types/chat.dto";
+  import { authStore } from "$state/auth.svelte";
 
   const {
     activeChatId,
@@ -25,7 +26,7 @@
     onNotificationToggle?: () => void;
   }>();
 
-  let chatListRef: ReturnType<typeof ChatList> | undefined = $state();
+  let chatListRef: { refreshChats: () => Promise<void> } | undefined = $state();
   let searchQuery = $state("");
   let activeTab: "all" | "unread" = $state("all");
 
@@ -39,6 +40,18 @@
   let requestSuccess = $state<string | null>(null);
 
   const tooltipPos = $derived(uiStore.windowWidth < 768 ? "top" : "right");
+
+  const newChatLabel = $derived.by(() => {
+    if (authStore.isRestricted) {
+      return "Verify your email to start new chats";
+    }
+    return showRequestInput ? "Close New Chat" : "New Chat";
+  });
+
+  const toggleNewChat = () => {
+    if (authStore.isRestricted) return;
+    showRequestInput = !showRequestInput;
+  };
 
   const handleSendRequest = async () => {
     if (!requestUsername.trim()) return;
@@ -69,9 +82,7 @@
   };
 
   export const refreshChats = () => {
-    if (chatListRef && (chatListRef as any).refreshChats) {
-      (chatListRef as any).refreshChats();
-    }
+    chatListRef?.refreshChats();
   };
 </script>
 
@@ -88,13 +99,15 @@
           class={[
             "hidden md:flex w-8 h-8 items-center justify-center rounded-lg transition-all active:scale-95",
             showRequestInput ? "bg-indigo-600 text-white" : "text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10",
+            authStore.isRestricted && "opacity-50 cursor-not-allowed",
           ]}
-          onclick={() => (showRequestInput = !showRequestInput)}
+          onclick={toggleNewChat}
           use:tooltip={{
-            text: showRequestInput ? "Close New Chat" : "New Chat",
+            text: newChatLabel,
             position: tooltipPos,
           }}
           aria-label="New Chat"
+          disabled={authStore.isRestricted}
         >
           {#if showRequestInput}
             <Icon name="close" class="w-4 h-4" />
@@ -111,7 +124,7 @@
           <Icon name="notifications" class="w-4.5 h-4.5" />
           {#if unreadCount > 0}
             <span
-              class="absolute top-0 right-0 bg-rose-600 text-white text-[8px] font-bold min-w-[12px] h-3 rounded-full flex items-center justify-center px-1 shadow-sm"
+              class="absolute top-0 right-0 bg-rose-600 text-white text-[8px] font-bold min-w-3 h-3 rounded-full flex items-center justify-center px-1 shadow-sm"
             >
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
@@ -164,7 +177,7 @@
               disabled={requestLoading}
             />
             <button
-              class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center min-w-[60px]"
+              class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center min-w-15"
               onclick={handleSendRequest}
               disabled={requestLoading || !requestUsername.trim()}
             >
@@ -196,13 +209,17 @@
 
   <!-- Mobile Floating Action Button (FAB) -->
   <button
-    class="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-95 z-50 hover:rotate-90"
-    onclick={() => (showRequestInput = !showRequestInput)}
+    class={[
+      "md:hidden fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-95 z-50 hover:rotate-90",
+      authStore.isRestricted && "opacity-50 grayscale cursor-not-allowed",
+    ]}
+    onclick={toggleNewChat}
     use:tooltip={{
-      text: showRequestInput ? "Close New Chat" : "New Chat",
+      text: newChatLabel,
       position: "top",
     }}
-    aria-label="New Chat"
+    aria-label={newChatLabel}
+    disabled={authStore.isRestricted}
   >
     <Icon name={showRequestInput ? "close" : "add"} class="w-6 h-6 transition-transform" />
   </button>

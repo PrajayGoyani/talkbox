@@ -1,6 +1,7 @@
 import { registry } from "@bootstrap/registry";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import { rateLimiter } from "@middlewares/rate-limiter.middleware";
+import { ensureVerified } from "@middlewares/verification.middleware";
 import { validate, validateQuery } from "@middlewares/validate.middleware";
 import { chatRequestSchema, chatSearchSchema } from "@schemas/chat.schema";
 import { Router } from "express";
@@ -23,10 +24,10 @@ router.get("/search", validateQuery(chatSearchSchema), chatController.searchChat
 router.get("/:chatId", chatController.getChat);
 
 // Send a chat request by username
-router.post("/request", validate(chatRequestSchema), chatController.requestChat);
+router.post("/request", ensureVerified, validate(chatRequestSchema), chatController.requestChat);
 
 // Accept a pending chat request
-router.put("/:chatId/accept", chatController.acceptChat);
+router.put("/:chatId/accept", ensureVerified, chatController.acceptChat);
 
 // Reject a pending chat request
 router.put("/:chatId/reject", chatController.rejectChat);

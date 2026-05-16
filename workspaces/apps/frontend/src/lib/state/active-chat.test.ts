@@ -2,6 +2,7 @@ import { chatService } from "$services/chat.service";
 import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
 import { socketManager } from "$services/socket.manager.svelte";
 import { MessageStore } from "$state/active-chat.svelte";
+import type { FrontendMessageDto } from "$lib/types/chat";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock dependencies
@@ -130,7 +131,7 @@ describe("MessageStore", () => {
 
   it("should deduplicate incoming message when already present", () => {
     store.initialize("chat-1");
-    const msg = {
+    const msg: FrontendMessageDto = {
       id: "dup-1",
       chatId: "chat-1",
       senderId: "user-1",
@@ -152,10 +153,10 @@ describe("MessageStore", () => {
     store.messages.push({
       id: "del-1",
       chatId: "chat-1",
-      senderId: "user-2",
+      senderId: "user-1",
       contentBody: "Will be deleted",
       createdAt: new Date().toISOString(),
-    } as any);
+    } as FrontendMessageDto);
 
     realtimeEvents.emit(RealtimeEvent.MESSAGE_DELETED, { messageId: "del-1", chatId: "chat-1" });
 
@@ -168,9 +169,10 @@ describe("MessageStore", () => {
     store.messages.push({
       id: "del-2",
       chatId: "chat-1",
+      senderId: "user-1",
       contentBody: "Keep me",
       createdAt: new Date().toISOString(),
-    } as any);
+    } as FrontendMessageDto);
 
     realtimeEvents.emit(RealtimeEvent.MESSAGE_DELETED, { messageId: "del-2", chatId: "chat-2" });
 
@@ -182,9 +184,10 @@ describe("MessageStore", () => {
     store.messages.push({
       id: "edit-1",
       chatId: "chat-1",
+      senderId: "user-1",
       contentBody: "Original",
       createdAt: new Date().toISOString(),
-    } as any);
+    } as FrontendMessageDto);
 
     realtimeEvents.emit(RealtimeEvent.MESSAGE_UPDATED, {
       messageId: "edit-1",
@@ -203,10 +206,11 @@ describe("MessageStore", () => {
     store.messages.push({
       id: "react-1",
       chatId: "chat-1",
+      senderId: "user-1",
       contentBody: "Nice!",
       reactions: [],
       createdAt: new Date().toISOString(),
-    } as any);
+    } as FrontendMessageDto);
 
     realtimeEvents.emit(RealtimeEvent.REACTION_UPDATED, {
       chatId: "chat-1",
@@ -224,10 +228,11 @@ describe("MessageStore", () => {
     store.messages.push({
       id: "react-2",
       chatId: "chat-1",
+      senderId: "user-1",
       contentBody: "Great!",
       reactions: [{ emoji: "🎉", slug: "party", users: ["user-2", "user-3"] }],
       createdAt: new Date().toISOString(),
-    } as any);
+    } as FrontendMessageDto);
 
     realtimeEvents.emit(RealtimeEvent.REACTION_UPDATED, {
       chatId: "chat-1",
@@ -261,9 +266,10 @@ describe("MessageStore", () => {
     store.messages.push({
       id: "m1",
       chatId: "chat-1",
+      senderId: "user-1",
       contentBody: "test",
       createdAt: new Date().toISOString(),
-    } as any);
+    } as FrontendMessageDto);
     store.clear();
 
     expect(store.activeChatId).toBeNull();
@@ -276,7 +282,15 @@ describe("MessageStore", () => {
   it("should load older messages", async () => {
     await store.initialize("chat-1");
     store.hasMoreMessages = true;
-    (chatService.loadOlderMessages as any).mockResolvedValue([{ id: "older-msg", contentBody: "Older" }]);
+    vi.mocked(chatService.loadOlderMessages).mockResolvedValue([
+      {
+        id: "older-msg",
+        chatId: "chat-1",
+        senderId: "user-2",
+        contentBody: "Older",
+        createdAt: new Date().toISOString(),
+      },
+    ] as FrontendMessageDto[]);
 
     await store.loadOlderMessages();
 

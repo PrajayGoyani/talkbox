@@ -34,7 +34,7 @@
   };
 
   const handleSendRequest = async () => {
-    if (!requestUsername.trim()) return;
+    if (authStore.isRestricted || !requestUsername.trim()) return;
 
     if (!isValidUsername(requestUsername)) {
       requestError = USERNAME_ERROR;
@@ -55,7 +55,7 @@
   };
 
   const handleAccept = async (chatId: string) => {
-    if (processingStates[chatId]) return;
+    if (authStore.isRestricted || processingStates[chatId]) return;
     processingStates[chatId] = "accepting";
     try {
       await chatActions.acceptChat(chatId);
@@ -67,7 +67,7 @@
   };
 
   const handleReject = async (chatId: string) => {
-    if (processingStates[chatId]) return;
+    if (authStore.isRestricted || processingStates[chatId]) return;
     processingStates[chatId] = "rejecting";
     try {
       await chatActions.rejectChat(chatId);
@@ -80,6 +80,8 @@
 
   const incomingRequests = $derived(chatListStore.requests.filter((c) => c.createdBy !== authStore.user?.id));
   const outgoingRequests = $derived(chatListStore.requests.filter((c) => c.createdBy === authStore.user?.id));
+
+  const restrictionTooltip = $derived(authStore.isRestricted ? "Verify your email to manage chat requests" : "");
 
   onMount(() => {
     refreshRequests();
@@ -104,16 +106,19 @@
         <input
           type="text"
           id="request-username"
-          placeholder="Enter username..."
+          placeholder={authStore.isRestricted ? "Verify email to start chats..." : "Enter username..."}
           bind:value={requestUsername}
-          class="input-field flex-1 py-2! px-3! text-sm!"
+          class={["input-field flex-1 py-2! px-3! text-sm!", authStore.isRestricted && "opacity-60 cursor-not-allowed"]}
           onkeydown={(e) => e.key === "Enter" && handleSendRequest()}
+          disabled={authStore.isRestricted}
+          title={restrictionTooltip}
         />
         <button
           class="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-all disabled:opacity-40 shrink-0 active:scale-90"
           onclick={handleSendRequest}
-          disabled={requestLoading || !requestUsername.trim()}
+          disabled={requestLoading || !requestUsername.trim() || authStore.isRestricted}
           aria-label="Send request"
+          title={restrictionTooltip}
         >
           {#if requestLoading}
             <span class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></span>
@@ -131,7 +136,7 @@
     </div>
 
     <!-- Section Divider with dynamic padding -->
-    <div class="h-px bg-slate-200 dark:bg-white/10 mx-[-16px] my-2"></div>
+    <div class="h-px bg-slate-200 dark:bg-white/10 -mx-4 my-2"></div>
 
     <!-- Incoming Requests -->
     <div class="flex flex-col gap-2">
@@ -139,7 +144,7 @@
         Incoming
         {#if incomingRequests.length > 0}
           <span
-            class="bg-indigo-600 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1"
+            class="bg-indigo-600 text-white text-[10px] min-w-4.5 h-4.5 rounded-full flex items-center justify-center px-1"
             >{incomingRequests.length}</span
           >
         {/if}
@@ -175,7 +180,8 @@
                   class="w-8 h-8 rounded-full flex items-center justify-center bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-all disabled:opacity-40 active:scale-95"
                   onclick={() => handleAccept(chat.id)}
                   aria-label="Accept"
-                  disabled={!!processingStates[chat.id]}
+                  disabled={!!processingStates[chat.id] || authStore.isRestricted}
+                  title={restrictionTooltip}
                 >
                   {#if processingStates[chat.id] === "accepting"}
                     <span

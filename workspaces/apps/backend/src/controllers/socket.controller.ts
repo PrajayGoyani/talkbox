@@ -16,6 +16,15 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 
 import { AuthenticatedSocketUser, JWTPayload, TypedIO, TypedSocket } from "@/types/socket.types";
+import { MessageDto } from "shared/types/chat.dto";
+
+type SocketAck = (res: {
+  status: "ok" | "error";
+  message?: MessageDto;
+  error?: string;
+  code?: string;
+  details?: unknown;
+}) => void;
 
 export class SocketController {
   constructor(
@@ -23,6 +32,17 @@ export class SocketController {
     private redisPresenceService: IRedisPresenceService,
     private userCacheService: IUserCacheService,
   ) {}
+
+  private readonly HANDLER_CONFIG: Record<string, { schema: z.Schema<any>; requireVerified: boolean }> = {
+    send_message: { schema: sendMessageSchema, requireVerified: true },
+    react_message: { schema: reactMessageSchema, requireVerified: true },
+    delete_message: { schema: deleteMessageSchema, requireVerified: true },
+    edit_message: { schema: editMessageSchema, requireVerified: true },
+    typing_start: { schema: typingSchema, requireVerified: true },
+    typing_stop: { schema: typingSchema, requireVerified: true },
+    read_chat: { schema: readChatSchema, requireVerified: false },
+    active_chat: { schema: activeChatSchema, requireVerified: false },
+  };
 
   public configure(io: TypedIO): void {
     // Authenticate socket connection
@@ -45,6 +65,7 @@ export class SocketController {
           name: user.name ?? null,
           avatarUrl: user.avatarUrl || "",
           plan: user.plan,
+          isEmailVerified: !!user.isEmailVerified,
           bio: user.bio,
         };
         socket.data.user = socketUser;
@@ -60,84 +81,23 @@ export class SocketController {
     io.on("connection", async (socket: TypedSocket) => {
       await this.socketService.handleConnection(socket);
 
-      const wrap = <T>(
-        schema: z.Schema<T>,
-        handler: (socket: TypedSocket, data: T, ack?: (res: any) => void) => Promise<void> | void,
-      ) => {
-        return async (data: any, ack?: (res: any) => void) => {
-          try {
-            const validatedData = schema.parse(data);
-            await handler(socket, validatedData, ack);
-          } catch (err: any) {
-            if (err instanceof z.ZodError) {
-              ack?.({ status: "error", error: "Validation failed", details: err.issues });
-            } else {
-              const message = err.message || "Internal error";
-              ack?.({ status: "error", error: message });
-              if (NODE_ENV === "development") {
-                console.error(`[SocketController] Error in handler:`, err);
-              }
-            }
-          }
-        };
-      };
+      // Local alias for declarative registration
+      const on = <K extends keyof import("@/types/socket.types").ClientToServerEvents>(
+        event: K,
+        handler: (socket: TypedSocket, data: any, ack?: SocketAck) => Promise<void> | void,
+      ) => this.registerEvent(socket, event, handler);
 
-      socket.on(
-        "send_message",
-        wrap(sendMessageSchema, async (s, data, ack) => {
-          const message = await this.socketService.saveAndDeliverMessage(s.data.user, data);
-          ack?.({ status: "ok", message });
-        }),
-      );
-
-      socket.on(
-        "react_message",
-        wrap(reactMessageSchema, (s, data) => {
-          void this.socketService.handleReaction(s.data.user, data);
-        }),
-      );
-
-      socket.on(
-        "delete_message",
-        wrap(deleteMessageSchema, (s, data) => {
-          void this.socketService.handleDeleteMessage(s.data.user, data);
-        }),
-      );
-
-      socket.on(
-        "edit_message",
-        wrap(editMessageSchema, (s, data) => {
-          void this.socketService.handleEditMessage(s.data.user, data);
-        }),
-      );
-
-      socket.on(
-        "typing_start",
-        wrap(typingSchema, (s, data) => {
-          void this.socketService.handleTyping(s.data.user, data, true);
-        }),
-      );
-
-      socket.on(
-        "typing_stop",
-        wrap(typingSchema, (s, data) => {
-          void this.socketService.handleTyping(s.data.user, data, false);
-        }),
-      );
-
-      socket.on(
-        "read_chat",
-        wrap(readChatSchema, async (s, data) => {
-          await this.socketService.handleMarkAsRead(s.data.user.id, data.chatId);
-        }),
-      );
-
-      socket.on(
-        "active_chat",
-        wrap(activeChatSchema, async (s, data) => {
-          await this.redisPresenceService.setActiveChat(s.data.user.id, data.chatId);
-        }),
-      );
+      on("send_message", async (s, d, ack) => {
+        const message = await this.socketService.saveAndDeliverMessage(s.data.user, d);
+        ack?.({ status: "ok", message });
+      });
+      on("react_message", (s, d) => void this.socketService.handleReaction(s.data.user, d));
+      on("delete_message", (s, d) => void this.socketService.handleDeleteMessage(s.data.user, d));
+      on("edit_message", (s, d) => void this.socketService.handleEditMessage(s.data.user, d));
+      on("typing_start", (s, d) => void this.socketService.handleTyping(s.data.user, d, true));
+      on("typing_stop", (s, d) => void this.socketService.handleTyping(s.data.user, d, false));
+      on("read_chat", (s, d) => void this.socketService.handleMarkAsRead(s.data.user.id, d.chatId));
+      on("active_chat", (s, d) => void this.redisPresenceService.setActiveChat(s.data.user.id, d.chatId));
 
       socket.on("disconnect", async () => {
         try {
@@ -151,5 +111,53 @@ export class SocketController {
         ack?.({ status: "ok" });
       });
     });
+  }
+
+  // ─── Private Helpers ───────────────────────────────────────────────
+
+  private registerEvent<K extends keyof import("@/types/socket.types").ClientToServerEvents>(
+    socket: TypedSocket,
+    event: K,
+    handler: (socket: TypedSocket, data: any, ack?: SocketAck) => Promise<void> | void,
+  ) {
+    const config = this.HANDLER_CONFIG[event];
+    if (!config) {
+      socket.on(event as any, handler as any);
+      return;
+    }
+    socket.on(event as any, this.wrap(socket, config.schema, handler, { requireVerified: config.requireVerified }));
+  }
+
+  private isRestricted(user: AuthenticatedSocketUser) {
+    return !user.isEmailVerified && user.plan === "free";
+  }
+
+  private wrap<T>(
+    socket: TypedSocket,
+    schema: z.Schema<T>,
+    handler: (socket: TypedSocket, data: T, ack?: SocketAck) => Promise<void> | void,
+    options?: { requireVerified?: boolean },
+  ) {
+    return async (data: unknown, ack?: SocketAck) => {
+      try {
+        if (options?.requireVerified && this.isRestricted(socket.data.user)) {
+          throw AppError.verificationRequired("Please verify your email to perform this action.");
+        }
+
+        const validatedData = schema.parse(data);
+        await handler(socket, validatedData, ack);
+      } catch (err: unknown) {
+        if (err instanceof z.ZodError) {
+          ack?.({ status: "error", error: "Validation failed", details: err.issues });
+        } else {
+          const error = err as Error & { code?: string };
+          const message = error.message || "Internal error";
+          ack?.({ status: "error", error: message, code: error.code });
+          if (NODE_ENV === "development") {
+            console.error(`[SocketController] Error in handler:`, error);
+          }
+        }
+      }
+    };
   }
 }

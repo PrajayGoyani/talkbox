@@ -54,4 +54,8 @@ export class AppError extends Error {
   static tooMany(message = "Too many requests", code = "TOO_MANY_REQUESTS") {
     return new AppError(message, StatusCodes.TOO_MANY_REQUESTS, code);
   }
+
+  static verificationRequired(message = "Email verification required", code = "VERIFICATION_REQUIRED") {
+    return new AppError(message, StatusCodes.FORBIDDEN, code);
+  }
 }

@@ -121,55 +121,56 @@ export class SocketService {
   // ─── Emission Methods ──────────────────────────────────────────
 
   /**
-   * Emit to a specific user. Always uses the adapter (Redis) to ensure
-   * propagation across all instances (Live and Local).
+   * Emit to a specific user. Bypasses Redis when user is local-only.
    */
   async emitToUser(userId: string, event: string, data: unknown): Promise<void> {
-    /*
-    // Smart Local Routing (Short-term optimization)
-    // TODO: Re-enable once global session counts are perfectly synchronized in hybrid environments.
-    const localSockets = this.activeConnections.get(userId);
-    if (localSockets && localSockets.size > 0) {
-      const globalCount = await this.redisSessionService.getGlobalSessionCount(userId);
-      if (globalCount === localSockets.size) {
-        localSockets.forEach((socket) => {
-          (socket as any).emit(event, data);
-        });
-        return;
-      }
-    }
-    */
-    (this.io as any)?.to(`user:${userId}`).emit(event, data);
+    await this._emitInternal(userId, event, data);
   }
 
   /**
-   * Emit to multiple users.
+   * Emit to multiple users in parallel.
    */
   async emitToUsers(userIds: string[], event: string, data: unknown): Promise<void> {
     if (userIds.length === 0) return;
-    const io = this.io;
+    await Promise.all(userIds.map((userId) => this._emitInternal(userId, event, data)));
+  }
 
-    for (const userId of userIds) {
-      /*
-      // Smart Local Routing (Short-term optimization)
-      const localSockets = this.activeConnections.get(userId);
-      if (localSockets && localSockets.size > 0) {
-        const globalCount = await this.redisSessionService.getGlobalSessionCount(userId);
-        if (globalCount === localSockets.size) {
-          localSockets.forEach((socket) => {
-            (socket as any).emit(event, data);
-          });
-          continue;
-        }
+  private async _emitInternal(userId: string, event: string, data: unknown): Promise<void> {
+    const localSockets = this.activeConnections.get(userId);
+
+    // Smart Local Routing: If user is only on this instance, bypass Redis
+    if (localSockets && localSockets.size > 0) {
+      const globalCount = await this.redisSessionService.getGlobalSessionCount(userId);
+      if (globalCount === localSockets.size) {
+        localSockets.forEach((socket) => this._rawEmit(socket, event, data));
+        return;
       }
-      */
-      (io as any)?.to(`user:${userId}`).emit(event, data);
+    }
+
+    // Fallback to global broadcast via Redis adapter
+    this._rawEmit(this.io, event, data, `user:${userId}`);
+  }
+
+  /**
+   * Internal helper to handle brittle type casts for Socket.IO emissions
+   */
+  private _rawEmit(target: TypedIO | TypedSocket | null, event: string, data: unknown, room?: string): void {
+    if (!target) return;
+
+    if (room) {
+      // Handle IO broadcast to room
+      (target as unknown as { to: (r: string) => { emit: (e: string, d: unknown) => void } })
+        .to(room)
+        .emit(event, data);
+    } else {
+      // Handle direct socket/IO emit
+      (target as unknown as { emit: (e: string, d: unknown) => void }).emit(event, data);
     }
   }
 
-  async notifyProfileUpdate(userId: string, profile: any) {
+  async notifyProfileUpdate(userId: string, profile: import("shared/types/chat.dto").ProfileUpdateDto) {
     const io = this.io;
-    io?.to(`watching:${userId}`).emit("profile_updated", { userId, ...profile });
+    io?.to(`watching:${userId}`).emit("profile_updated", { ...profile });
   }
 
   private _handleGlobalTakeover(userId: string, victimSocketId?: string) {

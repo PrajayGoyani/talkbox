@@ -108,8 +108,13 @@
   };
 
   const handleAvatarSelect = () => {
+    if (authStore.isRestricted) return;
     avatarInput?.click();
   };
+
+  const avatarTooltip = $derived(
+    authStore.isRestricted ? "Verify email to change avatar" : "Change avatar",
+  );
 
   const handleAvatarChange = async (e: Event) => {
     const target = e.target as HTMLInputElement;
@@ -187,28 +192,34 @@
     <!-- Avatar Section -->
     <div class="flex justify-center">
       <button
-        class="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center relative overflow-hidden shadow-xl shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 border-none p-0"
+        class={[
+          "w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center relative overflow-hidden shadow-xl shadow-indigo-500/20 transition-all border-none p-0",
+          authStore.isRestricted ? "opacity-60 cursor-not-allowed grayscale" : "hover:scale-105 active:scale-95",
+        ]}
         onclick={handleAvatarSelect}
         onkeydown={(e) => (e.key === "Enter" || e.key === " ") && handleAvatarSelect()}
-        aria-label="Change avatar"
+        aria-label={avatarTooltip}
+        use:tooltip={avatarTooltip}
       >
         {#if avatarPreview || resolvedAvatarUrl}
           <img src={avatarPreview || resolvedAvatarUrl} alt="Avatar" class="w-full h-full object-cover" />
         {:else}
           <span class="text-3xl font-bold text-white">{displayName[0]?.toUpperCase() || "?"}</span>
         {/if}
-        <div
-          class="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity"
-        >
-          <Icon name="camera" class="w-5 h-5" />
-        </div>
+        {#if !authStore.isRestricted}
+          <div
+            class="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity"
+          >
+            <Icon name="camera" class="w-5 h-5" />
+          </div>
+        {/if}
         {#if uploadingAvatar}
           <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
             <span class="w-3.5 h-3.5 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></span>
           </div>
         {/if}
       </button>
-      <input type="file" bind:this={avatarInput} onchange={handleAvatarChange} accept="image/*" class="hidden" />
+      <input type="file" bind:this={avatarInput} onchange={handleAvatarChange} accept="image/*" class="hidden" disabled={authStore.isRestricted} />
     </div>
 
     <!-- User Info -->

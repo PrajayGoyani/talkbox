@@ -1,4 +1,4 @@
-import { AcceptChatRequest, RejectChatRequest } from "@controllers/types";
+import { AcceptChatRequest, ChatIdParam, RejectChatRequest } from "@controllers/types";
 import { IChatService } from "@services/interfaces/chat.service";
 import { Request, Response } from "express";
 
@@ -41,21 +41,21 @@ export class ChatController {
   };
 
   public rejectChat = async (req: RejectChatRequest, res: Response) => {
-    const chat = await this.chatService.rejectChat(req.params.chatId as string, req.user!.id);
+    const chat = await this.chatService.rejectChat(req.params.chatId, req.user!.id);
     res.success(chat);
   };
 
-  public deleteChat = async (req: Request, res: Response) => {
-    const result = await this.chatService.deleteChat(req.params.chatId as string, req.user!.id);
+  public deleteChat = async (req: Request<ChatIdParam>, res: Response) => {
+    const result = await this.chatService.deleteChat(req.params.chatId, req.user!.id);
     res.success(result);
   };
 
-  public getChatMessages = async (req: Request, res: Response) => {
+  public getChatMessages = async (req: Request<ChatIdParam>, res: Response) => {
     const limit = parseInt((req.query.limit || req.headers["x-limit"]) as string) || 50;
     const cursor = ((req.query.cursor || req.headers["x-cursor"]) as string) || null;
     const markAsRead = req.query.read === "true";
     const messages = await this.chatService.getChatMessages(
-      req.params.chatId as string,
+      req.params.chatId,
       req.user!.id,
       limit,
       cursor,
@@ -65,13 +65,13 @@ export class ChatController {
     res.success(messages);
   };
 
-  public markChatRead = async (req: Request, res: Response) => {
-    const result = await this.chatService.markChatRead(req.params.chatId as string, req.user!.id);
+  public markChatRead = async (req: Request<ChatIdParam>, res: Response) => {
+    const result = await this.chatService.markChatRead(req.params.chatId, req.user!.id);
     res.success(result);
   };
 
-  public getChat = async (req: Request, res: Response) => {
-    const chat = await this.chatService.getChat(req.user!.id, req.params.chatId as string);
+  public getChat = async (req: Request<ChatIdParam>, res: Response) => {
+    const chat = await this.chatService.getChat(req.user!.id, req.params.chatId);
     res.success(chat);
   };
 }

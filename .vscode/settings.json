@@ -14,8 +14,6 @@
     "source.fixAll.oxc": "explicit"
   },
   "editor.formatOnSave": true,
-  "oxc.enable.oxfmt": true,
-  "oxc.enable.oxlint": true,
   "oxc.configPath": "./oxlint.json",
   "oxc.fmt.configPath": "./oxfmt.json",
   "search.exclude": {
@@ -27,9 +25,5 @@
     ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
     ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
   ],
-  "typescript.experimental.useTsgo": true,
-  "typescript.native-preview.tsdk": "/home/dev/Documents/work/other/projects/user-chat/node_modules/@typescript/native-preview",
-  "[typescript]": {
-    "editor.defaultFormatter": "oxc.oxc-vscode"
-  }
+  "js/ts.experimental.useTsgo": true
 }

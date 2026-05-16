@@ -153,21 +153,25 @@
   </Popover>
 
   <textarea
-    placeholder="Type a message..."
-    class="input-field flex-1 rounded-2xl! pl-3 md:pl-5 pr-3 py-1.5 md:py-2.5 resize-none max-h-32 scrollbar-slim text-sm md:text-base leading-tight md:leading-normal"
+    placeholder={authStore.isRestricted ? "Verify your email to reply..." : "Type a message..."}
+    class={[
+      "input-field flex-1 rounded-2xl! pl-3 md:pl-5 pr-3 py-1.5 md:py-2.5 resize-none max-h-32 scrollbar-slim text-sm md:text-base leading-tight md:leading-normal",
+      authStore.isRestricted && "opacity-60 cursor-not-allowed bg-slate-100 dark:bg-white/5",
+    ]}
     bind:value={messageInput}
     bind:this={textareaElement}
     onkeydown={handleKeydown}
     oninput={handleInput}
     rows="1"
     name="msg_input"
+    disabled={authStore.isRestricted}
   ></textarea>
 
   <button
     class="bg-indigo-600 hover:bg-indigo-700 text-white w-9 h-9 md:w-10.5 md:h-10.5 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
     aria-label="Send message"
     onclick={handleSendMessage}
-    disabled={!messageInput.trim()}
+    disabled={!messageInput.trim() || authStore.isRestricted}
   >
     <Icon name="send" class="w-5 h-5" />
   </button>

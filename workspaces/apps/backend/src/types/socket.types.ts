@@ -20,6 +20,7 @@ export interface AuthenticatedSocketUser {
   name: string | null;
   avatarUrl: string;
   plan: "free" | "pro";
+  isEmailVerified: boolean;
   bio?: string | null;
 }
 

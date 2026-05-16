@@ -1,7 +1,6 @@
 <script lang="ts">
   import { chatListStore } from "$state/chat/chat-list.svelte";
   import { chatActions } from "$state/chat/chat-actions.svelte";
-  import { socketManager } from "$services/socket.manager.svelte";
 
   import NotificationsDropdown from "$components/layout/NotificationsDropdown.svelte";
   import ToastContainer from "$components/layout/ToastContainer.svelte";
@@ -27,6 +26,7 @@
   import { routerStore } from "$state/router.svelte";
   import { uiStore } from "$state/ui.svelte";
   import { Route } from "$utils/routes";
+  import VerificationBanner from "$components/ui/VerificationBanner.svelte";
 
   let isHomePage = $derived(routerStore.segments.length === 0);
 
@@ -274,21 +274,7 @@
   >
     <NotificationsDropdown bind:isOpen={uiStore.notificationsOpen} onNavigate={handleNotificationNavigate} />
 
-    {#if authStore.user && !authStore.user.isEmailVerified && false}
-      <!-- TODO: should we verify the this at login time? -->
-      <div
-        class="shrink-0 bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-center gap-3 text-sm text-amber-700 dark:text-amber-400"
-      >
-        <Icon name="mail" class="w-4 h-4 shrink-0" />
-        <span>Please verify your email. Check your inbox.</span>
-        <button
-          class="text-xs font-bold underline hover:no-underline ml-1"
-          onclick={() => authStore.resendVerification()}
-        >
-          Resend
-        </button>
-      </div>
-    {/if}
+    <VerificationBanner />
 
     <div class="flex flex-col md:flex-row flex-1 min-h-0 relative w-full overflow-hidden">
       <IconRail

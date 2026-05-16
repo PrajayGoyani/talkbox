@@ -21,6 +21,9 @@ class AuthStore {
   private bootTimer: ReturnType<typeof setTimeout> | null = null;
   private observers: Set<AuthObserver> = new Set();
 
+  isVerified = $derived(this.user?.isEmailVerified ?? false);
+  isRestricted = $derived(!this.isVerified && this.user?.plan === "free");
+
   constructor() {
     setTokenProvider(() => this.accessToken);
     void this.init();

@@ -4,11 +4,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 describe("ChatController", () => {
   let req: any;
   let res: any;
+  let next: any;
   let chatController: ChatController;
   let chatService: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    next = vi.fn();
     chatService = {
       getChatListing: vi.fn(),
       getChatRequests: vi.fn(),

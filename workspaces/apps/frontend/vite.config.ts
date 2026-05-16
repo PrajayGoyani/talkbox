@@ -6,6 +6,7 @@ import { loadEnv } from "vite";
 // import { compression } from "vite-plugin-compression2";
 import { defineConfig } from "vite-plus";
 
+// @ts-ignore
 import { svelteRunesPlugin } from "../../../plugins/svelte-runes.js";
 
 const isTest = process.env.VITEST === "true";

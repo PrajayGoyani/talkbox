@@ -24,8 +24,15 @@ export class ChatActionService implements IChatActionService {
     }
 
     const requestingUser = await this.userRepository.findById(senderId);
+    if (!requestingUser) {
+      throw AppError.notFound("User", "USER_NOT_FOUND");
+    }
 
-    if (requestingUser?.plan === "free") {
+    if (!requestingUser.isEmailVerified && requestingUser.plan === "free") {
+      throw AppError.verificationRequired("Please verify your email to start new chats.");
+    }
+
+    if (requestingUser.plan === "free") {
       const activeCount = await this.repository.countDocuments({
         participants: senderId,
         status: "accepted",
@@ -97,14 +104,19 @@ export class ChatActionService implements IChatActionService {
       throw AppError.forbidden("You cannot accept your own chat request");
     }
 
+    const acceptor = await this.userRepository.findById(userId);
+    if (!acceptor) throw AppError.notFound("User");
+
+    if (!acceptor.isEmailVerified && acceptor.plan === "free") {
+      throw AppError.verificationRequired("Please verify your email to accept chat requests.");
+    }
+
     const updatedChat = await this.repository.updateById(chatId, {
       status: "accepted",
       acceptedAt: new Date(),
     });
 
     if (!updatedChat) throw AppError.notFound("Chat");
-
-    const acceptor = await this.userRepository.findById(userId);
 
     // Invalidate partner cache for both participants globally
     await Promise.all(
