@@ -51,6 +51,7 @@ export const COOKIE_SAMESITE: "strict" | "lax" | "none" =
 export const COOKIE_SECURE = Bun.env.COOKIE_SECURE === "true" || NODE_ENV === "production";
 
 // Email / SMTP (optional — graceful no-op if not configured)
+export const RESEND_API_KEY = Bun.env.RESEND_API_KEY as string;
 export const SMTP_HOST = Bun.env.SMTP_HOST as string;
 export const SMTP_PORT = Number(Bun.env.SMTP_PORT) || 587;
 export const SMTP_USER = Bun.env.SMTP_USER as string;

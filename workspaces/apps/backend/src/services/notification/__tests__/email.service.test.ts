@@ -1,8 +1,19 @@
 import { APP_NAME, FRONTEND_URL } from "@config/env";
 import nodemailer from "nodemailer";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import { EmailService } from "../email.service";
+
+vi.mock("@config/env", () => ({
+  APP_NAME: "Talkbox",
+  FRONTEND_URL: "http://localhost:5173",
+  EMAIL_FROM: "noreply@talkbox.app",
+  SMTP_HOST: "localhost",
+  SMTP_PORT: 587,
+  SMTP_USER: "user",
+  SMTP_PASS: "pass",
+  RESEND_API_KEY: undefined,
+}));
 
 vi.mock("nodemailer", () => ({
   default: {
@@ -77,5 +88,82 @@ describe("EmailService", () => {
     await emailService.sendResetEmail("test@example.com", "token");
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("[EmailService]"), expect.any(Error));
+  });
+
+  describe("with Resend API configured", () => {
+    const mockFetch = vi.fn();
+    let originalFetch: any;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+      globalThis.fetch = mockFetch as any;
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: "resend-test-id" }),
+      });
+      process.env.RESEND_API_KEY = "test-resend-api-key";
+      emailService = new EmailService();
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+      delete process.env.RESEND_API_KEY;
+    });
+
+    it("should report isConfigured as true", () => {
+      expect(emailService.isConfigured).toBe(true);
+    });
+
+    it("should send verification email via Resend API", async () => {
+      const to = "verify@example.com";
+      const token = "resend-verify-token";
+
+      await emailService.sendVerificationEmail(to, token);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://api.resend.com/emails",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+            Authorization: "Bearer test-resend-api-key",
+          }),
+          body: expect.stringContaining(token),
+        }),
+      );
+      expect(mockSendMail).not.toHaveBeenCalled();
+    });
+
+    it("should send reset email via Resend API", async () => {
+      const to = "reset@example.com";
+      const token = "resend-reset-token";
+
+      await emailService.sendResetEmail(to, token);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://api.resend.com/emails",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+            Authorization: "Bearer test-resend-api-key",
+          }),
+          body: expect.stringContaining(token),
+        }),
+      );
+      expect(mockSendMail).not.toHaveBeenCalled();
+    });
+
+    it("should catch and log errors if Resend API fails", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("Network Error"));
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      await emailService.sendResetEmail("test@example.com", "token");
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[EmailService] Failed to send reset email via Resend"),
+        expect.any(Error),
+      );
+    });
   });
 });
