@@ -153,9 +153,7 @@ describe("Scalability Optimizations", () => {
     (socketService as any).partnerRequests.clear();
 
     vi.spyOn(mongoose, "startSession").mockResolvedValue({
-      startTransaction: vi.fn(),
-      commitTransaction: vi.fn(),
-      abortTransaction: vi.fn(),
+      withTransaction: vi.fn(async (cb) => cb({} as any)),
       endSession: vi.fn(),
     } as any);
 

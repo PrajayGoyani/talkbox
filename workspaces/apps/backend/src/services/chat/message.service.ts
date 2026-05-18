@@ -219,43 +219,49 @@ export class MessageService implements IMessageService {
     skipUnreadIncrement: boolean = false,
   ): Promise<{ message: IMessage; chat: IChat }> {
     const session = await mongoose.startSession();
-    session.startTransaction();
 
     try {
-      const message = await this.messageRepo.create(
-        {
-          chatId: new ObjectId(chatId),
-          senderId: new ObjectId(senderId),
-          contentBody,
-          idempotencyKey,
-        },
-        { session },
-      );
+      let message: IMessage | undefined;
+      let chat: IChat | undefined;
 
-      const updateData: any = {
-        lastMessage: {
-          messageId: message._id,
-          contentBody,
-          senderId,
-          sentAt: message.createdAt,
-        },
-      };
+      await session.withTransaction(async (txnSession) => {
+        message = await this.messageRepo.create(
+          {
+            chatId: new ObjectId(chatId),
+            senderId: new ObjectId(senderId),
+            contentBody,
+            idempotencyKey,
+          },
+          { session: txnSession },
+        );
 
-      if (!skipUnreadIncrement) {
-        updateData.$inc = { [`unreadCounts.${receiverId}`]: 1 };
+        const updateData: any = {
+          lastMessage: {
+            messageId: message._id,
+            contentBody,
+            senderId,
+            sentAt: message.createdAt,
+          },
+        };
+
+        if (!skipUnreadIncrement) {
+          updateData.$inc = { [`unreadCounts.${receiverId}`]: 1 };
+        }
+
+        const updatedChat = await this.chatRepo.updateById(chatId, updateData, { session: txnSession });
+
+        if (!updatedChat) {
+          throw AppError.forbidden(CHAT_MESSAGES.DELIVERY_FAILED);
+        }
+
+        chat = updatedChat;
+      });
+
+      if (!message || !chat) {
+        throw new Error("Transaction failed to populate message or chat");
       }
 
-      const chat = await this.chatRepo.updateById(chatId, updateData, { session });
-
-      if (!chat) {
-        throw AppError.forbidden(CHAT_MESSAGES.DELIVERY_FAILED);
-      }
-
-      await session.commitTransaction();
       return { message, chat };
-    } catch (err: any) {
-      await session.abortTransaction();
-      throw err;
     } finally {
       await session.endSession();
     }
