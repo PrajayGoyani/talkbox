@@ -1,8 +1,9 @@
+import type { FrontendMessageDto } from "$lib/types/chat";
+
 import { chatService } from "$services/chat.service";
 import { realtimeEvents, RealtimeEvent } from "$services/realtime-events";
 import { socketManager } from "$services/socket.manager.svelte";
 import { MessageStore } from "$state/active-chat.svelte";
-import type { FrontendMessageDto } from "$lib/types/chat";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock dependencies

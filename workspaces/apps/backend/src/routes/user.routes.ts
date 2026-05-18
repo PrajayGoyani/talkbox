@@ -4,9 +4,9 @@ const router = express.Router();
 import { registry } from "@bootstrap/registry";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import { rateLimiter } from "@middlewares/rate-limiter.middleware";
-import { ensureVerified } from "@middlewares/verification.middleware";
 import { memoryUpload } from "@middlewares/upload.middleware";
 import { validate } from "@middlewares/validate.middleware";
+import { ensureVerified } from "@middlewares/verification.middleware";
 import { updateProfileSchema } from "@schemas/user.schema";
 
 router.use(authenticateToken);

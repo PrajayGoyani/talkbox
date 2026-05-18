@@ -112,9 +112,7 @@
     avatarInput?.click();
   };
 
-  const avatarTooltip = $derived(
-    authStore.isRestricted ? "Verify email to change avatar" : "Change avatar",
-  );
+  const avatarTooltip = $derived(authStore.isRestricted ? "Verify email to change avatar" : "Change avatar");
 
   const handleAvatarChange = async (e: Event) => {
     const target = e.target as HTMLInputElement;
@@ -219,7 +217,14 @@
           </div>
         {/if}
       </button>
-      <input type="file" bind:this={avatarInput} onchange={handleAvatarChange} accept="image/*" class="hidden" disabled={authStore.isRestricted} />
+      <input
+        type="file"
+        bind:this={avatarInput}
+        onchange={handleAvatarChange}
+        accept="image/*"
+        class="hidden"
+        disabled={authStore.isRestricted}
+      />
     </div>
 
     <!-- User Info -->

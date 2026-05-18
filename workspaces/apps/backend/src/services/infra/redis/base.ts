@@ -65,7 +65,7 @@ export class RedisBaseService {
       // Connection monitoring for adapter clients
       this.adapterPubClient.on("connect", () => console.log("[RedisBaseService] Adapter PubClient connected."));
       this.adapterSubClient.on("connect", () => console.log("[RedisBaseService] Adapter SubClient connected."));
-      
+
       this.adapterPubClient.on("error", (err) => console.error("[RedisBaseService] Adapter PubClient Error:", err));
       this.adapterSubClient.on("error", (err) => console.error("[RedisBaseService] Adapter SubClient Error:", err));
     } catch (err) {

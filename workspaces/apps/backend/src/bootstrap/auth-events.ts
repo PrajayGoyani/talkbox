@@ -44,7 +44,10 @@ export const initAuthEventListeners = () => {
 
     // 3b. Broadcast plan update to partners via Socket.io
     try {
-      await registry.socketService.notifyProfileUpdate(userId.toString(), { plan: newPlan });
+      await registry.socketService.notifyProfileUpdate(userId.toString(), {
+        userId: userId.toString(),
+        plan: newPlan,
+      });
     } catch (err) {
       console.error("[EventBus] Failed to notify partners of profile update:", err);
     }

@@ -32,11 +32,11 @@ Currently, we use the `@socket.io/redis-adapter` to synchronize events across mu
 
 ### Impact
 
-| Scenario | Before | After |
-|---|---|---|
-| 1 tab, same instance (~90% of users) | Redis Pub/Sub round-trip | Direct local emit |
-| 2 tabs, same instance | Redis Pub/Sub round-trip | Direct local emit |
-| 1 tab here + 1 tab elsewhere | Redis Pub/Sub round-trip | Redis Pub/Sub (unchanged) |
+| Scenario                             | Before                   | After                     |
+| ------------------------------------ | ------------------------ | ------------------------- |
+| 1 tab, same instance (~90% of users) | Redis Pub/Sub round-trip | Direct local emit         |
+| 2 tabs, same instance                | Redis Pub/Sub round-trip | Direct local emit         |
+| 1 tab here + 1 tab elsewhere         | Redis Pub/Sub round-trip | Redis Pub/Sub (unchanged) |
 
 ### Implementation
 

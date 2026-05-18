@@ -1,8 +1,8 @@
 import { registry } from "@bootstrap/registry";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import { rateLimiter } from "@middlewares/rate-limiter.middleware";
-import { ensureVerified } from "@middlewares/verification.middleware";
 import { validate, validateQuery } from "@middlewares/validate.middleware";
+import { ensureVerified } from "@middlewares/verification.middleware";
 import { chatRequestSchema, chatSearchSchema } from "@schemas/chat.schema";
 import { Router } from "express";
 const router = Router();

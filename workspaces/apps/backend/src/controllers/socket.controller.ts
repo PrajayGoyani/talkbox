@@ -13,10 +13,10 @@ import { IRedisPresenceService } from "@services/infra/interfaces";
 import { IUserCacheService } from "@services/interfaces/user-cache.service";
 import { AppError } from "@utils/AppError";
 import jwt from "jsonwebtoken";
+import { MessageDto } from "shared/types/chat.dto";
 import { z } from "zod";
 
 import { AuthenticatedSocketUser, JWTPayload, TypedIO, TypedSocket } from "@/types/socket.types";
-import { MessageDto } from "shared/types/chat.dto";
 
 type SocketAck = (res: {
   status: "ok" | "error";
