@@ -1,9 +1,16 @@
 import { AuthController } from "@controllers/auth.controller";
+import { redisGuardService } from "@services/infra/redis.service";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@config/env", () => ({
   COOKIE_SAMESITE: "lax",
   COOKIE_SECURE: false,
+}));
+
+vi.mock("@services/infra/redis.service", () => ({
+  redisGuardService: {
+    blacklistToken: vi.fn(),
+  },
 }));
 
 describe("AuthController", () => {
@@ -26,7 +33,7 @@ describe("AuthController", () => {
       resendVerificationEmail: vi.fn(),
     };
     authController = new AuthController(authService);
-    req = { body: {}, query: {}, cookies: {}, user: { id: "user123" } };
+    req = { body: {}, query: {}, cookies: {}, headers: {}, user: { id: "user123" } };
     res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnThis(),
@@ -75,7 +82,34 @@ describe("AuthController", () => {
   });
 
   describe("logout", () => {
-    it("should clear auth cookies", async () => {
+    it("should blacklist token from Authorization header and clear cookies", async () => {
+      req.headers.authorization = "Bearer valid-access-token";
+      (redisGuardService.blacklistToken as any).mockResolvedValue?.();
+
+      await authController.logout(req, res);
+
+      expect(redisGuardService.blacklistToken).toHaveBeenCalledWith("valid-access-token");
+      expect(res.clearCookie).toHaveBeenCalledWith("refresh_token", expect.any(Object));
+      expect(res.clearCookie).toHaveBeenCalledWith("access_token", expect.any(Object));
+      expect(res.success).toHaveBeenCalledWith({ message: "Logged out successfully" });
+    });
+
+    it("should blacklist token from cookie if header is missing", async () => {
+      req.cookies.access_token = "cookie-access-token";
+      (redisGuardService.blacklistToken as any).mockResolvedValue?.();
+
+      await authController.logout(req, res);
+
+      expect(redisGuardService.blacklistToken).toHaveBeenCalledWith("cookie-access-token");
+      expect(res.clearCookie).toHaveBeenCalledWith("refresh_token", expect.any(Object));
+      expect(res.clearCookie).toHaveBeenCalledWith("access_token", expect.any(Object));
+      expect(res.success).toHaveBeenCalledWith({ message: "Logged out successfully" });
+    });
+
+    it("should still clear cookies even if blacklist fails", async () => {
+      req.headers.authorization = "Bearer valid-token";
+      (redisGuardService.blacklistToken as any).mockRejectedValue?.(new Error("Redis error"));
+
       await authController.logout(req, res);
 
       expect(res.clearCookie).toHaveBeenCalledWith("refresh_token", expect.any(Object));

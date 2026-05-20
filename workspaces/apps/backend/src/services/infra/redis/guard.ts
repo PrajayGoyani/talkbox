@@ -44,6 +44,46 @@ export class RedisGuardService implements IRedisGuardService {
     }
   }
 
+  // ─── Token Blacklist (Logout) ─────────────────────────────────────
+
+  async blacklistToken(token: string): Promise<void> {
+    if (!this.client || !this.isConnected) {
+      console.warn("[RedisGuardService] Redis disconnected. Token blacklist skipped.");
+      return;
+    }
+    try {
+      // Decode token to get expiration time
+      const decoded = require("jsonwebtoken").decode(token) as { exp?: number };
+      if (!decoded || !decoded.exp) {
+        console.warn("[RedisGuardService] Unable to decode token or extract expiration.");
+        return;
+      }
+
+      // Calculate TTL (time until token expiration in seconds)
+      const now = Math.floor(Date.now() / 1000);
+      const ttl = Math.max(1, decoded.exp - now);
+
+      // Add token to blacklist set with TTL
+      await this.client.setex(`blacklist:${token}`, ttl, "1");
+    } catch (err) {
+      console.error("[RedisGuardService] Error blacklisting token:", err);
+      // Don't throw - logout should succeed even if blacklist fails
+    }
+  }
+
+  async isTokenBlacklisted(token: string): Promise<boolean> {
+    if (!this.client || !this.isConnected) {
+      console.warn("[RedisGuardService] Redis disconnected. Token blacklist check skipped.");
+      return false;
+    }
+    try {
+      return (await this.client.exists(`blacklist:${token}`)) === 1;
+    } catch (err) {
+      console.error("[RedisGuardService] Error checking token blacklist:", err);
+      return false;
+    }
+  }
+
   // ─── Rate Limiting (Global) ────────────────────────────────────────
 
   async incrementAndCheckLimit(

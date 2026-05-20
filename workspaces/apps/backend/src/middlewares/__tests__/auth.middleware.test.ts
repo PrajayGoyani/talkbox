@@ -1,7 +1,16 @@
 import { registry } from "@bootstrap/registry";
 import { authenticateToken } from "@middlewares/auth.middleware";
+import { redisGuardService } from "@services/infra/redis.service";
 import { verifyAccessToken } from "@utils/jwt";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mockFn = <T extends (...args: any[]) => any>(fn: any) =>
+  fn as unknown as {
+    mockImplementation: (impl: any) => void;
+    mockReturnValue: (value: any) => void;
+    mockResolvedValue: (value: any) => void;
+    mockRejectedValue: (value: any) => void;
+  };
 
 vi.mock("@utils/jwt", () => ({
   verifyAccessToken: vi.fn(),
@@ -15,6 +24,12 @@ vi.mock("@bootstrap/registry", () => ({
   },
 }));
 
+vi.mock("@services/infra/redis.service", () => ({
+  redisGuardService: {
+    isTokenBlacklisted: vi.fn(),
+  },
+}));
+
 describe("AuthMiddleware", () => {
   let req: any;
   let res: any;
@@ -22,9 +37,7 @@ describe("AuthMiddleware", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(registry.userCacheService.getUser).mockImplementation(
-      async (id) => ({ id, username: "testuser" }) as any,
-    );
+    mockFn(registry.userCacheService.getUser).mockImplementation(async (id) => ({ id, username: "testuser" }) as any);
 
     req = {
       headers: {},
@@ -39,7 +52,7 @@ describe("AuthMiddleware", () => {
 
   it("should authenticate via Authorization header", async () => {
     req.headers.authorization = "Bearer valid-token";
-    vi.mocked(verifyAccessToken).mockReturnValue({ id: "user123" } as any);
+    mockFn(verifyAccessToken).mockReturnValue({ id: "user123" } as any);
 
     await authenticateToken(req, res, next);
 
@@ -51,7 +64,7 @@ describe("AuthMiddleware", () => {
 
   it("should authenticate via access_token cookie if header is missing", async () => {
     req.cookies.access_token = "cookie-token";
-    vi.mocked(verifyAccessToken).mockReturnValue({ id: "user456" } as any);
+    mockFn(verifyAccessToken).mockReturnValue({ id: "user456" } as any);
 
     await authenticateToken(req, res, next);
 
@@ -72,7 +85,7 @@ describe("AuthMiddleware", () => {
 
   it("should return 403 if token is invalid", async () => {
     req.headers.authorization = "Bearer invalid-token";
-    vi.mocked(verifyAccessToken).mockImplementation(() => {
+    mockFn(verifyAccessToken).mockImplementation(() => {
       throw new Error("Invalid token");
     });
 
@@ -80,5 +93,30 @@ describe("AuthMiddleware", () => {
 
     expect(res.status).toHaveBeenCalledWith(403);
     expect(next).not.toHaveBeenCalled();
+  });
+
+  it("should return 401 if token is blacklisted (logged out)", async () => {
+    req.headers.authorization = "Bearer valid-token";
+    mockFn(redisGuardService.isTokenBlacklisted).mockResolvedValue(true);
+
+    await authenticateToken(req, res, next);
+
+    expect(redisGuardService.isTokenBlacklisted).toHaveBeenCalledWith("valid-token");
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining("revoked") }));
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("should authenticate successfully if token is not blacklisted", async () => {
+    req.headers.authorization = "Bearer valid-token";
+    mockFn(redisGuardService.isTokenBlacklisted).mockResolvedValue(false);
+    mockFn(verifyAccessToken).mockReturnValue({ id: "user123" } as any);
+
+    await authenticateToken(req, res, next);
+
+    expect(redisGuardService.isTokenBlacklisted).toHaveBeenCalledWith("valid-token");
+    expect(verifyAccessToken).toHaveBeenCalledWith("valid-token");
+    expect(req.user).toBeDefined();
+    expect(next).toHaveBeenCalled();
   });
 });

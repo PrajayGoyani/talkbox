@@ -6,6 +6,7 @@ import {
   ResetPasswordRequest,
   SignupRequest,
 } from "@controllers/types";
+import { redisGuardService } from "@services/infra/redis.service";
 import { IAuthService } from "@services/interfaces/auth.service";
 import { AppError } from "@utils/AppError";
 import { CookieOptions, Request, Response } from "express";
@@ -45,10 +46,32 @@ export class AuthController {
     res.success(result);
   };
 
-  public logout = async (_req: Request, res: Response) => {
-    res.clearCookie("refresh_token", REFRESH_TOKEN_COOKIE_OPTIONS);
-    res.clearCookie("access_token", ACCESS_TOKEN_COOKIE_OPTIONS);
-    res.success({ message: "Logged out successfully" });
+  public logout = async (req: Request, res: Response) => {
+    try {
+      // Extract token from Authorization header or cookies
+      const authHeader = req.headers["authorization"];
+      let token = authHeader && authHeader.split(" ")[1];
+      if (!token && req.cookies) {
+        token = req.cookies.access_token;
+      }
+
+      // Blacklist the token if present
+      if (token) {
+        await redisGuardService.blacklistToken(token);
+      }
+
+      // Clear cookies
+      res.clearCookie("refresh_token", REFRESH_TOKEN_COOKIE_OPTIONS);
+      res.clearCookie("access_token", ACCESS_TOKEN_COOKIE_OPTIONS);
+
+      res.success({ message: "Logged out successfully" });
+    } catch (err) {
+      // Log but still clear cookies on error
+      console.error("[AuthController] Error blacklisting token:", err);
+      res.clearCookie("refresh_token", REFRESH_TOKEN_COOKIE_OPTIONS);
+      res.clearCookie("access_token", ACCESS_TOKEN_COOKIE_OPTIONS);
+      res.success({ message: "Logged out successfully" });
+    }
   };
 
   public refresh = async (req: RefreshRequest, res: Response) => {

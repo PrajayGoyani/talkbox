@@ -1,34 +1,31 @@
 import { registry } from "@bootstrap/registry";
-import { RATE_LIMIT_AUTH_MAX } from "@config/env";
+import { rateLimiters } from "@config/rate-limiters";
 import { authenticateToken } from "@middlewares/auth.middleware";
-import { createRateLimiter } from "@middlewares/rate-limiter.middleware";
 import { validate } from "@middlewares/validate.middleware";
 import { forgotPasswordSchema, loginSchema, resetPasswordSchema, signupSchema } from "@schemas/user.schema";
 import { Router } from "express";
 
 const router = Router();
-const authController = registry.authController;
+const auth = registry.authController;
 
-const authRateLimiter = createRateLimiter(RATE_LIMIT_AUTH_MAX, 60000, "auth");
+router.post("/signup", rateLimiters.auth, validate(signupSchema), auth.signup);
 
-router.post("/signup", authRateLimiter, validate(signupSchema), authController.signup);
+router.post("/login", rateLimiters.auth, validate(loginSchema), auth.login);
 
-router.post("/login", authRateLimiter, validate(loginSchema), authController.login);
+router.post("/refresh", rateLimiters.authRefresh, auth.refresh);
 
-router.post("/refresh", authController.refresh);
+router.post("/logout", authenticateToken, rateLimiters.logout, auth.logout);
 
-router.post("/logout", authController.logout);
+router.get("/me", authenticateToken, auth.getMe);
 
-router.get("/me", authenticateToken, authController.getMe);
-
-router.post("/upgrade-pro", authenticateToken, authController.upgradeToPro);
+router.post("/upgrade-pro", authenticateToken, auth.upgradeToPro);
 
 // Password Reset (public, rate-limited)
-router.post("/forgot-password", authRateLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
-router.post("/reset-password", authRateLimiter, validate(resetPasswordSchema), authController.resetPassword);
+router.post("/forgot-password", rateLimiters.passwordReset, validate(forgotPasswordSchema), auth.forgotPassword);
+router.post("/reset-password", rateLimiters.auth, validate(resetPasswordSchema), auth.resetPassword);
 
 // Email Verification
-router.get("/verify-email", authController.verifyEmail);
-router.post("/resend-verification", authenticateToken, authController.resendVerification);
+router.get("/verify-email", auth.verifyEmail);
+router.post("/resend-verification", authenticateToken, rateLimiters.email, auth.resendVerification);
 
 export default router;

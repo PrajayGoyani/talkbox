@@ -10,6 +10,7 @@ import {
 } from "@schemas/socket.schema";
 import { SocketService } from "@services/chat/socket.service";
 import { IRedisPresenceService } from "@services/infra/interfaces";
+import { redisGuardService } from "@services/infra/redis.service";
 import { IUserCacheService } from "@services/interfaces/user-cache.service";
 import { AppError } from "@utils/AppError";
 import jwt from "jsonwebtoken";
@@ -53,6 +54,12 @@ export class SocketController {
       }
 
       try {
+        // Check if token has been blacklisted (user logged out)
+        const isBlacklisted = await redisGuardService.isTokenBlacklisted(token);
+        if (isBlacklisted) {
+          return next(AppError.unauthorized("Socket authentication error: Token has been revoked."));
+        }
+
         const decoded = jwt.verify(token, JWT_SECRET_KEY) as unknown as JWTPayload;
         const user = await this.userCacheService.getUser(decoded.id);
         if (!user) {

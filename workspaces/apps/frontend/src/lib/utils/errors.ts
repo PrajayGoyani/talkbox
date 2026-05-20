@@ -5,13 +5,15 @@ export class ApiError extends Error {
   status: number;
   code: string | null;
   details: any;
+  url: string | null;
 
-  constructor(message: string, status: number, code: string | null = null, details: any = null) {
+  constructor(message: string, status: number, code: string | null = null, details: any = null, url: string | null = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.details = details;
+    this.url = url;
 
     // Ensure the prototype is set correctly for instanceof checks
     Object.setPrototypeOf(this, ApiError.prototype);
@@ -32,6 +34,6 @@ export class ApiError extends Error {
       message = resp.statusText || message;
     }
 
-    return new ApiError(message, resp.status, code, details);
+    return new ApiError(message, resp.status, code, details, resp.url);
   }
 }

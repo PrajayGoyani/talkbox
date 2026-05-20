@@ -40,7 +40,7 @@ class ErrorStore {
         displayMessage = "You don't have permission to perform this action.";
         break;
       case 429:
-        displayMessage = "Too many requests. Please slow down.";
+        displayMessage = message || "Too many attempts. Please wait before trying again.";
         type = "warning";
         break;
       case 500:

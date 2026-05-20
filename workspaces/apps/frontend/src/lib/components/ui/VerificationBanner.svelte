@@ -33,8 +33,6 @@
         const success = await authStore.resendVerification();
         if (success) {
           uiStore.addAlert("Verification email sent!", "success");
-        } else {
-          uiStore.addAlert("Failed to resend. Try again later.", "danger");
         }
       }}
     >

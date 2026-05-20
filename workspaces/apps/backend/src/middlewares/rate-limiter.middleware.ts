@@ -28,6 +28,7 @@ export const createRateLimiter = (
   maxRequests: number = RATE_LIMIT_DEFAULT_MAX,
   windowMs: number = RATE_LIMIT_DEFAULT_WINDOW_MS,
   prefix: string = "rl",
+  message?: string,
 ) => {
   // L1: Local counter for fail-through protection and windowing
   const localFallbackCounts = new LRUCache<string, RateLimitState>({
@@ -52,7 +53,7 @@ export const createRateLimiter = (
       res.set("X-RateLimit-Remaining", "0");
       return next(
         AppError.tooMany(
-          `Strict limit of ${maxRequests} requests per ${windowMs / 1000}s exceeded. (L1)`,
+          message || `Strict limit of ${maxRequests} requests per ${windowMs / 1000}s exceeded. (L1)`,
           "RATE_LIMIT_EXCEEDED",
         ),
       );
@@ -81,7 +82,7 @@ export const createRateLimiter = (
 
       return next(
         AppError.tooMany(
-          `Strict limit of ${maxRequests} requests per ${windowMs / 1000}s exceeded. (Local)`,
+          message || `Strict limit of ${maxRequests} requests per ${windowMs / 1000}s exceeded. (Local)`,
           "RATE_LIMIT_EXCEEDED",
         ),
       );
@@ -108,7 +109,7 @@ export const createRateLimiter = (
 
           return next(
             AppError.tooMany(
-              `Strict limit of ${maxRequests} requests per ${windowMs / 1000}s exceeded.`,
+              message || `Strict limit of ${maxRequests} requests per ${windowMs / 1000}s exceeded.`,
               "RATE_LIMIT_EXCEEDED",
             ),
           );
