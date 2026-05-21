@@ -37,6 +37,6 @@
 
 ## Development Tools
 
-- **Package Manager**: `bun` (v1.3.13).
+- **Package Manager**: `bun` (v1.3.14).
 - **Toolchain**: `vite-plus` (`vp`) for test, dev, and fmt.
 - **Linter/Checker**: `svelte-check`, `tsc`.
