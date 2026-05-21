@@ -1,6 +1,5 @@
 import fs from "fs/promises";
 import path from "path";
-import sharp from "sharp";
 
 export class ImageService {
   public uploadDir: any;
@@ -15,13 +14,12 @@ export class ImageService {
    * @returns {Promise<Buffer>} - The processed WebP buffer.
    */
   async getProcessedBuffer(buffer: Buffer): Promise<Buffer> {
-    return await sharp(buffer)
+    const pipeline = new Bun.Image(buffer)
       .resize(256, 256, {
-        fit: "cover",
-        position: "center",
+        fit: "inside",
       })
-      .webp({ quality: 80 })
-      .toBuffer();
+      .webp({ quality: 80 });
+    return await pipeline.buffer();
   }
 
   /**
