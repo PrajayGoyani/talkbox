@@ -1,16 +1,10 @@
 import { registry } from "@bootstrap/registry";
 import { redisGuardService } from "@services/infra/redis.service";
-import { verifyAccessToken } from "@utils/jwt";
+import { extractTokenFromRequest, verifyAccessToken } from "@utils/jwt";
 import { NextFunction, Request, Response } from "express";
 
 export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers["authorization"];
-  let token = authHeader && authHeader.split(" ")[1];
-
-  // Fallback to cookie if header is missing (for CORS-friendly GET requests)
-  if (!token && req.cookies) {
-    token = req.cookies.access_token;
-  }
+  const token = extractTokenFromRequest(req);
 
   if (!token) {
     return res.status(401).json({ message: "Authentication required. No token provided." });
@@ -31,6 +25,7 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
     }
 
     req.user = user;
+    req.token = token;
     next();
   } catch {
     return res.status(403).json({ message: "Invalid or expired token." });

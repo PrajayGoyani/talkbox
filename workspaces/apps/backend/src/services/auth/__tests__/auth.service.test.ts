@@ -36,14 +36,18 @@ vi.mock("@services/notification/email.service", () => ({
   },
 }));
 
-vi.mock("@utils/jwt", () => ({
-  generateTokens: vi.fn().mockReturnValue({
-    accessToken: "test-access",
-    refreshToken: "test-refresh",
-  }),
-  generateAccessToken: vi.fn().mockReturnValue("test-access"),
-  verifyRefreshToken: vi.fn(),
-}));
+vi.mock("@utils/jwt", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@utils/jwt")>();
+  return {
+    ...actual,
+    generateTokens: vi.fn().mockReturnValue({
+      accessToken: "test-access",
+      refreshToken: "test-refresh",
+    }),
+    generateAccessToken: vi.fn().mockReturnValue("test-access"),
+    verifyRefreshToken: vi.fn(),
+  };
+});
 
 // Mock crypto.getRandomValues for deterministic tokens
 vi.spyOn(crypto, "getRandomValues").mockImplementation((arr: any) => {

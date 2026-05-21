@@ -1,4 +1,5 @@
 import { JWT_SECRET_KEY, JWT_EXPIRATION, JWT_REFRESH_SECRET_KEY, JWT_REFRESH_EXPIRATION } from "@config/env";
+import { Request } from "express";
 import jwt from "jsonwebtoken";
 
 export const generateAccessToken = (payload: object) =>
@@ -14,3 +15,14 @@ export function generateTokens(payload: object) {
 
 export const verifyAccessToken = (token: string) => jwt.verify(token, JWT_SECRET_KEY);
 export const verifyRefreshToken = (token: string) => jwt.verify(token, JWT_REFRESH_SECRET_KEY);
+
+export function extractTokenFromRequest(req: Request): string | undefined {
+  const authHeader = req.headers["authorization"];
+  let token = authHeader && authHeader.split(" ")[1];
+
+  if (!token && req.cookies) {
+    token = req.cookies.access_token;
+  }
+
+  return token;
+}

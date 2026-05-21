@@ -467,4 +467,29 @@ describe("SocketService", () => {
       expect(mockTypingHandler.handleTyping).toHaveBeenCalledWith(sender, payload, true);
     });
   });
+
+  describe("Distributed Active Session Eviction / Logout", () => {
+    it("should evict all active sockets for a user when receiving a global logout signal", async () => {
+      const socket1 = createMockSocket(MOCK_USER_ID, "free");
+      const socket2 = createMockSocket(MOCK_USER_ID, "free");
+
+      socketService.activeConnections.set(MOCK_USER_ID, new Set([socket1, socket2]));
+      expect(socketService.activeConnections.get(MOCK_USER_ID)!.size).toBe(2);
+
+      // Trigger global logout
+      (socketService as any)._handleGlobalLogout(MOCK_USER_ID);
+
+      expect(socket1.emit).toHaveBeenCalledWith("session_error", {
+        reason: "logout",
+        message: "You have been logged out.",
+      });
+      expect(socket2.emit).toHaveBeenCalledWith("session_error", {
+        reason: "logout",
+        message: "You have been logged out.",
+      });
+      expect(socket1.disconnect).toHaveBeenCalled();
+      expect(socket2.disconnect).toHaveBeenCalled();
+      expect(socketService.activeConnections.get(MOCK_USER_ID)).toBeUndefined();
+    });
+  });
 });

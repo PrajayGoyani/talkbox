@@ -41,7 +41,12 @@ export class SocketService {
     this.io = io;
 
     if (this.redisBaseService.subClient) {
-      this.redisBaseService.subClient.subscribe("presence:updates", "cache:invalidate", "session:takeover");
+      this.redisBaseService.subClient.subscribe(
+        "presence:updates",
+        "cache:invalidate",
+        "session:takeover",
+        "session:logout",
+      );
       this.redisBaseService.subClient.on("message", (channel: string, message: string) => {
         try {
           const data = JSON.parse(message);
@@ -57,6 +62,9 @@ export class SocketService {
               break;
             case "session:takeover":
               this._handleGlobalTakeover(data.userId, data.victimSocketId);
+              break;
+            case "session:logout":
+              this._handleGlobalLogout(data.userId);
               break;
           }
         } catch (err) {
@@ -192,6 +200,23 @@ export class SocketService {
     if (userSockets.size === 0) {
       this.activeConnections.delete(userId);
     }
+  }
+
+  private _handleGlobalLogout(userId: string) {
+    const userSockets = this.activeConnections.get(userId);
+    if (!userSockets) return;
+
+    const socketsToKick = Array.from(userSockets);
+    for (const socket of socketsToKick) {
+      socket.emit("session_error", {
+        reason: "logout",
+        message: "You have been logged out.",
+      });
+      socket.disconnect();
+      userSockets.delete(socket);
+    }
+
+    this.activeConnections.delete(userId);
   }
 
   // ─── Message Operations ──────────────────────────────────────────

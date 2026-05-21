@@ -96,6 +96,9 @@ export class SocketManager implements AuthObserver {
         } else {
           void this.connect();
         }
+      } else if (data.reason === "logout") {
+        this.disconnect();
+        await authStore.logout();
       }
     });
 

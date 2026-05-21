@@ -1,3 +1,5 @@
+import jwt from "jsonwebtoken";
+
 import { IRedisGuardService } from "../interfaces";
 import { RedisBaseService } from "./base";
 
@@ -53,7 +55,7 @@ export class RedisGuardService implements IRedisGuardService {
     }
     try {
       // Decode token to get expiration time
-      const decoded = require("jsonwebtoken").decode(token) as { exp?: number };
+      const decoded = jwt.decode(token) as { exp?: number };
       if (!decoded || !decoded.exp) {
         console.warn("[RedisGuardService] Unable to decode token or extract expiration.");
         return;

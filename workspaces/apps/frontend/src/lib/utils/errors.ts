@@ -7,7 +7,13 @@ export class ApiError extends Error {
   details: any;
   url: string | null;
 
-  constructor(message: string, status: number, code: string | null = null, details: any = null, url: string | null = null) {
+  constructor(
+    message: string,
+    status: number,
+    code: string | null = null,
+    details: any = null,
+    url: string | null = null,
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;

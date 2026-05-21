@@ -92,6 +92,24 @@ export class RedisSessionService {
     }
   }
 
+  async publishSessionLogout(userId: string): Promise<void> {
+    if (!this.client || !this.isConnected) return;
+    try {
+      await this.client.publish("session:logout", JSON.stringify({ userId }));
+    } catch (err) {
+      console.error("[RedisSessionService] Error publishing session logout:", err);
+    }
+  }
+
+  async clearUserSessions(userId: string): Promise<void> {
+    if (!this.client || !this.isConnected) return;
+    try {
+      await this.client.del(`sessions:${userId}`);
+    } catch (err) {
+      console.error("[RedisSessionService] Error clearing user sessions:", err);
+    }
+  }
+
   // ─── Cache Invalidation ────────────────────────────────────────────
 
   async publishCacheInvalidation(type: "user" | "partner" | "chat", id: string): Promise<void> {

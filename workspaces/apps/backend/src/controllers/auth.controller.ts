@@ -6,9 +6,10 @@ import {
   ResetPasswordRequest,
   SignupRequest,
 } from "@controllers/types";
-import { redisGuardService } from "@services/infra/redis.service";
+import { redisGuardService, redisSessionService } from "@services/infra/redis.service";
 import { IAuthService } from "@services/interfaces/auth.service";
 import { AppError } from "@utils/AppError";
+import { extractTokenFromRequest } from "@utils/jwt";
 import { CookieOptions, Request, Response } from "express";
 
 const REFRESH_TOKEN_COOKIE_OPTIONS: CookieOptions = {
@@ -48,16 +49,18 @@ export class AuthController {
 
   public logout = async (req: Request, res: Response) => {
     try {
-      // Extract token from Authorization header or cookies
-      const authHeader = req.headers["authorization"];
-      let token = authHeader && authHeader.split(" ")[1];
-      if (!token && req.cookies) {
-        token = req.cookies.access_token;
-      }
+      // Statically populated by authenticateToken middleware, with fallback for isolated unit tests
+      const token = req.token || extractTokenFromRequest(req);
 
       // Blacklist the token if present
       if (token) {
         await redisGuardService.blacklistToken(token);
+      }
+
+      // Evict active WS sessions and clear them from Redis
+      if (req.user?.id) {
+        await redisSessionService.publishSessionLogout(req.user.id);
+        await redisSessionService.clearUserSessions(req.user.id);
       }
 
       // Clear cookies

@@ -12,9 +12,13 @@ const mockFn = <T extends (...args: any[]) => any>(fn: any) =>
     mockRejectedValue: (value: any) => void;
   };
 
-vi.mock("@utils/jwt", () => ({
-  verifyAccessToken: vi.fn(),
-}));
+vi.mock("@utils/jwt", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@utils/jwt")>();
+  return {
+    ...actual,
+    verifyAccessToken: vi.fn(),
+  };
+});
 
 vi.mock("@bootstrap/registry", () => ({
   registry: {
@@ -37,7 +41,9 @@ describe("AuthMiddleware", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFn(registry.userCacheService.getUser).mockImplementation(async (id) => ({ id, username: "testuser" }) as any);
+    mockFn(registry.userCacheService.getUser).mockImplementation(
+      async (id: string) => ({ id, username: "testuser" }) as any,
+    );
 
     req = {
       headers: {},
