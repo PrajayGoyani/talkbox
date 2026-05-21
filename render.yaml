@@ -1,0 +1,93 @@
+# Exported from Render on 2026-05-21T06:13:45Z
+version: "1"
+projects:
+  - name: My project
+    environments:
+      - name: Production
+        services:
+          - type: web
+            name: talkbox-backend
+            runtime: bun
+            repo: https://github.com/PrajayGoyani/user-chat
+            plan: free
+            envVars:
+              - key: NODE_ENV
+                sync: false
+              - key: PRO_PLAN_SESSION_LIMIT
+                sync: false
+              - key: VERIFY_TOKEN_TTL
+                sync: false
+              - key: RESET_TOKEN_TTL
+                sync: false
+              - key: FRONTEND_URL
+                sync: false
+              - key: EMAIL_FROM
+                sync: false
+              - key: SMTP_PASS
+                sync: false
+              - key: SMTP_USER
+                sync: false
+              - key: SMTP_PORT
+                sync: false
+              - key: SMTP_HOST
+                sync: false
+              - key: REDIS_URL
+                sync: false
+              - key: REDIS_URL_UPSTASH
+                sync: false
+              - key: SENTRY_DSN
+                sync: false
+              - key: RETENTION_DELETED_CHAT_DAYS
+                sync: false
+              - key: RETENTION_MESSAGE_DAYS
+                sync: false
+              - key: FREE_PLAN_CHAT_LIMIT
+                sync: false
+              - key: FREE_PLAN_SCRUB_DAYS
+                sync: false
+              - key: REACTIONS_MAX_UNIQUE
+                sync: false
+              - key: ALLOWED_ORIGINS
+                sync: false
+              - key: CLOUDINARY_API_SECRET
+                sync: false
+              - key: CLOUDINARY_API_KEY
+                sync: false
+              - key: CLOUDINARY_CLOUD_NAME
+                sync: false
+              - key: UPLOAD_STRATEGY
+                sync: false
+              - key: MONGO_URI
+                sync: false
+              - key: BCRYPT_SALT
+                sync: false
+              - key: JWT_REFRESH_EXPIRATION
+                sync: false
+              - key: JWT_REFRESH_SECRET_KEY
+                sync: false
+              - key: JWT_EXPIRATION
+                sync: false
+              - key: JWT_SECRET_KEY
+                sync: false
+              - key: PORT
+                sync: false
+              - key: APP_NAME
+                sync: false
+            region: oregon
+            buildCommand: bun install && bun build
+            startCommand: bun start
+            autoDeployTrigger: commit
+            rootDir: workspaces/apps/backend
+          - type: web
+            name: talkbox-frontend
+            runtime: static
+            repo: https://github.com/PrajayGoyani/user-chat
+            envVars:
+              - key: VITE_ALLOW_UPGRADES
+                sync: false
+              - key: VITE_API_URL
+                sync: false
+            buildCommand: bun install && bunx --bun vite build
+            staticPublishPath: dist
+            autoDeployTrigger: commit
+            rootDir: workspaces/apps/frontend
