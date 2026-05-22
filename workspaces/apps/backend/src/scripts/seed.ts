@@ -1,3 +1,4 @@
+/* eslint-disable no-console, no-unused-vars */
 import { connectDB } from "@config/db";
 import Chat from "@models/chat.model";
 import Message from "@models/message.model";

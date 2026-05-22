@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-console
 console.log("[TestSetup] Initializing...");
 // Polyfill Bun for tests running in Node environment
 const isNode = typeof Bun === "undefined";

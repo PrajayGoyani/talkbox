@@ -6,6 +6,7 @@
   import ChatInput from "$components/chat/ChatInput.svelte";
   import MessageList from "$components/chat/MessageList.svelte";
   import Icon from "$components/ui/Icon.svelte";
+  import ConnectionStatus from "$components/ui/ConnectionStatus.svelte";
   import { messageStore } from "$state/active-chat.svelte";
   import { authStore } from "$state/auth.svelte";
   import type { ChatStatus } from "$lib/types/chat";
@@ -103,6 +104,7 @@
 </script>
 
 <ChatHeader {otherUser} {status} {partnerStatus} {onBack} />
+<ConnectionStatus />
 
 {#if status === "pending"}
   <div class="flex-1 p-6 flex flex-col items-center justify-center text-center">

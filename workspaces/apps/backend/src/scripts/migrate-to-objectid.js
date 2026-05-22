@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * One-time migration: Convert String fields to ObjectId in Chat and Message collections.
  * Run with: node migrate-to-objectid.js

@@ -11,6 +11,7 @@ import type { NotificationDto } from "shared/types/notification.dto";
 import type { Socket } from "socket.io-client";
 
 import { authStore } from "$state/auth.svelte";
+import { outboxStore } from "$state/chat/outbox.svelte";
 import { confirmStore } from "$state/confirm.svelte";
 import { notificationStore } from "$state/notification.svelte";
 import { routerStore } from "$state/router.svelte";
@@ -56,6 +57,7 @@ export class SocketManager implements AuthObserver {
 
     this.socket.on("connect", () => {
       this.isConnected = true;
+      outboxStore.drainQueue();
     });
 
     this.socket.on("disconnect", () => {
@@ -166,7 +168,12 @@ export class SocketManager implements AuthObserver {
   }
 
   sendMessage(chatId: string, receiverId: string, contentBody: string) {
-    if (!this.socket || !this.isConnected || !contentBody.trim()) return null;
+    if (!contentBody.trim()) return null;
+
+    if (!this.socket || !this.isConnected) {
+      const idempotencyKey = outboxStore.add(chatId, receiverId, contentBody.trim());
+      return idempotencyKey;
+    }
 
     this.isSendingMessage = true;
     this.emitTyping(chatId, receiverId, false);

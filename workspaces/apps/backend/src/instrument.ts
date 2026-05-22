@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/bun";
+import { logger } from "@utils/logger";
 
 // DNS Prefetching for performance optimization
 const prefetchHostnames = new Set<string>();
@@ -35,7 +36,7 @@ if (prefetchHostnames.size > 0) {
   for (const hostname of prefetchHostnames) {
     Bun.dns.prefetch(hostname);
   }
-  console.log(`[Bun] DNS Prefetched: ${Array.from(prefetchHostnames).join(", ")}`);
+  logger.info(`[Bun] DNS Prefetched: ${Array.from(prefetchHostnames).join(", ")}`);
 }
 
 // Initialize Sentry at the very beginning to ensure instrumentation of all modules
@@ -49,7 +50,7 @@ if (SENTRY_DSN) {
     tracesSampleRate: 1.0,
     integrations: [Sentry.expressIntegration()],
   });
-  console.log(`[Sentry] Initialized with environment: ${NODE_ENV}`);
+  logger.info(`[Sentry] Initialized with environment: ${NODE_ENV}`);
 } else if (NODE_ENV === "production") {
-  console.warn("[Sentry] Warning: SENTRY_DSN is not set in production!");
+  logger.warn("[Sentry] Warning: SENTRY_DSN is not set in production!");
 }

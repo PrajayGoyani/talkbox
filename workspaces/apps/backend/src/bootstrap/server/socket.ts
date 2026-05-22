@@ -2,6 +2,7 @@ import { registry } from "@bootstrap/registry/registry";
 import { ALLOWED_ORIGINS } from "@config/env";
 import { baseService } from "@services/infra/redis.service";
 import { createAdapter } from "@socket.io/redis-adapter";
+import { logger } from "@utils/logger";
 import { Server as HttpServer } from "http";
 import { Server } from "socket.io";
 
@@ -25,7 +26,7 @@ export const initSocketIO = (server: HttpServer): TypedIO => {
     const pubClient = baseService.adapterPubClient;
     const subClient = baseService.adapterSubClient;
     io.adapter(createAdapter(pubClient, subClient));
-    console.log("[SocketBootstrap] Redis adapter configured for distributed events (isolated clients).");
+    logger.info("[SocketBootstrap] Redis adapter configured for distributed events (isolated clients).");
   }
 
   registry.socketService.init(io);

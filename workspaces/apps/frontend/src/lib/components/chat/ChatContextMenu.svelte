@@ -1,6 +1,8 @@
 <script lang="ts">
   import { chatListStore } from "$state/chat/chat-list.svelte";
   import { chatActions } from "$state/chat/chat-actions.svelte";
+  import { confirmStore } from "$state/confirm.svelte";
+  import { uiStore } from "$state/ui.svelte";
 
   import Icon from "$components/ui/Icon.svelte";
   import type { Chat } from "$lib/types/chat";
@@ -37,10 +39,26 @@
     close();
   };
 
-  const handleDelete = () => {
-    // Current implementation doesn't have a chat deletion API in chatStore yet,
-    // but we can add one or just close for now.
+  const handleDelete = async () => {
     close();
+    if (!chat) return;
+
+    const confirmed = await confirmStore.show({
+      title: "Delete Conversation",
+      message: `Are you sure you want to delete your conversation with ${chat.otherUser?.name || chat.otherUser?.username}? This action cannot be undone.`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      variant: "danger",
+    });
+
+    if (confirmed) {
+      try {
+        await chatActions.deleteChat(chat.id);
+        uiStore.addAlert("Conversation deleted successfully", "success");
+      } catch (err: any) {
+        uiStore.addAlert(err.message || "Failed to delete conversation", "danger");
+      }
+    }
   };
 
   const close = () => {

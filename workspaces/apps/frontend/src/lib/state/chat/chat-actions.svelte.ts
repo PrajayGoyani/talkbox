@@ -2,9 +2,9 @@ import { chatService } from "$services/chat.service";
 import { RealtimeEvent, realtimeEvents } from "$services/realtime-events";
 import { socketManager } from "$services/socket.manager.svelte";
 import { messageStore } from "$state/active-chat.svelte";
-
-import { authStore } from "../auth.svelte";
-import { chatListStore } from "./chat-list.svelte";
+import { authStore } from "$state/auth.svelte";
+import { chatListStore } from "$state/chat/chat-list.svelte";
+import { uiStore } from "$state/ui.svelte";
 
 class ChatActions {
   lastError: string | null = $state(null);
@@ -93,6 +93,20 @@ class ChatActions {
     const result = await chatService.sendChatRequest(username);
     await chatListStore.fetchRequests();
     return result;
+  }
+
+  async deleteChat(chatId: string) {
+    try {
+      await chatService.deleteChat(chatId);
+      chatListStore.removeChatLocally(chatId);
+      if (messageStore.activeChatId === chatId) {
+        messageStore.destroy();
+        uiStore.navigate("/chat/conversations");
+      }
+    } catch (e: any) {
+      this.lastError = e.message || "Failed to delete chat";
+      throw e;
+    }
   }
 }
 

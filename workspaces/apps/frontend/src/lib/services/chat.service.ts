@@ -72,6 +72,11 @@ export class ChatService {
   async sendChatRequest(username: string) {
     return api.post("/chat/request", { username: username.trim() });
   }
+
+  /** Delete a conversation */
+  async deleteChat(chatId: string): Promise<{ message: string }> {
+    return api.delete<{ message: string }>(`/chat/${chatId}`);
+  }
 }
 
 export const chatService = new ChatService();

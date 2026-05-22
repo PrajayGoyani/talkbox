@@ -11,7 +11,7 @@ export function svelteRunesPlugin() {
     transform(code, id) {
       if (!id.endsWith(".svelte.ts")) return;
 
-      const runeRe = /\$((?:state|derived|effect))\s*\(/g;
+      const runeRe = /\$((?:state|derived|effect))[^\n(]*\(/g;
       let result = code;
       let match;
 

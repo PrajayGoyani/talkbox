@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/bun";
 import { baseService } from "@services/infra/redis.service";
 import { AppError } from "@utils/AppError";
 import { generateETag } from "@utils/hash.utils";
+import { logger } from "@utils/logger";
 import { error as errorResponse, success } from "@utils/response";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -51,7 +52,7 @@ export function initializeErrorHandlers() {
   app.use((req, res, _next) => {
     const err = errorResponse("ROUTE_NOT_FOUND", `Cannot ${req.method} ${req.path}`);
     if (NODE_ENV === "development") {
-      console.log(err);
+      logger.info(`Route not found: ${req.method} ${req.path}`, err);
     }
     res.status(404).json(err);
   });
@@ -71,7 +72,7 @@ export function initializeErrorHandlers() {
         Sentry.captureException(err);
       }
     }
-    console.error(err.stack);
+    logger.error(err.message || "Unhandled error", { stack: err.stack });
     res.status(err.statusCode || 500).json({
       success: false,
       message,
@@ -90,11 +91,11 @@ export function initializeExtensions() {
 
 // Graceful shutdown
 const shutdown = async (signal: string) => {
-  console.log(`\n${signal} received. Shutting down gracefully...`);
+  logger.info(`${signal} received. Shutting down gracefully...`);
 
   // Force shutdown after 10s if graceful shutdown hangs
   setTimeout(() => {
-    console.warn("Graceful shutdown timed out. Forcing shutdown.");
+    logger.warn("Graceful shutdown timed out. Forcing shutdown.");
     process.exit(1);
   }, 10000).unref();
 
@@ -106,7 +107,7 @@ const shutdown = async (signal: string) => {
     // This will trigger 'disconnect' events on all sockets
     await new Promise<void>((resolve) => {
       server.close(() => {
-        console.log("HTTP server closed.");
+        logger.info("HTTP server closed.");
         resolve();
       });
     });
@@ -116,9 +117,9 @@ const shutdown = async (signal: string) => {
 
     // 4. Close MongoDB
     await mongoose.connection.close();
-    console.log("MongoDB connection closed.");
+    logger.info("MongoDB connection closed.");
   } catch (err) {
-    console.error("Error during graceful shutdown:", err);
+    logger.error("Error during graceful shutdown", { error: err instanceof Error ? err.stack : String(err) });
     process.exit(1);
   }
 
