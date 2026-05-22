@@ -1,4 +1,4 @@
-import { registry } from "@bootstrap/registry";
+import { registry } from "@bootstrap/registry/registry";
 import { redisGuardService } from "@services/infra/redis.service";
 import { extractTokenFromRequest, verifyAccessToken } from "@utils/jwt";
 import { NextFunction, Request, Response } from "express";

@@ -1,4 +1,4 @@
-import { registry } from "@bootstrap/registry";
+import { registry } from "@bootstrap/registry/registry";
 import { ALLOWED_ORIGINS } from "@config/env";
 import { baseService } from "@services/infra/redis.service";
 import { createAdapter } from "@socket.io/redis-adapter";

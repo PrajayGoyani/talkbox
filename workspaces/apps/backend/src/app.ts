@@ -3,15 +3,15 @@
  * If we ever need to run external tools (like FFmpeg for media processing),
  * Bun.spawn is much more memory-efficient and faster than Node's child_process.spawn.
  */
-import { initEventListeners } from "@bootstrap/events";
+import { initEventListeners } from "@bootstrap/events/events";
+import { registry } from "@bootstrap/registry/registry";
 import {
   initializeErrorHandlers,
   initializeExtensions,
   initializeMiddlewares,
   initializeStatic,
-} from "@bootstrap/handler";
-import { registry } from "@bootstrap/registry";
-import { initSocketIO } from "@bootstrap/socket";
+} from "@bootstrap/server/express";
+import { initSocketIO } from "@bootstrap/server/socket";
 import { PORT } from "@config/env";
 import { registerRoutes } from "@routes/routes";
 import express from "express";
@@ -37,9 +37,7 @@ export function startServer() {
   registerRoutes();
   initializeErrorHandlers();
 
-  server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-  });
+  server.listen(PORT, () => {});
 
   return server;
 }

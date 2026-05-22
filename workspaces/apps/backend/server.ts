@@ -2,7 +2,7 @@ import { connectDB } from "@config/db";
 import { startJobs } from "@jobs/jobs";
 
 import { configureSocket, startServer } from "@/app";
-import { setupGracefulShutdown } from "@/bootstrap/handler";
+import { setupGracefulShutdown } from "@/bootstrap/server/express";
 
 export async function bootstrap() {
   await connectDB();

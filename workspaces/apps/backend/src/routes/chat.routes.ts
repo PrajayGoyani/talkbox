@@ -1,4 +1,4 @@
-import { registry } from "@bootstrap/registry";
+import { registry } from "@bootstrap/registry/registry";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import { rateLimiter } from "@middlewares/rate-limiter.middleware";
 import { validate, validateQuery } from "@middlewares/validate.middleware";

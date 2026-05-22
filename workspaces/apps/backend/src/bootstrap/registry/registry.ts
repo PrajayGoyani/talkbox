@@ -28,7 +28,7 @@ import { RedisSessionService } from "@services/infra/redis/session";
 import { EmailService } from "@services/notification/email.service";
 import { NotificationService } from "@services/notification/notification.service";
 
-import { container } from "./registry/container";
+import { container } from "./container";
 
 export interface IRegistry {
   // Infra

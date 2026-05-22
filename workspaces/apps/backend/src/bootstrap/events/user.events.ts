@@ -1,4 +1,4 @@
-import { registry } from "@bootstrap/registry";
+import { registry } from "@bootstrap/registry/registry";
 import { USER_EVENTS, eventBus } from "@utils/event-bus";
 
 /**

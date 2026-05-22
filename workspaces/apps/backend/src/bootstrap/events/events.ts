@@ -1,8 +1,8 @@
-import { initAuthEventListeners } from "./auth-events";
-import { initChatEventListeners } from "./chat-events";
-import { initMessageEventListeners } from "./message-events";
-import { initSocketEventListeners } from "./socket-events";
-import { initUserEventListeners } from "./user-events";
+import { initAuthEventListeners } from "./auth.events";
+import { initChatEventListeners } from "./chat.events";
+import { initMessageEventListeners } from "./message.events";
+import { initSocketEventListeners } from "./socket.events";
+import { initUserEventListeners } from "./user.events";
 
 /**
  * Global Event Initialization.

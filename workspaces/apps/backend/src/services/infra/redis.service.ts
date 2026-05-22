@@ -3,7 +3,7 @@ export * from "./redis/presence";
 export * from "./redis/session";
 export * from "./redis/guard";
 
-import { registry } from "@bootstrap/registry";
+import { registry } from "@bootstrap/registry/registry";
 
 export const baseService = registry.redisBaseService;
 export const redisPresenceService = registry.redisPresenceService;

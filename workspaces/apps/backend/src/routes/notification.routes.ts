@@ -1,4 +1,4 @@
-import { registry } from "@bootstrap/registry";
+import { registry } from "@bootstrap/registry/registry";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import express from "express";
 

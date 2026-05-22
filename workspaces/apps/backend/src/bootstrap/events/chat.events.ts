@@ -1,4 +1,4 @@
-import { registry } from "@bootstrap/registry";
+import { registry } from "@bootstrap/registry/registry";
 import { eventBus, CHAT_EVENTS } from "@utils/event-bus";
 
 /**
@@ -50,6 +50,5 @@ export const initChatEventListeners = () => {
   // 4. Chat Deleted
   eventBus.on(CHAT_EVENTS.DELETED, async ({ chatId, userId }) => {
     // Logic for deletion notification if needed
-    console.log(`[EventBus] Chat ${chatId} deleted by user ${userId}`);
   });
 };

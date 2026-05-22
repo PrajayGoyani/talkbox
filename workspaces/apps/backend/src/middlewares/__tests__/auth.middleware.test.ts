@@ -1,4 +1,4 @@
-import { registry } from "@bootstrap/registry";
+import { registry } from "@bootstrap/registry/registry";
 import { authenticateToken } from "@middlewares/auth.middleware";
 import { redisGuardService } from "@services/infra/redis.service";
 import { verifyAccessToken } from "@utils/jwt";
@@ -20,7 +20,7 @@ vi.mock("@utils/jwt", async (importOriginal) => {
   };
 });
 
-vi.mock("@bootstrap/registry", () => ({
+vi.mock("@bootstrap/registry/registry", () => ({
   registry: {
     userCacheService: {
       getUser: vi.fn(),
