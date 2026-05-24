@@ -60,3 +60,5 @@ export const APP_NAME = Bun.env.APP_NAME || "Talkbox";
 export const FRONTEND_URL = Bun.env.FRONTEND_URL || "http://localhost:5173";
 export const RESET_TOKEN_TTL = Number(Bun.env.RESET_TOKEN_TTL) || 3600; // 1 hour
 export const VERIFY_TOKEN_TTL = Number(Bun.env.VERIFY_TOKEN_TTL) || 86400; // 24 hours
+export const ENABLE_PERIODIC_HEAP_SNAPSHOTS = Bun.env.ENABLE_PERIODIC_HEAP_SNAPSHOTS === "true";
+export const ENABLE_DIAGNOSTICS = Bun.env.ENABLE_DIAGNOSTICS === "true";

@@ -5,6 +5,7 @@
  */
 import { initEventListeners } from "@bootstrap/events/events";
 import { registry } from "@bootstrap/registry/registry";
+import { initializeDiagnostics } from "@bootstrap/server/diagnostics";
 import {
   initializeErrorHandlers,
   initializeExtensions,
@@ -36,6 +37,7 @@ export function startServer() {
   initializeMiddlewares();
   registerRoutes();
   initializeErrorHandlers();
+  initializeDiagnostics();
 
   server.listen(PORT, () => {});
 
