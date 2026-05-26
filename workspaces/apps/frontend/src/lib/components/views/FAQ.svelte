@@ -80,7 +80,7 @@
       </summary>
       <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
         Free accounts are limited to one active session at a time. If you log in on a new device, your previous session
-        will be closed. Pro users can maintain up to 10 active sessions simultaneously.
+        will be closed. Pro users can maintain up to 5 active sessions simultaneously.
       </div>
     </details>
 

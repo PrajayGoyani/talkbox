@@ -23,7 +23,7 @@
         </div>
         <h3 class="text-xl font-bold mb-2">Multi-Device Sync</h3>
         <p class="text-slate-600 dark:text-slate-400">
-          Stay connected everywhere. Pro users can maintain up to 10 active sessions across all their devices
+          Stay connected everywhere. Pro users can maintain up to 5 active sessions across all their devices
           simultaneously.
         </p>
       </div>
