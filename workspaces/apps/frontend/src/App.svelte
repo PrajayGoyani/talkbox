@@ -378,6 +378,7 @@
         <Lazy
           component={Views.ChatPartnerProfile}
           user={selectedOtherUser}
+          chat={selectedChat}
           onClose={() => (uiStore.chatInfoOpen = false)}
         />
       </aside>
@@ -438,7 +439,7 @@
           {:else}
             <button
               onclick={() => uiStore.navigate(Route.LOGIN)}
-              class="hidden sm:block text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-indigo-600 px-2 active:scale-95"
+              class="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-indigo-600 px-2 active:scale-95"
             >
               Log In
             </button>

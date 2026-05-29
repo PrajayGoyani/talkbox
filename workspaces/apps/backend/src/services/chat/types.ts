@@ -19,6 +19,7 @@ export interface IChatActionService {
   acceptChat(chatId: string, userId: string): Promise<IChat>;
   rejectChat(chatId: string | ObjectId, userId: string | ObjectId): Promise<IChat>;
   deleteChat(chatId: string | ObjectId, userId: string | ObjectId): Promise<{ message: string }>;
+  updateRetentionPeriod(chatId: string, userId: string, retentionPeriod: number | null): Promise<IChat>;
 }
 
 export interface IMessageService {

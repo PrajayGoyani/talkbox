@@ -110,6 +110,7 @@ export class ChatQueryRepository implements IChatQueryRepository {
         },
         createdAt: 1,
         sortTime: 1,
+        retentionPeriod: 1,
       },
     });
 

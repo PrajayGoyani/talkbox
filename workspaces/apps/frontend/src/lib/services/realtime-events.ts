@@ -50,6 +50,7 @@ class RealtimeEvents {
   static readonly NOTIFICATION_RECEIVED = "NOTIFICATION_RECEIVED";
   static readonly CHAT_ACCEPTED = "CHAT_ACCEPTED";
   static readonly PROFILE_UPDATED = "PROFILE_UPDATED";
+  static readonly RETENTION_UPDATED = "RETENTION_UPDATED";
 }
 
 export const realtimeEvents = new RealtimeEvents();

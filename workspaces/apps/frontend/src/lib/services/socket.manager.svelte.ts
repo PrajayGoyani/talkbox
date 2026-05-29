@@ -150,8 +150,12 @@ export class SocketManager implements AuthObserver {
       },
     );
 
-    this.socket.on("profile_updated", (data: { userId: string } & Partial<UserDto>) => {
+    this.socket.on("profile_updated", (data) => {
       realtimeEvents.emit(RealtimeEvent.PROFILE_UPDATED, data);
+    });
+
+    this.socket.on("chat_retention_updated", (data) => {
+      realtimeEvents.emit(RealtimeEvent.RETENTION_UPDATED, data);
     });
   }
 

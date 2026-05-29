@@ -17,4 +17,10 @@ export const rateLimiters = {
     "Password reset email already sent! Please wait a minute before trying again.",
   ),
   logout: createRateLimiter(200, 60000, "logout", "Too many logout attempts. Please try again later."),
+  retention: createRateLimiter(
+    10,
+    60000,
+    "rl:chat:retention",
+    "Too many retention setting changes. Please wait a minute.",
+  ),
 };

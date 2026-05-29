@@ -19,6 +19,7 @@ export const CHAT_EVENTS = {
   MESSAGE_DELETED: "message.deleted",
   MESSAGE_UPDATED: "message.updated",
   REACTION_UPDATED: "message.reaction_updated",
+  RETENTION_UPDATED: "chat.retention_updated",
 } as const;
 
 export const USER_EVENTS = {

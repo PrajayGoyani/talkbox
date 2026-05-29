@@ -61,6 +61,7 @@ export class ChatListStore implements AuthObserver {
       realtimeEvents.on(RealtimeEvent.MESSAGE_DELETED, (d) => this.handleMessageDeleted(d)),
       realtimeEvents.on(RealtimeEvent.MESSAGE_UPDATED, (d) => this.handleMessageUpdated(d)),
       realtimeEvents.on(RealtimeEvent.PROFILE_UPDATED, (d) => this.handleProfileUpdate(d)),
+      realtimeEvents.on(RealtimeEvent.RETENTION_UPDATED, (d) => this.handleRetentionUpdated(d)),
     ];
   }
 
@@ -161,6 +162,10 @@ export class ChatListStore implements AuthObserver {
         Object.assign(chat.otherUser, updates);
       }
     });
+  }
+
+  private handleRetentionUpdated(data: { chatId: string; retentionPeriod: number | null }) {
+    this.patchChatLocally(data.chatId, { retentionPeriod: data.retentionPeriod });
   }
 
   private updateUserIdMap(chat: Chat) {

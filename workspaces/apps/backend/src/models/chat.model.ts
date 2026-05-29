@@ -18,6 +18,7 @@ export interface IChat extends Document {
   deletedAt: Date | null;
   /** Denormalized flag for retention job optimization */
   isFreeTierOnly: boolean;
+  retentionPeriod?: number | null;
 }
 
 export interface IChatModel extends Model<IChat> {}
@@ -50,6 +51,7 @@ const chatSchema = new Schema<IChat>({
   isDeleted: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null },
   isFreeTierOnly: { type: Boolean, default: true },
+  retentionPeriod: { type: Number, default: null },
 });
 
 // Consolidated "Super Index" for chat listing, requests, and pagination.
@@ -63,6 +65,7 @@ chatSchema.index({ participants: 1, isFreeTierOnly: 1, isDeleted: 1 });
 // Retention & cleanup optimization indices (Global background jobs)
 chatSchema.index({ isFreeTierOnly: 1, isDeleted: 1 });
 chatSchema.index({ isDeleted: 1, deletedAt: 1 }, { partialFilterExpression: { isDeleted: true } });
+chatSchema.index({ retentionPeriod: 1, isDeleted: 1 }, { partialFilterExpression: { retentionPeriod: { $ne: null } } });
 
 const Chat = mongoose.model<IChat>("Chat", chatSchema);
 

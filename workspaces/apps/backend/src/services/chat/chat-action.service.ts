@@ -196,4 +196,54 @@ export class ChatActionService implements IChatActionService {
 
     return { message: "Chat successfully deleted" };
   }
+
+  async updateRetentionPeriod(
+    chatId: string | ObjectId,
+    userId: string | ObjectId,
+    retentionPeriod: number | null,
+  ): Promise<IChat> {
+    const chat = await this.repository.findById(chatId);
+    if (!chat) throw AppError.notFound("Chat");
+
+    const isParticipant = chat.participants.some((p: any) => p.toString() === userId.toString());
+    if (!isParticipant) {
+      throw AppError.forbidden("You are not authorized to update this chat");
+    }
+
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw AppError.notFound("User");
+
+    // Validate retention period based on Free and Pro tier
+    if (user.plan === "free") {
+      if (retentionPeriod === null || retentionPeriod === 0 || retentionPeriod > 12) {
+        throw AppError.forbidden(
+          "Free users can set up to 12 months retention and cannot choose Lifetime.",
+          "RETENTION_LIMIT_EXCEEDED",
+        );
+      }
+    }
+
+    const updatedChat = await this.repository.updateById(chatId, {
+      retentionPeriod,
+    });
+
+    if (!updatedChat) throw AppError.notFound("Chat");
+
+    // Invalidate partner cache and chat cache globally
+    await Promise.all([
+      ...updatedChat.participants.map((p: any) =>
+        this.redisSessionService.publishCacheInvalidation("partner", p.toString()),
+      ),
+      this.redisSessionService.publishCacheInvalidation("chat", chatId.toString()),
+    ]);
+
+    // Emit event for real-time socket delivery
+    eventBus.emit(CHAT_EVENTS.RETENTION_UPDATED, {
+      chatId: updatedChat._id.toString(),
+      retentionPeriod,
+      participants: updatedChat.participants.map((p: any) => p.toString()),
+    });
+
+    return updatedChat;
+  }
 }

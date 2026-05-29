@@ -43,6 +43,7 @@ export const toChatDto = (chat: IChat, userId: string | ObjectId): ChatDto => {
       : null,
     unreadCount: unread,
     createdAt: chat.createdAt,
+    retentionPeriod: chat.retentionPeriod !== undefined ? chat.retentionPeriod : null,
   };
 };
 

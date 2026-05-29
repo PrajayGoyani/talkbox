@@ -3,7 +3,8 @@ import { authenticateToken } from "@middlewares/auth.middleware";
 import { rateLimiter } from "@middlewares/rate-limiter.middleware";
 import { validate, validateQuery } from "@middlewares/validate.middleware";
 import { ensureVerified } from "@middlewares/verification.middleware";
-import { chatRequestSchema, chatSearchSchema } from "@schemas/chat.schema";
+import { chatRequestSchema, chatSearchSchema, chatRetentionSchema } from "@schemas/chat.schema";
+import { rateLimiters } from "@config/rate-limiters";
 import { Router } from "express";
 const router = Router();
 const chatController = registry.chatController;
@@ -34,6 +35,15 @@ router.put("/:chatId/reject", chatController.rejectChat);
 
 // Delete chat
 router.delete("/:chatId", chatController.deleteChat);
+
+// Update chat retention period (rate-limited to 10 requests per minute)
+router.put(
+  "/:chatId/retention",
+  ensureVerified,
+  rateLimiters.retention,
+  validate(chatRetentionSchema),
+  chatController.updateRetentionPeriod,
+);
 
 // Get chat messages
 router.get("/:chatId/messages", chatController.getChatMessages);

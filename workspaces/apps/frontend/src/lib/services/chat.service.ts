@@ -77,6 +77,11 @@ export class ChatService {
   async deleteChat(chatId: string): Promise<{ message: string }> {
     return api.delete<{ message: string }>(`/chat/${chatId}`);
   }
+
+  /** Update retention period for a chat */
+  async updateRetentionPeriod(chatId: string, retentionPeriod: number | null): Promise<ChatDto> {
+    return api.put<ChatDto>(`/chat/${chatId}/retention`, { retentionPeriod });
+  }
 }
 
 export const chatService = new ChatService();

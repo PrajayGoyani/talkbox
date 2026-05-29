@@ -22,6 +22,7 @@ describe("ChatController", () => {
       getChatMessages: vi.fn(),
       markChatRead: vi.fn(),
       getChat: vi.fn(),
+      updateRetentionPeriod: vi.fn(),
     };
     chatController = new ChatController(chatService);
     req = {
@@ -29,6 +30,7 @@ describe("ChatController", () => {
       query: {},
       headers: {},
       user: { id: "user123", plan: "free" },
+      body: {},
     };
     res = {
       status: vi.fn().mockReturnThis(),
@@ -185,6 +187,28 @@ describe("ChatController", () => {
 
       expect(chatService.getChat).toHaveBeenCalledWith("user123", "chat123");
       expect(res.success).toHaveBeenCalledWith({ id: "chat123" });
+    });
+  });
+
+  describe("updateRetentionPeriod", () => {
+    it("should call chatService.updateRetentionPeriod with mapped null if retentionPeriod is 0", async () => {
+      req.body = { retentionPeriod: 0 };
+      chatService.updateRetentionPeriod.mockResolvedValue({ id: "chat123", retentionPeriod: null });
+
+      await chatController.updateRetentionPeriod(req, res);
+
+      expect(chatService.updateRetentionPeriod).toHaveBeenCalledWith("chat123", "user123", null);
+      expect(res.success).toHaveBeenCalledWith({ id: "chat123", retentionPeriod: null });
+    });
+
+    it("should call chatService.updateRetentionPeriod with number if retentionPeriod is a positive integer", async () => {
+      req.body = { retentionPeriod: 3 };
+      chatService.updateRetentionPeriod.mockResolvedValue({ id: "chat123", retentionPeriod: 3 });
+
+      await chatController.updateRetentionPeriod(req, res);
+
+      expect(chatService.updateRetentionPeriod).toHaveBeenCalledWith("chat123", "user123", 3);
+      expect(res.success).toHaveBeenCalledWith({ id: "chat123", retentionPeriod: 3 });
     });
   });
 

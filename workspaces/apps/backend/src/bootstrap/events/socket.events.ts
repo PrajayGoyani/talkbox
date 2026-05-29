@@ -41,4 +41,12 @@ export const initSocketEventListeners = () => {
   eventBus.on(CHAT_EVENTS.REACTION_UPDATED, ({ payload, participants }) => {
     registry.socketService.emitToUsers(participants, "message_reaction_update", payload);
   });
+
+  // 5. Chat Retention Period Updated
+  eventBus.on(CHAT_EVENTS.RETENTION_UPDATED, ({ chatId, retentionPeriod, participants }) => {
+    registry.socketService.emitToUsers(participants, "chat_retention_updated", {
+      chatId,
+      retentionPeriod,
+    });
+  });
 };

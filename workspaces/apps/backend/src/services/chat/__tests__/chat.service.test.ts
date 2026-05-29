@@ -21,6 +21,7 @@ describe("ChatService Delegation", () => {
       acceptChat: vi.fn(),
       rejectChat: vi.fn(),
       deleteChat: vi.fn(),
+      updateRetentionPeriod: vi.fn(),
     };
     messageService = {
       getChatMessages: vi.fn(),
@@ -78,6 +79,16 @@ describe("ChatService Delegation", () => {
   it("should delegate markChatRead to messageService", async () => {
     await chatService.markChatRead("chat1", "u1");
     expect(messageService.markChatRead).toHaveBeenCalledWith("chat1", "u1");
+  });
+
+  it("should delegate updateRetentionPeriod to chatActionService and fetch updated chat", async () => {
+    chatActionService.updateRetentionPeriod.mockResolvedValue({ id: "chat1" });
+    chatListingService.getChat.mockResolvedValue({ id: "chat1", retentionPeriod: 6 });
+
+    const result = await chatService.updateRetentionPeriod("chat1", "u1", 6);
+    expect(chatActionService.updateRetentionPeriod).toHaveBeenCalledWith("chat1", "u1", 6);
+    expect(chatListingService.getChat).toHaveBeenCalledWith("u1", "chat1");
+    expect(result).toEqual({ id: "chat1", retentionPeriod: 6 });
   });
 
   it("should forward errors from underlying services", async () => {

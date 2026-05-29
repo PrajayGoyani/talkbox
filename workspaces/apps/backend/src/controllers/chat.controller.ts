@@ -74,4 +74,12 @@ export class ChatController {
     const chat = await this.chatService.getChat(req.user!.id, req.params.chatId);
     res.success(chat);
   };
+
+  public updateRetentionPeriod = async (req: Request<ChatIdParam>, res: Response) => {
+    const { retentionPeriod } = req.body;
+    // Map 0 to null (Lifetime) for simplicity if passed that way, otherwise keep number or null
+    const mappedPeriod = retentionPeriod === 0 ? null : retentionPeriod;
+    const chat = await this.chatService.updateRetentionPeriod(req.params.chatId, req.user!.id, mappedPeriod);
+    res.success(chat);
+  };
 }

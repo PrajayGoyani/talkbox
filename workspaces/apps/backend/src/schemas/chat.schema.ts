@@ -20,3 +20,7 @@ export const chatSearchSchema = z.object({
       return escaped.startsWith("@") ? escaped.slice(1) : escaped;
     }),
 });
+
+export const chatRetentionSchema = z.object({
+  retentionPeriod: z.union([z.number().min(1).max(1200), z.null(), z.literal(0)]),
+});

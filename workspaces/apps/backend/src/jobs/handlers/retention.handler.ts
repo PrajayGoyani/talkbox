@@ -9,6 +9,7 @@ import ChatModel from "@models/chat.model";
 import MessageModel from "@models/message.model";
 import NotificationModel from "@models/notification.model";
 import { Types } from "mongoose";
+import { logger } from "@utils/logger";
 
 /**
  * @risk Medium - Background Jobs
@@ -20,7 +21,7 @@ import { Types } from "mongoose";
  */
 export const retentionHandler = async () => {
   try {
-    console.log("Running background retention jobs (Agenda)...");
+    logger.info("Running background retention jobs (Agenda)...");
 
     // Calculate dates
     const retentionThreshold = new Date();
@@ -88,9 +89,46 @@ export const retentionHandler = async () => {
     await Promise.all(deletionPromises);
 
     if (deletedCountTotal > 0) {
-      console.log(
+      logger.info(
         `[Retention] Purged ${deletedCountTotal} messages older than ${RETENTION_MESSAGE_DAYS} days from Free-to-Free chats.`,
       );
+    }
+
+    // 1.5. Purge messages based on custom per-chat retention settings
+    const customRetentionChats = await ChatModel.find({
+      retentionPeriod: { $ne: null, $gt: 0 },
+      isDeleted: false,
+    })
+      .select("_id retentionPeriod")
+      .lean();
+
+    if (customRetentionChats.length > 0) {
+      const chatsByPeriod = new Map<number, Types.ObjectId[]>();
+      for (const chat of customRetentionChats) {
+        const period = chat.retentionPeriod!;
+        if (!chatsByPeriod.has(period)) {
+          chatsByPeriod.set(period, []);
+        }
+        chatsByPeriod.get(period)!.push(chat._id);
+      }
+
+      for (const [periodMonths, chatIds] of chatsByPeriod.entries()) {
+        const customThreshold = new Date();
+        customThreshold.setMonth(customThreshold.getMonth() - periodMonths);
+
+        const customThresholdId = Types.ObjectId.createFromTime(Math.floor(customThreshold.getTime() / 1000));
+
+        const res = await MessageModel.deleteMany({
+          chatId: { $in: chatIds },
+          _id: { $lt: customThresholdId },
+        });
+
+        if (res.deletedCount > 0) {
+          logger.info(
+            `[Retention] Purged ${res.deletedCount} messages older than ${periodMonths} months based on custom chat settings.`,
+          );
+        }
+      }
     }
 
     // 2. Purge notifications
@@ -140,10 +178,12 @@ export const retentionHandler = async () => {
     }
     await Promise.all(cleanupPromises);
 
-    console.log(
+    logger.info(
       `Background retention jobs complete. (Policy: Free messages ${RETENTION_MESSAGE_DAYS}d, Notifications 30d, Deleted chats 14d)`,
     );
   } catch (error) {
-    console.error("Error during background jobs:", error);
+    logger.error("Error during background jobs", {
+      error: error instanceof Error ? error.stack : String(error),
+    });
   }
 };

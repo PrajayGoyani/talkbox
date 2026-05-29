@@ -68,4 +68,9 @@ export class ChatService implements IChatService {
   async markChatRead(chatId: string, userId: string): Promise<{ message: string }> {
     return this.messageService.markChatRead(chatId, userId);
   }
+
+  async updateRetentionPeriod(chatId: string, userId: string, retentionPeriod: number | null): Promise<ChatDto> {
+    await this.chatActionService.updateRetentionPeriod(chatId, userId, retentionPeriod);
+    return this.getChat(userId, chatId);
+  }
 }

@@ -18,4 +18,5 @@ export interface IChatService {
     markAsRead?: boolean,
   ): Promise<MessageDto[]>;
   markChatRead(chatId: string, userId: string): Promise<{ message: string }>;
+  updateRetentionPeriod(chatId: string, userId: string, retentionPeriod: number | null): Promise<ChatDto>;
 }

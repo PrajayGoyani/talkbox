@@ -108,6 +108,7 @@ export interface ChatDto {
   } | null;
   unreadCount: number;
   createdAt: string | Date;
+  retentionPeriod?: number | null;
 }
 
 /**
