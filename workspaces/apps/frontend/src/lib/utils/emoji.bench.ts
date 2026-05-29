@@ -4,7 +4,7 @@ import { bench, describe } from "vitest";
 describe("parsing logic stress test", () => {
   const shortMessage = "Hello world! Check out https://google.com 🚀";
   const mediumMessage =
-    "Check code `npm install` at https://github.com/PrajayGoyani/user-chat and some emojis 🚀🔥✨".repeat(10);
+    "Check code `npm install` at https://github.com/PrajayGoyani/talkbox and some emojis 🚀🔥✨".repeat(10);
   const largeMessage =
     "System log: `error 500` at https://internal.logs/123-456. Mixed emojis 💩💋🫦 and normal text.".repeat(100);
 

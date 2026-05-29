@@ -14,7 +14,7 @@
 ### Changed
 
 - **Backend Architecture**: Fully refactored the backend into domain-driven services and implemented an event-driven decoupling pattern with dedicated repositories.
-- **Shared Package**: Consolidated types, constants, and utilities into a new `@user-chat/shared` workspace package.
+- **Shared Package**: Consolidated types, constants, and utilities into a new `@talkbox/shared` workspace package.
 - **Unified Tooling**: Standardized development, building, and testing under the `vite-plus` (`vp`) toolchain across all workspaces.
 - **Redis Modularization**: Split the monolithic Redis service into specialized components for sessions, presence, and guards.
 - **Graceful Shutdown**: Enhanced the shutdown sequence with configurable timeouts and improved connection handling.

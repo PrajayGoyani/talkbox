@@ -41,7 +41,7 @@ Talkbox is a real-time messaging platform providing message synchronization acro
 
    ```bash
    git clone <repository-url>
-   cd user-chat
+   cd talkbox
    ```
 
 2. **Install all dependencies**:

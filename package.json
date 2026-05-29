@@ -1,5 +1,5 @@
 {
-  "name": "user-chat",
+  "name": "talkbox",
   "private": true,
   "workspaces": [
     "workspaces/apps/*",

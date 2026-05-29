@@ -16,7 +16,7 @@ Analysis of the current schema identifies gaps in supporting modern chat feature
 
 We need to transition from a fixed 2-user schema to a flexible participant system.
 
-#### [MODIFY] [chat.model.js](file:///home/dev/Documents/work/other/projects/user-chat/backend/src/models/chat.model.js)
+#### [MODIFY] [chat.model.js](file:///home/dev/Documents/work/other/projects/talkbox/backend/src/models/chat.model.js)
 
 - Add `kind`: `enum: ["1:1", "group"]`.
 - Add `participants`: Array of User IDs.
@@ -31,7 +31,7 @@ We need to transition from a fixed 2-user schema to a flexible participant syste
 
 Uncommenting existing placeholders and adding new ones for rich interactivity.
 
-#### [MODIFY] [message.model.js](file:///home/dev/Documents/work/other/projects/user-chat/backend/src/models/message.model.js)
+#### [MODIFY] [message.model.js](file:///home/dev/Documents/work/other/projects/talkbox/backend/src/models/message.model.js)
 
 - **Uncomment**: `status`, `isEdited`, `editedAt`, `isDeleted`, `deletedAt`.
 - **Add Replies**: `replyTo`: { type: Schema.Types.ObjectId, ref: 'Message', default: null }.
@@ -41,7 +41,7 @@ Uncommenting existing placeholders and adding new ones for rich interactivity.
 
 ### 3. Media & File Sharing Enhancement
 
-#### [MODIFY] [message.model.js](file:///home/dev/Documents/work/other/projects/user-chat/backend/src/models/message.model.js)
+#### [MODIFY] [message.model.js](file:///home/dev/Documents/work/other/projects/talkbox/backend/src/models/message.model.js)
 
 - Expand `attachment`:
   - `kind`: Add "document", "file".
@@ -51,7 +51,7 @@ Uncommenting existing placeholders and adding new ones for rich interactivity.
 
 ### 4. End-to-End Encryption (E2EE) Infrastructure
 
-#### [NEW] [keyBundle.model.js](file:///home/dev/Documents/work/other/projects/user-chat/backend/src/models/keyBundle.model.js)
+#### [NEW] [keyBundle.model.js](file:///home/dev/Documents/work/other/projects/talkbox/backend/src/models/keyBundle.model.js)
 
 - `userId`: ref to User.
 - `registrationId`: number.
@@ -59,27 +59,27 @@ Uncommenting existing placeholders and adding new ones for rich interactivity.
 - `signedPreKey`: { id, key, signature }.
 - `oneTimePreKeys`: Array of { id, key }.
 
-#### [MODIFY] [message.model.js](file:///home/dev/Documents/work/other/projects/user-chat/backend/src/models/message.model.js)
+#### [MODIFY] [message.model.js](file:///home/dev/Documents/work/other/projects/talkbox/backend/src/models/message.model.js)
 
 - Add `isEncrypted`: boolean.
 
 ### 5. Advanced Presence System
 
-#### [MODIFY] [user.model.js](file:///home/dev/Documents/work/other/projects/user-chat/backend/src/models/user.model.js)
+#### [MODIFY] [user.model.js](file:///home/dev/Documents/work/other/projects/talkbox/backend/src/models/user.model.js)
 
 - Add `presenceStatus`: `enum: ["online", "offline", "away", "dnd", "invisible"]`.
 - `customStatus`: string (e.g., "In a meeting").
 
 ### 6. Validation Schema Updates
 
-#### [MODIFY] [chat.schema.js](file:///home/dev/Documents/work/other/projects/user-chat/backend/src/schemas/chat.schema.js)
+#### [MODIFY] [chat.schema.js](file:///home/dev/Documents/work/other/projects/talkbox/backend/src/schemas/chat.schema.js)
 
 - Update `createChatSchema` to handle both individual and group chat creation.
 - Add validation for `groupMetadata` and `participants` array.
 
 ### 7. Notification Updates
 
-#### [MODIFY] [notification.model.js](file:///home/dev/Documents/work/other/projects/user-chat/backend/src/models/notification.model.js)
+#### [MODIFY] [notification.model.js](file:///home/dev/Documents/work/other/projects/talkbox/backend/src/models/notification.model.js)
 
 - Add new notification types: `group_invite`, `group_message`, `message_reaction`.
 

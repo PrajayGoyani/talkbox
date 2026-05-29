@@ -1,6 +1,6 @@
 # High-Level Functional & Technical Requirements
 
-This document outlines the core functional requirements, API endpoints, socket events, and tech stack dependencies for the `user-chat` application.
+This document outlines the core functional requirements, API endpoints, socket events, and tech stack dependencies for the `talkbox` application.
 
 ## Core Features & User Stories
 

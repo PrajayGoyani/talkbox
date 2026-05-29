@@ -8,7 +8,7 @@ projects:
           - type: web
             name: talkbox-backend
             runtime: bun
-            repo: https://github.com/PrajayGoyani/user-chat
+            repo: https://github.com/PrajayGoyani/talkbox
             plan: free
             envVars:
               - key: NODE_ENV
@@ -81,7 +81,7 @@ projects:
           - type: web
             name: talkbox-frontend
             runtime: static
-            repo: https://github.com/PrajayGoyani/user-chat
+            repo: https://github.com/PrajayGoyani/talkbox
             envVars:
               - key: VITE_ALLOW_UPGRADES
                 sync: false

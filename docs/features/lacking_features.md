@@ -1,6 +1,6 @@
-# Meaningful Lacking Features Analysis: User-Chat
+# Meaningful Lacking Features Analysis: talkbox
 
-While the `user-chat` project provides a solid foundation for real-time messaging, several high-impact features are missing that would be required for a production-grade or highly competitive chat application.
+While the `talkbox` project provides a solid foundation for real-time messaging, several high-impact features are missing that would be required for a production-grade or highly competitive chat application.
 
 ## 1. Group Messaging Capabilities
 
