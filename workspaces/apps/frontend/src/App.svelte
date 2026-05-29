@@ -414,7 +414,6 @@
         <div class="flex items-center gap-4">
           {#if routerStore.segments.length === 0}
             <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-400 mr-4">
-              <a href="#features" class="hover:text-indigo-600 transition-colors">Features</a>
               <button
                 onclick={() => uiStore.navigate(Route.FAQ)}
                 class="hover:text-indigo-600 transition-colors cursor-pointer">FAQ</button
